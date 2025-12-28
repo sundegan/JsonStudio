@@ -1,0 +1,54 @@
+---
+alwaysApply: true
+---
+
+# Git Commit Convention
+
+When generating Git commit messages, strictly follow the **Conventional Commits** specification.
+
+## Commit Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+## Commit Types
+
+Use one of the following types:
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, no logic change)
+- **refactor**: Code refactoring (neither fixes a bug nor adds a feature)
+- **perf**: Performance improvements
+- **test**: Adding or modifying tests
+- **chore**: Changes to build process or auxiliary tools
+- **ci**: Changes to CI configuration files and scripts
+- **build**: Changes that affect the build system or external dependencies
+
+## Examples
+
+- `feat(api): add user login endpoint`
+- `fix(ui): resolve button click not responding`
+- `docs: update README installation guide`
+- `refactor(core): restructure data processing logic`
+- `perf(query): optimize database query performance`
+- `chore(deps): upgrade dependency versions`
+
+## Rules
+
+1. Write **description** in English, keep it clear and concise
+2. Use **scope** when changes affect a specific module
+3. Start description with lowercase, no period at the end
+4. Use imperative mood (e.g., "add" not "added" or "adds")
+
+## Important Notes
+
+- Do NOT execute git commit automatically, only generate commit messages for user
+- Commit messages should accurately reflect the nature and scope of changes
+
