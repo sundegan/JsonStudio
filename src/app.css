@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* 全局基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+/* 亮色主题（默认） */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --border: #d0d7de;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-muted: #8c959f;
+  --accent: #1f883d;
+  --accent-hover: #1a7f37;
+  --error: #cf222e;
+  --warning: #bf8700;
+  --success: #1a7f37;
+}
+
+/* 暗色主题 */
+.dark {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --border: #21262d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #238636;
+  --accent-hover: #2ea043;
+  --error: #f85149;
+  --warning: #f0883e;
+  --success: #3fb950;
+}
