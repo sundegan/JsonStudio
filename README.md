@@ -6,7 +6,7 @@
 
 提供格式化、压缩、转义、对比等常用功能
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/sundegan/JsonStudio/releases) [![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)](https://tauri.app/) [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/sundegan/JsonStudio/releases) [![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)](https://tauri.app/) [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 
 </div>
 
@@ -24,6 +24,9 @@
 
 - **快捷键驱动工作流**
   从格式化、压缩到对比、转换，所有操作均可通过快捷键完成，无需鼠标点击。支持全局快捷键和应用内快捷键自定义，打造属于你的高效工作流，**让双手始终停留在键盘上**。
+
+- **简洁现代的交互体验**
+  纯图标工具栏，粘贴自动格式化，实时校验定位错误。支持快捷键操作、拖拽导入文件、撤销重做、状态恢复、行号显示、深色/浅色主题切换，**专注数据本身**。
 
 - **极致性能体验**
   基于 Rust 高性能后端，轻松处理 MB 级大型 JSON 文件，即时响应无卡顿。Tauri 2.0 加持下，应用体积小巧、启动迅速、内存占用低。
