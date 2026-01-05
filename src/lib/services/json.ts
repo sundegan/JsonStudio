@@ -45,3 +45,17 @@ export async function validateJson(content: string): Promise<ValidationResult> {
 export async function getJsonStats(content: string): Promise<JsonStats> {
   return await invoke<JsonStats>('json_stats', { content });
 }
+
+/**
+ * 转义字符串（将字符串转换为 JSON 字符串格式）
+ */
+export async function escapeString(content: string): Promise<string> {
+  return await invoke<string>('json_escape', { content });
+}
+
+/**
+ * 反转义字符串（将 JSON 字符串格式转换为普通字符串）
+ */
+export async function unescapeString(content: string): Promise<string> {
+  return await invoke<string>('json_unescape', { content });
+}
