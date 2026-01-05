@@ -101,6 +101,24 @@ pub fn json_stats(content: &str) -> JsonStats {
     }
 }
 
+/// 转义字符串（将字符串转换为 JSON 字符串格式）
+#[tauri::command]
+pub fn json_escape(content: &str) -> String {
+    // 使用 serde_json 将字符串序列化为 JSON 字符串
+    // 这会自动处理所有需要转义的字符（引号、换行符、反斜杠等）
+    serde_json::to_string(content).unwrap_or_else(|_| String::from("\"\""))
+}
+
+/// 反转义字符串（将 JSON 字符串格式转换为普通字符串）
+#[tauri::command]
+pub fn json_unescape(content: &str) -> Result<String, String> {
+    // 尝试将内容解析为字符串
+    match serde_json::from_str::<String>(content) {
+        Ok(unescaped) => Ok(unescaped),
+        Err(e) => Err(format!("反转义失败: {}", format_error_description(&e))),
+    }
+}
+
 /// 格式化错误信息（用于返回给前端）
 fn format_error_message(e: &serde_json::Error) -> String {
     format!("第 {} 行，第 {} 列：{}", e.line(), e.column(), format_error_description(e))

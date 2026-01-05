@@ -18,10 +18,18 @@
   },
   "author": "sundegan",
   "dependencies": {
+    "@monaco-editor/loader": "^1.7.0",
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "bits-ui": "^2.15.2",
+    "clsx": "^2.1.1",
+    "monaco-editor": "^0.55.1",
+    "tailwind-merge": "^3.4.0",
+    "tailwind-variants": "^3.2.2"
   },
   "devDependencies": {
+    "@internationalized/date": "^3.10.1",
+    "@lucide/svelte": "^0.561.0",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
@@ -34,6 +42,7 @@
     "svelte-check": "^4.0.0",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.6.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vite-plugin-monaco-editor": "^1.1.0"
   }
 }
