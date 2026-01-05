@@ -7,37 +7,112 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-base);
+  overflow: hidden;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 
+               'Hiragino Sans GB', sans-serif;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-base);
+  overflow: hidden;
 }
 
-/* 亮色主题（默认） */
+/* 禁用文本选择 */
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 等宽字体 */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 
+               'Inconsolata', 'Roboto Mono', ui-monospace, monospace;
+}
+
+/* 暗色主题（默认） */
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f6f8fa;
-  --border: #d0d7de;
-  --text-primary: #1f2328;
-  --text-secondary: #656d76;
-  --text-muted: #8c959f;
-  --accent: #1f883d;
-  --accent-hover: #1a7f37;
-  --error: #cf222e;
-  --warning: #bf8700;
-  --success: #1a7f37;
+  /* 背景层次 */
+  --bg-base: #0f0f0f;
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #242424;
+  --bg-tertiary: #2d2d2d;
+  
+  /* 边框 */
+  --border: #333333;
+  --border-focus: #4d4d4d;
+  
+  /* 文字 */
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  
+  /* 强调色 - 翡翠绿 */
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-glow: rgba(16, 185, 129, 0.2);
+  
+  /* 状态色 */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
 }
 
-/* 暗色主题 */
-.dark {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --border: #21262d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #6e7681;
-  --accent: #238636;
-  --accent-hover: #2ea043;
-  --error: #f85149;
-  --warning: #f0883e;
-  --success: #3fb950;
+/* 亮色主题 */
+.light {
+  /* 背景层次 */
+  --bg-base: #f8f9fa;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f1f3f4;
+  --bg-tertiary: #e8eaed;
+  
+  /* 边框 */
+  --border: #dadce0;
+  --border-focus: #1a73e8;
+  
+  /* 文字 */
+  --text-primary: #202124;
+  --text-secondary: #5f6368;
+  --text-muted: #9aa0a6;
+  
+  /* 强调色 */
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-glow: rgba(16, 185, 129, 0.15);
+  
+  /* 状态色 */
+  --success: #188038;
+  --warning: #f29900;
+  --error: #d93025;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-focus);
+}
+
+/* 选中文本样式 */
+::selection {
+  background: var(--accent-glow);
 }

@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="快速、现代、高效的 JSON 桌面工具" />
     <title>Json Studio</title>
+    <!-- 防止白色闪现：在任何 CSS 加载前就设置背景色 -->
+    <style>
+      html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #0f0f0f;
+        overflow: hidden;
+      }
+      html.light, html.light body {
+        background-color: #f8f9fa;
+      }
+    </style>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
