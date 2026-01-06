@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "JsonStudio",
+        "title": "Json Studio",
         "width": 1200,
         "height": 800,
         "minWidth": 800,
