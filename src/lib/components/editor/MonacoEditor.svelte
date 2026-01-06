@@ -38,10 +38,29 @@
   let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
   
+  // 标志位：用于区分内部编辑和外部更新
+  let isInternalChange = false;
+  
   // 监听 value 变化
   $effect(() => {
+    // 如果是内部编辑触发的变化，不需要更新编辑器
+    if (isInternalChange) {
+      isInternalChange = false;
+      return;
+    }
+    
+    // 只在外部值真正变化时才更新编辑器
     if (editor && value !== editor.getValue()) {
-      editor.setValue(value);
+      const model = editor.getModel();
+      if (model) {
+        // 使用 pushEditOperations 而不是 setValue 来保留撤销历史
+        const fullRange = model.getFullModelRange();
+        model.pushEditOperations(
+          [],
+          [{ range: fullRange, text: value }],
+          () => null
+        );
+      }
     }
   });
   
@@ -131,6 +150,8 @@
       editor.onDidChangeModelContent(() => {
         const currentValue = editor?.getValue() || '';
         if (currentValue !== value) {
+          // 标记为内部变化，避免触发 $effect 重新设置值
+          isInternalChange = true;
           onChange(currentValue);
         }
       });
