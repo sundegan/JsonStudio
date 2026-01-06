@@ -17,15 +17,23 @@ jobs:
           - platform: 'macos-latest'
             target: 'aarch64-apple-darwin'
             args: '--target aarch64-apple-darwin'
+            os_name: 'macos'
+            arch_suffix: 'aarch64'
           - platform: 'macos-latest'
             target: 'x86_64-apple-darwin'
             args: '--target x86_64-apple-darwin'
+            os_name: 'macos'
+            arch_suffix: 'x64'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
             args: '--target x86_64-unknown-linux-gnu'
+            os_name: 'linux'
+            arch_suffix: 'amd64'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
             args: '--target x86_64-pc-windows-msvc'
+            os_name: 'windows'
+            arch_suffix: 'x64'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -62,16 +70,44 @@ jobs:
       - name: Build frontend
         run: pnpm build
 
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+      - name: Build Tauri app (without auto-upload)
+        run: pnpm tauri build ${{ matrix.args }}
+
+      - name: Rename artifacts with OS name
+        shell: bash
+        run: |
+          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          VERSION="${{ github.ref_name }}"
+          
+          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+            # Windows: rename .exe files
+            if [ -f "$BUNDLE_DIR/nsis/jsonstudio_${VERSION#v}_x64-setup.exe" ]; then
+              mv "$BUNDLE_DIR/nsis/jsonstudio_${VERSION#v}_x64-setup.exe" "$BUNDLE_DIR/nsis/jsonstudio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            fi
+          elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
+            # Linux: rename AppImage
+            if [ -f "$BUNDLE_DIR/appimage/jsonstudio_${VERSION#v}_amd64.AppImage" ]; then
+              mv "$BUNDLE_DIR/appimage/jsonstudio_${VERSION#v}_amd64.AppImage" "$BUNDLE_DIR/appimage/jsonstudio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
+            fi
+          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+            # macOS: rename DMG files
+            if [ -f "$BUNDLE_DIR/dmg/jsonstudio_${VERSION#v}_${{ matrix.arch_suffix }}.dmg" ]; then
+              mv "$BUNDLE_DIR/dmg/jsonstudio_${VERSION#v}_${{ matrix.arch_suffix }}.dmg" "$BUNDLE_DIR/dmg/jsonstudio_${VERSION#v}_macos_${{ matrix.arch_suffix }}.dmg"
+            fi
+          fi
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.AppImage
+          tag_name: ${{ github.ref_name }}
+          name: 'Json Studio ${{ github.ref_name }}'
+          body: 'View changelog: https://github.com/${{ github.repository }}/releases'
+          draft: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: ./src-tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Json Studio ${{ github.ref_name }}'
-          releaseBody: 'View changelog: https://github.com/${{ github.repository }}/releases'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
 
