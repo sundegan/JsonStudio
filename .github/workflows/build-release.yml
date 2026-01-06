@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'  # Triggered when pushing tags starting with 'v' (e.g., v0.1.0)
   workflow_dispatch:  # Allow manual trigger
+    inputs:
+      tag_name:
+        description: 'Tag name (e.g., v0.1.0)'
+        required: true
+        type: string
 
 jobs:
   build-tauri:
@@ -79,7 +84,7 @@ jobs:
         run: |
           BUNDLE_DIR="./src-tauri/target/release/bundle"
           APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
-          VERSION="${{ github.ref_name }}"
+          VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ -d "$APP_PATH" ]; then
             echo "Creating installer DMG with auto-install script..."
@@ -185,7 +190,7 @@ jobs:
         shell: bash
         run: |
           BUNDLE_DIR="./src-tauri/target/release/bundle"
-          VERSION="${{ github.ref_name }}"
+          VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
             # Windows: rename .exe files
@@ -213,8 +218,8 @@ jobs:
             src-tauri/target/release/bundle/**/*.exe
             src-tauri/target/release/bundle/**/*.dmg
             src-tauri/target/release/bundle/**/*.AppImage
-          tag_name: ${{ github.ref_name }}
-          name: 'Json Studio ${{ github.ref_name }}'
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
           body: 'View changelog: https://github.com/${{ github.repository }}/releases'
           draft: true
           prerelease: false
