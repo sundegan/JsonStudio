@@ -446,20 +446,17 @@
       onChange={handleEditorChange}
     />
 
-    <!-- Toast 提示 -->
     {#if toastMsg}
-      <div class="absolute top-4 right-4 px-4 py-2 
-                  bg-(--bg-secondary) border border-(--border)
-                  text-(--text-primary) rounded-lg text-sm font-medium
-                  shadow-lg
-                  animate-[fadeIn_0.2s_ease-out]
-                  z-50">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-(--success)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div 
+        class="absolute top-6 right-6 flex items-center gap-2.5 rounded-lg text-sm font-medium z-50 animate-[fadeIn_0.2s_ease-out]"
+        style="padding: 10px 16px; background-color: var(--bg-primary); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);"
+      >
+        <div class="flex items-center justify-center w-5 h-5 rounded-full" style="background-color: var(--success);">
+          <svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <path d="M20 6L9 17l-5-5"/>
           </svg>
-          {toastMsg}
         </div>
+        <span class="text-(--text-primary)">{toastMsg}</span>
       </div>
     {/if}
   </div>
