@@ -1,4 +1,4 @@
-// 工具函数
+// Utility functions
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { Snippet } from 'svelte';
@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// shadcn-svelte 需要的类型定义
+// Type definitions required by shadcn-svelte
 export type WithoutChild<T> = Omit<T, 'child' | 'children'> & {
   children?: Snippet;
 };

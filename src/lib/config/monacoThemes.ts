@@ -1,9 +1,9 @@
-// Monaco Editor 主题配置
-// 统一管理所有编辑器主题定义
+// Monaco Editor theme configuration
+// Unified management of all editor theme definitions
 
 import type * as Monaco from 'monaco-editor';
 
-// 主题配置类型
+// Theme configuration type
 export interface MonacoThemeConfig {
   base: 'vs' | 'vs-dark' | 'hc-black';
   inherit: boolean;
@@ -11,9 +11,9 @@ export interface MonacoThemeConfig {
   colors: Monaco.editor.IColors;
 }
 
-// 主题配置映射
+// Theme configuration mapping
 export const monacoThemes: Record<string, MonacoThemeConfig> = {
-  // One Dark Pro 主题 (Atom 风格)
+  // One Dark Pro theme (Atom style)
   'one-dark': {
     base: 'vs-dark',
     inherit: true,
@@ -44,7 +44,7 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
     }
   },
 
-  // GitHub Dark 主题
+  // GitHub Dark theme
   'github-dark': {
     base: 'vs-dark',
     inherit: true,
@@ -75,7 +75,7 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
     }
   },
 
-  // Tokyo Night 主题
+  // Tokyo Night theme
   'tokyo-night': {
     base: 'vs-dark',
     inherit: true,
@@ -106,7 +106,7 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
     }
   },
 
-  // GitHub Light 主题
+  // GitHub Light theme
   'github-light': {
     base: 'vs',
     inherit: true,
@@ -139,8 +139,8 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
 };
 
 /**
- * 注册所有自定义主题到 Monaco Editor
- * @param monaco Monaco Editor 实例
+ * Register all custom themes to Monaco Editor
+ * @param monaco Monaco Editor instance
  */
 export function registerMonacoThemes(monaco: typeof Monaco): void {
   Object.entries(monacoThemes).forEach(([themeId, themeConfig]) => {
@@ -149,13 +149,13 @@ export function registerMonacoThemes(monaco: typeof Monaco): void {
 }
 
 /**
- * 编辑器主题类型（基于配置文件中定义的主题）
- * 包括 Monaco 内置主题和自定义主题
+ * Editor theme type (based on themes defined in config)
+ * Includes Monaco built-in themes and custom themes
  */
 export type EditorTheme = 'vs' | 'vs-dark' | 'hc-black' | keyof typeof monacoThemes;
 
 /**
- * 获取所有已定义的主题 ID 列表
+ * Get all defined theme ID list
  */
 export function getAvailableThemeIds(): string[] {
   return Object.keys(monacoThemes);

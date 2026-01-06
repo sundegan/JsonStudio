@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Monaco Editor Svelte 包装组件
+  // Monaco Editor Svelte wrapper component
   import { onMount, onDestroy } from 'svelte';
   import loader from '@monaco-editor/loader';
   import type * as Monaco from 'monaco-editor';
@@ -38,22 +38,22 @@
   let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
   
-  // 标志位：用于区分内部编辑和外部更新
+  // Flag: distinguish between internal edits and external updates
   let isInternalChange = false;
   
-  // 监听 value 变化
+  // Watch value changes
   $effect(() => {
-    // 如果是内部编辑触发的变化，不需要更新编辑器
+    // If change triggered by internal edit, don't update editor
     if (isInternalChange) {
       isInternalChange = false;
       return;
     }
     
-    // 只在外部值真正变化时才更新编辑器
+    // Only update editor when external value actually changes
     if (editor && value !== editor.getValue()) {
       const model = editor.getModel();
       if (model) {
-        // 使用 pushEditOperations 而不是 setValue 来保留撤销历史
+        // Use pushEditOperations instead of setValue to preserve undo history
         const fullRange = model.getFullModelRange();
         model.pushEditOperations(
           [],
@@ -64,21 +64,21 @@
     }
   });
   
-  // 监听 theme 变化并应用主题
+  // Watch theme changes and apply theme
   $effect(() => {
     if (monaco && theme) {
       monaco.editor.setTheme(theme);
     }
   });
   
-  // 监听 readOnly 变化
+  // Watch readOnly changes
   $effect(() => {
     if (editor) {
       editor.updateOptions({ readOnly });
     }
   });
   
-  // 监听编辑器选项变化
+  // Watch editor option changes
   $effect(() => {
     if (editor) {
       editor.updateOptions({
@@ -92,14 +92,14 @@
   });
   
   onMount(async () => {
-    // 使用 loader 加载 Monaco（自动处理 worker）
+    // Use loader to load Monaco (automatically handles worker)
     const monacoInstance = await loader.init();
     monaco = monacoInstance;
     
-    // 注册自定义主题（从配置文件加载）
+    // Register custom themes (loaded from config file)
     registerMonacoThemes(monacoInstance);
     
-    // 配置 JSON 语言特性
+    // Configure JSON language features
     monacoInstance.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
       allowComments: false,
@@ -107,7 +107,7 @@
       enableSchemaRequest: false,
     });
     
-    // 创建编辑器
+    // Create editor
     editor = monacoInstance.editor.create(container, {
       value,
       language,
@@ -140,17 +140,17 @@
       formatOnType: false,
     });
     
-    // 赋值后会自动触发 $effect 应用主题
+    // After assignment, $effect will automatically apply theme
     if (theme) {
       monacoInstance.editor.setTheme(theme);
     }
     
-    // 监听内容变化
+    // Listen to content changes
     if (editor) {
       editor.onDidChangeModelContent(() => {
         const currentValue = editor?.getValue() || '';
         if (currentValue !== value) {
-          // 标记为内部变化，避免触发 $effect 重新设置值
+          // Mark as internal change to avoid triggering $effect to reset value
           isInternalChange = true;
           onChange(currentValue);
         }
@@ -178,13 +178,13 @@
     return editor?.getValue() || '';
   }
 
-  // Monaco Editor 原生格式化功能
+  // Monaco Editor native format function
   export async function format(): Promise<void> {
     if (!editor) return;
     await editor.getAction('editor.action.formatDocument')?.run();
   }
 
-  // Monaco Editor 原生压缩功能（移除所有空白）
+  // Monaco Editor native minify function (remove all whitespace)
   export function minify(): string {
     if (!editor) return '';
     const content = editor.getValue();
@@ -196,7 +196,7 @@
     }
   }
 
-  // Monaco Editor 原生校验功能
+  // Monaco Editor native validate function
   export function validate(): { valid: boolean; errors: string[] } {
     if (!editor || !monaco) {
       return { valid: true, errors: [] };
@@ -219,7 +219,7 @@
     };
   }
 
-  // 获取编辑器实例
+  // Get editor instance
   export function getEditorInstance() {
     return editor;
   }

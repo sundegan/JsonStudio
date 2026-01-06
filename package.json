@@ -1,7 +1,7 @@
 {
   "name": "Json Studio",
   "version": "0.1.0",
-  "description": "快速、现代、高效的 JSON 桌面工具",
+  "description": "Fast, modern, and efficient JSON desktop tool",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

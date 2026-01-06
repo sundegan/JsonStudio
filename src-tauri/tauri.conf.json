@@ -26,7 +26,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "nsis",      
+      "dmg",       
+      "appimage"   
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -34,8 +38,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "shortDescription": "快速、现代、高效的 JSON 桌面工具",
-    "longDescription": "一个基于 Tauri 2.0 和 Rust 构建的现代化 JSON 桌面应用，提供格式化、压缩、转义、对比等常用功能",
+    "shortDescription": "Fast, modern, and efficient JSON desktop tool",
+    "longDescription": "A modern JSON desktop application built with Tauri 2.0 and Rust, providing common features like formatting, compression, escaping, and comparison",
     "copyright": "Copyright © 2025 JsonStudio",
     "category": "DeveloperTool",
     "windows": {
