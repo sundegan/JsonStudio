@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Json Studio",
+  "productName": "jsonstudio",
   "version": "0.1.0",
   "identifier": "com.jsonstudio.app",
   "build": {
@@ -37,6 +37,11 @@
     "shortDescription": "快速、现代、高效的 JSON 桌面工具",
     "longDescription": "一个基于 Tauri 2.0 和 Rust 构建的现代化 JSON 桌面应用，提供格式化、压缩、转义、对比等常用功能",
     "copyright": "Copyright © 2025 JsonStudio",
-    "category": "DeveloperTool"
+    "category": "DeveloperTool",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
   }
 }
