@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { settingsStore } from '$lib/stores/settings';
+  import { shortcutsStore } from '$lib/stores/shortcuts';
   import '../app.css';
 
   async function applyTheme(isDarkMode: boolean) {
@@ -21,6 +22,7 @@
 
   onMount(() => {
     settingsStore.init();
+    shortcutsStore.init();
     const unsubscribe = settingsStore.subscribe(settings => {
       applyTheme(settings.isDarkMode);
     });

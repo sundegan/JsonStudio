@@ -1,7 +1,25 @@
 <script lang="ts">
   import { settingsStore, darkThemes, lightThemes, type AppSettings } from '$lib/stores/settings';
+  import { shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import ShortcutRecorder from './ShortcutRecorder.svelte';
 
   let isOpen = $state(false);
+  let shortcuts = $state<ShortcutsSettings>({
+    showApp: {
+      id: 'show_app',
+      name: '显示应用',
+      description: '将 Json Studio 置于最前端',
+      defaultKey: 'CommandOrControl+Shift+J',
+      currentKey: 'CommandOrControl+Shift+J'
+    },
+    formatClipboard: {
+      id: 'format_clipboard',
+      name: '格式化粘贴板',
+      description: '格式化粘贴板中的 JSON 并显示',
+      defaultKey: 'CommandOrControl+Shift+V',
+      currentKey: 'CommandOrControl+Shift+V'
+    }
+  });
   
   let settings = $state<AppSettings>({
     isDarkMode: false,
@@ -14,6 +32,13 @@
   $effect(() => {
     const unsubscribe = settingsStore.subscribe(newSettings => {
       settings = newSettings;
+    });
+    return () => unsubscribe();
+  });
+
+  $effect(() => {
+    const unsubscribe = shortcutsStore.subscribe(newShortcuts => {
+      shortcuts = newShortcuts;
     });
     return () => unsubscribe();
   });
@@ -187,6 +212,47 @@
               />
               <span class="text-sm text-(--text-secondary)">空格</span>
             </div>
+          </div>
+        </div>
+
+        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
+          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">快捷键</h3>
+
+          <div class="space-y-1">
+            {#snippet shortcutRow(shortcut: typeof shortcuts.showApp)}
+              {@const isModified = shortcut.currentKey !== shortcut.defaultKey}
+              <div 
+                class="group flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm text-(--text-primary)">{shortcut.name}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-7 flex items-center justify-end">
+                    {#if isModified}
+                      <button
+                        class="opacity-0 group-hover:opacity-100 transition-all duration-200 w-5 h-5 flex items-center justify-center rounded hover:bg-(--bg-tertiary)"
+                        onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
+                        title="重置为默认"
+                        type="button"
+                      >
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-secondary);">
+                          <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                          <path d="M21 3v5h-5"/>
+                        </svg>
+                      </button>
+                    {/if}
+                  </div>
+                  <ShortcutRecorder 
+                    value={shortcut.currentKey}
+                    onchange={(key) => shortcutsStore.updateShortcut(shortcut.id, key)}
+                  />
+                </div>
+              </div>
+            {/snippet}
+
+            {@render shortcutRow(shortcuts.showApp)}
+            {@render shortcutRow(shortcuts.formatClipboard)}
           </div>
         </div>
       </div>

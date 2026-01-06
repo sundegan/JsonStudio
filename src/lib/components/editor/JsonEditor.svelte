@@ -9,7 +9,13 @@
   const LARGE_FILE_THRESHOLD = 1024 * 1024;
 
   let content = $state('');
-  let stats = $state<JsonStats | null>(null);
+  let stats = $state<JsonStats>({
+    valid: false,
+    key_count: 0,
+    depth: 0,
+    byte_size: 0,
+    error_info: null,
+  });
   let toastMsg = $state('');
   let isProcessing = $state(false);
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -27,6 +33,23 @@
   
   onMount(() => {
     settingsStore.init();
+    
+    // 监听粘贴板格式化事件
+    let unlisten: (() => void) | null = null;
+    
+    (async () => {
+      const { listen } = await import('@tauri-apps/api/event');
+      unlisten = await listen<string>('clipboard-formatted', (event) => {
+        content = event.payload;
+        monacoEditor?.setValue(event.payload);
+        updateStats();
+        showToast('已格式化粘贴板内容');
+      });
+    })();
+    
+    return () => {
+      if (unlisten) unlisten();
+    };
   });
   
   $effect(() => {
@@ -61,7 +84,13 @@
     content = newValue;
     if (statsTimer) clearTimeout(statsTimer);
     if (!content.trim()) { 
-      stats = null;
+      stats = {
+        valid: false,
+        key_count: 0,
+        depth: 0,
+        byte_size: 0,
+        error_info: null,
+      };
       return;
     }
     statsTimer = setTimeout(updateStats, 300);
@@ -201,7 +230,13 @@
   function handleClear() {
     content = '';
     monacoEditor?.setValue('');
-    stats = null;
+    stats = {
+      valid: false,
+      key_count: 0,
+      depth: 0,
+      byte_size: 0,
+      error_info: null,
+    };
   }
 
   async function handleCopy() {
@@ -462,21 +497,17 @@
   </div>
 
   <div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border) text-xs" style="padding: 2px 10px;">
-    {#if stats && stats.valid}
+    {#if stats}
       <span class="text-(--text-secondary)">{stats.key_count} keys</span>
       <div class="w-px h-3 bg-(--border)"></div>
       <span class="text-(--text-secondary)">{stats.depth} levels</span>
       <div class="w-px h-3 bg-(--border)"></div>
       <span class="text-(--text-secondary)">{formatBytes(stats.byte_size)}</span>
-    {:else if !content.trim()}
-      <span class="text-(--text-secondary)">Ready</span>
     {/if}
     
     <span class="flex-1"></span>
     
-    {#if content}
-      <span class="text-(--text-secondary)">{content.split('\n').length} lines</span>
-    {/if}
+    <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} lines</span>
   </div>
 
   <!-- 设置面板 -->
