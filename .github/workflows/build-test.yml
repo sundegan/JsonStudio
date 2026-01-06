@@ -68,7 +68,7 @@ jobs:
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
           VERSION="0.1.0"
           
@@ -174,7 +174,7 @@ jobs:
       - name: Rename artifacts with OS name (for verification)
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           VERSION="0.1.0"  # Test builds use version from Cargo.toml
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
@@ -200,5 +200,9 @@ jobs:
           
           # List renamed files for verification
           echo "Renamed artifacts:"
-          find "$BUNDLE_DIR" -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) | head -5
+          if [ -d "$BUNDLE_DIR" ]; then
+            find "$BUNDLE_DIR" -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) | head -5
+          else
+            echo "Bundle directory not found: $BUNDLE_DIR"
+          fi
 

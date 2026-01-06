@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'  # Triggered when pushing tags starting with 'v' (e.g., v0.1.0)
   workflow_dispatch:  # Allow manual trigger
+    inputs:
+      tag_name:
+        description: 'Tag name (e.g., v0.1.0)'
+        required: true
+        type: string
 
 jobs:
   build-tauri:
@@ -77,9 +82,9 @@ jobs:
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
-          VERSION="${{ github.ref_name }}"
+          VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ -d "$APP_PATH" ]; then
             echo "Creating installer DMG with auto-install script..."
@@ -184,8 +189,8 @@ jobs:
       - name: Rename artifacts with OS name
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/release/bundle"
-          VERSION="${{ github.ref_name }}"
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
+          VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
             # Windows: rename .exe files
@@ -210,11 +215,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.AppImage
-          tag_name: ${{ github.ref_name }}
-          name: 'Json Studio ${{ github.ref_name }}'
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
           body: 'View changelog: https://github.com/${{ github.repository }}/releases'
           draft: true
           prerelease: false
