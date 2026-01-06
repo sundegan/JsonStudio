@@ -4,7 +4,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[tauri::command]
 pub async fn update_shortcut(app: AppHandle, id: String, key: String) -> Result<(), String> {
-    // 注销旧的快捷键
+    // Unregister old shortcut
     let old_key = match id.as_str() {
         "show_app" => "CommandOrControl+Shift+J",
         "format_clipboard" => "CommandOrControl+Shift+V",
@@ -13,11 +13,11 @@ pub async fn update_shortcut(app: AppHandle, id: String, key: String) -> Result<
     
     let _ = app.global_shortcut().unregister(old_key);
     
-    // 解析快捷键字符串
+    // Parse shortcut string
     let shortcut: Shortcut = key.parse()
         .map_err(|e| format!("Invalid shortcut format: {:?}", e))?;
     
-    // 注册新的快捷键
+    // Register new shortcut
     match id.as_str() {
         "show_app" => {
             let app_handle = app.clone();
@@ -54,7 +54,7 @@ pub async fn show_main_window(app: AppHandle) -> Result<(), String> {
         window.set_focus().map_err(|e| e.to_string())?;
         window.set_always_on_top(true).map_err(|e| e.to_string())?;
         
-        // 延迟取消置顶，让窗口能够正常显示在最前面
+        // Delay unsetting always-on-top to ensure window appears in front
         let window_clone = window.clone();
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -69,7 +69,7 @@ pub async fn show_main_window(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn format_clipboard_and_show(app: AppHandle) -> Result<(), String> {
-    // 获取粘贴板内容
+    // Get clipboard content
     let clipboard_text = app.clipboard()
         .read_text()
         .map_err(|e| format!("Failed to read clipboard: {}", e))?;
@@ -78,23 +78,23 @@ pub async fn format_clipboard_and_show(app: AppHandle) -> Result<(), String> {
         return Err("Clipboard is empty".to_string());
     }
     
-    // 尝试解析和格式化 JSON
+    // Try to parse and format JSON
     let parsed: serde_json::Value = serde_json::from_str(&clipboard_text)
         .map_err(|e| format!("Invalid JSON in clipboard: {}", e))?;
     
     let formatted = serde_json::to_string_pretty(&parsed)
         .map_err(|e| format!("Failed to format JSON: {}", e))?;
     
-    // 显示窗口
+    // Show window
     if let Some(window) = app.get_webview_window("main") {
         window.show().map_err(|e| e.to_string())?;
         window.set_focus().map_err(|e| e.to_string())?;
         window.set_always_on_top(true).map_err(|e| e.to_string())?;
         
-        // 发送格式化后的内容到前端
+        // Send formatted content to frontend
         window.emit("clipboard-formatted", formatted).map_err(|e| e.to_string())?;
         
-        // 延迟取消置顶
+        // Delay unsetting always-on-top
         let window_clone = window.clone();
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;

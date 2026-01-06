@@ -14,7 +14,7 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             
-            // 注册全局快捷键：显示应用
+            // Register global shortcut: show app
             let show_app_handle = app_handle.clone();
             app.global_shortcut().on_shortcut("CommandOrControl+Shift+J", move |_app, _shortcut, _event| {
                 let handle = show_app_handle.clone();
@@ -23,7 +23,7 @@ pub fn run() {
                 });
             }).map_err(|e| format!("Failed to register show app shortcut: {}", e))?;
             
-            // 注册全局快捷键：格式化粘贴板
+            // Register global shortcut: format clipboard
             let format_handle = app_handle.clone();
             app.global_shortcut().on_shortcut("CommandOrControl+Shift+V", move |_app, _shortcut, _event| {
                 let handle = format_handle.clone();

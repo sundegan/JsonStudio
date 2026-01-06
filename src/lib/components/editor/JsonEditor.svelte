@@ -34,7 +34,7 @@
   onMount(() => {
     settingsStore.init();
     
-    // 监听粘贴板格式化事件
+    // Listen to clipboard formatting event
     let unlisten: (() => void) | null = null;
     
     (async () => {
@@ -43,7 +43,7 @@
         content = event.payload;
         monacoEditor?.setValue(event.payload);
         updateStats();
-        showToast('已格式化粘贴板内容');
+        showToast('Clipboard content formatted');
       });
     })();
     
@@ -186,7 +186,7 @@
         if (typeof u === 'string') {
           unescaped = u;
         } else {
-          throw new Error('内容不是字符串');
+          throw new Error('Content is not a string');
         }
       }
       
@@ -243,7 +243,7 @@
     if (!content) return;
     try {
       await navigator.clipboard.writeText(content);
-      showToast('已复制');
+      showToast('Copied');
     } catch (e) {}
   }
 
@@ -263,9 +263,9 @@
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
-  <!-- 工具栏 -->
+  <!-- Toolbar -->
   <div class="flex items-center gap-0.5 px-2 py-1.5 bg-(--bg-secondary) border-b border-(--border) shrink-0">
-    <!-- 格式化操作组 -->
+    <!-- Format operations group -->
     <div class="flex items-center">
       <button
         class="w-8 h-8 flex items-center justify-center rounded-md
@@ -276,7 +276,7 @@
                transition-all duration-150"
         onclick={handleFormat}
         disabled={isProcessing || !content.trim()}
-        title="格式化"
+        title="Format"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 6h16M4 12h10M4 18h14"/>
@@ -292,7 +292,7 @@
                transition-all duration-150"
         onclick={handleMinify}
         disabled={isProcessing || !content.trim()}
-        title="压缩"
+        title="Minify"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/>
@@ -302,7 +302,7 @@
 
     <div class="w-px h-4 bg-(--border) mx-1.5"></div>
 
-    <!-- 折叠操作组 -->
+    <!-- Fold operations group -->
     <div class="flex items-center">
       <button
         class="w-8 h-8 flex items-center justify-center rounded-md
@@ -313,7 +313,7 @@
                transition-all duration-150"
         onclick={handleFoldAll}
         disabled={isProcessing || !content.trim()}
-        title="全部折叠"
+        title="Fold All"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 6h16M4 12h16M4 18h16"/>
@@ -330,7 +330,7 @@
                transition-all duration-150"
         onclick={handleUnfoldAll}
         disabled={isProcessing || !content.trim()}
-        title="全部展开"
+        title="Unfold All"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 6h16M4 12h16M4 18h16"/>
@@ -341,7 +341,7 @@
 
     <div class="w-px h-4 bg-(--border) mx-1.5"></div>
 
-    <!-- 转义操作组 -->
+    <!-- Escape operations group -->
     <div class="flex items-center">
       <button
         class="w-8 h-8 flex items-center justify-center rounded-md
@@ -352,7 +352,7 @@
                transition-all duration-150"
         onclick={handleEscape}
         disabled={isProcessing || !content.trim()}
-        title="转义"
+        title="Escape"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M7 8l-4 4 4 4M17 8l4 4-4 4"/>
@@ -367,7 +367,7 @@
                transition-all duration-150"
         onclick={handleUnescape}
         disabled={isProcessing || !content.trim()}
-        title="反转义"
+        title="Unescape"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 8l4 4-4 4M15 8l-4 4 4 4"/>
@@ -382,7 +382,7 @@
                transition-all duration-150"
         onclick={handleMinifyEscape}
         disabled={isProcessing || !content.trim()}
-        title="压缩+转义"
+        title="Minify + Escape"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -393,7 +393,7 @@
 
     <div class="flex-1"></div>
 
-    <!-- 右侧操作组 -->
+    <!-- Right side operations group -->
     <div class="flex items-center">
       <button
         class="w-8 h-8 flex items-center justify-center rounded-md
@@ -404,7 +404,7 @@
                transition-all duration-150"
         onclick={handleCopy}
         disabled={!content}
-        title="复制"
+        title="Copy"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2"/>
@@ -420,7 +420,7 @@
                transition-all duration-150"
         onclick={handleClear}
         disabled={!content}
-        title="清空"
+        title="Clear"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
@@ -429,7 +429,7 @@
 
       <div class="w-px h-4 bg-(--border) mx-1.5"></div>
 
-      <!-- 主题切换按钮 -->
+      <!-- Theme toggle button -->
       <button
         class="w-8 h-8 flex items-center justify-center rounded-md
                text-(--text-secondary)
@@ -437,7 +437,7 @@
                active:scale-95
                transition-all duration-150"
         onclick={toggleTheme}
-        title={isDarkMode ? '亮色模式' : '暗色模式'}
+        title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
       >
         {#if isDarkMode}
           <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -451,7 +451,7 @@
         {/if}
       </button>
 
-      <!-- 设置按钮 -->
+      <!-- Settings button -->
       <button
         class="w-8 h-8 flex items-center justify-center rounded-md
                text-(--text-secondary)
@@ -459,7 +459,7 @@
                active:scale-95
                transition-all duration-150"
         onclick={openSettings}
-        title="设置"
+        title="Settings"
       >
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
@@ -469,7 +469,7 @@
     </div>
   </div>
 
-  <!-- 编辑器主体区域 -->
+  <!-- Editor main area -->
   <div class="flex-1 relative min-h-0">
     <MonacoEditor
       bind:this={monacoEditor}
@@ -510,7 +510,7 @@
     <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} lines</span>
   </div>
 
-  <!-- 设置面板 -->
+  <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />
 </div>
 
