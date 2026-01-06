@@ -33,7 +33,7 @@
     
     const keys: string[] = [];
     
-    // 修饰键
+    // Modifier keys
     if (e.metaKey || e.ctrlKey) {
       keys.push('CommandOrControl');
     }
@@ -44,13 +44,13 @@
       keys.push('Alt');
     }
     
-    // 主键
+    // Main key
     if (e.key && !['Control', 'Meta', 'Shift', 'Alt'].includes(e.key)) {
       const mainKey = e.key.toUpperCase();
       keys.push(mainKey);
     }
     
-    if (keys.length > 1) { // 至少有一个修饰键 + 一个主键
+    if (keys.length > 1) { // At least one modifier + one main key
       recordedKeys = keys;
     }
   }
@@ -61,7 +61,7 @@
     e.preventDefault();
     e.stopPropagation();
     
-    // 当松开所有键时完成录制
+    // Complete recording when all keys are released
     if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
       stopRecording();
     }
@@ -81,7 +81,7 @@
     type="text"
     readonly
     value={isRecording ? (recordedKeys.length > 0 ? formatShortcutKey(recordedKeys.join('+')) : '') : formatShortcutKey(value)}
-    placeholder={isRecording ? '按下快捷键...' : ''}
+    placeholder={isRecording ? 'Press shortcut...' : ''}
     class="w-32 px-2 py-1 text-xs font-mono text-center rounded border transition-all cursor-pointer"
     class:recording={isRecording}
     style="background-color: {isRecording ? 'var(--bg-primary)' : 'var(--bg-secondary)'}; 

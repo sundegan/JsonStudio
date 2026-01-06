@@ -1,33 +1,33 @@
-// 设置存储 - 管理应用全局设置
+// Settings store - manages app global settings
 import { writable } from 'svelte/store';
 import { getAvailableThemeIds } from '$lib/config/monacoThemes';
 
-// 深色主题选项（与 monacoThemes.ts 中的配置保持一致）
+// Dark theme options (consistent with monacoThemes.ts config)
 export const darkThemes = [
-  { id: 'one-dark', name: 'One Dark Pro', description: 'Atom 风格，柔和配色' },
-  { id: 'github-dark', name: 'GitHub Dark', description: 'GitHub 官方深色' },
-  { id: 'tokyo-night', name: 'Tokyo Night', description: '现代日式美学' },
+  { id: 'one-dark', name: 'One Dark Pro', description: 'Atom style, soft colors' },
+  { id: 'github-dark', name: 'GitHub Dark', description: 'GitHub official dark' },
+  { id: 'tokyo-night', name: 'Tokyo Night', description: 'Modern Japanese aesthetics' },
 ] as const;
 
-// 亮色主题选项（与 monacoThemes.ts 中的配置保持一致）
+// Light theme options (consistent with monacoThemes.ts config)
 export const lightThemes = [
-  { id: 'vs', name: 'Visual Studio', description: '经典亮色主题' },
-  { id: 'github-light', name: 'GitHub Light', description: 'GitHub 官方亮色' },
+  { id: 'vs', name: 'Visual Studio', description: 'Classic light theme' },
+  { id: 'github-light', name: 'GitHub Light', description: 'GitHub official light' },
 ] as const;
 
-// 设置类型定义
+// Settings type definition
 export interface AppSettings {
-  // 主题设置
+  // Theme settings
   isDarkMode: boolean;
   darkTheme: 'one-dark' | 'github-dark' | 'tokyo-night';
   lightTheme: 'vs' | 'github-light';
   
-  // 编辑器设置
+  // Editor settings
   fontSize: number;
   tabSize: number;
 }
 
-// 默认设置
+// Default settings
 const defaultSettings: AppSettings = {
   isDarkMode: false,
   darkTheme: 'one-dark',
@@ -36,7 +36,7 @@ const defaultSettings: AppSettings = {
   tabSize: 2,
 };
 
-// 从 localStorage 加载设置
+// Load settings from localStorage
 function loadSettings(): AppSettings {
   if (typeof window === 'undefined') return defaultSettings;
   
@@ -52,7 +52,7 @@ function loadSettings(): AppSettings {
   return defaultSettings;
 }
 
-// 保存设置到 localStorage
+// Save settings to localStorage
 function saveSettings(settings: AppSettings) {
   if (typeof window === 'undefined') return;
   
@@ -63,20 +63,20 @@ function saveSettings(settings: AppSettings) {
   }
 }
 
-// 创建设置 store
+// Create settings store
 function createSettingsStore() {
   const { subscribe, set, update } = writable<AppSettings>(defaultSettings);
   
   return {
     subscribe,
     
-    // 初始化（从 localStorage 加载）
+    // Initialize (load from localStorage)
     init() {
       const settings = loadSettings();
       set(settings);
     },
     
-    // 更新单个设置项
+    // Update single setting
     async updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
       update(settings => {
         const newSettings = { ...settings, [key]: value };
@@ -84,7 +84,7 @@ function createSettingsStore() {
         return newSettings;
       });
       
-      // 如果更新的是暗色模式设置，同步更新 macOS 窗口主题
+      // If updating dark mode, sync macOS window theme
       if (key === 'isDarkMode') {
         try {
           const { invoke } = await import('@tauri-apps/api/core');
@@ -95,7 +95,7 @@ function createSettingsStore() {
       }
     },
     
-    // 更新多个设置项
+    // Update multiple settings
     updateSettings(partial: Partial<AppSettings>) {
       update(settings => {
         const newSettings = { ...settings, ...partial };
@@ -104,7 +104,7 @@ function createSettingsStore() {
       });
     },
     
-    // 重置为默认设置
+    // Reset to default settings
     reset() {
       set(defaultSettings);
       saveSettings(defaultSettings);

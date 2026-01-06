@@ -7,7 +7,7 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [sveltekit()],
-  // Monaco Editor 优化配置
+  // Monaco Editor optimization config
   optimizeDeps: {
     include: ['monaco-editor'],
   },

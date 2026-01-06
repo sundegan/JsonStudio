@@ -16,15 +16,15 @@ export interface ShortcutsSettings {
 const defaultShortcuts: ShortcutsSettings = {
   showApp: {
     id: 'show_app',
-    name: '显示应用',
-    description: '将 Json Studio 置于最前端',
+    name: 'Show App',
+    description: 'Bring Json Studio to front',
     defaultKey: 'CommandOrControl+Shift+J',
     currentKey: 'CommandOrControl+Shift+J'
   },
   formatClipboard: {
     id: 'format_clipboard',
-    name: '格式化粘贴板',
-    description: '格式化粘贴板中的 JSON 并显示',
+    name: 'Format Clipboard',
+    description: 'Format JSON in clipboard and display',
     defaultKey: 'CommandOrControl+Shift+V',
     currentKey: 'CommandOrControl+Shift+V'
   }
@@ -50,7 +50,7 @@ function createShortcutsStore() {
       }
     },
     updateShortcut: async (id: string, key: string) => {
-      // 先更新前端状态
+      // Update frontend state first
       update(state => {
         const newState = { ...state };
         for (const shortcutKey in newState) {
@@ -63,7 +63,7 @@ function createShortcutsStore() {
         return newState;
       });
 
-      // 通知后端重新注册快捷键
+      // Notify backend to re-register shortcut
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         await invoke('update_shortcut', { id, key });
@@ -93,7 +93,7 @@ function createShortcutsStore() {
 
 export const shortcutsStore = createShortcutsStore();
 
-// 格式化快捷键显示（将 CommandOrControl 转换为平台特定符号）
+// Format shortcut key display (convert CommandOrControl to platform-specific symbols)
 export function formatShortcutKey(key: string): string {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   

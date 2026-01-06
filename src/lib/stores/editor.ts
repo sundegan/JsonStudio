@@ -1,15 +1,15 @@
-// 编辑器状态管理
+// Editor state management
 import { writable } from 'svelte/store';
 
-// 编辑器状态接口
+// Editor state interface
 interface EditorState {
-  content: string;      // 当前编辑内容
-  isValid: boolean;     // 是否有效 JSON
-  errorMessage: string; // 错误信息
-  isLoading: boolean;   // 是否正在处理
+  content: string;      // Current editing content
+  isValid: boolean;     // Whether JSON is valid
+  errorMessage: string; // Error message
+  isLoading: boolean;   // Whether processing
 }
 
-// 初始状态
+// Initial state
 const initialState: EditorState = {
   content: '',
   isValid: true,
@@ -17,25 +17,25 @@ const initialState: EditorState = {
   isLoading: false
 };
 
-// 创建 store
+// Create store
 function createEditorStore() {
   const { subscribe, set, update } = writable<EditorState>(initialState);
 
   return {
     subscribe,
-    // 设置内容
+    // Set content
     setContent: (content: string) => {
       update(state => ({ ...state, content }));
     },
-    // 设置校验结果
+    // Set validation result
     setValidation: (isValid: boolean, errorMessage: string = '') => {
       update(state => ({ ...state, isValid, errorMessage }));
     },
-    // 设置加载状态
+    // Set loading state
     setLoading: (isLoading: boolean) => {
       update(state => ({ ...state, isLoading }));
     },
-    // 重置状态
+    // Reset state
     reset: () => set(initialState)
   };
 }

@@ -15,12 +15,18 @@ jobs:
           - platform: 'macos-latest'
             target: 'aarch64-apple-darwin'
             args: '--target aarch64-apple-darwin'
+            os_name: 'macos'
+            arch_suffix: 'aarch64'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
             args: '--target x86_64-unknown-linux-gnu'
+            os_name: 'linux'
+            arch_suffix: 'amd64'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
             args: '--target x86_64-pc-windows-msvc'
+            os_name: 'windows'
+            arch_suffix: 'x64'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -56,8 +62,143 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app (build only, no upload)
-        uses: tauri-apps/tauri-action@v0
-        with:
-          projectPath: ./src-tauri
-          args: ${{ matrix.args }}
+        run: pnpm tauri build ${{ matrix.args }}
+
+      - name: Create installer DMG with auto-install script (macOS only)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
+          VERSION="0.1.0"
+          
+          if [ -d "$APP_PATH" ]; then
+            echo "Creating installer DMG with auto-install script..."
+            
+            APP_NAME="jsonstudio.app"
+            TEMP_DIR=$(mktemp -d)
+            DMG_DIR="$TEMP_DIR/dmg"
+            VOLUME_NAME="Json Studio"
+            ORIGINAL_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION}_${{ matrix.arch_suffix }}.dmg"
+            INSTALLER_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            
+            mkdir -p "$DMG_DIR"
+            cp -R "$APP_PATH" "$DMG_DIR/"
+            # Apply ad-hoc signature to improve user experience
+            codesign --force --deep --sign - "$DMG_DIR/$APP_NAME" 2>/dev/null || echo "⚠ Ad-hoc signing failed (can be ignored)"
+            # Remove quarantine attributes
+            xattr -cr "$DMG_DIR/$APP_NAME"
+            ln -s /Applications "$DMG_DIR/Applications"
+            
+            echo "Installation Instructions" > "$DMG_DIR/README.txt"
+            echo "==========================" >> "$DMG_DIR/README.txt"
+            echo "" >> "$DMG_DIR/README.txt"
+            echo "Method 1: Auto Install (Recommended)" >> "$DMG_DIR/README.txt"
+            echo "1. Double-click \"Install Helper.command\"" >> "$DMG_DIR/README.txt"
+            echo "2. Follow the prompts" >> "$DMG_DIR/README.txt"
+            echo "" >> "$DMG_DIR/README.txt"
+            echo "Method 2: Manual Install" >> "$DMG_DIR/README.txt"
+            echo "1. Drag jsonstudio.app to Applications folder" >> "$DMG_DIR/README.txt"
+            echo "2. If you see \"damaged\" message, right-click -> Open" >> "$DMG_DIR/README.txt"
+            
+            # Create install helper script
+            cat > "$DMG_DIR/install-helper.sh" << 'INSTALL_SCRIPT'
+          #!/bin/bash
+          set -e
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          APP_NAME="jsonstudio.app"
+          APP_PATH="$SCRIPT_DIR/$APP_NAME"
+          INSTALL_DIR="/Applications"
+          INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
+          echo "=========================================="
+          echo "Json Studio Install Helper"
+          echo "=========================================="
+          echo ""
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Error: Cannot find $APP_NAME"
+            exit 1
+          fi
+          echo "Step 1/4: Removing quarantine attributes..."
+          xattr -cr "$APP_PATH"
+          echo "✓ Done"
+          echo ""
+          echo "Step 2/4: Applying code signature..."
+          codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || echo "⚠ Signing failed (can be ignored)"
+          echo "✓ Done"
+          echo ""
+          echo "Step 3/4: Installing to /Applications..."
+          if [ -d "$INSTALL_PATH" ]; then
+            rm -rf "$INSTALL_PATH"
+          fi
+          cp -R "$APP_PATH" "$INSTALL_DIR/"
+          echo "✓ Installation complete"
+          echo ""
+          echo "Step 4/4: Removing quarantine from installed app..."
+          xattr -cr "$INSTALL_PATH"
+          echo "✓ Done"
+          echo ""
+          echo "=========================================="
+          echo "Installation Complete!"
+          echo "=========================================="
+          echo ""
+          echo "App installed to: $INSTALL_PATH"
+          echo ""
+          read -p "Open the app now? (y/n) " -n 1 -r
+          echo ""
+          if [[ $REPLY =~ ^[Yy]$ ]]; then
+            open "$INSTALL_PATH"
+          fi
+          INSTALL_SCRIPT
+            
+            # Create command files
+            echo '#!/bin/bash' > "$DMG_DIR/Install Helper.command"
+            echo 'cd "$(dirname "$0")"' >> "$DMG_DIR/Install Helper.command"
+            echo './install-helper.sh' >> "$DMG_DIR/Install Helper.command"
+            
+            chmod +x "$DMG_DIR/Install Helper.command"
+            chmod +x "$DMG_DIR/install-helper.sh"
+            
+            # Create DMG
+            hdiutil create -volname "$VOLUME_NAME" -srcfolder "$DMG_DIR" -ov -format UDZO "$INSTALLER_DMG"
+            rm -rf "$TEMP_DIR"
+            
+            # Remove original DMG if exists (only keep installer DMG)
+            if [ -f "$ORIGINAL_DMG" ]; then
+              rm -f "$ORIGINAL_DMG"
+              echo "✓ Removed original DMG"
+            fi
+            
+            echo "✓ Installer DMG created: $INSTALLER_DMG"
+          fi
+
+      - name: Rename artifacts with OS name (for verification)
+        shell: bash
+        run: |
+          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          VERSION="0.1.0"  # Test builds use version from Cargo.toml
+          
+          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+            # Windows: rename .exe files
+            if [ -f "$BUNDLE_DIR/nsis/jsonstudio_${VERSION}_x64-setup.exe" ]; then
+              mv "$BUNDLE_DIR/nsis/jsonstudio_${VERSION}_x64-setup.exe" "$BUNDLE_DIR/nsis/jsonstudio_${VERSION}_windows_${{ matrix.arch_suffix }}-setup.exe"
+              echo "✓ Renamed Windows installer: jsonstudio_${VERSION}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            fi
+          elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
+            # Linux: rename AppImage
+            if [ -f "$BUNDLE_DIR/appimage/jsonstudio_${VERSION}_amd64.AppImage" ]; then
+              mv "$BUNDLE_DIR/appimage/jsonstudio_${VERSION}_amd64.AppImage" "$BUNDLE_DIR/appimage/jsonstudio_${VERSION}_linux_${{ matrix.arch_suffix }}.AppImage"
+              echo "✓ Renamed Linux AppImage: jsonstudio_${VERSION}_linux_${{ matrix.arch_suffix }}.AppImage"
+            fi
+          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+            # macOS: only installer DMG is kept
+            INSTALLER_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            
+            if [ -f "$INSTALLER_DMG" ]; then
+              echo "✓ Installer DMG: $INSTALLER_DMG"
+            fi
+          fi
+          
+          # List renamed files for verification
+          echo "Renamed artifacts:"
+          find "$BUNDLE_DIR" -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) | head -5
 
