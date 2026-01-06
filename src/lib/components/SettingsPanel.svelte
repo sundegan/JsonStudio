@@ -7,15 +7,15 @@
   let shortcuts = $state<ShortcutsSettings>({
     showApp: {
       id: 'show_app',
-      name: '显示应用',
-      description: '将 Json Studio 置于最前端',
+      name: 'Show App',
+      description: 'Bring Json Studio to front',
       defaultKey: 'CommandOrControl+Shift+J',
       currentKey: 'CommandOrControl+Shift+J'
     },
     formatClipboard: {
       id: 'format_clipboard',
-      name: '格式化粘贴板',
-      description: '格式化粘贴板中的 JSON 并显示',
+      name: 'Format Clipboard',
+      description: 'Format JSON in clipboard and display',
       defaultKey: 'CommandOrControl+Shift+V',
       currentKey: 'CommandOrControl+Shift+V'
     }
@@ -95,7 +95,7 @@
       onclick={(e) => e.stopPropagation()}
     >
       <div class="flex items-center justify-between px-6 py-4 border-b border-(--border) shrink-0">
-        <h2 id="settings-title" class="text-lg font-semibold text-(--text-primary)">设置</h2>
+        <h2 id="settings-title" class="text-lg font-semibold text-(--text-primary)">Settings</h2>
         <button
           class="w-8 h-8 flex items-center justify-center rounded-md text-(--text-secondary)
                  hover:bg-(--bg-tertiary) hover:text-(--text-primary) transition-all"
@@ -110,25 +110,25 @@
 
       <div class="flex-1 overflow-y-auto px-6 py-8 space-y-8">
         <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
-          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">外观</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Appearance</h3>
           
           <div class="space-y-2">
-            <label class="text-sm font-medium text-(--text-primary)">主题</label>
+            <label class="text-sm font-medium text-(--text-primary)">Theme</label>
             <div class="flex gap-2">
               <button
                 class="flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all {!settings.isDarkMode ? 'bg-(--accent) text-white' : 'bg-(--bg-secondary) text-(--text-secondary) hover:bg-(--bg-tertiary) border border-(--border)'}"
                 onclick={handleThemeModeToggle}
-              >亮色</button>
+              >Light</button>
               <button
                 class="flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all {settings.isDarkMode ? 'bg-(--accent) text-white' : 'bg-(--bg-secondary) text-(--text-secondary) hover:bg-(--bg-tertiary) border border-(--border)'}"
                 onclick={handleThemeModeToggle}
-              >深色</button>
+              >Dark</button>
             </div>
           </div>
 
           {#if settings.isDarkMode}
             <div class="space-y-2">
-              <label class="text-sm font-medium text-(--text-primary)">深色主题</label>
+              <label class="text-sm font-medium text-(--text-primary)">Dark Theme</label>
               <div class="space-y-1.5">
                 {#each darkThemes as theme}
                   <button
@@ -152,7 +152,7 @@
 
           {#if !settings.isDarkMode}
             <div class="space-y-2">
-              <label class="text-sm font-medium text-(--text-primary)">亮色主题</label>
+              <label class="text-sm font-medium text-(--text-primary)">Light Theme</label>
               <div class="space-y-1.5">
                 {#each lightThemes as theme}
                   <button
@@ -176,12 +176,12 @@
         </div>
 
         <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
-          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">编辑器</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Editor</h3>
 
           <div class="space-y-1">
             <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
               <div class="flex-1 min-w-0">
-                <div class="text-sm text-(--text-primary)">字体大小</div>
+                <div class="text-sm text-(--text-primary)">Font Size</div>
               </div>
               <div class="flex items-center gap-2">
                 <div class="w-7"></div>
@@ -205,7 +205,7 @@
 
             <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
               <div class="flex-1 min-w-0">
-                <div class="text-sm text-(--text-primary)">缩进大小</div>
+                <div class="text-sm text-(--text-primary)">Indent Size</div>
               </div>
               <div class="flex items-center gap-2">
                 <div class="w-7"></div>
@@ -222,7 +222,7 @@
                     class="w-full px-2 py-1 pr-16 text-xs font-mono text-center rounded border transition-all"
                     style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
                   />
-                  <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">空格</div>
+                  <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">spaces</div>
                 </div>
               </div>
             </div>
@@ -230,7 +230,7 @@
         </div>
 
         <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
-          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">快捷键</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Shortcuts</h3>
 
           <div class="space-y-1">
             {#snippet shortcutRow(shortcut: typeof shortcuts.showApp)}
@@ -247,7 +247,7 @@
                       <button
                         class="opacity-0 group-hover:opacity-100 transition-all duration-200 w-5 h-5 flex items-center justify-center rounded hover:bg-(--bg-tertiary)"
                         onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
-                        title="重置为默认"
+                        title="Reset to default"
                         type="button"
                       >
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-secondary);">

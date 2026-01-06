@@ -1,6 +1,6 @@
-// 窗口相关命令
+// Window-related commands
 
-/// 设置窗口主题（macOS 标题栏）
+/// Set window theme (macOS title bar)
 #[tauri::command]
 pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), String> {
     #[cfg(target_os = "macos")]
@@ -13,14 +13,14 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
         
         unsafe {
             let appearance_name = if is_dark {
-                // 深色模式
+                // Dark mode
                 NSString::alloc(nil).init_str("NSAppearanceNameDarkAqua")
             } else {
-                // 浅色模式
+                // Light mode
                 NSString::alloc(nil).init_str("NSAppearanceNameAqua")
             };
             
-            // 获取 NSAppearance 类
+            // Get NSAppearance class
             let appearance_class = objc::class!(NSAppearance);
             let appearance: id = msg_send![appearance_class, appearanceNamed: appearance_name];
             let _: () = msg_send![ns_window, setAppearance: appearance];
