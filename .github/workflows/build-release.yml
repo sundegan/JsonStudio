@@ -82,7 +82,7 @@ jobs:
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
@@ -189,7 +189,7 @@ jobs:
       - name: Rename artifacts with OS name
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/release/bundle"
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
@@ -215,9 +215,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
           body: 'View changelog: https://github.com/${{ github.repository }}/releases'
