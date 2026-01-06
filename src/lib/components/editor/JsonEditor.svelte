@@ -1,5 +1,4 @@
 <script lang="ts">
-  // JSON 编辑器组件 - 基于 Monaco Editor
   import { onMount } from 'svelte';
   import { getJsonStats, escapeString, unescapeString, type JsonStats } from '$lib/services/json';
   import MonacoEditor from './MonacoEditor.svelte';
@@ -7,11 +6,16 @@
   import { settingsStore } from '$lib/stores/settings';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
 
-  // 当json数据大小超过此阈值时，使用 Rust 后端处理以避免 UI 阻塞
-  const LARGE_FILE_THRESHOLD = 1024 * 1024; // 1MB
+  const LARGE_FILE_THRESHOLD = 1024 * 1024;
 
   let content = $state('');
-  let stats = $state<JsonStats | null>(null);
+  let stats = $state<JsonStats>({
+    valid: false,
+    key_count: 0,
+    depth: 0,
+    byte_size: 0,
+    error_info: null,
+  });
   let toastMsg = $state('');
   let isProcessing = $state(false);
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -19,8 +23,6 @@
   let monacoEditor: MonacoEditor;
   let settingsPanel: SettingsPanel | null = null;
   
-  // 从 settingsStore 获取设置
-  // 使用 $state 存储设置值，通过 subscribe 同步更新
   let settings = $state<import('$lib/stores/settings').AppSettings>({
     isDarkMode: false,
     darkTheme: 'one-dark',
@@ -29,12 +31,27 @@
     tabSize: 2,
   });
   
-  // 初始化 settingsStore（如果还未初始化）
   onMount(() => {
     settingsStore.init();
+    
+    // 监听粘贴板格式化事件
+    let unlisten: (() => void) | null = null;
+    
+    (async () => {
+      const { listen } = await import('@tauri-apps/api/event');
+      unlisten = await listen<string>('clipboard-formatted', (event) => {
+        content = event.payload;
+        monacoEditor?.setValue(event.payload);
+        updateStats();
+        showToast('已格式化粘贴板内容');
+      });
+    })();
+    
+    return () => {
+      if (unlisten) unlisten();
+    };
   });
   
-  // 订阅 settingsStore 变化以更新本地状态
   $effect(() => {
     const unsubscribe = settingsStore.subscribe(newSettings => {
       settings = newSettings;
@@ -45,11 +62,7 @@
   let isDarkMode = $derived(settings.isDarkMode);
   let fontSize = $derived(settings.fontSize);
   let tabSize = $derived(settings.tabSize);
-  
-  // Monaco 主题 - 根据 isDarkMode 和对应的主题设置选择
-  let monacoTheme = $derived<EditorTheme>(
-    isDarkMode ? settings.darkTheme : settings.lightTheme
-  );
+  let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
 
   function toggleTheme() {
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
@@ -71,51 +84,47 @@
     content = newValue;
     if (statsTimer) clearTimeout(statsTimer);
     if (!content.trim()) { 
-      stats = null;
+      stats = {
+        valid: false,
+        key_count: 0,
+        depth: 0,
+        byte_size: 0,
+        error_info: null,
+      };
       return;
     }
-    // 防抖：300ms 后更新统计信息
     statsTimer = setTimeout(updateStats, 300);
   }
 
-  // 更新 JSON 统计信息
   async function updateStats() {
     if (!content.trim()) return;
     try {
       stats = await getJsonStats(content);
-    } catch (e) {
-      // 忽略错误
-    }
+    } catch (e) {}
   }
 
-  // 格式化 - 根据文件大小选择最优方案
   async function handleFormat() {
     if (!content.trim()) return;
     isProcessing = true;
     const contentSize = content.length;
     
     try {
-      // 对于大文件，使用 Rust 后端格式化JSON以避免 UI 阻塞
       if (contentSize > LARGE_FILE_THRESHOLD) {
         const { formatJson } = await import('$lib/services/json');
         const formatted = await formatJson(content);
         content = formatted;
         monacoEditor?.setValue(formatted);
       } else {
-        // 小文件使用 Monaco 原生格式化，响应更快
         await monacoEditor?.format();
         content = monacoEditor?.getValue() || '';
       }
-      
       await updateStats();
     } catch (e) {
-      // 忽略格式化错误
     } finally {
       isProcessing = false;
     }
   }
 
-  // 压缩 - 根据文件大小选择最优方案
   async function handleMinify() {
     if (!content.trim()) return;
     isProcessing = true;
@@ -123,13 +132,10 @@
     
     try {
       let minified = '';
-      
-      // 对于大文件，使用 Rust 后端压缩JSON以避免 UI 阻塞
       if (contentSize > LARGE_FILE_THRESHOLD) {
         const { minifyJson } = await import('$lib/services/json');
         minified = await minifyJson(content);
       } else {
-        // 小文件使用 Monaco 原生压缩，响应更快
         minified = monacoEditor?.minify() || '';
       }
       
@@ -139,13 +145,11 @@
         await updateStats();
       }
     } catch (e) {
-      // 忽略压缩错误
     } finally {
       isProcessing = false;
     }
   }
 
-  // 转义 - 根据文件大小选择最优方案
   async function handleEscape() {
     if (!content.trim()) return;
     isProcessing = true;
@@ -153,12 +157,9 @@
     
     try {
       let escaped = '';
-      
-      // 对于大文件，使用 Rust 后端处理以避免 UI 阻塞
       if (contentSize > LARGE_FILE_THRESHOLD) {
         escaped = await escapeString(content);
       } else {
-        // 小文件使用前端处理，响应更快
         escaped = JSON.stringify(content);
       }
       
@@ -166,13 +167,11 @@
       monacoEditor?.setValue(escaped);
       await updateStats();
     } catch (e) {
-      // 忽略转义错误
     } finally {
       isProcessing = false;
     }
   }
 
-  // 反转义 - 根据文件大小选择最优方案
   async function handleUnescape() {
     if (!content.trim()) return;
     isProcessing = true;
@@ -180,12 +179,9 @@
     
     try {
       let unescaped = '';
-      
-      // 对于大文件，使用 Rust 后端处理以避免 UI 阻塞
       if (contentSize > LARGE_FILE_THRESHOLD) {
         unescaped = await unescapeString(content);
       } else {
-        // 小文件使用前端处理，响应更快
         const u = JSON.parse(content);
         if (typeof u === 'string') {
           unescaped = u;
@@ -200,13 +196,11 @@
         await updateStats();
       }
     } catch (e) {
-      // 忽略反转义错误
     } finally {
       isProcessing = false;
     }
   }
 
-  // 压缩 + 转义 - 根据文件大小选择最优方案
   async function handleMinifyEscape() {
     if (!content.trim()) return;
     isProcessing = true;
@@ -214,13 +208,10 @@
     
     try {
       let minified = '';
-      
-      // 对于大文件，使用 Rust 后端
       if (contentSize > LARGE_FILE_THRESHOLD) {
         const { minifyJson } = await import('$lib/services/json');
         minified = await minifyJson(content);
       } else {
-        // 小文件使用 Monaco 原生压缩
         minified = monacoEditor?.minify() || '';
       }
       
@@ -231,7 +222,6 @@
         await updateStats();
       }
     } catch (e) {
-      // 忽略错误
     } finally {
       isProcessing = false;
     }
@@ -240,7 +230,13 @@
   function handleClear() {
     content = '';
     monacoEditor?.setValue('');
-    stats = null;
+    stats = {
+      valid: false,
+      key_count: 0,
+      depth: 0,
+      byte_size: 0,
+      error_info: null,
+    };
   }
 
   async function handleCopy() {
@@ -248,9 +244,7 @@
     try {
       await navigator.clipboard.writeText(content);
       showToast('已复制');
-    } catch (e) {
-      // 忽略复制错误
-    }
+    } catch (e) {}
   }
 
   function handleFoldAll() {
@@ -261,7 +255,6 @@
     monacoEditor?.unfoldAll();
   }
 
-  // 格式化字节大小
   function formatBytes(b: number): string {
     if (b < 1024) return `${b} B`;
     if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
@@ -488,42 +481,33 @@
       onChange={handleEditorChange}
     />
 
-    <!-- Toast 提示 -->
     {#if toastMsg}
-      <div class="absolute top-4 right-4 px-4 py-2 
-                  bg-(--bg-secondary) border border-(--border)
-                  text-(--text-primary) rounded-lg text-sm font-medium
-                  shadow-lg
-                  animate-[fadeIn_0.2s_ease-out]
-                  z-50">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-(--success)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div 
+        class="absolute top-6 right-6 flex items-center gap-2.5 rounded-lg text-sm font-medium z-50 animate-[fadeIn_0.2s_ease-out]"
+        style="padding: 10px 16px; background-color: var(--bg-primary); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);"
+      >
+        <div class="flex items-center justify-center w-5 h-5 rounded-full" style="background-color: var(--success);">
+          <svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <path d="M20 6L9 17l-5-5"/>
           </svg>
-          {toastMsg}
         </div>
+        <span class="text-(--text-primary)">{toastMsg}</span>
       </div>
     {/if}
   </div>
 
-  <!-- 状态栏 -->
-  <div class="flex items-center gap-3 px-3 py-1.5 bg-(--bg-secondary) border-t border-(--border) text-xs">
-    {#if stats && stats.valid}
-      <!-- 只在 JSON 有效时显示统计信息 -->
-      <span class="text-(--text-muted)">{stats.key_count} keys</span>
+  <div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border) text-xs" style="padding: 2px 10px;">
+    {#if stats}
+      <span class="text-(--text-secondary)">{stats.key_count} keys</span>
       <div class="w-px h-3 bg-(--border)"></div>
-      <span class="text-(--text-muted)">{stats.depth} levels</span>
+      <span class="text-(--text-secondary)">{stats.depth} levels</span>
       <div class="w-px h-3 bg-(--border)"></div>
-      <span class="text-(--text-muted)">{formatBytes(stats.byte_size)}</span>
-    {:else if !content.trim()}
-      <span class="text-(--text-muted)">Ready</span>
+      <span class="text-(--text-secondary)">{formatBytes(stats.byte_size)}</span>
     {/if}
     
     <span class="flex-1"></span>
     
-    {#if content}
-      <span class="text-(--text-muted)">{content.split('\n').length} lines</span>
-    {/if}
+    <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} lines</span>
   </div>
 
   <!-- 设置面板 -->
