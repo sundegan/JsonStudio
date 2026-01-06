@@ -42,6 +42,9 @@ body {
   --text-secondary: #a0a0a0;
   --accent: #10b981;
   --accent-glow: rgba(16, 185, 129, 0.2);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
 }
 
 .light {
@@ -54,6 +57,9 @@ body {
   --text-secondary: #5f6368;
   --accent: #10b981;
   --accent-glow: rgba(16, 185, 129, 0.15);
+  --success: #188038;
+  --warning: #f29900;
+  --error: #d93025;
 }
 
 ::-webkit-scrollbar {
