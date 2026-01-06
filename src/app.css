@@ -77,7 +77,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-focus);
+  background: var(--text-secondary);
 }
 
 ::selection {
