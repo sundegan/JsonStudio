@@ -64,6 +64,27 @@
   let fontSize = $derived(settings.fontSize);
   let tabSize = $derived(settings.tabSize);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
+  
+  // Track previous tabSize to detect changes
+  let prevTabSize = $state(settings.tabSize);
+  
+  // Watch tabSize changes and reformat JSON content
+  $effect(() => {
+    const currentTabSize = tabSize;
+    // Only reformat if tabSize actually changed and there's valid JSON content
+    if (currentTabSize !== prevTabSize && content.trim()) {
+      prevTabSize = currentTabSize;
+      // Try to reformat the JSON with new indent size
+      try {
+        const parsed = JSON.parse(content);
+        const formatted = JSON.stringify(parsed, null, currentTabSize);
+        content = formatted;
+        monacoEditor?.setValue(formatted);
+      } catch (e) {
+        // Content is not valid JSON, skip reformatting
+      }
+    }
+  });
 
   function toggleTheme() {
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
@@ -122,12 +143,15 @@
     try {
       if (contentSize > LARGE_FILE_THRESHOLD) {
         const { formatJson } = await import('$lib/services/json');
-        const formatted = await formatJson(content);
+        const formatted = await formatJson(content, tabSize);
         content = formatted;
         monacoEditor?.setValue(formatted);
       } else {
-        await monacoEditor?.format();
-        content = monacoEditor?.getValue() || '';
+        // Use custom formatting with current tabSize setting
+        const parsed = JSON.parse(content);
+        const formatted = JSON.stringify(parsed, null, tabSize);
+        content = formatted;
+        monacoEditor?.setValue(formatted);
       }
       await updateStats();
     } catch (e) {
