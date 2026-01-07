@@ -141,7 +141,7 @@ jobs:
             xattr -cr "$DMG_DIR/$APP_NAME"
             
             # Create README file
-            cat > "$DMG_DIR/README.txt" << 'README'
+            cat > "$DMG_DIR/README.txt" << 'EOF'
 Json Studio Installation Guide
 ===============================
 
@@ -186,7 +186,7 @@ Option B - Manual fix in Finder:
 Need Help?
 ----------
 Report issues at: https://github.com/degjs/JsonStudio/issues
-README
+EOF
             
             # Create one-click install script
             cat > "$DMG_DIR/Install.command" << 'INSTALL_SCRIPT'
