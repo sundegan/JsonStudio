@@ -19,6 +19,7 @@
     fontSize = 13,
     tabSize = 2,
     onChange = (value: string) => {},
+    onPaste = (_event?: unknown) => {},
   }: {
     value?: string;
     language?: string;
@@ -32,6 +33,7 @@
     fontSize?: number;
     tabSize?: number;
     onChange?: (value: string) => void;
+    onPaste?: (event?: unknown) => void;
   } = $props();
 
   let container: HTMLDivElement;
@@ -154,6 +156,10 @@
           isInternalChange = true;
           onChange(currentValue);
         }
+      });
+
+      editor.onDidPaste((event) => {
+        onPaste(event);
       });
     }
   });
