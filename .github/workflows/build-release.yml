@@ -83,18 +83,17 @@ jobs:
         shell: bash
         run: |
           BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
-          APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
+          APP_PATH="$BUNDLE_DIR/macos/Json Studio.app"
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ -d "$APP_PATH" ]; then
             echo "Creating installer DMG with auto-install script..."
             
-            APP_NAME="jsonstudio.app"
+            APP_NAME="Json Studio.app"
             TEMP_DIR=$(mktemp -d)
             DMG_DIR="$TEMP_DIR/dmg"
             VOLUME_NAME="Json Studio"
-            ORIGINAL_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION#v}_${{ matrix.arch_suffix }}.dmg"
-            INSTALLER_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION#v}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            INSTALLER_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_macos_${{ matrix.arch_suffix }}_installer.dmg"
             
             mkdir -p "$DMG_DIR"
             cp -R "$APP_PATH" "$DMG_DIR/"
@@ -113,7 +112,7 @@ jobs:
             echo "2. Follow the prompts" >> "$DMG_DIR/README.txt"
             echo "" >> "$DMG_DIR/README.txt"
             echo "Method 2: Manual Install" >> "$DMG_DIR/README.txt"
-            echo "1. Drag jsonstudio.app to Applications folder" >> "$DMG_DIR/README.txt"
+            echo "1. Drag Json Studio.app to Applications folder" >> "$DMG_DIR/README.txt"
             echo "2. If you see \"damaged\" message, right-click -> Open" >> "$DMG_DIR/README.txt"
             
             # Create install helper script
@@ -121,7 +120,7 @@ jobs:
           #!/bin/bash
           set -e
           SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          APP_NAME="jsonstudio.app"
+          APP_NAME="Json Studio.app"
           APP_PATH="$SCRIPT_DIR/$APP_NAME"
           INSTALL_DIR="/Applications"
           INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
@@ -172,17 +171,33 @@ jobs:
             chmod +x "$DMG_DIR/Install Helper.command"
             chmod +x "$DMG_DIR/install-helper.sh"
             
+            # Ensure DMG directory exists
+            mkdir -p "$BUNDLE_DIR/dmg"
+            
             # Create DMG
+            echo "Creating installer DMG at: $INSTALLER_DMG"
             hdiutil create -volname "$VOLUME_NAME" -srcfolder "$DMG_DIR" -ov -format UDZO "$INSTALLER_DMG"
+            
+            # Verify DMG was created
+            if [ ! -f "$INSTALLER_DMG" ]; then
+              echo "❌ Error: Failed to create installer DMG"
+              exit 1
+            fi
+            
+            echo "✓ Installer DMG created successfully: $INSTALLER_DMG"
+            ls -lh "$INSTALLER_DMG"
+            
             rm -rf "$TEMP_DIR"
             
             # Remove original DMG if exists (only keep installer DMG)
+            ORIGINAL_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_${{ matrix.arch_suffix }}.dmg"
             if [ -f "$ORIGINAL_DMG" ]; then
               rm -f "$ORIGINAL_DMG"
-              echo "✓ Removed original DMG"
+              echo "✓ Removed original DMG: $ORIGINAL_DMG"
             fi
-            
-            echo "✓ Installer DMG created: $INSTALLER_DMG"
+          else
+            echo "❌ Error: App not found at $APP_PATH"
+            exit 1
           fi
 
       - name: Rename artifacts with OS name
@@ -192,21 +207,35 @@ jobs:
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            # Windows: rename .exe files
-            if [ -f "$BUNDLE_DIR/nsis/jsonstudio_${VERSION#v}_x64-setup.exe" ]; then
-              mv "$BUNDLE_DIR/nsis/jsonstudio_${VERSION#v}_x64-setup.exe" "$BUNDLE_DIR/nsis/jsonstudio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            # Windows: rename .exe files (Tauri uses productName "Json Studio")
+            ORIGINAL_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_x64-setup.exe"
+            RENAMED_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            if [ -f "$ORIGINAL_EXE" ]; then
+              mv "$ORIGINAL_EXE" "$RENAMED_EXE"
+              echo "✓ Renamed Windows installer: $RENAMED_EXE"
+            else
+              echo "⚠ Windows installer not found at: $ORIGINAL_EXE"
             fi
           elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
             # Linux: rename AppImage
-            if [ -f "$BUNDLE_DIR/appimage/jsonstudio_${VERSION#v}_amd64.AppImage" ]; then
-              mv "$BUNDLE_DIR/appimage/jsonstudio_${VERSION#v}_amd64.AppImage" "$BUNDLE_DIR/appimage/jsonstudio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
+            ORIGINAL_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_amd64.AppImage"
+            RENAMED_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
+            if [ -f "$ORIGINAL_APPIMAGE" ]; then
+              mv "$ORIGINAL_APPIMAGE" "$RENAMED_APPIMAGE"
+              echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
+            else
+              echo "⚠ Linux AppImage not found at: $ORIGINAL_APPIMAGE"
             fi
           elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            # macOS: only installer DMG is kept
-            INSTALLER_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION#v}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            # macOS: check installer DMG
+            INSTALLER_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_macos_${{ matrix.arch_suffix }}_installer.dmg"
             
             if [ -f "$INSTALLER_DMG" ]; then
-              echo "✓ Installer DMG: $INSTALLER_DMG"
+              echo "✓ Installer DMG ready: $INSTALLER_DMG"
+            else
+              echo "❌ Installer DMG not found at: $INSTALLER_DMG"
+              ls -la "$BUNDLE_DIR/dmg/" || true
+              exit 1
             fi
           fi
 
@@ -222,6 +251,7 @@ jobs:
           body: 'View changelog: https://github.com/${{ github.repository }}/releases'
           draft: true
           prerelease: false
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
