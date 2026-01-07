@@ -215,9 +215,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*windows*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*_installer.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*linux*.AppImage
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
           body: 'View changelog: https://github.com/${{ github.repository }}/releases'
