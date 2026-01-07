@@ -19,6 +19,7 @@
   let toastMsg = $state('');
   let isProcessing = $state(false);
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
+  let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor: MonacoEditor;
   let settingsPanel: SettingsPanel | null = null;
@@ -94,6 +95,16 @@
       return;
     }
     statsTimer = setTimeout(updateStats, 300);
+  }
+
+  function handleEditorPaste() {
+    if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
+    pasteFormatTimer = setTimeout(async () => {
+      if (isProcessing || !content.trim()) {
+        return;
+      }
+      await handleFormat();
+    }, 100);
   }
 
   async function updateStats() {
@@ -479,6 +490,7 @@
       fontSize={fontSize}
       tabSize={tabSize}
       onChange={handleEditorChange}
+      onPaste={handleEditorPaste}
     />
 
     {#if toastMsg}
