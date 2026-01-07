@@ -133,23 +133,27 @@ jobs:
             echo "Error: Cannot find $APP_NAME"
             exit 1
           fi
-          echo "Step 1/4: Removing quarantine attributes..."
+          echo "Step 1/5: Removing quarantine attributes..."
           xattr -cr "$APP_PATH"
           echo "✓ Done"
           echo ""
-          echo "Step 2/4: Applying code signature..."
+          echo "Step 2/5: Applying code signature..."
           codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || echo "⚠ Signing failed (can be ignored)"
           echo "✓ Done"
           echo ""
-          echo "Step 3/4: Installing to /Applications..."
+          echo "Step 3/5: Installing to /Applications..."
           if [ -d "$INSTALL_PATH" ]; then
             rm -rf "$INSTALL_PATH"
           fi
           cp -R "$APP_PATH" "$INSTALL_DIR/"
           echo "✓ Installation complete"
           echo ""
-          echo "Step 4/4: Removing quarantine from installed app..."
+          echo "Step 4/5: Removing quarantine from installed app..."
           xattr -cr "$INSTALL_PATH"
+          echo "✓ Done"
+          echo ""
+          echo "Step 5/5: Opening application..."
+          open "$INSTALL_PATH"
           echo "✓ Done"
           echo ""
           echo "=========================================="
@@ -157,12 +161,7 @@ jobs:
           echo "=========================================="
           echo ""
           echo "App installed to: $INSTALL_PATH"
-          echo ""
-          read -p "Open the app now? (y/n) " -n 1 -r
-          echo ""
-          if [[ $REPLY =~ ^[Yy]$ ]]; then
-            open "$INSTALL_PATH"
-          fi
+          echo "Application is now opening..."
           INSTALL_SCRIPT
             
             # Create command files
