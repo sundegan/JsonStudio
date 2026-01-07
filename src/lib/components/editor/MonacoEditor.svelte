@@ -19,6 +19,7 @@
     fontSize = 13,
     tabSize = 2,
     onChange = (value: string) => {},
+    onPaste = (_event?: unknown) => {},
   }: {
     value?: string;
     language?: string;
@@ -32,6 +33,7 @@
     fontSize?: number;
     tabSize?: number;
     onChange?: (value: string) => void;
+    onPaste?: (event?: unknown) => void;
   } = $props();
 
   let container: HTMLDivElement;
@@ -78,12 +80,36 @@
     }
   });
   
-  // Watch editor option changes
+  // Watch fontSize changes
+  $effect(() => {
+    const currentFontSize = fontSize;
+    if (editor) {
+      editor.updateOptions({ fontSize: currentFontSize });
+    }
+  });
+  
+  // Watch tabSize changes
+  $effect(() => {
+    const currentTabSize = tabSize;
+    if (editor) {
+      // Update editor options
+      editor.updateOptions({ tabSize: currentTabSize });
+      // Also update model options for tabSize to take effect (important for formatting)
+      const model = editor.getModel();
+      if (model) {
+        model.updateOptions({ 
+          tabSize: currentTabSize,
+          indentSize: currentTabSize,
+          insertSpaces: true 
+        });
+      }
+    }
+  });
+  
+  // Watch other editor option changes
   $effect(() => {
     if (editor) {
       editor.updateOptions({
-        fontSize,
-        tabSize,
         minimap: { enabled: minimap },
         lineNumbers: lineNumbers ? 'on' : 'off',
         wordWrap,
@@ -154,6 +180,10 @@
           isInternalChange = true;
           onChange(currentValue);
         }
+      });
+
+      editor.onDidPaste((event) => {
+        onPaste(event);
       });
     }
   });
