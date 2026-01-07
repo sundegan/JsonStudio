@@ -107,112 +107,115 @@ jobs:
             xattr -cr "$DMG_DIR/$APP_NAME"
             
             # Create README file
-            cat > "$DMG_DIR/README.txt" << 'EOF'
-Json Studio Installation Guide
-===============================
+            {
+              echo "Json Studio Installation Guide"
+              echo "==============================="
+              echo ""
+              echo "Method 1: Automatic Install (Recommended)"
+              echo "------------------------------------------"
+              echo "Double-click \"Install.command\" to install Json Studio automatically."
+              echo ""
+              echo "The installer will:"
+              echo "  • Install Json Studio to /Applications"
+              echo "  • Remove security quarantine attributes"
+              echo "  • Launch the application automatically"
+              echo "  • Complete in seconds"
+              echo ""
+              echo ""
+              echo "Method 2: Manual Install"
+              echo "-------------------------"
+              echo "1. Drag \"Json Studio.app\" to your Applications folder"
+              echo ""
+              echo "2. Open Terminal and run this command to remove quarantine:"
+              echo "   sudo xattr -cr \"/Applications/Json Studio.app\""
+              echo ""
+              echo "3. Go to /Applications in Finder, right-click \"Json Studio.app\""
+              echo "   and select \"Open\" for the first launch"
+              echo ""
+              echo ""
+              echo "Troubleshooting"
+              echo "---------------"
+              echo "If you see \"damaged\" or \"unverified developer\" error:"
+              echo ""
+              echo "Option A - Use Terminal (Recommended):"
+              echo "  1. Open Terminal"
+              echo "  2. Run: sudo xattr -cr \"/Applications/Json Studio.app\""
+              echo "  3. Enter your password"
+              echo "  4. Go to /Applications in Finder, right-click \"Json Studio.app\" and select \"Open\""
+              echo ""
+              echo "Option B - Manual fix in Finder:"
+              echo "  1. Go to /Applications in Finder"
+              echo "  2. Right-click \"Json Studio.app\" and select \"Open\""
+              echo "  3. Click \"Open\" in the security dialog"
+              echo ""
+              echo ""
+              echo "Need Help?"
+              echo "----------"
+              echo "Report issues at: https://github.com/degjs/JsonStudio/issues"
+            } > "$DMG_DIR/README.txt"
 
-Method 1: Automatic Install (Recommended)
-------------------------------------------
-Double-click "Install.command" to install Json Studio automatically.
-
-The installer will:
-  • Install Json Studio to /Applications
-  • Remove security quarantine attributes
-  • Launch the application automatically
-  • Complete in seconds
-
-
-Method 2: Manual Install
--------------------------
-1. Drag "Json Studio.app" to your Applications folder
-
-2. Open Terminal and run this command to remove quarantine:
-   sudo xattr -cr "/Applications/Json Studio.app"
-
-3. Go to /Applications in Finder, right-click "Json Studio.app" 
-   and select "Open" for the first launch
-
-
-Troubleshooting
----------------
-If you see "damaged" or "unverified developer" error:
-
-Option A - Use Terminal (Recommended):
-  1. Open Terminal
-  2. Run: sudo xattr -cr "/Applications/Json Studio.app"
-  3. Enter your password
-  4. Go to /Applications in Finder, right-click "Json Studio.app" and select "Open"
-
-Option B - Manual fix in Finder:
-  1. Go to /Applications in Finder
-  2. Right-click "Json Studio.app" and select "Open"
-  3. Click "Open" in the security dialog
-
-
-Need Help?
-----------
-Report issues at: https://github.com/degjs/JsonStudio/issues
-EOF
+            
             
             # Create one-click install script
-            cat > "$DMG_DIR/Install.command" << 'INSTALL_SCRIPT'
-#!/bin/bash
-set -e
+            {
+              echo '#!/bin/bash'
+              echo 'set -e'
+              echo ''
+              echo '# Get the directory where this script is located (the DMG mount point)'
+              echo 'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"'
+              echo 'APP_NAME="Json Studio.app"'
+              echo 'APP_PATH="$SCRIPT_DIR/.app/$APP_NAME"'
+              echo 'INSTALL_DIR="/Applications"'
+              echo 'INSTALL_PATH="$INSTALL_DIR/$APP_NAME"'
+              echo ''
+              echo 'clear'
+              echo 'echo ""'
+              echo 'echo "  ✨ Json Studio Installer"'
+              echo 'echo ""'
+              echo ''
+              echo '# Check if app exists in hidden folder'
+              echo 'if [ ! -d "$APP_PATH" ]; then'
+              echo '  echo "  ❌ Installation failed"'
+              echo '  echo "  Please re-download the installer"'
+              echo '  echo ""'
+              echo '  read -p "  Press Enter to close..."'
+              echo '  exit 1'
+              echo 'fi'
+              echo ''
+              echo '# Show progress with simple messages'
+              echo 'echo "  Installing... 20%"'
+              echo 'xattr -cr "$APP_PATH" 2>/dev/null || true'
+              echo ''
+              echo 'echo "  Installing... 40%"'
+              echo 'codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true'
+              echo ''
+              echo 'echo "  Installing... 60%"'
+              echo 'if [ -d "$INSTALL_PATH" ]; then'
+              echo '  rm -rf "$INSTALL_PATH"'
+              echo 'fi'
+              echo 'cp -R "$APP_PATH" "$INSTALL_DIR/"'
+              echo ''
+              echo 'echo "  Installing... 80%"'
+              echo 'xattr -cr "$INSTALL_PATH" 2>/dev/null || true'
+              echo ''
+              echo 'echo "  Installing... 100%"'
+              echo 'sleep 0.5'
+              echo ''
+              echo 'clear'
+              echo 'echo ""'
+              echo 'echo "  ✅ Installation Complete!"'
+              echo 'echo ""'
+              echo 'echo "  Json Studio has been installed successfully."'
+              echo 'echo "  The application is now starting..."'
+              echo 'echo ""'
+              echo ''
+              echo '# Launch application'
+              echo 'open "$INSTALL_PATH"'
+              echo ''
+              echo '# Keep window open for 2 seconds so user can see the success message'
+              echo 'sleep 2'
+            } > "$DMG_DIR/Install.command"
 
-# Get the directory where this script is located (the DMG mount point)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_NAME="Json Studio.app"
-APP_PATH="$SCRIPT_DIR/.app/$APP_NAME"
-INSTALL_DIR="/Applications"
-INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
-
-clear
-echo ""
-echo "  ✨ Json Studio Installer"
-echo ""
-
-# Check if app exists in hidden folder
-if [ ! -d "$APP_PATH" ]; then
-  echo "  ❌ Installation failed"
-  echo "  Please re-download the installer"
-  echo ""
-  read -p "  Press Enter to close..."
-  exit 1
-fi
-
-# Show progress with simple messages
-echo "  Installing... 20%"
-xattr -cr "$APP_PATH" 2>/dev/null || true
-
-echo "  Installing... 40%"
-codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
-
-echo "  Installing... 60%"
-if [ -d "$INSTALL_PATH" ]; then
-  rm -rf "$INSTALL_PATH"
-fi
-cp -R "$APP_PATH" "$INSTALL_DIR/"
-
-echo "  Installing... 80%"
-xattr -cr "$INSTALL_PATH" 2>/dev/null || true
-
-echo "  Installing... 100%"
-sleep 0.5
-
-clear
-echo ""
-echo "  ✅ Installation Complete!"
-echo ""
-echo "  Json Studio has been installed successfully."
-echo "  The application is now starting..."
-echo ""
-
-# Launch application
-open "$INSTALL_PATH"
-
-# Keep window open for 2 seconds so user can see the success message
-sleep 2
-INSTALL_SCRIPT
             
             chmod +x "$DMG_DIR/Install.command"
             
@@ -291,4 +294,3 @@ INSTALL_SCRIPT
           else
             echo "Bundle directory not found: $BUNDLE_DIR"
           fi
-
