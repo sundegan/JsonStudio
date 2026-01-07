@@ -62,112 +62,187 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app (build only, no upload)
-        run: pnpm tauri build ${{ matrix.args }}
+        run: |
+          if [ "${{ matrix.platform }}" == "macos-latest" ]; then
+            # macOS: only build .app, skip DMG (we'll create installer DMG ourselves)
+            pnpm tauri build ${{ matrix.args }} --bundles app
+          else
+            # Other platforms: normal build
+            pnpm tauri build ${{ matrix.args }}
+          fi
+        shell: bash
 
-      - name: Create installer DMG with auto-install script (macOS only)
+      - name: Create installer DMG with one-click install (macOS only)
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
           BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
-          APP_PATH="$BUNDLE_DIR/macos/jsonstudio.app"
+          APP_PATH="$BUNDLE_DIR/macos/Json Studio.app"
           VERSION="0.1.0"
           
           if [ -d "$APP_PATH" ]; then
-            echo "Creating installer DMG with auto-install script..."
+            echo "Creating installer DMG with one-click install..."
             
-            APP_NAME="jsonstudio.app"
+            APP_NAME="Json Studio.app"
             TEMP_DIR=$(mktemp -d)
             DMG_DIR="$TEMP_DIR/dmg"
-            VOLUME_NAME="Json Studio"
-            ORIGINAL_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION}_${{ matrix.arch_suffix }}.dmg"
-            INSTALLER_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            VOLUME_NAME="Json Studio Installer"
+            INSTALLER_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION}_macos_${{ matrix.arch_suffix }}_installer.dmg"
             
             mkdir -p "$DMG_DIR"
-            cp -R "$APP_PATH" "$DMG_DIR/"
+            
+            # Hide the .app file in DMG (user shouldn't see it)
+            HIDDEN_APP_DIR="$DMG_DIR/.app"
+            mkdir -p "$HIDDEN_APP_DIR"
+            cp -R "$APP_PATH" "$HIDDEN_APP_DIR/"
+            
             # Apply ad-hoc signature to improve user experience
-            codesign --force --deep --sign - "$DMG_DIR/$APP_NAME" 2>/dev/null || echo "⚠ Ad-hoc signing failed (can be ignored)"
+            codesign --force --deep --sign - "$HIDDEN_APP_DIR/$APP_NAME" 2>/dev/null || echo "⚠ Ad-hoc signing failed (can be ignored)"
             # Remove quarantine attributes
+            xattr -cr "$HIDDEN_APP_DIR/$APP_NAME"
+            
+            # Also provide a visible .app file for manual installation
+            cp -R "$APP_PATH" "$DMG_DIR/"
+            codesign --force --deep --sign - "$DMG_DIR/$APP_NAME" 2>/dev/null || echo "⚠ Ad-hoc signing failed (can be ignored)"
             xattr -cr "$DMG_DIR/$APP_NAME"
-            ln -s /Applications "$DMG_DIR/Applications"
             
-            echo "Installation Instructions" > "$DMG_DIR/README.txt"
-            echo "==========================" >> "$DMG_DIR/README.txt"
-            echo "" >> "$DMG_DIR/README.txt"
-            echo "Method 1: Auto Install (Recommended)" >> "$DMG_DIR/README.txt"
-            echo "1. Double-click \"Install Helper.command\"" >> "$DMG_DIR/README.txt"
-            echo "2. Follow the prompts" >> "$DMG_DIR/README.txt"
-            echo "" >> "$DMG_DIR/README.txt"
-            echo "Method 2: Manual Install" >> "$DMG_DIR/README.txt"
-            echo "1. Drag jsonstudio.app to Applications folder" >> "$DMG_DIR/README.txt"
-            echo "2. If you see \"damaged\" message, right-click -> Open" >> "$DMG_DIR/README.txt"
+            # Create README file
+            cat > "$DMG_DIR/README.txt" << 'EOF'
+Json Studio Installation Guide
+===============================
+
+Method 1: Automatic Install (Recommended)
+------------------------------------------
+Double-click "Install.command" to install Json Studio automatically.
+
+The installer will:
+  • Install Json Studio to /Applications
+  • Remove security quarantine attributes
+  • Launch the application automatically
+  • Complete in seconds
+
+
+Method 2: Manual Install
+-------------------------
+1. Drag "Json Studio.app" to your Applications folder
+
+2. Open Terminal and run this command to remove quarantine:
+   sudo xattr -cr "/Applications/Json Studio.app"
+
+3. Go to /Applications in Finder, right-click "Json Studio.app" 
+   and select "Open" for the first launch
+
+
+Troubleshooting
+---------------
+If you see "damaged" or "unverified developer" error:
+
+Option A - Use Terminal (Recommended):
+  1. Open Terminal
+  2. Run: sudo xattr -cr "/Applications/Json Studio.app"
+  3. Enter your password
+  4. Go to /Applications in Finder, right-click "Json Studio.app" and select "Open"
+
+Option B - Manual fix in Finder:
+  1. Go to /Applications in Finder
+  2. Right-click "Json Studio.app" and select "Open"
+  3. Click "Open" in the security dialog
+
+
+Need Help?
+----------
+Report issues at: https://github.com/degjs/JsonStudio/issues
+EOF
             
-            # Create install helper script
-            cat > "$DMG_DIR/install-helper.sh" << 'INSTALL_SCRIPT'
-          #!/bin/bash
-          set -e
-          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          APP_NAME="jsonstudio.app"
-          APP_PATH="$SCRIPT_DIR/$APP_NAME"
-          INSTALL_DIR="/Applications"
-          INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
-          echo "=========================================="
-          echo "Json Studio Install Helper"
-          echo "=========================================="
-          echo ""
-          if [ ! -d "$APP_PATH" ]; then
-            echo "Error: Cannot find $APP_NAME"
-            exit 1
-          fi
-          echo "Step 1/5: Removing quarantine attributes..."
-          xattr -cr "$APP_PATH"
-          echo "✓ Done"
-          echo ""
-          echo "Step 2/5: Applying code signature..."
-          codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || echo "⚠ Signing failed (can be ignored)"
-          echo "✓ Done"
-          echo ""
-          echo "Step 3/5: Installing to /Applications..."
-          if [ -d "$INSTALL_PATH" ]; then
-            rm -rf "$INSTALL_PATH"
-          fi
-          cp -R "$APP_PATH" "$INSTALL_DIR/"
-          echo "✓ Installation complete"
-          echo ""
-          echo "Step 4/5: Removing quarantine from installed app..."
-          xattr -cr "$INSTALL_PATH"
-          echo "✓ Done"
-          echo ""
-          echo "Step 5/5: Opening application..."
-          open "$INSTALL_PATH"
-          echo "✓ Done"
-          echo ""
-          echo "=========================================="
-          echo "Installation Complete!"
-          echo "=========================================="
-          echo ""
-          echo "App installed to: $INSTALL_PATH"
-          echo "Application is now opening..."
-          INSTALL_SCRIPT
+            # Create one-click install script
+            cat > "$DMG_DIR/Install.command" << 'INSTALL_SCRIPT'
+#!/bin/bash
+set -e
+
+# Get the directory where this script is located (the DMG mount point)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_NAME="Json Studio.app"
+APP_PATH="$SCRIPT_DIR/.app/$APP_NAME"
+INSTALL_DIR="/Applications"
+INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
+
+clear
+echo ""
+echo "  ✨ Json Studio Installer"
+echo ""
+
+# Check if app exists in hidden folder
+if [ ! -d "$APP_PATH" ]; then
+  echo "  ❌ Installation failed"
+  echo "  Please re-download the installer"
+  echo ""
+  read -p "  Press Enter to close..."
+  exit 1
+fi
+
+# Show progress with simple messages
+echo "  Installing... 20%"
+xattr -cr "$APP_PATH" 2>/dev/null || true
+
+echo "  Installing... 40%"
+codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
+
+echo "  Installing... 60%"
+if [ -d "$INSTALL_PATH" ]; then
+  rm -rf "$INSTALL_PATH"
+fi
+cp -R "$APP_PATH" "$INSTALL_DIR/"
+
+echo "  Installing... 80%"
+xattr -cr "$INSTALL_PATH" 2>/dev/null || true
+
+echo "  Installing... 100%"
+sleep 0.5
+
+clear
+echo ""
+echo "  ✅ Installation Complete!"
+echo ""
+echo "  Json Studio has been installed successfully."
+echo "  The application is now starting..."
+echo ""
+
+# Launch application
+open "$INSTALL_PATH"
+
+# Keep window open for 2 seconds so user can see the success message
+sleep 2
+INSTALL_SCRIPT
             
-            # Create command files
-            echo '#!/bin/bash' > "$DMG_DIR/Install Helper.command"
-            echo 'cd "$(dirname "$0")"' >> "$DMG_DIR/Install Helper.command"
-            echo './install-helper.sh' >> "$DMG_DIR/Install Helper.command"
+            chmod +x "$DMG_DIR/Install.command"
             
-            chmod +x "$DMG_DIR/Install Helper.command"
-            chmod +x "$DMG_DIR/install-helper.sh"
+            # Ensure DMG directory exists
+            mkdir -p "$BUNDLE_DIR/dmg"
             
             # Create DMG
+            echo "Creating installer DMG at: $INSTALLER_DMG"
             hdiutil create -volname "$VOLUME_NAME" -srcfolder "$DMG_DIR" -ov -format UDZO "$INSTALLER_DMG"
+            
+            # Verify DMG was created
+            if [ ! -f "$INSTALLER_DMG" ]; then
+              echo "❌ Error: Failed to create installer DMG"
+              exit 1
+            fi
+            
+            echo "✓ Installer DMG created successfully: $INSTALLER_DMG"
+            ls -lh "$INSTALLER_DMG"
+            
             rm -rf "$TEMP_DIR"
             
             # Remove original DMG if exists (only keep installer DMG)
+            ORIGINAL_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION}_${{ matrix.arch_suffix }}.dmg"
             if [ -f "$ORIGINAL_DMG" ]; then
               rm -f "$ORIGINAL_DMG"
-              echo "✓ Removed original DMG"
+              echo "✓ Removed original DMG: $ORIGINAL_DMG"
             fi
-            
-            echo "✓ Installer DMG created: $INSTALLER_DMG"
+          else
+            echo "❌ Error: App not found at $APP_PATH"
+            exit 1
           fi
 
       - name: Rename artifacts with OS name (for verification)
@@ -177,23 +252,35 @@ jobs:
           VERSION="0.1.0"  # Test builds use version from Cargo.toml
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            # Windows: rename .exe files
-            if [ -f "$BUNDLE_DIR/nsis/jsonstudio_${VERSION}_x64-setup.exe" ]; then
-              mv "$BUNDLE_DIR/nsis/jsonstudio_${VERSION}_x64-setup.exe" "$BUNDLE_DIR/nsis/jsonstudio_${VERSION}_windows_${{ matrix.arch_suffix }}-setup.exe"
-              echo "✓ Renamed Windows installer: jsonstudio_${VERSION}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            # Windows: rename .exe files (Tauri uses productName "Json Studio")
+            ORIGINAL_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION}_x64-setup.exe"
+            RENAMED_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            if [ -f "$ORIGINAL_EXE" ]; then
+              mv "$ORIGINAL_EXE" "$RENAMED_EXE"
+              echo "✓ Renamed Windows installer: $RENAMED_EXE"
+            else
+              echo "⚠ Windows installer not found at: $ORIGINAL_EXE"
             fi
           elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
             # Linux: rename AppImage
-            if [ -f "$BUNDLE_DIR/appimage/jsonstudio_${VERSION}_amd64.AppImage" ]; then
-              mv "$BUNDLE_DIR/appimage/jsonstudio_${VERSION}_amd64.AppImage" "$BUNDLE_DIR/appimage/jsonstudio_${VERSION}_linux_${{ matrix.arch_suffix }}.AppImage"
-              echo "✓ Renamed Linux AppImage: jsonstudio_${VERSION}_linux_${{ matrix.arch_suffix }}.AppImage"
+            ORIGINAL_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION}_amd64.AppImage"
+            RENAMED_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION}_linux_${{ matrix.arch_suffix }}.AppImage"
+            if [ -f "$ORIGINAL_APPIMAGE" ]; then
+              mv "$ORIGINAL_APPIMAGE" "$RENAMED_APPIMAGE"
+              echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
+            else
+              echo "⚠ Linux AppImage not found at: $ORIGINAL_APPIMAGE"
             fi
           elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            # macOS: only installer DMG is kept
-            INSTALLER_DMG="$BUNDLE_DIR/dmg/jsonstudio_${VERSION}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            # macOS: check installer DMG
+            INSTALLER_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION}_macos_${{ matrix.arch_suffix }}_installer.dmg"
             
             if [ -f "$INSTALLER_DMG" ]; then
-              echo "✓ Installer DMG: $INSTALLER_DMG"
+              echo "✓ Installer DMG ready: $INSTALLER_DMG"
+            else
+              echo "❌ Installer DMG not found at: $INSTALLER_DMG"
+              ls -la "$BUNDLE_DIR/dmg/" || true
+              exit 1
             fi
           fi
           
