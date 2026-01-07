@@ -190,63 +190,63 @@ EOF
             
             # Create one-click install script
             cat > "$DMG_DIR/Install.command" << 'INSTALL_SCRIPT'
-          #!/bin/bash
-          set -e
-          
-          # Get the directory where this script is located (the DMG mount point)
-          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          APP_NAME="Json Studio.app"
-          APP_PATH="$SCRIPT_DIR/.app/$APP_NAME"
-          INSTALL_DIR="/Applications"
-          INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
-          
-          clear
-          echo ""
-          echo "  ✨ Json Studio Installer"
-          echo ""
-          
-          # Check if app exists in hidden folder
-          if [ ! -d "$APP_PATH" ]; then
-            echo "  ❌ Installation failed"
-            echo "  Please re-download the installer"
-            echo ""
-            read -p "  Press Enter to close..."
-            exit 1
-          fi
-          
-          # Show progress with simple messages
-          echo "  Installing... 20%"
-          xattr -cr "$APP_PATH" 2>/dev/null || true
-          
-          echo "  Installing... 40%"
-          codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
-          
-          echo "  Installing... 60%"
-          if [ -d "$INSTALL_PATH" ]; then
-            rm -rf "$INSTALL_PATH"
-          fi
-          cp -R "$APP_PATH" "$INSTALL_DIR/"
-          
-          echo "  Installing... 80%"
-          xattr -cr "$INSTALL_PATH" 2>/dev/null || true
-          
-          echo "  Installing... 100%"
-          sleep 0.5
-          
-          clear
-          echo ""
-          echo "  ✅ Installation Complete!"
-          echo ""
-          echo "  Json Studio has been installed successfully."
-          echo "  The application is now starting..."
-          echo ""
-          
-          # Launch application
-          open "$INSTALL_PATH"
-          
-          # Keep window open for 2 seconds so user can see the success message
-          sleep 2
-          INSTALL_SCRIPT
+#!/bin/bash
+set -e
+
+# Get the directory where this script is located (the DMG mount point)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_NAME="Json Studio.app"
+APP_PATH="$SCRIPT_DIR/.app/$APP_NAME"
+INSTALL_DIR="/Applications"
+INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
+
+clear
+echo ""
+echo "  ✨ Json Studio Installer"
+echo ""
+
+# Check if app exists in hidden folder
+if [ ! -d "$APP_PATH" ]; then
+  echo "  ❌ Installation failed"
+  echo "  Please re-download the installer"
+  echo ""
+  read -p "  Press Enter to close..."
+  exit 1
+fi
+
+# Show progress with simple messages
+echo "  Installing... 20%"
+xattr -cr "$APP_PATH" 2>/dev/null || true
+
+echo "  Installing... 40%"
+codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
+
+echo "  Installing... 60%"
+if [ -d "$INSTALL_PATH" ]; then
+  rm -rf "$INSTALL_PATH"
+fi
+cp -R "$APP_PATH" "$INSTALL_DIR/"
+
+echo "  Installing... 80%"
+xattr -cr "$INSTALL_PATH" 2>/dev/null || true
+
+echo "  Installing... 100%"
+sleep 0.5
+
+clear
+echo ""
+echo "  ✅ Installation Complete!"
+echo ""
+echo "  Json Studio has been installed successfully."
+echo "  The application is now starting..."
+echo ""
+
+# Launch application
+open "$INSTALL_PATH"
+
+# Keep window open for 2 seconds so user can see the success message
+sleep 2
+INSTALL_SCRIPT
             
             chmod +x "$DMG_DIR/Install.command"
             
