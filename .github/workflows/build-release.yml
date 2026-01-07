@@ -78,12 +78,29 @@ jobs:
       - name: Build Tauri app (without auto-upload)
         run: pnpm tauri build ${{ matrix.args }}
 
-      - name: Create installer DMG with auto-install script (macOS only)
+      - name: Backup macOS app before DMG cleanup (macOS only)
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
           BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           APP_PATH="$BUNDLE_DIR/macos/Json Studio.app"
+          BACKUP_PATH="$BUNDLE_DIR/Json Studio.app"
+          
+          if [ -d "$APP_PATH" ]; then
+            echo "Backing up .app before Tauri cleanup..."
+            cp -R "$APP_PATH" "$BACKUP_PATH"
+            echo "✓ Backed up to: $BACKUP_PATH"
+            ls -la "$BACKUP_PATH"
+          else
+            echo "⚠ App not found at: $APP_PATH"
+          fi
+
+      - name: Create installer DMG with auto-install script (macOS only)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
+          APP_PATH="$BUNDLE_DIR/Json Studio.app"
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ -d "$APP_PATH" ]; then
