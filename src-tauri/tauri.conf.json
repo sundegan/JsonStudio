@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "jsonstudio",
+  "productName": "Json Studio",
   "version": "0.1.0",
   "identifier": "com.jsonstudio.app",
   "build": {
@@ -40,7 +40,7 @@
     ],
     "shortDescription": "Fast, modern, and efficient JSON desktop tool",
     "longDescription": "A modern JSON desktop application built with Tauri 2.0 and Rust, providing common features like formatting, compression, escaping, and comparison",
-    "copyright": "Copyright © 2025 JsonStudio",
+    "copyright": "Copyright © 2025 Json Studio",
     "category": "DeveloperTool",
     "windows": {
       "certificateThumbprint": null,
