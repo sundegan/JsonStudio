@@ -68,24 +68,28 @@ pub async fn format_clipboard_and_show(app: AppHandle) -> Result<(), String> {
         return Err("Clipboard is empty".to_string());
     }
     
+    // Show window first
+    let window = app.get_webview_window("main")
+        .ok_or("Main window not found".to_string())?;
+    
+    ensure_window_in_front(&window)?;
+    
     // Try to parse and format JSON
-    let parsed: serde_json::Value = serde_json::from_str(&clipboard_text)
-        .map_err(|e| format!("Invalid JSON in clipboard: {}", e))?;
-    
-    let formatted = serde_json::to_string_pretty(&parsed)
-        .map_err(|e| format!("Failed to format JSON: {}", e))?;
-    
-    // Show window
-    if let Some(window) = app.get_webview_window("main") {
-        ensure_window_in_front(&window)?;
-
-        // Send formatted content to frontend
-        window.emit("clipboard-formatted", formatted).map_err(|e| e.to_string())?;
-
-        Ok(())
-    } else {
-        Err("Main window not found".to_string())
+    match serde_json::from_str::<serde_json::Value>(&clipboard_text) {
+        Ok(parsed) => {
+            // Valid JSON - format it
+            let formatted = serde_json::to_string_pretty(&parsed)
+                .map_err(|e| format!("Failed to format JSON: {}", e))?;
+            
+            window.emit("clipboard-formatted", formatted).map_err(|e| e.to_string())?;
+        }
+        Err(_) => {
+            // Invalid JSON - paste as is, let user see and fix it
+            window.emit("clipboard-pasted-raw", clipboard_text).map_err(|e| e.to_string())?;
+        }
     }
+
+    Ok(())
 }
 
 fn ensure_window_in_front(window: &WebviewWindow) -> Result<(), String> {
