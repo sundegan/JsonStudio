@@ -35,21 +35,33 @@
   onMount(() => {
     settingsStore.init();
     
-    // Listen to clipboard formatting event
-    let unlisten: (() => void) | null = null;
+    // Listen to clipboard formatting events
+    let unlistenFormatted: (() => void) | null = null;
+    let unlistenRaw: (() => void) | null = null;
     
     (async () => {
       const { listen } = await import('@tauri-apps/api/event');
-      unlisten = await listen<string>('clipboard-formatted', (event) => {
+      
+      // Listen for successfully formatted JSON
+      unlistenFormatted = await listen<string>('clipboard-formatted', (event) => {
         content = event.payload;
         monacoEditor?.setValue(event.payload);
         updateStats();
         showToast('Clipboard content formatted');
       });
+      
+      // Listen for raw paste (when JSON is invalid)
+      unlistenRaw = await listen<string>('clipboard-pasted-raw', (event) => {
+        content = event.payload;
+        monacoEditor?.setValue(event.payload);
+        updateStats();
+        showToast('Clipboard content pasted (invalid JSON)');
+      });
     })();
     
     return () => {
-      if (unlisten) unlisten();
+      if (unlistenFormatted) unlistenFormatted();
+      if (unlistenRaw) unlistenRaw();
     };
   });
   
