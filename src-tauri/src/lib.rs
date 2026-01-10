@@ -1,8 +1,9 @@
 mod commands;
 
 use commands::json::{json_format, json_minify, json_stats, json_validate, json_escape, json_unescape};
-use commands::window::set_window_theme;
+use commands::window::{set_window_theme, open_devtools};
 use commands::shortcuts::{show_main_window, format_clipboard_and_show, update_shortcut};
+use commands::file::{open_file_dialog, save_file, save_file_dialog, read_file, is_json_file, get_file_name};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -11,6 +12,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
             
@@ -42,9 +45,16 @@ pub fn run() {
             json_escape,
             json_unescape,
             set_window_theme,
+            open_devtools,
             show_main_window,
             format_clipboard_and_show,
-            update_shortcut
+            update_shortcut,
+            open_file_dialog,
+            save_file,
+            save_file_dialog,
+            read_file,
+            is_json_file,
+            get_file_name
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

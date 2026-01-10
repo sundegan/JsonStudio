@@ -1,6 +1,6 @@
 {
   "name": "Json Studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Fast, modern, and efficient JSON desktop tool",
   "type": "module",
   "scripts": {
