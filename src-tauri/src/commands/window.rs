@@ -30,3 +30,12 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
     Ok(())
 }
 
+/// Open developer tools
+#[tauri::command]
+pub fn open_devtools(window: tauri::WebviewWindow) {
+    #[cfg(debug_assertions)]
+    {
+        let _ = window.open_devtools();
+    }
+}
+
