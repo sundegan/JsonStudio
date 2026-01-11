@@ -121,6 +121,7 @@
       scrollBeyondLastLine: false,
       fontSize,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
+      contextmenu: false,
     });
 
     diffEditor = createdDiffEditor;
