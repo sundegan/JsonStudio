@@ -219,10 +219,13 @@
         toolbarRef?.saveAsFile();
       }
 
-      // Cmd/Ctrl + Shift + I: Open DevTools
+      // Cmd/Ctrl + Shift + I: Open DevTools (only in development)
       if (cmdOrCtrl && e.shiftKey && e.key === 'i') {
         e.preventDefault();
-        openDevTools();
+        // Only enable in development mode
+        if (import.meta.env.DEV) {
+          openDevTools();
+        }
       }
     };
     

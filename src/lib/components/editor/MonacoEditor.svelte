@@ -201,7 +201,17 @@
   }
 
   export function setValue(newValue: string) {
-    editor?.setValue(newValue);
+    if (!editor) return;
+    const model = editor.getModel();
+    if (model) {
+      // Use pushEditOperations to preserve undo history
+      const fullRange = model.getFullModelRange();
+      model.pushEditOperations(
+        [],
+        [{ range: fullRange, text: newValue }],
+        () => null
+      );
+    }
   }
 
   export function getValue(): string {

@@ -39,7 +39,13 @@
   $effect(() => {
     if (originalModel && originalValue !== originalModel.getValue()) {
       isSyncingOriginal = true;
-      originalModel.setValue(originalValue);
+      // Use pushEditOperations to preserve undo history
+      const fullRange = originalModel.getFullModelRange();
+      originalModel.pushEditOperations(
+        [],
+        [{ range: fullRange, text: originalValue }],
+        () => null
+      );
       isSyncingOriginal = false;
     }
   });
@@ -47,7 +53,13 @@
   $effect(() => {
     if (modifiedModel && modifiedValue !== modifiedModel.getValue()) {
       isSyncingModified = true;
-      modifiedModel.setValue(modifiedValue);
+      // Use pushEditOperations to preserve undo history
+      const fullRange = modifiedModel.getFullModelRange();
+      modifiedModel.pushEditOperations(
+        [],
+        [{ range: fullRange, text: modifiedValue }],
+        () => null
+      );
       isSyncingModified = false;
     }
   });
