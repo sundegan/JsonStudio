@@ -12,10 +12,12 @@
     activeTab,
     isDarkMode,
     isJsonQueryOpen,
+    isTreeViewOpen,
     editor,
     tabSize,
     onToggleDiff,
     onToggleJsonQuery,
+    onToggleTreeView,
     onToggleTheme,
     onOpenSettings,
     onContentChange,
@@ -28,10 +30,12 @@
     activeTab: Tab | null;
     isDarkMode: boolean;
     isJsonQueryOpen: boolean;
+    isTreeViewOpen: boolean;
     editor: MonacoEditor | null;
     tabSize: number;
     onToggleDiff: () => void;
     onToggleJsonQuery: () => void;
+    onToggleTreeView: () => void;
     onToggleTheme: () => void;
     onOpenSettings: () => void;
     onContentChange: (value: string) => void;
@@ -552,6 +556,30 @@
         <circle cx="11" cy="11" r="8"/>
         <path d="m21 21-4.35-4.35"/>
         <path d="M11 8v6M8 11h6"/>
+      </svg>
+    </button>
+
+    <!-- Tree View toggle button -->
+    <button
+      class="w-8 h-8 flex items-center justify-center rounded-md
+             {isTreeViewOpen ? 'text-(--accent) bg-(--accent)/10' : 'text-(--text-secondary)'}
+             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
+             active:scale-95
+             disabled:opacity-30 disabled:cursor-not-allowed
+             transition-all duration-150"
+      onclick={onToggleTreeView}
+      disabled={isDiffMode}
+      title="Tree View"
+    >
+      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="6" rx="1"/>
+        <rect x="3" y="14" width="6" height="6" rx="1"/>
+        <rect x="15" y="14" width="6" height="6" rx="1"/>
+        <path d="M12 8v3"/>
+        <path d="M12 11h-6"/>
+        <path d="M12 11h6"/>
+        <path d="M6 14v-3"/>
+        <path d="M18 14v-3"/>
       </svg>
     </button>
 
