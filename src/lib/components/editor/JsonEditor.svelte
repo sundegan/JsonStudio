@@ -50,7 +50,10 @@
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
   let isJsonQueryOpen = $state(false);
-  let isTreeViewOpen = $state(false);
+  const TREE_MIN_WIDTH = 260;
+  const TREE_MAX_WIDTH = 640;
+  let treeViewWidth = $state(320);
+  let isResizingTreeView = $state(false);
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -276,7 +279,13 @@
   let isDarkMode = $derived(settings.isDarkMode);
   let fontSize = $derived(settings.fontSize);
   let tabSize = $derived(settings.tabSize);
+  let showTreeView = $derived(settings.showTreeView);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
+  $effect(() => {
+    if (!showTreeView) {
+      isResizingTreeView = false;
+    }
+  });
   
   // Track previous tabSize to detect changes
   let prevTabSize = $state(settings.tabSize);
@@ -320,17 +329,7 @@
   }
 
   function toggleJsonQueryPanel() {
-    if (isTreeViewOpen) {
-      isTreeViewOpen = false;
-    }
     isJsonQueryOpen = !isJsonQueryOpen;
-  }
-
-  function toggleTreeView() {
-    if (isJsonQueryOpen) {
-      isJsonQueryOpen = false;
-    }
-    isTreeViewOpen = !isTreeViewOpen;
   }
 
   function toggleDiffMode() {
@@ -341,10 +340,6 @@
 
     if (isJsonQueryOpen) {
       isJsonQueryOpen = false;
-    }
-
-    if (isTreeViewOpen) {
-      isTreeViewOpen = false;
     }
 
     isDiffMode = true;
@@ -384,6 +379,34 @@
 
   function showToast(msg: string) {
     toastMsg = msg;
+  }
+
+  function clampTreeWidth(width: number) {
+    return Math.min(TREE_MAX_WIDTH, Math.max(TREE_MIN_WIDTH, width));
+  }
+
+  function startTreeResize(event: PointerEvent) {
+    if (!showTreeView) return;
+
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = treeViewWidth;
+    isResizingTreeView = true;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!isResizingTreeView) return;
+      const delta = startX - moveEvent.clientX;
+      treeViewWidth = clampTreeWidth(startWidth + delta);
+    };
+
+    const handlePointerUp = () => {
+      isResizingTreeView = false;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   }
 
   function updateDiffStats(changes: Array<{
@@ -506,12 +529,10 @@
     activeTab={$activeTab}
     isDarkMode={isDarkMode}
     isJsonQueryOpen={isJsonQueryOpen}
-    isTreeViewOpen={isTreeViewOpen}
     editor={monacoEditor}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
     onToggleJsonQuery={toggleJsonQueryPanel}
-    onToggleTreeView={toggleTreeView}
     onToggleTheme={toggleTheme}
     onOpenSettings={openSettings}
     onContentChange={(value) => { content = value; }}
@@ -548,34 +569,47 @@
         </div>
       </div>
     {:else}
-      <MonacoEditor
-        bind:this={monacoEditor}
-        value={content}
-        theme={monacoTheme}
-        language="json"
-        fontSize={fontSize}
-        tabSize={tabSize}
-        onChange={handleEditorChange}
-        onPaste={handleEditorPaste}
-      />
+      <div class="json-editor-workspace" class:resizing-tree-view={isResizingTreeView}>
+        <div class="json-editor-main">
+          <MonacoEditor
+            bind:this={monacoEditor}
+            value={content}
+            theme={monacoTheme}
+            language="json"
+            fontSize={fontSize}
+            tabSize={tabSize}
+            onChange={handleEditorChange}
+            onPaste={handleEditorPaste}
+          />
 
-      {#if isJsonQueryOpen}
-        <JsonQueryPanel
-          content={content}
-          editor={monacoEditor}
-          onClose={toggleJsonQueryPanel}
-          on:toast={(event) => showToast(event.detail.message)}
-        />
-      {/if}
+          {#if isJsonQueryOpen}
+            <JsonQueryPanel
+              content={content}
+              editor={monacoEditor}
+              onClose={toggleJsonQueryPanel}
+              on:toast={(event) => showToast(event.detail.message)}
+            />
+          {/if}
+        </div>
 
-      {#if isTreeViewOpen}
-        <JsonTreeView
-          content={content}
-          editor={monacoEditor}
-          onClose={toggleTreeView}
-          on:toast={(event) => showToast(event.detail.message)}
-        />
-      {/if}
+        {#if showTreeView}
+          <div
+            class="json-tree-resizer"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize tree view"
+            tabindex="0"
+            onpointerdown={startTreeResize}
+          ></div>
+          <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
+            <JsonTreeView
+              content={content}
+              editor={monacoEditor}
+              on:toast={(event) => showToast(event.detail.message)}
+            />
+          </div>
+        {/if}
+      </div>
     {/if}
 
     {#if toastMsg}

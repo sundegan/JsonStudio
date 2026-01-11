@@ -12,10 +12,9 @@
     endOffset: number;
   };
 
-  const { content, editor, onClose } = $props<{
+  const { content, editor } = $props<{
     content: string;
     editor: MonacoEditor | null;
-    onClose: () => void;
   }>();
 
   const dispatch = createEventDispatcher<{ toast: { message: string } }>();
@@ -268,17 +267,6 @@
       </div>
       <div class="text-sm font-semibold text-(--text-primary)">Tree View</div>
     </div>
-    <button
-      class="json-tree-close-btn"
-      onclick={onClose}
-      title="Close (Esc)"
-      type="button"
-      aria-label="Close tree view panel"
-    >
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 6L6 18M6 6l12 12"/>
-      </svg>
-    </button>
   </div>
 
   <!-- Toolbar -->
