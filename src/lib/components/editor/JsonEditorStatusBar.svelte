@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Tab } from '$lib/stores/tabs';
+  
   const {
     isDiffMode,
     diffLineCount,
@@ -6,7 +8,7 @@
     diffRightStats,
     diffOriginal,
     diffModified,
-    fileState,
+    activeTab,
     stats,
     content
   } = $props<{
@@ -16,7 +18,7 @@
     diffRightStats: import('$lib/services/json').JsonStats;
     diffOriginal: string;
     diffModified: string;
-    fileState: import('$lib/stores/file').FileState;
+    activeTab: Tab | null;
     stats: import('$lib/services/json').JsonStats;
     content: string;
   }>();
@@ -41,9 +43,9 @@
     </span>
   {:else}
     <!-- File info on the left -->
-    {#if fileState.currentFileName}
-      <span class="text-(--text-primary) font-medium">{fileState.currentFileName}</span>
-      {#if fileState.isModified}
+    {#if activeTab?.fileName}
+      <span class="text-(--text-primary) font-medium">{activeTab.fileName}</span>
+      {#if activeTab.isModified}
         <span class="text-(--warning)" title="Modified">●</span>
       {/if}
       <div class="w-px h-3 bg-(--border)"></div>

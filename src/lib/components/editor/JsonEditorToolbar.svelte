@@ -1,7 +1,7 @@
 <script lang="ts">
   import { escapeString, unescapeString } from '$lib/services/json';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, getFileName } from '$lib/services/file';
-  import { fileStateStore } from '$lib/stores/file';
+  import { tabsStore, type Tab } from '$lib/stores/tabs';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   const LARGE_FILE_THRESHOLD = 1024 * 1024;
@@ -9,7 +9,7 @@
   const {
     isDiffMode,
     content,
-    fileState,
+    activeTab,
     isDarkMode,
     isJsonQueryOpen,
     editor,
@@ -25,7 +25,7 @@
   } = $props<{
     isDiffMode: boolean;
     content: string;
-    fileState: import('$lib/stores/file').FileState;
+    activeTab: Tab | null;
     isDarkMode: boolean;
     isJsonQueryOpen: boolean;
     editor: MonacoEditor | null;
@@ -222,8 +222,15 @@
         const [path, fileContent] = result;
         const name = await getFileName(path);
 
-        setContentValue(fileContent);
-        fileStateStore.setCurrentFile(path, name);
+        // Open in current tab if it's empty and untitled
+        if (activeTab && !activeTab.content && !activeTab.filePath) {
+          setContentValue(fileContent);
+          tabsStore.updateTabFile(activeTab.id, path, name);
+          tabsStore.updateTabContent(activeTab.id, fileContent);
+        } else {
+          // Create new tab for the file
+          tabsStore.addTab(fileContent, path, name);
+        }
 
         await onStatsUpdate();
         onToast(`Opened: ${name || 'file'}`);
@@ -240,12 +247,17 @@
       return;
     }
 
+    if (!activeTab) {
+      onToast('No active tab');
+      return;
+    }
+
     try {
-      if (fileState.currentFilePath) {
+      if (activeTab.filePath) {
         // Save to existing file.
-        await writeFile(fileState.currentFilePath, content);
-        fileStateStore.setModified(false);
-        onToast(`Saved: ${fileState.currentFileName || 'file'}`);
+        await writeFile(activeTab.filePath, content);
+        tabsStore.updateTabModified(activeTab.id, false);
+        onToast(`Saved: ${activeTab.fileName || 'file'}`);
       } else {
         // No current file, use save as.
         await handleSaveAsFile();
@@ -262,11 +274,16 @@
       return;
     }
 
+    if (!activeTab) {
+      onToast('No active tab');
+      return;
+    }
+
     try {
       const path = await saveFileDialog(content);
       if (path) {
         const name = await getFileName(path);
-        fileStateStore.setCurrentFile(path, name);
+        tabsStore.updateTabFile(activeTab.id, path, name);
         onToast(`Saved: ${name || 'file'}`);
       }
     } catch (e) {
@@ -276,10 +293,8 @@
   }
 
   function handleNewFile() {
-    setContentValue('');
-    fileStateStore.setCurrentFile(null, null);
-    onStatsReset();
-    onToast('New file');
+    tabsStore.addTab();
+    onToast('New tab created');
   }
 </script>
 
