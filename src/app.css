@@ -649,25 +649,63 @@ body {
   animation: spin 1s linear infinite;
 }
 
-/* Tree View Styles - Postman Style */
+/* Editor workspace layout */
+.json-editor-workspace {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.json-editor-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.json-editor-workspace.resizing-tree-view,
+.json-editor-workspace.resizing-tree-view * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.json-tree-container {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
+.json-tree-resizer {
+  width: 6px;
+  cursor: col-resize;
+  align-self: stretch;
+  background: transparent;
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  touch-action: none;
+}
+
+.json-tree-resizer:hover,
+.json-tree-resizer:focus-visible,
+.json-editor-workspace.resizing-tree-view .json-tree-resizer {
+  background: var(--bg-secondary);
+  border-left-color: var(--border);
+  border-right-color: var(--border);
+}
+
+/* Tree View Styles - Sidebar */
 .json-tree-panel {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  transform: translateY(-50%);
-  width: 400px;
-  height: 88vh;
-  max-height: 92%;
-  min-height: 600px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  z-index: 40;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border);
   overflow: hidden;
-  backdrop-filter: blur(10px);
+  flex: 1;
 }
 
 .json-tree-header {
@@ -689,25 +727,6 @@ body {
   border-radius: 6px;
   background: var(--accent);
   color: white;
-}
-
-.json-tree-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  transition: all 0.15s ease;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-.json-tree-close-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
 }
 
 /* Toolbar */
@@ -818,6 +837,7 @@ body {
 /* Tree content area */
 .json-tree-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   font-family: 'JetBrains Mono', 'Monaco', 'Menlo', monospace;
