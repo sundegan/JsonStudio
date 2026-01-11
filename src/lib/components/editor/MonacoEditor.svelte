@@ -161,7 +161,7 @@
         verticalScrollbarSize: 10,
         horizontalScrollbarSize: 10,
       },
-      contextmenu: true,
+      contextmenu: false,
       formatOnPaste: false,
       formatOnType: false,
     });
