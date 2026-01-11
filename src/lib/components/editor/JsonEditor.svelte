@@ -2,9 +2,10 @@
   import { onMount } from 'svelte';
   import { getJsonStats, type JsonStats } from '$lib/services/json';
   import { readFile, getFileName } from '$lib/services/file';
-  import { fileStateStore } from '$lib/stores/file';
+  import { tabsStore, activeTab } from '$lib/stores/tabs';
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
+  import TabBar from './TabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonQueryPanel from './JsonQueryPanel.svelte';
@@ -49,10 +50,9 @@
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
   let isJsonQueryOpen = $state(false);
   
-  let fileState = $state<import('$lib/stores/file').FileState>({
-    currentFilePath: null,
-    currentFileName: null,
-    isModified: false
+  let tabsState = $state<import('$lib/stores/tabs').TabsState>({
+    tabs: [],
+    activeTabId: null
   });
   
   let settings = $state<import('$lib/stores/settings').AppSettings>({
@@ -76,16 +76,24 @@
       
       // Listen for successfully formatted JSON
       unlistenFormatted = await listen<string>('clipboard-formatted', (event) => {
+        const currentTab = $activeTab;
+        if (!currentTab) return;
+        
         content = event.payload;
         monacoEditor?.setValue(event.payload);
+        tabsStore.updateTabContent(currentTab.id, event.payload);
         updateStats();
         showToast('Clipboard content formatted');
       });
       
       // Listen for raw paste (when JSON is invalid)
       unlistenRaw = await listen<string>('clipboard-pasted-raw', (event) => {
+        const currentTab = $activeTab;
+        if (!currentTab) return;
+        
         content = event.payload;
         monacoEditor?.setValue(event.payload);
+        tabsStore.updateTabContent(currentTab.id, event.payload);
         updateStats();
         showToast('Clipboard content pasted (invalid JSON)');
       });
@@ -100,12 +108,30 @@
             const fileContent = await readFile(filePath);
             const name = await getFileName(filePath);
             
-            content = fileContent;
-            monacoEditor?.setValue(fileContent);
+            const currentTab = $activeTab;
             
-            fileStateStore.setCurrentFile(filePath, name);
+            // Check if current tab is empty (new untitled tab)
+            const isEmptyTab = currentTab && 
+                               !currentTab.filePath && 
+                               !currentTab.fileName && 
+                               !currentTab.content.trim() && 
+                               !currentTab.isModified;
             
-            await updateStats();
+            if (isEmptyTab) {
+              // Reuse empty tab
+              tabsStore.updateTabFile(currentTab.id, filePath, name);
+              tabsStore.updateTabContent(currentTab.id, fileContent);
+              
+              // Update local state (will be synced by $effect)
+              content = fileContent;
+              monacoEditor?.setValue(fileContent);
+              await updateStats();
+            } else {
+              // Create new tab for the file
+              tabsStore.addTab(fileContent, filePath, name);
+              // Content and editor will be updated by $effect when tab switches
+            }
+            
             showToast(`Opened: ${name || 'file'}`);
           } catch (e) {
             showToast('Failed to open file');
@@ -119,6 +145,55 @@
     const handleKeydown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+      
+      // Cmd/Ctrl + T: New tab
+      if (cmdOrCtrl && e.key === 't') {
+        e.preventDefault();
+        tabsStore.addTab();
+        return;
+      }
+      
+      // Cmd/Ctrl + W: Close current tab
+      if (cmdOrCtrl && e.key === 'w') {
+        e.preventDefault();
+        const currentTab = $activeTab;
+        if (currentTab) {
+          if (currentTab.isModified) {
+            const confirmClose = confirm(`"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`);
+            if (!confirmClose) return;
+          }
+          tabsStore.removeTab(currentTab.id);
+        }
+        return;
+      }
+      
+      // Cmd/Ctrl + Tab: Next tab
+      if (cmdOrCtrl && e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
+        const nextIndex = (currentIndex + 1) % tabsState.tabs.length;
+        tabsStore.setActiveTab(tabsState.tabs[nextIndex].id);
+        return;
+      }
+      
+      // Cmd/Ctrl + Shift + Tab: Previous tab
+      if (cmdOrCtrl && e.shiftKey && e.key === 'Tab') {
+        e.preventDefault();
+        const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
+        const prevIndex = (currentIndex - 1 + tabsState.tabs.length) % tabsState.tabs.length;
+        tabsStore.setActiveTab(tabsState.tabs[prevIndex].id);
+        return;
+      }
+      
+      // Cmd/Ctrl + 1-9: Switch to specific tab
+      if (cmdOrCtrl && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const tabIndex = parseInt(e.key) - 1;
+        if (tabIndex < tabsState.tabs.length) {
+          tabsStore.setActiveTab(tabsState.tabs[tabIndex].id);
+        }
+        return;
+      }
       
       // Cmd/Ctrl + N: New file
       if (cmdOrCtrl && e.key === 'n') {
@@ -168,9 +243,27 @@
     return () => unsubscribe();
   });
   
+  // Track previous active tab ID to detect tab switches
+  let prevActiveTabId = $state<string | null>(null);
+  
   $effect(() => {
-    const unsubscribe = fileStateStore.subscribe(newFileState => {
-      fileState = newFileState;
+    const unsubscribe = tabsStore.subscribe(newTabsState => {
+      const oldActiveTabId = prevActiveTabId;
+      const newActiveTabId = newTabsState.activeTabId;
+      
+      tabsState = newTabsState;
+      
+      // Only sync content when switching tabs, not when updating current tab's content
+      if (oldActiveTabId !== newActiveTabId) {
+        prevActiveTabId = newActiveTabId;
+        
+        const currentTab = $activeTab;
+        if (currentTab) {
+          content = currentTab.content;
+          stats = currentTab.stats;
+          monacoEditor?.setValue(currentTab.content);
+        }
+      }
     });
     return () => unsubscribe();
   });
@@ -326,11 +419,15 @@
 
 
   function handleEditorChange(newValue: string) {
+    const currentTab = $activeTab;
+    if (!currentTab) return;
+    
     content = newValue;
+    tabsStore.updateTabContent(currentTab.id, newValue);
     
     // Mark as modified if we have a current file
-    if (fileState.currentFilePath && !fileState.isModified) {
-      fileStateStore.setModified(true);
+    if (currentTab.filePath && !currentTab.isModified) {
+      tabsStore.updateTabModified(currentTab.id, true);
     }
 
     if (statsTimer) clearTimeout(statsTimer);
@@ -342,6 +439,7 @@
         byte_size: 0,
         error_info: null,
       };
+      tabsStore.updateTabStats(currentTab.id, stats);
       return;
     }
     statsTimer = setTimeout(updateStats, 300);
@@ -369,19 +467,24 @@
 
   async function updateStats() {
     if (!content.trim()) return;
+    const currentTab = $activeTab;
+    if (!currentTab) return;
+    
     try {
       stats = await getJsonStats(content);
+      tabsStore.updateTabStats(currentTab.id, stats);
     } catch (e) {}
   }
 
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
+  <!-- Toolbar -->
   <JsonEditorToolbar
     bind:this={toolbarRef}
     isDiffMode={isDiffMode}
     content={content}
-    fileState={fileState}
+    activeTab={$activeTab}
     isDarkMode={isDarkMode}
     isJsonQueryOpen={isJsonQueryOpen}
     editor={monacoEditor}
@@ -395,6 +498,15 @@
     onStatsReset={resetStats}
     onToast={showToast}
   />
+  
+  <!-- Tab Bar - only show when multiple tabs exist -->
+  {#if tabsState.tabs.length > 1}
+    <TabBar 
+      tabs={tabsState.tabs} 
+      activeTabId={tabsState.activeTabId}
+      isDarkMode={isDarkMode}
+    />
+  {/if}
 
   <!-- Editor main area -->
   <div class="flex-1 relative min-h-0">
@@ -448,7 +560,7 @@
     diffRightStats={diffRightStats}
     diffOriginal={diffOriginal}
     diffModified={diffModified}
-    fileState={fileState}
+    activeTab={$activeTab}
     stats={stats}
     content={content}
   />
