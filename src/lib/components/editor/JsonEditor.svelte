@@ -9,6 +9,7 @@
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonQueryPanel from './JsonQueryPanel.svelte';
+  import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
@@ -49,6 +50,7 @@
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
   let isJsonQueryOpen = $state(false);
+  let isTreeViewOpen = $state(false);
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -318,7 +320,17 @@
   }
 
   function toggleJsonQueryPanel() {
+    if (isTreeViewOpen) {
+      isTreeViewOpen = false;
+    }
     isJsonQueryOpen = !isJsonQueryOpen;
+  }
+
+  function toggleTreeView() {
+    if (isJsonQueryOpen) {
+      isJsonQueryOpen = false;
+    }
+    isTreeViewOpen = !isTreeViewOpen;
   }
 
   function toggleDiffMode() {
@@ -329,6 +341,10 @@
 
     if (isJsonQueryOpen) {
       isJsonQueryOpen = false;
+    }
+
+    if (isTreeViewOpen) {
+      isTreeViewOpen = false;
     }
 
     isDiffMode = true;
@@ -490,10 +506,12 @@
     activeTab={$activeTab}
     isDarkMode={isDarkMode}
     isJsonQueryOpen={isJsonQueryOpen}
+    isTreeViewOpen={isTreeViewOpen}
     editor={monacoEditor}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
     onToggleJsonQuery={toggleJsonQueryPanel}
+    onToggleTreeView={toggleTreeView}
     onToggleTheme={toggleTheme}
     onOpenSettings={openSettings}
     onContentChange={(value) => { content = value; }}
@@ -546,6 +564,15 @@
           content={content}
           editor={monacoEditor}
           onClose={toggleJsonQueryPanel}
+          on:toast={(event) => showToast(event.detail.message)}
+        />
+      {/if}
+
+      {#if isTreeViewOpen}
+        <JsonTreeView
+          content={content}
+          editor={monacoEditor}
+          onClose={toggleTreeView}
           on:toast={(event) => showToast(event.detail.message)}
         />
       {/if}
