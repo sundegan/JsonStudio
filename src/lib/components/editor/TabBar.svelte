@@ -143,7 +143,7 @@
   }
 
   function getContextMenuTab(): Tab | null {
-    return contextMenuTabId ? tabs.find(tab => tab.id === contextMenuTabId) || null : null;
+    return contextMenuTabId ? tabs.find((tab: Tab) => tab.id === contextMenuTabId) || null : null;
   }
 
   onMount(() => {

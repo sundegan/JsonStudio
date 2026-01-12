@@ -17,6 +17,13 @@ export interface TabsState {
   activeTabId: string | null;    // Currently active tab ID
 }
 
+export interface DiffModeState {
+  leftTabs: Tab[];               // Left side tabs in diff mode
+  rightTabs: Tab[];              // Right side tabs in diff mode
+  leftActiveTabId: string | null;
+  rightActiveTabId: string | null;
+}
+
 const STORAGE_KEY = 'jsonstudio_tabs_state';
 const MAX_TABS = 10;
 
@@ -130,6 +137,15 @@ function saveState(state: TabsState) {
 
 function createTabsStore() {
   const { subscribe, set, update } = writable<TabsState>(loadState());
+  
+  // Separate writable store for diff mode state
+  const diffModeStore = writable<DiffModeState | null>(null);
+  let diffModeState: DiffModeState | null = null;
+  
+  // Subscribe to keep local reference in sync (no need to unsubscribe as it's internal)
+  diffModeStore.subscribe(value => {
+    diffModeState = value;
+  });
 
   function moveTab(tabs: Tab[], fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex) return tabs;
@@ -357,7 +373,278 @@ function createTabsStore() {
       };
       set(newState);
       saveState(newState);
-    }
+    },
+    
+    // Diff mode operations
+    
+    // Enter diff mode: clone current tabs to both sides
+    enterDiffMode: () => {
+      update(state => {
+        // Clone tabs for both sides (deep copy)
+        const leftTabs = state.tabs.map(tab => ({ ...tab }));
+        const rightTabs = state.tabs.map(tab => ({ ...tab }));
+        
+        const newDiffState: DiffModeState = {
+          leftTabs,
+          rightTabs,
+          leftActiveTabId: state.activeTabId,
+          rightActiveTabId: state.activeTabId,
+        };
+        
+        diffModeStore.set(newDiffState);
+        
+        return state;
+      });
+    },
+    
+    // Exit diff mode: merge left and right tabs
+    exitDiffMode: () => {
+      if (!diffModeState) return;
+      
+      update(state => {
+        // Merge strategy:
+        // 1. Keep all left tabs
+        // 2. Add right tabs that don't exist in left (by id or filePath)
+        const leftTabIds = new Set(diffModeState!.leftTabs.map(t => t.id));
+        const leftFilePaths = new Set(
+          diffModeState!.leftTabs
+            .filter(t => t.filePath)
+            .map(t => t.filePath)
+        );
+        
+        const mergedTabs = [...diffModeState!.leftTabs];
+        
+        for (const rightTab of diffModeState!.rightTabs) {
+          // Skip if same id exists in left
+          if (leftTabIds.has(rightTab.id)) continue;
+          
+          // Skip if same filePath exists in left (unless it's null/untitled)
+          if (rightTab.filePath && leftFilePaths.has(rightTab.filePath)) continue;
+          
+          // Add unique right tab
+          mergedTabs.push(rightTab);
+        }
+        
+        // Ensure at least one tab
+        if (mergedTabs.length === 0) {
+          mergedTabs.push(createDefaultTab());
+        }
+        
+        // Set active tab (prefer left active, fallback to first tab)
+        let newActiveId = diffModeState!.leftActiveTabId;
+        if (!mergedTabs.find(t => t.id === newActiveId)) {
+          newActiveId = mergedTabs[0].id;
+        }
+        
+        diffModeStore.set(null);
+        
+        const newState: TabsState = {
+          tabs: mergedTabs,
+          activeTabId: newActiveId,
+        };
+        
+        saveState(newState);
+        return newState;
+      });
+    },
+    
+    // Subscribe to diff mode state
+    subscribeDiffMode: (callback: (state: DiffModeState | null) => void) => {
+      return diffModeStore.subscribe(callback);
+    },
+    
+    // Get diff mode state (for one-time access)
+    getDiffModeState: () => diffModeState,
+    
+    // Add tab to left side in diff mode
+    addDiffLeftTab: (content: string = '', filePath: string | null = null, fileName: string | null = null) => {
+      if (!diffModeState) return;
+      
+      if (diffModeState.leftTabs.length >= MAX_TABS) {
+        console.warn(`Maximum ${MAX_TABS} tabs allowed`);
+        return;
+      }
+      
+      const newTab = createNewTab(content, filePath, fileName);
+      diffModeStore.update(state => {
+        if (!state) return state;
+        return {
+          ...state,
+          leftTabs: [...state.leftTabs, newTab],
+          leftActiveTabId: newTab.id,
+        };
+      });
+    },
+    
+    // Add tab to right side in diff mode
+    addDiffRightTab: (content: string = '', filePath: string | null = null, fileName: string | null = null) => {
+      if (!diffModeState) return;
+      
+      if (diffModeState.rightTabs.length >= MAX_TABS) {
+        console.warn(`Maximum ${MAX_TABS} tabs allowed`);
+        return;
+      }
+      
+      const newTab = createNewTab(content, filePath, fileName);
+      diffModeStore.update(state => {
+        if (!state) return state;
+        return {
+          ...state,
+          rightTabs: [...state.rightTabs, newTab],
+          rightActiveTabId: newTab.id,
+        };
+      });
+    },
+    
+    // Remove tab from left side in diff mode
+    removeDiffLeftTab: (tabId: string) => {
+      if (!diffModeState) return;
+      
+      diffModeStore.update(state => {
+        if (!state) return state;
+        
+        const tabIndex = state.leftTabs.findIndex(t => t.id === tabId);
+        if (tabIndex === -1) return state;
+        
+        const newTabs = state.leftTabs.filter(t => t.id !== tabId);
+        
+        // Ensure at least one tab
+        if (newTabs.length === 0) {
+          newTabs.push(createNewTab());
+        }
+        
+        // Update active tab if removed tab was active
+        let newActiveId = state.leftActiveTabId;
+        if (state.leftActiveTabId === tabId) {
+          const newIndex = Math.max(0, tabIndex - 1);
+          newActiveId = newTabs[newIndex].id;
+        }
+        
+        return {
+          ...state,
+          leftTabs: newTabs,
+          leftActiveTabId: newActiveId,
+        };
+      });
+    },
+    
+    // Remove tab from right side in diff mode
+    removeDiffRightTab: (tabId: string) => {
+      if (!diffModeState) return;
+      
+      diffModeStore.update(state => {
+        if (!state) return state;
+        
+        const tabIndex = state.rightTabs.findIndex(t => t.id === tabId);
+        if (tabIndex === -1) return state;
+        
+        const newTabs = state.rightTabs.filter(t => t.id !== tabId);
+        
+        // Ensure at least one tab
+        if (newTabs.length === 0) {
+          newTabs.push(createNewTab());
+        }
+        
+        // Update active tab if removed tab was active
+        let newActiveId = state.rightActiveTabId;
+        if (state.rightActiveTabId === tabId) {
+          const newIndex = Math.max(0, tabIndex - 1);
+          newActiveId = newTabs[newIndex].id;
+        }
+        
+        return {
+          ...state,
+          rightTabs: newTabs,
+          rightActiveTabId: newActiveId,
+        };
+      });
+    },
+    
+    // Set active tab on left side in diff mode
+    setDiffLeftActiveTab: (tabId: string) => {
+      if (!diffModeState) return;
+      diffModeStore.update(state => {
+        if (!state) return state;
+        if (!state.leftTabs.find(t => t.id === tabId)) return state;
+        return {
+          ...state,
+          leftActiveTabId: tabId,
+        };
+      });
+    },
+    
+    // Set active tab on right side in diff mode
+    setDiffRightActiveTab: (tabId: string) => {
+      if (!diffModeState) return;
+      diffModeStore.update(state => {
+        if (!state) return state;
+        if (!state.rightTabs.find(t => t.id === tabId)) return state;
+        return {
+          ...state,
+          rightActiveTabId: tabId,
+        };
+      });
+    },
+    
+    // Update tab content on left side in diff mode
+    updateDiffLeftTabContent: (tabId: string, content: string) => {
+      if (!diffModeState) return;
+      diffModeStore.update(state => {
+        if (!state) return state;
+        return {
+          ...state,
+          leftTabs: state.leftTabs.map(tab =>
+            tab.id === tabId
+              ? { ...tab, content, isModified: tab.filePath ? true : tab.isModified }
+              : tab
+          ),
+        };
+      });
+    },
+    
+    // Update tab content on right side in diff mode
+    updateDiffRightTabContent: (tabId: string, content: string) => {
+      if (!diffModeState) return;
+      diffModeStore.update(state => {
+        if (!state) return state;
+        return {
+          ...state,
+          rightTabs: state.rightTabs.map(tab =>
+            tab.id === tabId
+              ? { ...tab, content, isModified: tab.filePath ? true : tab.isModified }
+              : tab
+          ),
+        };
+      });
+    },
+    
+    // Update tab stats on left side in diff mode
+    updateDiffLeftTabStats: (tabId: string, stats: JsonStats) => {
+      if (!diffModeState) return;
+      diffModeStore.update(state => {
+        if (!state) return state;
+        return {
+          ...state,
+          leftTabs: state.leftTabs.map(tab =>
+            tab.id === tabId ? { ...tab, stats } : tab
+          ),
+        };
+      });
+    },
+    
+    // Update tab stats on right side in diff mode
+    updateDiffRightTabStats: (tabId: string, stats: JsonStats) => {
+      if (!diffModeState) return;
+      diffModeStore.update(state => {
+        if (!state) return state;
+        return {
+          ...state,
+          rightTabs: state.rightTabs.map(tab =>
+            tab.id === tabId ? { ...tab, stats } : tab
+          ),
+        };
+      });
+    },
   };
 }
 
