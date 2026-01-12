@@ -206,8 +206,8 @@
               title="Unpin"
               aria-label="Unpin tab"
             >
-              <svg class="w-3 h-3 text-(--text-secondary)" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
-                <path d="M5 2.5h6v3.5l2.2 2.2v1H9.4l-.9 4.6L8 15l-.5-1.2-.9-4.6H2.8v-1L5 6z"/>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/>
               </svg>
             </button>
           {/if}
@@ -356,8 +356,21 @@
     justify-content: center;
     background: transparent;
     border: none;
-    padding: 0;
+    padding: 2px;
     cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+    color: var(--text-secondary, #9ca3af);
+  }
+
+  .pin-button:hover {
+    background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+    color: var(--text-primary, #e5e7eb);
+    transform: scale(1.1);
+  }
+
+  .pin-button:active {
+    transform: scale(0.95);
   }
 
   .tab-title {
