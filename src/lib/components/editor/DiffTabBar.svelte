@@ -211,7 +211,7 @@
     align-items: stretch;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
-    height: 32px;
+    height: 28px;
     flex-shrink: 0;
   }
   

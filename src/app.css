@@ -38,6 +38,7 @@ body {
   --bg-secondary: #242424;
   --bg-tertiary: #2d2d2d;
   --border: #333333;
+  --divider-strong: #4a4a4a;
   --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
   --accent: #10b981;
@@ -53,6 +54,7 @@ body {
   --bg-secondary: #f1f3f4;
   --bg-tertiary: #e8eaed;
   --border: #dadce0;
+  --divider-strong: #c0c4c9;
   --text-primary: #202124;
   --text-secondary: #5f6368;
   --accent: #10b981;
@@ -637,6 +639,44 @@ body {
 .json-query-match-active {
   background-color: rgba(245, 158, 11, 0.35);
   border-bottom: 2px solid rgba(245, 158, 11, 0.6);
+}
+
+/* Monaco Diff Editor center divider - make it a thin line */
+.monaco-diff-editor {
+  --vscode-diffEditor-border: var(--divider-strong) !important;
+  --vscode-sash-hoverBorder: var(--divider-strong) !important;
+}
+
+/* Target the main diff viewport container */
+.monaco-diff-editor .diffViewport {
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  background: var(--divider-strong) !important;
+}
+
+/* Target the overview ruler area */
+.monaco-diff-editor .diffOverview {
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  background: var(--divider-strong) !important;
+}
+
+.monaco-diff-editor .diffOverviewRuler {
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+}
+
+/* Target the container that holds the divider */
+.monaco-diff-editor .split-view-view:nth-child(2) {
+  border-left: 1px solid var(--divider-strong) !important;
+}
+
+/* Remove any extra borders */
+.monaco-diff-editor .monaco-scrollable-element {
+  border: none !important;
 }
 
 /* Animations */

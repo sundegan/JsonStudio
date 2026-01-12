@@ -117,11 +117,13 @@
       renderSideBySide: true,
       minimap: { enabled: false },
       renderOverviewRuler: false,
+      renderGutterMenu: false,
       renderMarginRevertIcon: false,
       scrollBeyondLastLine: false,
       fontSize,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
       contextmenu: false,
+      renderIndicators: false,
     });
 
     diffEditor = createdDiffEditor;
