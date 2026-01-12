@@ -32,12 +32,17 @@
 
 <div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border) text-xs" style="padding: 2px 10px;">
   {#if isDiffMode}
+    <!-- Left side stats -->
     <span class="text-(--text-secondary)">
       {diffLeftStats.key_count} keys · {diffLeftStats.depth} levels · {formatBytes(diffLeftStats.byte_size)} · {diffOriginal ? diffOriginal.split('\n').length : 0} lines
     </span>
+    
+    <!-- Center diff info -->
     <span class="flex-1 text-center text-(--text-secondary)">
       Diff {diffLineCount} lines
     </span>
+    
+    <!-- Right side stats -->
     <span class="text-(--text-secondary)">
       {diffRightStats.key_count} keys · {diffRightStats.depth} levels · {formatBytes(diffRightStats.byte_size)} · {diffModified ? diffModified.split('\n').length : 0} lines
     </span>

@@ -6,6 +6,7 @@
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import TabBar from './TabBar.svelte';
+  import DiffTabBar from './DiffTabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonQueryPanel from './JsonQueryPanel.svelte';
@@ -60,6 +61,9 @@
     activeTabId: null
   });
   
+  let diffModeState = $state<import('$lib/stores/tabs').DiffModeState | null>(null);
+  let diffModeUnsubscribe: (() => void) | null = null;
+  
   let settings = $state<import('$lib/stores/settings').AppSettings>({
     isDarkMode: false,
     darkTheme: 'one-dark',
@@ -70,6 +74,11 @@
   
   onMount(() => {
     settingsStore.init();
+    
+    // Subscribe to diff mode state changes
+    diffModeUnsubscribe = tabsStore.subscribeDiffMode((newState) => {
+      diffModeState = newState;
+    });
     
     // Listen to clipboard formatting events
     let unlistenFormatted: (() => void) | null = null;
@@ -222,6 +231,7 @@
       if (unlistenFormatted) unlistenFormatted();
       if (unlistenRaw) unlistenRaw();
       if (unlistenFileDrop) unlistenFileDrop();
+      if (diffModeUnsubscribe) diffModeUnsubscribe();
       window.removeEventListener('keydown', handleKeydown);
     };
   });
@@ -316,18 +326,26 @@
   });
 
   $effect(() => {
-    if (!isDiffMode) return;
+    if (!isDiffMode || !diffModeState) return;
     if (diffLeftTimer) clearTimeout(diffLeftTimer);
     diffLeftTimer = setTimeout(() => {
       updateDiffStatsForSide('left');
+      // Save left side content to left active tab
+      if (diffModeState?.leftActiveTabId) {
+        tabsStore.updateDiffLeftTabContent(diffModeState.leftActiveTabId, diffOriginal);
+      }
     }, 200);
   });
 
   $effect(() => {
-    if (!isDiffMode) return;
+    if (!isDiffMode || !diffModeState) return;
     if (diffRightTimer) clearTimeout(diffRightTimer);
     diffRightTimer = setTimeout(() => {
       updateDiffStatsForSide('right');
+      // Save right side content to right active tab
+      if (diffModeState?.rightActiveTabId) {
+        tabsStore.updateDiffRightTabContent(diffModeState.rightActiveTabId, diffModified);
+      }
     }, 200);
   });
 
@@ -341,7 +359,18 @@
 
   function toggleDiffMode() {
     if (isDiffMode) {
+      // Exit diff mode: merge tabs
+      tabsStore.exitDiffMode();
+      // diffModeState will be set to null via subscription
       isDiffMode = false;
+      
+      // Sync content back to normal mode
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
       return;
     }
 
@@ -349,24 +378,34 @@
       isJsonQueryOpen = false;
     }
 
+    // Enter diff mode: clone tabs to both sides
+    tabsStore.enterDiffMode();
     isDiffMode = true;
     diffLineCount = 0;
-    diffOriginal = content;
-    diffModified = '';
-    diffLeftStats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
-    diffRightStats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
+    
+    // Get the latest diff mode state (subscription is synchronous, so state is already updated)
+    const latestDiffState = tabsStore.getDiffModeState();
+    if (latestDiffState) {
+      const leftTab = latestDiffState.leftTabs.find(t => t.id === latestDiffState.leftActiveTabId);
+      const rightTab = latestDiffState.rightTabs.find(t => t.id === latestDiffState.rightActiveTabId);
+      
+      diffOriginal = leftTab?.content || '';
+      diffModified = rightTab?.content || '';
+      diffLeftStats = leftTab?.stats || {
+        valid: false,
+        key_count: 0,
+        depth: 0,
+        byte_size: 0,
+        error_info: null,
+      };
+      diffRightStats = rightTab?.stats || {
+        valid: false,
+        key_count: 0,
+        depth: 0,
+        byte_size: 0,
+        error_info: null,
+      };
+    }
   }
 
   function openSettings() {
@@ -439,7 +478,12 @@
   }
 
   async function updateDiffStatsForSide(side: 'left' | 'right') {
+    if (!diffModeState) return;
+    
     const value = side === 'left' ? diffOriginal : diffModified;
+    const tabId = side === 'left' ? diffModeState!.leftActiveTabId : diffModeState!.rightActiveTabId;
+    if (!tabId) return;
+    
     if (!value.trim()) {
       const emptyStats = {
         valid: false,
@@ -450,8 +494,10 @@
       };
       if (side === 'left') {
         diffLeftStats = emptyStats;
+        tabsStore.updateDiffLeftTabStats(tabId, emptyStats);
       } else {
         diffRightStats = emptyStats;
+        tabsStore.updateDiffRightTabStats(tabId, emptyStats);
       }
       return;
     }
@@ -460,10 +506,34 @@
       const result = await getJsonStats(value);
       if (side === 'left') {
         diffLeftStats = result;
+        tabsStore.updateDiffLeftTabStats(tabId, result);
       } else {
         diffRightStats = result;
+        tabsStore.updateDiffRightTabStats(tabId, result);
       }
     } catch (e) {}
+  }
+  
+  function handleDiffLeftTabChange(event: CustomEvent<{ tabId: string }>) {
+    // Use getDiffModeState() to get the latest state immediately
+    const latestState = tabsStore.getDiffModeState();
+    if (!latestState) return;
+    const tab = latestState.leftTabs.find(t => t.id === event.detail.tabId);
+    if (tab) {
+      diffOriginal = tab.content;
+      diffLeftStats = tab.stats;
+    }
+  }
+  
+  function handleDiffRightTabChange(event: CustomEvent<{ tabId: string }>) {
+    // Use getDiffModeState() to get the latest state immediately
+    const latestState = tabsStore.getDiffModeState();
+    if (!latestState) return;
+    const tab = latestState.rightTabs.find(t => t.id === event.detail.tabId);
+    if (tab) {
+      diffModified = tab.content;
+      diffRightStats = tab.stats;
+    }
   }
 
 
@@ -552,8 +622,20 @@
     onToast={showToast}
   />
   
-  <!-- Tab Bar - only show when multiple tabs exist -->
-  {#if tabsState.tabs.length > 1}
+  <!-- Tab Bar - show different tab bars based on mode -->
+  {#if isDiffMode && diffModeState}
+    <!-- Diff mode: show DiffTabBar with independent left/right tabs -->
+    <DiffTabBar 
+      leftTabs={diffModeState.leftTabs}
+      rightTabs={diffModeState.rightTabs}
+      leftActiveTabId={diffModeState.leftActiveTabId}
+      rightActiveTabId={diffModeState.rightActiveTabId}
+      isDarkMode={isDarkMode}
+      on:leftTabChange={handleDiffLeftTabChange}
+      on:rightTabChange={handleDiffRightTabChange}
+    />
+  {:else if tabsState.tabs.length > 1}
+    <!-- Normal mode: only show when multiple tabs exist -->
     <TabBar 
       tabs={tabsState.tabs} 
       activeTabId={tabsState.activeTabId}
@@ -645,6 +727,55 @@
 </div>
 
 <style>
+  .json-editor-workspace {
+    display: flex;
+    height: 100%;
+    position: relative;
+  }
+  
+  .json-editor-main {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+  
+  .json-tree-resizer {
+    width: 4px;
+    background: var(--bg-secondary);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    position: relative;
+  }
+  
+  .json-tree-resizer:hover {
+    background: var(--accent, #3b82f6);
+  }
+  
+  .json-tree-resizer::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+  }
+  
+  .json-tree-container {
+    flex-shrink: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
+  }
+  
+  .resizing-tree-view {
+    user-select: none;
+    cursor: col-resize;
+  }
+  
+  .resizing-tree-view * {
+    cursor: col-resize !important;
+  }
+
   :global {
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-8px); }
