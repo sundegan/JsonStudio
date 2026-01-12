@@ -115,27 +115,9 @@
             
             const currentTab = $activeTab;
             
-            // Check if current tab is empty (new untitled tab)
-            const isEmptyTab = currentTab && 
-                               !currentTab.filePath && 
-                               !currentTab.fileName && 
-                               !currentTab.content.trim() && 
-                               !currentTab.isModified;
-            
-            if (isEmptyTab) {
-              // Reuse empty tab
-              tabsStore.updateTabFile(currentTab.id, filePath, name);
-              tabsStore.updateTabContent(currentTab.id, fileContent);
-              
-              // Update local state (will be synced by $effect)
-              content = fileContent;
-              monacoEditor?.setValue(fileContent);
-              await updateStats();
-            } else {
-              // Create new tab for the file
-              tabsStore.addTab(fileContent, filePath, name);
-              // Content and editor will be updated by $effect when tab switches
-            }
+            // Always create a new tab for dropped files
+            tabsStore.addTab(fileContent, filePath, name);
+            // Content and editor will be updated by $effect when tab switches
             
             showToast(`Opened: ${name || 'file'}`);
           } catch (e) {
@@ -253,6 +235,29 @@
   
   // Track previous active tab ID to detect tab switches
   let prevActiveTabId = $state<string | null>(null);
+  let isFirstSync = $state(true);
+  let suppressNextEditorChange = $state(false);
+
+  function getActiveTabFromState(state: import('$lib/stores/tabs').TabsState) {
+    return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0] || null;
+  }
+
+  function syncActiveTab(state: import('$lib/stores/tabs').TabsState) {
+    const currentTab = getActiveTabFromState(state);
+    if (!currentTab) return;
+
+    content = currentTab.content;
+    stats = currentTab.stats;
+
+    const editorValue = monacoEditor?.getValue();
+    if (editorValue !== undefined && editorValue !== currentTab.content) {
+      suppressNextEditorChange = true;
+      monacoEditor?.setValue(currentTab.content);
+      queueMicrotask(() => {
+        suppressNextEditorChange = false;
+      });
+    }
+  }
   
   $effect(() => {
     const unsubscribe = tabsStore.subscribe(newTabsState => {
@@ -261,16 +266,18 @@
       
       tabsState = newTabsState;
       
+      // For the first sync, initialize prevActiveTabId and sync content
+      if (isFirstSync) {
+        isFirstSync = false;
+        prevActiveTabId = newActiveTabId;
+        syncActiveTab(newTabsState);
+        return;
+      }
+      
       // Only sync content when switching tabs, not when updating current tab's content
       if (oldActiveTabId !== newActiveTabId) {
         prevActiveTabId = newActiveTabId;
-        
-        const currentTab = $activeTab;
-        if (currentTab) {
-          content = currentTab.content;
-          stats = currentTab.stats;
-          monacoEditor?.setValue(currentTab.content);
-        }
+        syncActiveTab(newTabsState);
       }
     });
     return () => unsubscribe();
@@ -463,6 +470,10 @@
   function handleEditorChange(newValue: string) {
     const currentTab = $activeTab;
     if (!currentTab) return;
+    if (suppressNextEditorChange) {
+      suppressNextEditorChange = false;
+      return;
+    }
     
     content = newValue;
     tabsStore.updateTabContent(currentTab.id, newValue);

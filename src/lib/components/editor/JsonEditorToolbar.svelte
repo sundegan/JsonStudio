@@ -222,15 +222,8 @@
         const [path, fileContent] = result;
         const name = await getFileName(path);
 
-        // Open in current tab if it's empty and untitled
-        if (activeTab && !activeTab.content && !activeTab.filePath) {
-          setContentValue(fileContent);
-          tabsStore.updateTabFile(activeTab.id, path, name);
-          tabsStore.updateTabContent(activeTab.id, fileContent);
-        } else {
-          // Create new tab for the file
-          tabsStore.addTab(fileContent, path, name);
-        }
+        // Always create a new tab for the file
+        tabsStore.addTab(fileContent, path, name);
 
         await onStatsUpdate();
         onToast(`Opened: ${name || 'file'}`);
