@@ -170,7 +170,7 @@
   });
 </script>
 
-<div class="flex items-stretch bg-(--bg-secondary) border-b border-(--border) shrink-0" style="height: 24px;">
+<div class="flex items-stretch bg-(--bg-secondary) border-b border-(--border) shrink-0" style="height: 28px;">
   <div class="flex items-stretch flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container">
     {#each tabs as tab (tab.id)}
       <div
