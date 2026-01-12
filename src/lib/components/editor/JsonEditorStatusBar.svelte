@@ -39,7 +39,7 @@
     
     <!-- Center diff info -->
     <span class="flex-1 text-center text-(--text-secondary)">
-      Diff {diffLineCount} lines
+      Diff <span class="text-green-500 font-bold">{diffLineCount}</span> lines
     </span>
     
     <!-- Right side stats -->
