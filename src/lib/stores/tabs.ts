@@ -8,6 +8,8 @@ export interface Tab {
   content: string;               // Editor content
   isModified: boolean;           // Modified flag
   stats: JsonStats;              // JSON statistics
+  isDefault: boolean;            // Default tab flag
+  isPinned: boolean;             // Pinned tab flag
 }
 
 export interface TabsState {
@@ -38,7 +40,9 @@ function generateId(): string {
 export function createNewTab(
   content: string = '',
   filePath: string | null = null,
-  fileName: string | null = null
+  fileName: string | null = null,
+  isDefault: boolean = false,
+  isPinned: boolean = false
 ): Tab {
   return {
     id: generateId(),
@@ -47,11 +51,17 @@ export function createNewTab(
     content,
     isModified: false,
     stats: createEmptyStats(),
+    isDefault,
+    isPinned,
   };
 }
 
+function createDefaultTab(): Tab {
+  return createNewTab('', null, null, true);
+}
+
 const defaultState: TabsState = {
-  tabs: [createNewTab()],
+  tabs: [createDefaultTab()],
   activeTabId: null,
 };
 
@@ -67,11 +77,13 @@ function loadState(): TabsState {
         filePath: null,
         fileName: null,
         isModified: false,
+        isDefault: tab.isDefault ?? false,
+        isPinned: tab.isPinned ?? false,
       }));
       
       // Ensure at least one tab
       if (sanitizedTabs.length === 0) {
-        sanitizedTabs.push(createNewTab());
+        sanitizedTabs.push(createDefaultTab());
       }
       
       // Set first tab as active if no active tab
@@ -118,6 +130,14 @@ function saveState(state: TabsState) {
 
 function createTabsStore() {
   const { subscribe, set, update } = writable<TabsState>(loadState());
+
+  function moveTab(tabs: Tab[], fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return tabs;
+    const newTabs = [...tabs];
+    const [removed] = newTabs.splice(fromIndex, 1);
+    newTabs.splice(toIndex, 0, removed);
+    return newTabs;
+  }
 
   return {
     subscribe,
@@ -209,7 +229,7 @@ function createTabsStore() {
           ...state,
           tabs: state.tabs.map(tab =>
             tab.id === tabId
-              ? { ...tab, filePath, fileName, isModified: false }
+              ? { ...tab, filePath, fileName, isModified: false, isDefault: false }
               : tab
           ),
         };
@@ -253,11 +273,62 @@ function createTabsStore() {
     // Reorder tabs (for drag & drop)
     reorderTabs: (fromIndex: number, toIndex: number) => {
       update(state => {
-        const newTabs = [...state.tabs];
-        const [removed] = newTabs.splice(fromIndex, 1);
-        newTabs.splice(toIndex, 0, removed);
-        
+        const newTabs = moveTab(state.tabs, fromIndex, toIndex);
         const newState = {
+          ...state,
+          tabs: newTabs,
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+
+    // Close all tabs except the specified one
+    closeOtherTabs: (tabId: string) => {
+      update(state => {
+        const keepTab = state.tabs.find(tab => tab.id === tabId);
+        if (!keepTab) {
+          return state;
+        }
+        const keepTabs = state.tabs.filter(tab => tab.id === tabId || tab.isPinned);
+        const newState: TabsState = {
+          tabs: keepTabs,
+          activeTabId: keepTabs.find(tab => tab.id === tabId)?.id || keepTabs[0].id,
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
+
+    // Toggle pinned state for a tab
+    togglePinTab: (tabId: string) => {
+      update(state => {
+        const tabIndex = state.tabs.findIndex(tab => tab.id === tabId);
+        if (tabIndex === -1) return state;
+
+        const targetTab = state.tabs[tabIndex];
+        const nextPinned = !targetTab.isPinned;
+        const updatedTab = { ...targetTab, isPinned: nextPinned };
+        const updatedTabs = [...state.tabs];
+        updatedTabs[tabIndex] = updatedTab;
+
+        let newTabs = updatedTabs;
+        if (nextPinned) {
+          const lastPinnedIndex = updatedTabs.reduce(
+            (last, tab, index) => (tab.isPinned && index !== tabIndex ? index : last),
+            -1
+          );
+          const insertIndex = lastPinnedIndex + 1;
+          newTabs = moveTab(updatedTabs, tabIndex, insertIndex);
+        } else {
+          const firstUnpinnedIndex = updatedTabs.findIndex(
+            (tab, index) => !tab.isPinned && index !== tabIndex
+          );
+          const insertIndex = firstUnpinnedIndex === -1 ? updatedTabs.length - 1 : firstUnpinnedIndex;
+          newTabs = moveTab(updatedTabs, tabIndex, insertIndex);
+        }
+
+        const newState: TabsState = {
           ...state,
           tabs: newTabs,
         };
@@ -268,7 +339,7 @@ function createTabsStore() {
     
     // Close all tabs
     closeAllTabs: () => {
-      const newTab = createNewTab();
+      const newTab = createDefaultTab();
       const newState: TabsState = {
         tabs: [newTab],
         activeTabId: newTab.id,
@@ -279,7 +350,7 @@ function createTabsStore() {
     
     // Reset store
     reset: () => {
-      const newTab = createNewTab();
+      const newTab = createDefaultTab();
       const newState: TabsState = {
         tabs: [newTab],
         activeTabId: newTab.id,
