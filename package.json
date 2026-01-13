@@ -23,6 +23,8 @@
     "@tauri-apps/plugin-opener": "^2",
     "bits-ui": "^2.15.2",
     "clsx": "^2.1.1",
+    "json-source-map": "^0.6.1",
+    "jsonpath-plus": "^10.2.0",
     "monaco-editor": "^0.55.1",
     "tailwind-merge": "^3.4.0",
     "tailwind-variants": "^3.2.2"

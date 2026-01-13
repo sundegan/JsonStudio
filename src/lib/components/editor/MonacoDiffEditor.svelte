@@ -11,6 +11,7 @@
     theme = 'vs',
     readOnly = false,
     fontSize = 13,
+    lineHeight = 20,
     tabSize = 2,
     onOriginalChange = (_value: string) => {},
     onModifiedChange = (_value: string) => {},
@@ -22,6 +23,7 @@
     theme?: EditorTheme;
     readOnly?: boolean;
     fontSize?: number;
+    lineHeight?: number;
     tabSize?: number;
     onOriginalChange?: (value: string) => void;
     onModifiedChange?: (value: string) => void;
@@ -37,17 +39,35 @@
   let isSyncingModified = false;
 
   $effect(() => {
-    if (originalModel && originalValue !== originalModel.getValue()) {
+    // Always read originalValue first to establish dependency tracking
+    // (avoid short-circuit evaluation preventing dependency registration)
+    const currentOriginalValue = originalValue;
+    if (originalModel && currentOriginalValue !== originalModel.getValue()) {
       isSyncingOriginal = true;
-      originalModel.setValue(originalValue);
+      // Use pushEditOperations to preserve undo history
+      const fullRange = originalModel.getFullModelRange();
+      originalModel.pushEditOperations(
+        [],
+        [{ range: fullRange, text: currentOriginalValue }],
+        () => null
+      );
       isSyncingOriginal = false;
     }
   });
 
   $effect(() => {
-    if (modifiedModel && modifiedValue !== modifiedModel.getValue()) {
+    // Always read modifiedValue first to establish dependency tracking
+    // (avoid short-circuit evaluation preventing dependency registration)
+    const currentModifiedValue = modifiedValue;
+    if (modifiedModel && currentModifiedValue !== modifiedModel.getValue()) {
       isSyncingModified = true;
-      modifiedModel.setValue(modifiedValue);
+      // Use pushEditOperations to preserve undo history
+      const fullRange = modifiedModel.getFullModelRange();
+      modifiedModel.pushEditOperations(
+        [],
+        [{ range: fullRange, text: currentModifiedValue }],
+        () => null
+      );
       isSyncingModified = false;
     }
   });
@@ -64,6 +84,7 @@
         readOnly,
         originalEditable: !readOnly,
         fontSize,
+        lineHeight,
       });
     }
   });
@@ -105,10 +126,14 @@
       renderSideBySide: true,
       minimap: { enabled: false },
       renderOverviewRuler: false,
+      renderGutterMenu: false,
       renderMarginRevertIcon: false,
       scrollBeyondLastLine: false,
       fontSize,
+      lineHeight,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
+      contextmenu: false,
+      renderIndicators: false,
     });
 
     diffEditor = createdDiffEditor;

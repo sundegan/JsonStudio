@@ -24,7 +24,9 @@ export interface AppSettings {
   
   // Editor settings
   fontSize: number;
+  lineHeight: number;
   tabSize: number;
+  showTreeView: boolean;
 }
 
 // Default settings
@@ -33,7 +35,9 @@ const defaultSettings: AppSettings = {
   darkTheme: 'one-dark',
   lightTheme: 'vs',
   fontSize: 13,
+  lineHeight: 20,
   tabSize: 2,
+  showTreeView: true,
 };
 
 // Load settings from localStorage
