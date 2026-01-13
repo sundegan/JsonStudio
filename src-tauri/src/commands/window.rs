@@ -1,4 +1,6 @@
 // Window-related commands
+// 抑制 objc crate 宏中的 unexpected_cfgs 警告（来自第三方库）
+#![allow(unexpected_cfgs)]
 
 /// Set window theme (macOS title bar)
 #[tauri::command]
