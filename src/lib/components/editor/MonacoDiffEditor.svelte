@@ -37,13 +37,16 @@
   let isSyncingModified = false;
 
   $effect(() => {
-    if (originalModel && originalValue !== originalModel.getValue()) {
+    // Always read originalValue first to establish dependency tracking
+    // (avoid short-circuit evaluation preventing dependency registration)
+    const currentOriginalValue = originalValue;
+    if (originalModel && currentOriginalValue !== originalModel.getValue()) {
       isSyncingOriginal = true;
       // Use pushEditOperations to preserve undo history
       const fullRange = originalModel.getFullModelRange();
       originalModel.pushEditOperations(
         [],
-        [{ range: fullRange, text: originalValue }],
+        [{ range: fullRange, text: currentOriginalValue }],
         () => null
       );
       isSyncingOriginal = false;
@@ -51,13 +54,16 @@
   });
 
   $effect(() => {
-    if (modifiedModel && modifiedValue !== modifiedModel.getValue()) {
+    // Always read modifiedValue first to establish dependency tracking
+    // (avoid short-circuit evaluation preventing dependency registration)
+    const currentModifiedValue = modifiedValue;
+    if (modifiedModel && currentModifiedValue !== modifiedModel.getValue()) {
       isSyncingModified = true;
       // Use pushEditOperations to preserve undo history
       const fullRange = modifiedModel.getFullModelRange();
       modifiedModel.pushEditOperations(
         [],
-        [{ range: fullRange, text: modifiedValue }],
+        [{ range: fullRange, text: currentModifiedValue }],
         () => null
       );
       isSyncingModified = false;
