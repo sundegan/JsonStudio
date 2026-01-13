@@ -17,6 +17,14 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             
+            // Disable context menu in production builds
+            #[cfg(not(debug_assertions))]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_devtools(false);
+                }
+            }
+            
             // Register global shortcut: show app
             let show_app_handle = app_handle.clone();
             app.global_shortcut().on_shortcut("CommandOrControl+Shift+J", move |_app, _shortcut, _event| {

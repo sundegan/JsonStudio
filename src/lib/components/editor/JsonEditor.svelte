@@ -1,15 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getJsonStats, escapeString, unescapeString, type JsonStats } from '$lib/services/json';
-  import { openFileDialog, saveFile, saveFileDialog, readFile, getFileName } from '$lib/services/file';
-  import { fileStateStore } from '$lib/stores/file';
+  import { getJsonStats, type JsonStats } from '$lib/services/json';
+  import { readFile, getFileName } from '$lib/services/file';
+  import { tabsStore, activeTab } from '$lib/stores/tabs';
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
+  import TabBar from './TabBar.svelte';
+  import DiffTabBar from './DiffTabBar.svelte';
+  import JsonEditorToolbar from './JsonEditorToolbar.svelte';
+  import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
+  import JsonQueryPanel from './JsonQueryPanel.svelte';
+  import JsonTreeView from './JsonTreeView.svelte';
+  import JsonEditorToast from './JsonEditorToast.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
-
-  const LARGE_FILE_THRESHOLD = 1024 * 1024;
 
   let content = $state('');
   let stats = $state<JsonStats>({
@@ -20,17 +25,14 @@
     error_info: null,
   });
   let toastMsg = $state('');
-  let isProcessing = $state(false);
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
-  let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor: MonacoEditor;
+  let toolbarRef: JsonEditorToolbar | null = null;
   let settingsPanel: SettingsPanel | null = null;
   let isDiffMode = $state(false);
   let diffOriginal = $state('');
   let diffModified = $state('');
-  let diffLeftLabel = $state('Left');
-  let diffRightLabel = $state('Editor');
   let diffLineCount = $state(0);
   let diffLeftStats = $state<JsonStats>({
     valid: false,
@@ -48,12 +50,19 @@
   });
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
+  let isJsonQueryOpen = $state(false);
+  const TREE_MIN_WIDTH = 260;
+  const TREE_MAX_WIDTH = 640;
+  let treeViewWidth = $state(320);
+  let isResizingTreeView = $state(false);
   
-  let fileState = $state<import('$lib/stores/file').FileState>({
-    currentFilePath: null,
-    currentFileName: null,
-    isModified: false
+  let tabsState = $state<import('$lib/stores/tabs').TabsState>({
+    tabs: [],
+    activeTabId: null
   });
+  
+  let diffModeState = $state<import('$lib/stores/tabs').DiffModeState | null>(null);
+  let diffModeUnsubscribe: (() => void) | null = null;
   
   let settings = $state<import('$lib/stores/settings').AppSettings>({
     isDarkMode: false,
@@ -66,6 +75,11 @@
   onMount(() => {
     settingsStore.init();
     
+    // Subscribe to diff mode state changes
+    diffModeUnsubscribe = tabsStore.subscribeDiffMode((newState) => {
+      diffModeState = newState;
+    });
+    
     // Listen to clipboard formatting events
     let unlistenFormatted: (() => void) | null = null;
     let unlistenRaw: (() => void) | null = null;
@@ -76,16 +90,24 @@
       
       // Listen for successfully formatted JSON
       unlistenFormatted = await listen<string>('clipboard-formatted', (event) => {
+        const currentTab = $activeTab;
+        if (!currentTab) return;
+        
         content = event.payload;
         monacoEditor?.setValue(event.payload);
+        tabsStore.updateTabContent(currentTab.id, event.payload);
         updateStats();
         showToast('Clipboard content formatted');
       });
       
       // Listen for raw paste (when JSON is invalid)
       unlistenRaw = await listen<string>('clipboard-pasted-raw', (event) => {
+        const currentTab = $activeTab;
+        if (!currentTab) return;
+        
         content = event.payload;
         monacoEditor?.setValue(event.payload);
+        tabsStore.updateTabContent(currentTab.id, event.payload);
         updateStats();
         showToast('Clipboard content pasted (invalid JSON)');
       });
@@ -100,12 +122,12 @@
             const fileContent = await readFile(filePath);
             const name = await getFileName(filePath);
             
-            content = fileContent;
-            monacoEditor?.setValue(fileContent);
+            const currentTab = $activeTab;
             
-            fileStateStore.setCurrentFile(filePath, name);
+            // Always create a new tab for dropped files
+            tabsStore.addTab(fileContent, filePath, name);
+            // Content and editor will be updated by $effect when tab switches
             
-            await updateStats();
             showToast(`Opened: ${name || 'file'}`);
           } catch (e) {
             showToast('Failed to open file');
@@ -120,34 +142,86 @@
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
       
+      // Cmd/Ctrl + T: New tab
+      if (cmdOrCtrl && e.key === 't') {
+        e.preventDefault();
+        tabsStore.addTab();
+        return;
+      }
+      
+      // Cmd/Ctrl + W: Close current tab
+      if (cmdOrCtrl && e.key === 'w') {
+        e.preventDefault();
+        const currentTab = $activeTab;
+        if (currentTab) {
+          if (currentTab.isModified) {
+            const confirmClose = confirm(`"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`);
+            if (!confirmClose) return;
+          }
+          tabsStore.removeTab(currentTab.id);
+        }
+        return;
+      }
+      
+      // Cmd/Ctrl + Tab: Next tab
+      if (cmdOrCtrl && e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
+        const nextIndex = (currentIndex + 1) % tabsState.tabs.length;
+        tabsStore.setActiveTab(tabsState.tabs[nextIndex].id);
+        return;
+      }
+      
+      // Cmd/Ctrl + Shift + Tab: Previous tab
+      if (cmdOrCtrl && e.shiftKey && e.key === 'Tab') {
+        e.preventDefault();
+        const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
+        const prevIndex = (currentIndex - 1 + tabsState.tabs.length) % tabsState.tabs.length;
+        tabsStore.setActiveTab(tabsState.tabs[prevIndex].id);
+        return;
+      }
+      
+      // Cmd/Ctrl + 1-9: Switch to specific tab
+      if (cmdOrCtrl && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const tabIndex = parseInt(e.key) - 1;
+        if (tabIndex < tabsState.tabs.length) {
+          tabsStore.setActiveTab(tabsState.tabs[tabIndex].id);
+        }
+        return;
+      }
+      
       // Cmd/Ctrl + N: New file
       if (cmdOrCtrl && e.key === 'n') {
         e.preventDefault();
-        handleNewFile();
+        toolbarRef?.newFile();
       }
       
       // Cmd/Ctrl + O: Open file
       if (cmdOrCtrl && e.key === 'o') {
         e.preventDefault();
-        handleOpenFile();
+        toolbarRef?.openFile();
       }
       
       // Cmd/Ctrl + S: Save file
       if (cmdOrCtrl && e.key === 's') {
         e.preventDefault();
-        handleSaveFile();
+        toolbarRef?.saveFile();
       }
       
       // Cmd/Ctrl + Shift + S: Save as
       if (cmdOrCtrl && e.shiftKey && e.key === 's') {
         e.preventDefault();
-        handleSaveAsFile();
+        toolbarRef?.saveAsFile();
       }
 
-      // Cmd/Ctrl + Shift + I: Open DevTools
+      // Cmd/Ctrl + Shift + I: Open DevTools (only in development)
       if (cmdOrCtrl && e.shiftKey && e.key === 'i') {
         e.preventDefault();
-        openDevTools();
+        // Only enable in development mode
+        if (import.meta.env.DEV) {
+          openDevTools();
+        }
       }
     };
     
@@ -157,6 +231,7 @@
       if (unlistenFormatted) unlistenFormatted();
       if (unlistenRaw) unlistenRaw();
       if (unlistenFileDrop) unlistenFileDrop();
+      if (diffModeUnsubscribe) diffModeUnsubscribe();
       window.removeEventListener('keydown', handleKeydown);
     };
   });
@@ -168,17 +243,67 @@
     return () => unsubscribe();
   });
   
+  // Track previous active tab ID to detect tab switches
+  let prevActiveTabId = $state<string | null>(null);
+  let isFirstSync = $state(true);
+  let suppressNextEditorChange = $state(false);
+
+  function getActiveTabFromState(state: import('$lib/stores/tabs').TabsState) {
+    return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0] || null;
+  }
+
+  function syncActiveTab(state: import('$lib/stores/tabs').TabsState) {
+    const currentTab = getActiveTabFromState(state);
+    if (!currentTab) return;
+
+    content = currentTab.content;
+    stats = currentTab.stats;
+
+    const editorValue = monacoEditor?.getValue();
+    if (editorValue !== undefined && editorValue !== currentTab.content) {
+      suppressNextEditorChange = true;
+      monacoEditor?.setValue(currentTab.content);
+      queueMicrotask(() => {
+        suppressNextEditorChange = false;
+      });
+    }
+  }
+  
   $effect(() => {
-    const unsubscribe = fileStateStore.subscribe(newFileState => {
-      fileState = newFileState;
+    const unsubscribe = tabsStore.subscribe(newTabsState => {
+      const oldActiveTabId = prevActiveTabId;
+      const newActiveTabId = newTabsState.activeTabId;
+      
+      tabsState = newTabsState;
+      
+      // For the first sync, initialize prevActiveTabId and sync content
+      if (isFirstSync) {
+        isFirstSync = false;
+        prevActiveTabId = newActiveTabId;
+        syncActiveTab(newTabsState);
+        return;
+      }
+      
+      // Only sync content when switching tabs, not when updating current tab's content
+      if (oldActiveTabId !== newActiveTabId) {
+        prevActiveTabId = newActiveTabId;
+        syncActiveTab(newTabsState);
+      }
     });
     return () => unsubscribe();
   });
   
   let isDarkMode = $derived(settings.isDarkMode);
   let fontSize = $derived(settings.fontSize);
+  let lineHeight = $derived(settings.lineHeight);
   let tabSize = $derived(settings.tabSize);
+  let showTreeView = $derived(settings.showTreeView);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
+  $effect(() => {
+    if (!showTreeView) {
+      isResizingTreeView = false;
+    }
+  });
   
   // Track previous tabSize to detect changes
   let prevTabSize = $state(settings.tabSize);
@@ -202,20 +327,26 @@
   });
 
   $effect(() => {
-    if (!isDiffMode) return;
-    const leftValue = diffOriginal;
+    if (!isDiffMode || !diffModeState) return;
     if (diffLeftTimer) clearTimeout(diffLeftTimer);
     diffLeftTimer = setTimeout(() => {
       updateDiffStatsForSide('left');
+      // Save left side content to left active tab
+      if (diffModeState?.leftActiveTabId) {
+        tabsStore.updateDiffLeftTabContent(diffModeState.leftActiveTabId, diffOriginal);
+      }
     }, 200);
   });
 
   $effect(() => {
-    if (!isDiffMode) return;
-    const rightValue = diffModified;
+    if (!isDiffMode || !diffModeState) return;
     if (diffRightTimer) clearTimeout(diffRightTimer);
     diffRightTimer = setTimeout(() => {
       updateDiffStatsForSide('right');
+      // Save right side content to right active tab
+      if (diffModeState?.rightActiveTabId) {
+        tabsStore.updateDiffRightTabContent(diffModeState.rightActiveTabId, diffModified);
+      }
     }, 200);
   });
 
@@ -223,32 +354,59 @@
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
   }
 
+  function toggleJsonQueryPanel() {
+    isJsonQueryOpen = !isJsonQueryOpen;
+  }
+
   function toggleDiffMode() {
     if (isDiffMode) {
+      // Exit diff mode: merge tabs
+      tabsStore.exitDiffMode();
+      // diffModeState will be set to null via subscription
       isDiffMode = false;
+      
+      // Sync content back to normal mode
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
       return;
     }
 
+    if (isJsonQueryOpen) {
+      isJsonQueryOpen = false;
+    }
+
+    // Enter diff mode: clone tabs to both sides
+    tabsStore.enterDiffMode();
     isDiffMode = true;
     diffLineCount = 0;
-    diffOriginal = content;
-    diffModified = '';
-    diffLeftLabel = 'Editor';
-    diffRightLabel = 'Right';
-    diffLeftStats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
-    diffRightStats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
+    
+    // Get the latest diff mode state (subscription is synchronous, so state is already updated)
+    const latestDiffState = tabsStore.getDiffModeState();
+    if (latestDiffState) {
+      const leftTab = latestDiffState.leftTabs.find(t => t.id === latestDiffState.leftActiveTabId);
+      const rightTab = latestDiffState.rightTabs.find(t => t.id === latestDiffState.rightActiveTabId);
+      
+      diffOriginal = leftTab?.content || '';
+      diffModified = rightTab?.content || '';
+      diffLeftStats = leftTab?.stats || {
+        valid: false,
+        key_count: 0,
+        depth: 0,
+        byte_size: 0,
+        error_info: null,
+      };
+      diffRightStats = rightTab?.stats || {
+        valid: false,
+        key_count: 0,
+        depth: 0,
+        byte_size: 0,
+        error_info: null,
+      };
+    }
   }
 
   function openSettings() {
@@ -268,8 +426,34 @@
 
   function showToast(msg: string) {
     toastMsg = msg;
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toastMsg = ''; }, 3000);
+  }
+
+  function clampTreeWidth(width: number) {
+    return Math.min(TREE_MAX_WIDTH, Math.max(TREE_MIN_WIDTH, width));
+  }
+
+  function startTreeResize(event: PointerEvent) {
+    if (!showTreeView) return;
+
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = treeViewWidth;
+    isResizingTreeView = true;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!isResizingTreeView) return;
+      const delta = startX - moveEvent.clientX;
+      treeViewWidth = clampTreeWidth(startWidth + delta);
+    };
+
+    const handlePointerUp = () => {
+      isResizingTreeView = false;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   }
 
   function updateDiffStats(changes: Array<{
@@ -295,7 +479,12 @@
   }
 
   async function updateDiffStatsForSide(side: 'left' | 'right') {
+    if (!diffModeState) return;
+    
     const value = side === 'left' ? diffOriginal : diffModified;
+    const tabId = side === 'left' ? diffModeState!.leftActiveTabId : diffModeState!.rightActiveTabId;
+    if (!tabId) return;
+    
     if (!value.trim()) {
       const emptyStats = {
         valid: false,
@@ -306,8 +495,10 @@
       };
       if (side === 'left') {
         diffLeftStats = emptyStats;
+        tabsStore.updateDiffLeftTabStats(tabId, emptyStats);
       } else {
         diffRightStats = emptyStats;
+        tabsStore.updateDiffRightTabStats(tabId, emptyStats);
       }
       return;
     }
@@ -316,21 +507,53 @@
       const result = await getJsonStats(value);
       if (side === 'left') {
         diffLeftStats = result;
+        tabsStore.updateDiffLeftTabStats(tabId, result);
       } else {
         diffRightStats = result;
+        tabsStore.updateDiffRightTabStats(tabId, result);
       }
     } catch (e) {}
+  }
+  
+  function handleDiffLeftTabChange(event: CustomEvent<{ tabId: string }>) {
+    // Use getDiffModeState() to get the latest state immediately
+    const latestState = tabsStore.getDiffModeState();
+    if (!latestState) return;
+    const tab = latestState.leftTabs.find(t => t.id === event.detail.tabId);
+    if (tab) {
+      diffOriginal = tab.content;
+      diffLeftStats = tab.stats;
+    }
+  }
+  
+  function handleDiffRightTabChange(event: CustomEvent<{ tabId: string }>) {
+    // Use getDiffModeState() to get the latest state immediately
+    const latestState = tabsStore.getDiffModeState();
+    if (!latestState) return;
+    const tab = latestState.rightTabs.find(t => t.id === event.detail.tabId);
+    if (tab) {
+      diffModified = tab.content;
+      diffRightStats = tab.stats;
+    }
   }
 
 
   function handleEditorChange(newValue: string) {
-    content = newValue;
-    
-    // Mark as modified if we have a current file
-    if (fileState.currentFilePath && !fileState.isModified) {
-      fileStateStore.setModified(true);
+    const currentTab = $activeTab;
+    if (!currentTab) return;
+    if (suppressNextEditorChange) {
+      suppressNextEditorChange = false;
+      return;
     }
     
+    content = newValue;
+    tabsStore.updateTabContent(currentTab.id, newValue);
+    
+    // Mark as modified if we have a current file
+    if (currentTab.filePath && !currentTab.isModified) {
+      tabsStore.updateTabModified(currentTab.id, true);
+    }
+
     if (statsTimer) clearTimeout(statsTimer);
     if (!content.trim()) { 
       stats = {
@@ -340,6 +563,7 @@
         byte_size: 0,
         error_info: null,
       };
+      tabsStore.updateTabStats(currentTab.id, stats);
       return;
     }
     statsTimer = setTimeout(updateStats, 300);
@@ -348,629 +572,224 @@
   function handleEditorPaste() {
     if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
     pasteFormatTimer = setTimeout(async () => {
-      if (isProcessing || !content.trim()) {
+      if (!content.trim()) {
         return;
       }
-      await handleFormat();
+      await toolbarRef?.formatContent();
     }, 100);
+  }
+
+  function resetStats() {
+    stats = {
+      valid: false,
+      key_count: 0,
+      depth: 0,
+      byte_size: 0,
+      error_info: null,
+    };
   }
 
   async function updateStats() {
     if (!content.trim()) return;
+    const currentTab = $activeTab;
+    if (!currentTab) return;
+    
     try {
       stats = await getJsonStats(content);
+      tabsStore.updateTabStats(currentTab.id, stats);
     } catch (e) {}
   }
 
-  async function handleFormat() {
-    if (!content.trim()) return;
-    isProcessing = true;
-    const contentSize = content.length;
-    
-    try {
-      if (contentSize > LARGE_FILE_THRESHOLD) {
-        const { formatJson } = await import('$lib/services/json');
-        const formatted = await formatJson(content, tabSize);
-        content = formatted;
-        monacoEditor?.setValue(formatted);
-      } else {
-        // Use custom formatting with current tabSize setting
-        const parsed = JSON.parse(content);
-        const formatted = JSON.stringify(parsed, null, tabSize);
-        content = formatted;
-        monacoEditor?.setValue(formatted);
-      }
-      await updateStats();
-    } catch (e) {
-    } finally {
-      isProcessing = false;
-    }
-  }
-
-  async function handleMinify() {
-    if (!content.trim()) return;
-    isProcessing = true;
-    const contentSize = content.length;
-    
-    try {
-      let minified = '';
-      if (contentSize > LARGE_FILE_THRESHOLD) {
-        const { minifyJson } = await import('$lib/services/json');
-        minified = await minifyJson(content);
-      } else {
-        minified = monacoEditor?.minify() || '';
-      }
-      
-      if (minified) {
-        content = minified;
-        monacoEditor?.setValue(minified);        
-        await updateStats();
-      }
-    } catch (e) {
-    } finally {
-      isProcessing = false;
-    }
-  }
-
-  async function handleEscape() {
-    if (!content.trim()) return;
-    isProcessing = true;
-    const contentSize = content.length;
-    
-    try {
-      let escaped = '';
-      if (contentSize > LARGE_FILE_THRESHOLD) {
-        escaped = await escapeString(content);
-      } else {
-        escaped = JSON.stringify(content);
-      }
-      
-      content = escaped;
-      monacoEditor?.setValue(escaped);
-      await updateStats();
-    } catch (e) {
-    } finally {
-      isProcessing = false;
-    }
-  }
-
-  async function handleUnescape() {
-    if (!content.trim()) return;
-    isProcessing = true;
-    const contentSize = content.length;
-    
-    try {
-      let unescaped = '';
-      if (contentSize > LARGE_FILE_THRESHOLD) {
-        unescaped = await unescapeString(content);
-      } else {
-        const u = JSON.parse(content);
-        if (typeof u === 'string') {
-          unescaped = u;
-        } else {
-          throw new Error('Content is not a string');
-        }
-      }
-      
-      if (unescaped) {
-        content = unescaped;
-        monacoEditor?.setValue(unescaped);
-        await updateStats();
-      }
-    } catch (e) {
-    } finally {
-      isProcessing = false;
-    }
-  }
-
-  async function handleMinifyEscape() {
-    if (!content.trim()) return;
-    isProcessing = true;
-    const contentSize = content.length;
-    
-    try {
-      let minified = '';
-      if (contentSize > LARGE_FILE_THRESHOLD) {
-        const { minifyJson } = await import('$lib/services/json');
-        minified = await minifyJson(content);
-      } else {
-        minified = monacoEditor?.minify() || '';
-      }
-      
-      if (minified) {
-        const escaped = JSON.stringify(minified);
-        content = escaped;
-        monacoEditor?.setValue(escaped);
-        await updateStats();
-      }
-    } catch (e) {
-    } finally {
-      isProcessing = false;
-    }
-  }
-
-  function handleClear() {
-    content = '';
-    monacoEditor?.setValue('');
-    stats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
-  }
-
-  async function handleCopy() {
-    if (!content) return;
-    try {
-      await navigator.clipboard.writeText(content);
-      showToast('Copied');
-    } catch (e) {}
-  }
-
-  function handleFoldAll() {
-    monacoEditor?.foldAll();
-  }
-
-  function handleUnfoldAll() {
-    monacoEditor?.unfoldAll();
-  }
-
-  async function handleOpenFile() {
-    try {
-      const result = await openFileDialog();
-      if (result) {
-        const [path, fileContent] = result;
-        const name = await getFileName(path);
-        
-        content = fileContent;
-        monacoEditor?.setValue(fileContent);
-        
-        fileStateStore.setCurrentFile(path, name);
-        
-        await updateStats();
-        showToast(`Opened: ${name || 'file'}`);
-      }
-    } catch (e) {
-      showToast('Failed to open file');
-      console.error('Open file error:', e);
-    }
-  }
-
-  async function handleSaveFile() {
-    if (!content.trim()) {
-      showToast('Nothing to save');
-      return;
-    }
-
-    try {
-      if (fileState.currentFilePath) {
-        // Save to existing file
-        await saveFile(fileState.currentFilePath, content);
-        fileStateStore.setModified(false);
-        showToast(`Saved: ${fileState.currentFileName || 'file'}`);
-      } else {
-        // No current file, use save as
-        await handleSaveAsFile();
-      }
-    } catch (e) {
-      showToast('Failed to save file');
-      console.error('Save file error:', e);
-    }
-  }
-
-  async function handleSaveAsFile() {
-    if (!content.trim()) {
-      showToast('Nothing to save');
-      return;
-    }
-
-    try {
-      const path = await saveFileDialog(content);
-      if (path) {
-        const name = await getFileName(path);
-        fileStateStore.setCurrentFile(path, name);
-        showToast(`Saved: ${name || 'file'}`);
-      }
-    } catch (e) {
-      showToast('Failed to save file');
-      console.error('Save as file error:', e);
-    }
-  }
-
-  function handleNewFile() {
-    content = '';
-    monacoEditor?.setValue('');
-    fileStateStore.setCurrentFile(null, null);
-    stats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
-    showToast('New file');
-  }
-
-  function formatBytes(b: number): string {
-    if (b < 1024) return `${b} B`;
-    if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
-    return `${(b / 1048576).toFixed(1)} MB`;
-  }
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
   <!-- Toolbar -->
-  <div class="flex items-center gap-0.5 px-2 py-1.5 bg-(--bg-secondary) border-b border-(--border) shrink-0">
-    <!-- File operations group -->
-    <div class="flex items-center">
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleNewFile}
-        disabled={isDiffMode}
-        title="New File (Cmd+N)"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <path d="M14 2v6h6M12 18v-6M9 15h6"/>
-        </svg>
-      </button>
-      
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleOpenFile}
-        disabled={isDiffMode}
-        title="Open File (Cmd+O)"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-        </svg>
-      </button>
-      
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleSaveFile}
-        disabled={isDiffMode || !content.trim()}
-        title="Save File (Cmd+S)"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-          <path d="M17 21v-8H7v8M7 3v5h8"/>
-        </svg>
-      </button>
-    </div>
+  <JsonEditorToolbar
+    bind:this={toolbarRef}
+    isDiffMode={isDiffMode}
+    content={content}
+    activeTab={$activeTab}
+    isDarkMode={isDarkMode}
+    isJsonQueryOpen={isJsonQueryOpen}
+    editor={monacoEditor}
+    tabSize={tabSize}
+    onToggleDiff={toggleDiffMode}
+    onToggleJsonQuery={toggleJsonQueryPanel}
+    onToggleTheme={toggleTheme}
+    onOpenSettings={openSettings}
+    onContentChange={(value) => { content = value; }}
+    onStatsUpdate={updateStats}
+    onStatsReset={resetStats}
+    onToast={showToast}
+  />
+  
+  <!-- Main content area: Tab Bar + Editor + Tree View -->
+  <div class="flex flex-1 min-h-0" class:resizing-tree-view={isResizingTreeView}>
+    <!-- Left section: Tab Bar + Editor -->
+    <div class="flex flex-col flex-1 min-w-0">
+      <!-- Tab Bar - show different tab bars based on mode -->
+      {#if isDiffMode && diffModeState}
+        <!-- Diff mode: show DiffTabBar with independent left/right tabs -->
+        <DiffTabBar 
+          leftTabs={diffModeState.leftTabs}
+          rightTabs={diffModeState.rightTabs}
+          leftActiveTabId={diffModeState.leftActiveTabId}
+          rightActiveTabId={diffModeState.rightActiveTabId}
+          isDarkMode={isDarkMode}
+          on:leftTabChange={handleDiffLeftTabChange}
+          on:rightTabChange={handleDiffRightTabChange}
+        />
+      {:else if tabsState.tabs.length > 1}
+        <!-- Normal mode: only show when multiple tabs exist -->
+        <TabBar 
+          tabs={tabsState.tabs} 
+          activeTabId={tabsState.activeTabId}
+          isDarkMode={isDarkMode}
+        />
+      {/if}
 
-    <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-    <!-- Format operations group -->
-    <div class="flex items-center">
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--accent)
-               hover:bg-(--accent)/10
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleFormat}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Format"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 6h16M4 12h10M4 18h14"/>
-        </svg>
-      </button>
-      
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleMinify}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Minify"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-    <!-- Fold operations group -->
-    <div class="flex items-center">
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleFoldAll}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Fold All"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 6h16M4 12h16M4 18h16"/>
-          <path d="M9 6v6l3-3-3-3"/>
-        </svg>
-      </button>
-      
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleUnfoldAll}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Unfold All"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 6h16M4 12h16M4 18h16"/>
-          <path d="M9 6v6l3 3 3-3V6"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-    <!-- Escape operations group -->
-    <div class="flex items-center">
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleEscape}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Escape"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M7 8l-4 4 4 4M17 8l4 4-4 4"/>
-        </svg>
-      </button>
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleUnescape}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Unescape"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 8l4 4-4 4M15 8l-4 4 4 4"/>
-        </svg>
-      </button>
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleMinifyEscape}
-        disabled={isDiffMode || isProcessing || !content.trim()}
-        title="Minify + Escape"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <path d="M8 12h8"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="flex-1"></div>
-
-    <!-- Right side operations group -->
-    <div class="flex items-center">
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleCopy}
-        disabled={isDiffMode || !content}
-        title="Copy"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="9" y="9" width="13" height="13" rx="2"/>
-          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-        </svg>
-      </button>
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--error)/10 hover:text-(--error)
-               active:scale-95
-               disabled:opacity-30 disabled:cursor-not-allowed
-               transition-all duration-150"
-        onclick={handleClear}
-        disabled={isDiffMode || !content}
-        title="Clear"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
-        </svg>
-      </button>
-
-      <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-      <!-- Diff toggle button -->
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               {isDiffMode ? 'text-(--accent) bg-(--accent)/10' : 'text-(--text-secondary)'}
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               transition-all duration-150"
-        onclick={toggleDiffMode}
-        title={isDiffMode ? 'Exit Diff' : 'Diff'}
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
-          <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
-          <path d="M12 4v16"/>
-          <path d="M7 12h3M14 12h3"/>
-        </svg>
-      </button>
-
-      <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-      <!-- Theme toggle button -->
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--warning)/10 hover:text-(--warning)
-               active:scale-95
-               transition-all duration-150"
-        onclick={toggleTheme}
-        title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
-      >
-        {#if isDarkMode}
-          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"/>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
+      <!-- Editor main area -->
+      <div class="flex-1 relative min-h-0">
+        {#if isDiffMode}
+          <div class="flex flex-col h-full">
+            <div class="flex-1 min-h-0">
+              <MonacoDiffEditor
+                originalValue={diffOriginal}
+                modifiedValue={diffModified}
+                theme={monacoTheme}
+                language="json"
+                fontSize={fontSize}
+                lineHeight={lineHeight}
+                tabSize={tabSize}
+                onOriginalChange={(value) => { diffOriginal = value; }}
+                onModifiedChange={(value) => { diffModified = value; }}
+                onDiffUpdate={updateDiffStats}
+              />
+            </div>
+          </div>
         {:else}
-          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-          </svg>
-        {/if}
-      </button>
+          <div class="json-editor-workspace">
+            <div class="json-editor-main">
+              <MonacoEditor
+                bind:this={monacoEditor}
+                value={content}
+                theme={monacoTheme}
+                language="json"
+                fontSize={fontSize}
+                lineHeight={lineHeight}
+                tabSize={tabSize}
+                onChange={handleEditorChange}
+                onPaste={handleEditorPaste}
+              />
 
-      <!-- Settings button -->
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-md
-               text-(--text-secondary)
-               hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-               active:scale-95
-               transition-all duration-150"
-        onclick={openSettings}
-        title="Settings"
-      >
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
+              {#if isJsonQueryOpen}
+                <JsonQueryPanel
+                  content={content}
+                  editor={monacoEditor}
+                  onClose={toggleJsonQueryPanel}
+                  on:toast={(event) => showToast(event.detail.message)}
+                />
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        {#if toastMsg}
+          <JsonEditorToast message={toastMsg} on:close={() => { toastMsg = ''; }} />
+        {/if}
+      </div>
     </div>
-  </div>
 
-  <!-- Editor main area -->
-  <div class="flex-1 relative min-h-0">
-    {#if isDiffMode}
-      <div class="flex flex-col h-full">
-        <div class="flex-1 min-h-0">
-          <MonacoDiffEditor
-            originalValue={diffOriginal}
-            modifiedValue={diffModified}
-            theme={monacoTheme}
-            language="json"
-            fontSize={fontSize}
-            tabSize={tabSize}
-            onOriginalChange={(value) => { diffOriginal = value; }}
-            onModifiedChange={(value) => { diffModified = value; }}
-            onDiffUpdate={updateDiffStats}
-          />
-        </div>
-      </div>
-    {:else}
-      <MonacoEditor
-        bind:this={monacoEditor}
-        value={content}
-        theme={monacoTheme}
-        language="json"
-        fontSize={fontSize}
-        tabSize={tabSize}
-        onChange={handleEditorChange}
-        onPaste={handleEditorPaste}
-      />
-    {/if}
-
-    {#if toastMsg}
-      <div 
-        class="absolute top-6 right-6 flex items-center gap-2.5 rounded-lg text-sm font-medium z-50 animate-[fadeIn_0.2s_ease-out]"
-        style="padding: 10px 16px; background-color: var(--bg-primary); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);"
-      >
-        <div class="flex items-center justify-center w-5 h-5 rounded-full" style="background-color: var(--success);">
-          <svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
-        </div>
-        <span class="text-(--text-primary)">{toastMsg}</span>
+    <!-- Right section: Tree View (spans full height below toolbar) -->
+    {#if showTreeView && !isDiffMode}
+      <div
+        class="json-tree-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize tree view"
+        tabindex="0"
+        onpointerdown={startTreeResize}
+      ></div>
+      <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
+        <JsonTreeView
+          content={content}
+          editor={monacoEditor}
+          on:toast={(event) => showToast(event.detail.message)}
+        />
       </div>
     {/if}
   </div>
 
-  <div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border) text-xs" style="padding: 2px 10px;">
-    {#if isDiffMode}
-      <span class="text-(--text-secondary)">
-        {diffLeftStats.key_count} keys · {diffLeftStats.depth} levels · {formatBytes(diffLeftStats.byte_size)} · {diffOriginal ? diffOriginal.split('\n').length : 0} lines
-      </span>
-      <span class="flex-1 text-center text-(--text-secondary)">
-        Diff {diffLineCount} lines
-      </span>
-      <span class="text-(--text-secondary)">
-        {diffRightStats.key_count} keys · {diffRightStats.depth} levels · {formatBytes(diffRightStats.byte_size)} · {diffModified ? diffModified.split('\n').length : 0} lines
-      </span>
-    {:else}
-      <!-- File info on the left -->
-      {#if fileState.currentFileName}
-        <span class="text-(--text-primary) font-medium">{fileState.currentFileName}</span>
-        {#if fileState.isModified}
-          <span class="text-(--warning)" title="Modified">●</span>
-        {/if}
-        <div class="w-px h-3 bg-(--border)"></div>
-      {/if}
-      
-      {#if stats}
-        <span class="text-(--text-secondary)">{stats.key_count} keys</span>
-        <div class="w-px h-3 bg-(--border)"></div>
-        <span class="text-(--text-secondary)">{stats.depth} levels</span>
-        <div class="w-px h-3 bg-(--border)"></div>
-        <span class="text-(--text-secondary)">{formatBytes(stats.byte_size)}</span>
-      {/if}
-
-      <div class="w-px h-3 bg-(--border)"></div>
-      <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} lines</span>
-      
-      <span class="flex-1"></span>
-    {/if}
-  </div>
+  <JsonEditorStatusBar
+    isDiffMode={isDiffMode}
+    diffLineCount={diffLineCount}
+    diffLeftStats={diffLeftStats}
+    diffRightStats={diffRightStats}
+    diffOriginal={diffOriginal}
+    diffModified={diffModified}
+    activeTab={$activeTab}
+    stats={stats}
+    content={content}
+  />
 
   <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />
 </div>
 
 <style>
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+  .json-editor-workspace {
+    display: flex;
+    height: 100%;
+    position: relative;
+  }
+  
+  .json-editor-main {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+  
+  .json-tree-resizer {
+    width: 4px;
+    background: var(--bg-secondary);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    position: relative;
+  }
+  
+  .json-tree-resizer:hover {
+    background: var(--accent, #3b82f6);
+  }
+  
+  .json-tree-resizer::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+  }
+  
+  .json-tree-container {
+    flex-shrink: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
+  }
+  
+  .resizing-tree-view {
+    user-select: none;
+    cursor: col-resize;
+  }
+  
+  .resizing-tree-view * {
+    cursor: col-resize !important;
+  }
+
+  :global {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   }
 </style>
