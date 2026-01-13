@@ -30,7 +30,7 @@
   }
 </script>
 
-<div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border) text-xs" style="padding: 2px 10px;">
+<div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border)" style="padding: 1px 10px; font-size: 13px;">
   {#if isDiffMode}
     <!-- Left side stats -->
     <span class="text-(--text-secondary)">
@@ -53,18 +53,18 @@
       {#if activeTab.isModified}
         <span class="text-(--warning)" title="Modified">●</span>
       {/if}
-      <div class="w-px h-3 bg-(--border)"></div>
+      <div class="w-px h-3.5 bg-(--border)"></div>
     {/if}
 
     {#if stats}
       <span class="text-(--text-secondary)">{stats.key_count} keys</span>
-      <div class="w-px h-3 bg-(--border)"></div>
+      <div class="w-px h-3.5 bg-(--border)"></div>
       <span class="text-(--text-secondary)">{stats.depth} levels</span>
-      <div class="w-px h-3 bg-(--border)"></div>
+      <div class="w-px h-3.5 bg-(--border)"></div>
       <span class="text-(--text-secondary)">{formatBytes(stats.byte_size)}</span>
     {/if}
 
-    <div class="w-px h-3 bg-(--border)"></div>
+    <div class="w-px h-3.5 bg-(--border)"></div>
     <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} lines</span>
 
     <span class="flex-1"></span>
