@@ -4,8 +4,6 @@ use commands::json::{json_format, json_minify, json_stats, json_validate, json_e
 use commands::window::{set_window_theme, open_devtools};
 use commands::shortcuts::{show_main_window, format_clipboard_and_show, update_shortcut};
 use commands::file::{open_file_dialog, save_file, save_file_dialog, read_file, is_json_file, get_file_name};
-#[allow(unused_imports)]
-use tauri::Manager;
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -18,14 +16,6 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
-            
-            // Disable devtools in production builds
-            #[cfg(not(debug_assertions))]
-            {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.close_devtools();
-                }
-            }
             
             // Register global shortcut: show app
             let show_app_handle = app_handle.clone();
