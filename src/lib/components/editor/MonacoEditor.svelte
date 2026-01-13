@@ -17,6 +17,7 @@
     wordWrap = 'on',
     automaticLayout = true,
     fontSize = 13,
+    lineHeight = 20,
     tabSize = 2,
     onChange = (value: string) => {},
     onPaste = (_event?: unknown) => {},
@@ -31,6 +32,7 @@
     wordWrap?: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
     automaticLayout?: boolean;
     fontSize?: number;
+    lineHeight?: number;
     tabSize?: number;
     onChange?: (value: string) => void;
     onPaste?: (event?: unknown) => void;
@@ -85,6 +87,14 @@
     const currentFontSize = fontSize;
     if (editor) {
       editor.updateOptions({ fontSize: currentFontSize });
+    }
+  });
+  
+  // Watch lineHeight changes
+  $effect(() => {
+    const currentLineHeight = lineHeight;
+    if (editor) {
+      editor.updateOptions({ lineHeight: currentLineHeight });
     }
   });
   
@@ -145,6 +155,7 @@
       wordWrap,
       automaticLayout,
       fontSize,
+      lineHeight,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
       tabSize,
       scrollBeyondLastLine: false,
