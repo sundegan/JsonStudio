@@ -622,91 +622,98 @@
     onToast={showToast}
   />
   
-  <!-- Tab Bar - show different tab bars based on mode -->
-  {#if isDiffMode && diffModeState}
-    <!-- Diff mode: show DiffTabBar with independent left/right tabs -->
-    <DiffTabBar 
-      leftTabs={diffModeState.leftTabs}
-      rightTabs={diffModeState.rightTabs}
-      leftActiveTabId={diffModeState.leftActiveTabId}
-      rightActiveTabId={diffModeState.rightActiveTabId}
-      isDarkMode={isDarkMode}
-      on:leftTabChange={handleDiffLeftTabChange}
-      on:rightTabChange={handleDiffRightTabChange}
-    />
-  {:else if tabsState.tabs.length > 1}
-    <!-- Normal mode: only show when multiple tabs exist -->
-    <TabBar 
-      tabs={tabsState.tabs} 
-      activeTabId={tabsState.activeTabId}
-      isDarkMode={isDarkMode}
-    />
-  {/if}
+  <!-- Main content area: Tab Bar + Editor + Tree View -->
+  <div class="flex flex-1 min-h-0" class:resizing-tree-view={isResizingTreeView}>
+    <!-- Left section: Tab Bar + Editor -->
+    <div class="flex flex-col flex-1 min-w-0">
+      <!-- Tab Bar - show different tab bars based on mode -->
+      {#if isDiffMode && diffModeState}
+        <!-- Diff mode: show DiffTabBar with independent left/right tabs -->
+        <DiffTabBar 
+          leftTabs={diffModeState.leftTabs}
+          rightTabs={diffModeState.rightTabs}
+          leftActiveTabId={diffModeState.leftActiveTabId}
+          rightActiveTabId={diffModeState.rightActiveTabId}
+          isDarkMode={isDarkMode}
+          on:leftTabChange={handleDiffLeftTabChange}
+          on:rightTabChange={handleDiffRightTabChange}
+        />
+      {:else if tabsState.tabs.length > 1}
+        <!-- Normal mode: only show when multiple tabs exist -->
+        <TabBar 
+          tabs={tabsState.tabs} 
+          activeTabId={tabsState.activeTabId}
+          isDarkMode={isDarkMode}
+        />
+      {/if}
 
-  <!-- Editor main area -->
-  <div class="flex-1 relative min-h-0">
-    {#if isDiffMode}
-      <div class="flex flex-col h-full">
-        <div class="flex-1 min-h-0">
-          <MonacoDiffEditor
-            originalValue={diffOriginal}
-            modifiedValue={diffModified}
-            theme={monacoTheme}
-            language="json"
-            fontSize={fontSize}
-            tabSize={tabSize}
-            onOriginalChange={(value) => { diffOriginal = value; }}
-            onModifiedChange={(value) => { diffModified = value; }}
-            onDiffUpdate={updateDiffStats}
-          />
-        </div>
-      </div>
-    {:else}
-      <div class="json-editor-workspace" class:resizing-tree-view={isResizingTreeView}>
-        <div class="json-editor-main">
-          <MonacoEditor
-            bind:this={monacoEditor}
-            value={content}
-            theme={monacoTheme}
-            language="json"
-            fontSize={fontSize}
-            tabSize={tabSize}
-            onChange={handleEditorChange}
-            onPaste={handleEditorPaste}
-          />
+      <!-- Editor main area -->
+      <div class="flex-1 relative min-h-0">
+        {#if isDiffMode}
+          <div class="flex flex-col h-full">
+            <div class="flex-1 min-h-0">
+              <MonacoDiffEditor
+                originalValue={diffOriginal}
+                modifiedValue={diffModified}
+                theme={monacoTheme}
+                language="json"
+                fontSize={fontSize}
+                tabSize={tabSize}
+                onOriginalChange={(value) => { diffOriginal = value; }}
+                onModifiedChange={(value) => { diffModified = value; }}
+                onDiffUpdate={updateDiffStats}
+              />
+            </div>
+          </div>
+        {:else}
+          <div class="json-editor-workspace">
+            <div class="json-editor-main">
+              <MonacoEditor
+                bind:this={monacoEditor}
+                value={content}
+                theme={monacoTheme}
+                language="json"
+                fontSize={fontSize}
+                tabSize={tabSize}
+                onChange={handleEditorChange}
+                onPaste={handleEditorPaste}
+              />
 
-          {#if isJsonQueryOpen}
-            <JsonQueryPanel
-              content={content}
-              editor={monacoEditor}
-              onClose={toggleJsonQueryPanel}
-              on:toast={(event) => showToast(event.detail.message)}
-            />
-          {/if}
-        </div>
-
-        {#if showTreeView}
-          <div
-            class="json-tree-resizer"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize tree view"
-            tabindex="0"
-            onpointerdown={startTreeResize}
-          ></div>
-          <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
-            <JsonTreeView
-              content={content}
-              editor={monacoEditor}
-              on:toast={(event) => showToast(event.detail.message)}
-            />
+              {#if isJsonQueryOpen}
+                <JsonQueryPanel
+                  content={content}
+                  editor={monacoEditor}
+                  onClose={toggleJsonQueryPanel}
+                  on:toast={(event) => showToast(event.detail.message)}
+                />
+              {/if}
+            </div>
           </div>
         {/if}
-      </div>
-    {/if}
 
-    {#if toastMsg}
-      <JsonEditorToast message={toastMsg} on:close={() => { toastMsg = ''; }} />
+        {#if toastMsg}
+          <JsonEditorToast message={toastMsg} on:close={() => { toastMsg = ''; }} />
+        {/if}
+      </div>
+    </div>
+
+    <!-- Right section: Tree View (spans full height below toolbar) -->
+    {#if showTreeView && !isDiffMode}
+      <div
+        class="json-tree-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize tree view"
+        tabindex="0"
+        onpointerdown={startTreeResize}
+      ></div>
+      <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
+        <JsonTreeView
+          content={content}
+          editor={monacoEditor}
+          on:toast={(event) => showToast(event.detail.message)}
+        />
+      </div>
     {/if}
   </div>
 
