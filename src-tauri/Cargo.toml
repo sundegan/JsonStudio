@@ -1,6 +1,6 @@
 [package]
 name = "jsonstudio"
-version = "0.1.0"
+version = "0.0.3"
 description = "Fast, modern, and efficient JSON desktop tool"
 authors = ["sundegan"]
 license = "Apache-2.0"
