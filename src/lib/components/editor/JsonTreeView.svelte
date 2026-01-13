@@ -265,7 +265,7 @@
           <path d="M18 14v-3"/>
         </svg>
       </div>
-      <div class="text-sm font-semibold text-(--text-primary)">Tree View</div>
+      <div style="font-size: 14px;" class="font-semibold text-(--text-primary)">Tree View</div>
     </div>
   </div>
 
