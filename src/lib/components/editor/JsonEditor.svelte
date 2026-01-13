@@ -295,6 +295,7 @@
   
   let isDarkMode = $derived(settings.isDarkMode);
   let fontSize = $derived(settings.fontSize);
+  let lineHeight = $derived(settings.lineHeight);
   let tabSize = $derived(settings.tabSize);
   let showTreeView = $derived(settings.showTreeView);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
@@ -658,6 +659,7 @@
                 theme={monacoTheme}
                 language="json"
                 fontSize={fontSize}
+                lineHeight={lineHeight}
                 tabSize={tabSize}
                 onOriginalChange={(value) => { diffOriginal = value; }}
                 onModifiedChange={(value) => { diffModified = value; }}
@@ -674,6 +676,7 @@
                 theme={monacoTheme}
                 language="json"
                 fontSize={fontSize}
+                lineHeight={lineHeight}
                 tabSize={tabSize}
                 onChange={handleEditorChange}
                 onPaste={handleEditorPaste}

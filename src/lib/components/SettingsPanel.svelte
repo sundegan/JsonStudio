@@ -26,6 +26,7 @@
     darkTheme: 'one-dark',
     lightTheme: 'vs',
     fontSize: 13,
+    lineHeight: 20,
     tabSize: 2,
     showTreeView: true,
   });
@@ -62,6 +63,10 @@
 
   function handleFontSizeChange(value: number) {
     settingsStore.updateSetting('fontSize', value);
+  }
+
+  function handleLineHeightChange(value: number) {
+    settingsStore.updateSetting('lineHeight', value);
   }
 
   function handleTabSizeChange(value: number) {
@@ -113,8 +118,8 @@
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-6 py-8 space-y-8">
-        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
+      <div class="flex-1 overflow-y-auto px-6 py-8">
+        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 8px;">
           <h3 class="text-sm settings-text font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Appearance</h3>
           
           <div class="space-y-2">
@@ -180,7 +185,7 @@
           {/if}
         </div>
 
-        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 8px;">
           <h3 class="text-sm settings-text font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Editor</h3>
 
           <div class="space-y-1">
@@ -188,23 +193,41 @@
               <div class="flex-1 min-w-0">
                 <div class="text-sm settings-text text-(--text-primary)">Font Size</div>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="w-7"></div>
-                <div class="relative w-32">
-                  <input
-                    type="number"
-                    min="10"
-                    max="24"
-                    value={settings.fontSize}
-                    oninput={(e) => {
-                      const value = Number(e.currentTarget.value);
-                      if (value >= 10 && value <= 24) handleFontSizeChange(value);
-                    }}
-                    class="w-full px-2 py-1 pr-11 text-xs font-mono text-center rounded border transition-all"
-                    style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
-                  />
-                  <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">px</div>
-                </div>
+              <div class="relative w-32">
+                <input
+                  type="number"
+                  min="10"
+                  max="24"
+                  value={settings.fontSize}
+                  oninput={(e) => {
+                    const value = Number(e.currentTarget.value);
+                    if (value >= 10 && value <= 24) handleFontSizeChange(value);
+                  }}
+                  class="w-full px-2 py-1 pr-11 text-xs font-mono text-center rounded border transition-all"
+                  style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
+                />
+                <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">px</div>
+              </div>
+            </div>
+
+            <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
+              <div class="flex-1 min-w-0">
+                <div class="text-sm settings-text text-(--text-primary)">Line Height</div>
+              </div>
+              <div class="relative w-32">
+                <input
+                  type="number"
+                  min="14"
+                  max="36"
+                  value={settings.lineHeight}
+                  oninput={(e) => {
+                    const value = Number(e.currentTarget.value);
+                    if (value >= 14 && value <= 36) handleLineHeightChange(value);
+                  }}
+                  class="w-full px-2 py-1 pr-11 text-xs font-mono text-center rounded border transition-all"
+                  style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
+                />
+                <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">px</div>
               </div>
             </div>
 
@@ -212,23 +235,20 @@
               <div class="flex-1 min-w-0">
                 <div class="text-sm settings-text text-(--text-primary)">Indent Size</div>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="w-7"></div>
-                <div class="relative w-32">
-                  <input
-                    type="number"
-                    min="1"
-                    max="8"
-                    value={settings.tabSize}
-                    oninput={(e) => {
-                      const value = Number(e.currentTarget.value);
-                      if (value >= 1 && value <= 8) handleTabSizeChange(value);
-                    }}
-                    class="w-full px-2 py-1 pr-16 text-xs font-mono text-center rounded border transition-all"
-                    style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
-                  />
-                  <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">spaces</div>
-                </div>
+              <div class="relative w-32">
+                <input
+                  type="number"
+                  min="1"
+                  max="8"
+                  value={settings.tabSize}
+                  oninput={(e) => {
+                    const value = Number(e.currentTarget.value);
+                    if (value >= 1 && value <= 8) handleTabSizeChange(value);
+                  }}
+                  class="w-full px-2 py-1 pr-16 text-xs font-mono text-center rounded border transition-all"
+                  style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
+                />
+                <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">spaces</div>
               </div>
             </div>
 

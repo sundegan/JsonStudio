@@ -11,6 +11,7 @@
     theme = 'vs',
     readOnly = false,
     fontSize = 13,
+    lineHeight = 20,
     tabSize = 2,
     onOriginalChange = (_value: string) => {},
     onModifiedChange = (_value: string) => {},
@@ -22,6 +23,7 @@
     theme?: EditorTheme;
     readOnly?: boolean;
     fontSize?: number;
+    lineHeight?: number;
     tabSize?: number;
     onOriginalChange?: (value: string) => void;
     onModifiedChange?: (value: string) => void;
@@ -82,6 +84,7 @@
         readOnly,
         originalEditable: !readOnly,
         fontSize,
+        lineHeight,
       });
     }
   });
@@ -127,6 +130,7 @@
       renderMarginRevertIcon: false,
       scrollBeyondLastLine: false,
       fontSize,
+      lineHeight,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
       contextmenu: false,
       renderIndicators: false,
