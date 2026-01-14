@@ -321,12 +321,43 @@ jobs:
             fi
           fi
 
-      - name: Upload artifacts to release
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows-latest'
         uses: softprops/action-gh-release@v1
         with:
           files: |
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*windows*.exe
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
+          body: 'View changelog: https://github.com/${{ github.repository }}/releases'
+          draft: true
+          prerelease: false
+          fail_on_unmatched_files: false
+          overwrite: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'macos-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*_installer.dmg
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
+          body: 'View changelog: https://github.com/${{ github.repository }}/releases'
+          draft: true
+          prerelease: false
+          fail_on_unmatched_files: false
+          overwrite: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*linux*.AppImage
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
@@ -334,5 +365,6 @@ jobs:
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
