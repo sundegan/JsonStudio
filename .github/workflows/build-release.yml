@@ -289,24 +289,46 @@ jobs:
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            # Windows: rename .exe files (Tauri uses productName "Json Studio")
-            ORIGINAL_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_x64-setup.exe"
+            # Windows: rename .exe files (Tauri may replace spaces with dots in filename)
+            # Try both "Json Studio" and "Json.Studio" formats
+            ORIGINAL_EXE1="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_x64-setup.exe"
+            ORIGINAL_EXE2="$BUNDLE_DIR/nsis/Json.Studio_${VERSION#v}_x64-setup.exe"
             RENAMED_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
-            if [ -f "$ORIGINAL_EXE" ]; then
-              mv "$ORIGINAL_EXE" "$RENAMED_EXE"
+            
+            if [ -f "$ORIGINAL_EXE1" ]; then
+              mv "$ORIGINAL_EXE1" "$RENAMED_EXE"
+              echo "✓ Renamed Windows installer: $RENAMED_EXE"
+            elif [ -f "$ORIGINAL_EXE2" ]; then
+              mv "$ORIGINAL_EXE2" "$RENAMED_EXE"
               echo "✓ Renamed Windows installer: $RENAMED_EXE"
             else
-              echo "⚠ Windows installer not found at: $ORIGINAL_EXE"
+              echo "❌ Windows installer not found"
+              echo "Looking for: $ORIGINAL_EXE1"
+              echo "Or: $ORIGINAL_EXE2"
+              echo "Files in nsis directory:"
+              ls -la "$BUNDLE_DIR/nsis/" || true
+              exit 1
             fi
           elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
-            # Linux: rename AppImage
-            ORIGINAL_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_amd64.AppImage"
+            # Linux: rename AppImage (Tauri may replace spaces with dots in filename)
+            # Try both "Json Studio" and "Json.Studio" formats
+            ORIGINAL_APPIMAGE1="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_amd64.AppImage"
+            ORIGINAL_APPIMAGE2="$BUNDLE_DIR/appimage/Json.Studio_${VERSION#v}_amd64.AppImage"
             RENAMED_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
-            if [ -f "$ORIGINAL_APPIMAGE" ]; then
-              mv "$ORIGINAL_APPIMAGE" "$RENAMED_APPIMAGE"
+            
+            if [ -f "$ORIGINAL_APPIMAGE1" ]; then
+              mv "$ORIGINAL_APPIMAGE1" "$RENAMED_APPIMAGE"
+              echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
+            elif [ -f "$ORIGINAL_APPIMAGE2" ]; then
+              mv "$ORIGINAL_APPIMAGE2" "$RENAMED_APPIMAGE"
               echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
             else
-              echo "⚠ Linux AppImage not found at: $ORIGINAL_APPIMAGE"
+              echo "❌ Linux AppImage not found"
+              echo "Looking for: $ORIGINAL_APPIMAGE1"
+              echo "Or: $ORIGINAL_APPIMAGE2"
+              echo "Files in appimage directory:"
+              ls -la "$BUNDLE_DIR/appimage/" || true
+              exit 1
             fi
           elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
             # macOS: check installer DMG
@@ -321,15 +343,55 @@ jobs:
             fi
           fi
 
+      - name: Prepare upload file path
+        shell: bash
+        run: |
+          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
+          VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
+          
+          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+            # Windows: find renamed .exe file
+            EXE_FILE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            if [ -f "$EXE_FILE" ]; then
+              echo "UPLOAD_FILE=$EXE_FILE" >> $GITHUB_ENV
+              echo "✓ Found Windows installer: $EXE_FILE"
+            else
+              echo "❌ Windows installer not found at: $EXE_FILE"
+              ls -la "$BUNDLE_DIR/nsis/" || true
+              exit 1
+            fi
+          elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
+            # Linux: find renamed AppImage
+            APPIMAGE_FILE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
+            if [ -f "$APPIMAGE_FILE" ]; then
+              echo "UPLOAD_FILE=$APPIMAGE_FILE" >> $GITHUB_ENV
+              echo "✓ Found Linux AppImage: $APPIMAGE_FILE"
+            else
+              echo "❌ Linux AppImage not found at: $APPIMAGE_FILE"
+              ls -la "$BUNDLE_DIR/appimage/" || true
+              exit 1
+            fi
+          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+            # macOS: find installer DMG
+            DMG_FILE="$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_macos_${{ matrix.arch_suffix }}_installer.dmg"
+            if [ -f "$DMG_FILE" ]; then
+              echo "UPLOAD_FILE=$DMG_FILE" >> $GITHUB_ENV
+              echo "✓ Found macOS installer DMG: $DMG_FILE"
+            else
+              echo "❌ macOS installer DMG not found at: $DMG_FILE"
+              ls -la "$BUNDLE_DIR/dmg/" || true
+              exit 1
+            fi
+          fi
+
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*windows*.exe
+          files: ${{ env.UPLOAD_FILE }}
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
-          body: 'View changelog: https://github.com/${{ github.repository }}/releases'
+          body: 'View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md'
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
@@ -341,11 +403,10 @@ jobs:
         if: matrix.platform == 'macos-latest'
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*_installer.dmg
+          files: ${{ env.UPLOAD_FILE }}
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
-          body: 'View changelog: https://github.com/${{ github.repository }}/releases'
+          body: 'View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md'
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
@@ -357,11 +418,10 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*linux*.AppImage
+          files: ${{ env.UPLOAD_FILE }}
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
-          body: 'View changelog: https://github.com/${{ github.repository }}/releases'
+          body: 'View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md'
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
