@@ -290,42 +290,48 @@ jobs:
           
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
             # Windows: rename .exe files (Tauri may replace spaces with dots in filename)
-            # Try both "Json Studio" and "Json.Studio" formats
-            ORIGINAL_EXE1="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_x64-setup.exe"
-            ORIGINAL_EXE2="$BUNDLE_DIR/nsis/Json.Studio_${VERSION#v}_x64-setup.exe"
+            # Match any version suffix to avoid mismatches between tag and app version.
+            shopt -s nullglob
+            CANDIDATES=(
+              "$BUNDLE_DIR/nsis/Json Studio"*"_x64-setup.exe"
+              "$BUNDLE_DIR/nsis/Json.Studio"*"_x64-setup.exe"
+            )
             RENAMED_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
             
-            if [ -f "$ORIGINAL_EXE1" ]; then
-              mv "$ORIGINAL_EXE1" "$RENAMED_EXE"
-              echo "✓ Renamed Windows installer: $RENAMED_EXE"
-            elif [ -f "$ORIGINAL_EXE2" ]; then
-              mv "$ORIGINAL_EXE2" "$RENAMED_EXE"
-              echo "✓ Renamed Windows installer: $RENAMED_EXE"
+            if [ ${#CANDIDATES[@]} -gt 0 ]; then
+              ORIGINAL_EXE="${CANDIDATES[0]}"
+              if [ "$ORIGINAL_EXE" == "$RENAMED_EXE" ]; then
+                echo "✓ Windows installer already named: $RENAMED_EXE"
+              else
+                mv "$ORIGINAL_EXE" "$RENAMED_EXE"
+                echo "✓ Renamed Windows installer: $RENAMED_EXE"
+              fi
             else
               echo "❌ Windows installer not found"
-              echo "Looking for: $ORIGINAL_EXE1"
-              echo "Or: $ORIGINAL_EXE2"
               echo "Files in nsis directory:"
               ls -la "$BUNDLE_DIR/nsis/" || true
               exit 1
             fi
           elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
             # Linux: rename AppImage (Tauri may replace spaces with dots in filename)
-            # Try both "Json Studio" and "Json.Studio" formats
-            ORIGINAL_APPIMAGE1="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_amd64.AppImage"
-            ORIGINAL_APPIMAGE2="$BUNDLE_DIR/appimage/Json.Studio_${VERSION#v}_amd64.AppImage"
+            # Match any version suffix to avoid mismatches between tag and app version.
+            shopt -s nullglob
+            CANDIDATES=(
+              "$BUNDLE_DIR/appimage/Json Studio"*"_amd64.AppImage"
+              "$BUNDLE_DIR/appimage/Json.Studio"*"_amd64.AppImage"
+            )
             RENAMED_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
             
-            if [ -f "$ORIGINAL_APPIMAGE1" ]; then
-              mv "$ORIGINAL_APPIMAGE1" "$RENAMED_APPIMAGE"
-              echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
-            elif [ -f "$ORIGINAL_APPIMAGE2" ]; then
-              mv "$ORIGINAL_APPIMAGE2" "$RENAMED_APPIMAGE"
-              echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
+            if [ ${#CANDIDATES[@]} -gt 0 ]; then
+              ORIGINAL_APPIMAGE="${CANDIDATES[0]}"
+              if [ "$ORIGINAL_APPIMAGE" == "$RENAMED_APPIMAGE" ]; then
+                echo "✓ Linux AppImage already named: $RENAMED_APPIMAGE"
+              else
+                mv "$ORIGINAL_APPIMAGE" "$RENAMED_APPIMAGE"
+                echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
+              fi
             else
               echo "❌ Linux AppImage not found"
-              echo "Looking for: $ORIGINAL_APPIMAGE1"
-              echo "Or: $ORIGINAL_APPIMAGE2"
               echo "Files in appimage directory:"
               ls -la "$BUNDLE_DIR/appimage/" || true
               exit 1
