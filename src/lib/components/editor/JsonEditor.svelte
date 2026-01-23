@@ -569,6 +569,16 @@
     statsTimer = setTimeout(updateStats, 300);
   }
 
+  function handleToolbarContentChange(newValue: string) {
+    const currentTab = $activeTab;
+    content = newValue;
+    if (!currentTab) return;
+    tabsStore.updateTabContent(currentTab.id, newValue);
+    if (currentTab.filePath && !currentTab.isModified) {
+      tabsStore.updateTabModified(currentTab.id, true);
+    }
+  }
+
   function handleEditorPaste() {
     if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
     pasteFormatTimer = setTimeout(async () => {
@@ -617,7 +627,7 @@
     onToggleJsonQuery={toggleJsonQueryPanel}
     onToggleTheme={toggleTheme}
     onOpenSettings={openSettings}
-    onContentChange={(value) => { content = value; }}
+    onContentChange={handleToolbarContentChange}
     onStatsUpdate={updateStats}
     onStatsReset={resetStats}
     onToast={showToast}
