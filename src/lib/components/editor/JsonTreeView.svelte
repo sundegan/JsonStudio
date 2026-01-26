@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { openUrl } from '@tauri-apps/plugin-opener';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   type TreeNode = {
@@ -12,7 +13,7 @@
     endOffset: number;
   };
 
-  const { content, editor } = $props<{
+  let { content, editor } = $props<{
     content: string;
     editor: MonacoEditor | null;
   }>();
@@ -29,6 +30,7 @@
   let queryExpandedNodes = $state<Set<string>>(new Set());
   let queryRunId = 0;
   let expandedNodes = $state<Set<string>>(new Set());
+  let helpOpen = $state(false);
 
   // Build tree when content changes
   $effect(() => {
@@ -358,7 +360,13 @@
     queryMatches = matched;
     queryExpandedNodes = expanded;
   }
+
+  function hideHelp() {
+    helpOpen = false;
+  }
 </script>
+
+<svelte:window onclick={hideHelp} />
 
 <div class="json-tree-panel">
   <!-- Header -->
@@ -382,34 +390,170 @@
 
   <!-- Toolbar -->
   <div class="json-tree-toolbar">
-    <div class="json-tree-search-box">
-      <svg class="w-3.5 h-3.5 text-(--text-secondary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input
-        class="json-tree-search-input"
-        placeholder="JMESPath query"
-        value={searchQuery}
-        oninput={(e) => { searchQuery = e.currentTarget.value; }}
-      />
-      {#if searchQuery}
+    <div class="json-tree-query-group">
+      <div class="json-tree-search-box">
+        <svg class="json-tree-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          class="json-tree-search-input"
+          placeholder="JMESPath Query..."
+          value={searchQuery}
+          oninput={(e) => { searchQuery = e.currentTarget.value; }}
+          spellcheck="false"
+        />
+        {#if searchQuery}
+          <button
+            class="json-tree-clear-btn"
+            onclick={() => { searchQuery = ''; }}
+            title="Clear query"
+            type="button"
+          >
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        {/if}
+      </div>
+
+      <div
+        class="json-tree-help"
+        role="group"
+        aria-label="JMESPath Help"
+      >
         <button
-          class="json-tree-clear-btn"
-          onclick={() => { searchQuery = ''; }}
-          title="Clear"
+          class="json-tree-help-btn"
+          class:is-active={helpOpen}
+          onclick={(e) => { e.stopPropagation(); helpOpen = !helpOpen; }}
           type="button"
+          title="JMESPath Syntax Guide"
+          aria-expanded={helpOpen}
+          aria-controls="jmespath-help"
         >
-          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <path d="M12 17h.01"/>
           </svg>
         </button>
-      {/if}
+        
+        {#if helpOpen}
+          <div
+            class="json-tree-help-popover"
+            id="jmespath-help"
+            role="dialog"
+            aria-label="JMESPath Help"
+            tabindex="-1"
+            onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => e.key === 'Escape' && hideHelp()}
+          >
+            <div class="json-tree-help-header">
+              <span class="json-tree-help-title">JMESPath Cheat Sheet</span>
+              <a 
+                href="https://jmespath.org" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="json-tree-help-link"
+                onclick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    await openUrl('https://jmespath.org');
+                  } catch (err) {
+                    console.error('Failed to open link:', err);
+                    // Fallback for browser env if open() fails
+                    window.open('https://jmespath.org', '_blank');
+                  }
+                }}
+              >
+                Docs
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              </a>
+            </div>
+            
+            <div class="json-tree-help-content">
+              <div class="json-tree-help-section">
+                <div class="json-tree-help-label">Example JSON Data</div>
+                <div class="json-tree-help-code-wrapper">
+                  <button
+                    class="json-tree-copy-code-btn"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(`{
+  "people": [
+    {"name": "Alice", "age": 20},
+    {"name": "Bob",   "age": 30}
+  ],
+  "meta": {"count": 2}
+}`);
+                      dispatch('toast', { message: 'Example JSON copied' });
+                    }}
+                    title="Copy example"
+                    type="button"
+                  >
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                  <pre class="json-tree-help-code-block">{`{
+  "people": [
+    {"name": "Alice", "age": 20},
+    {"name": "Bob",   "age": 30}
+  ],
+  "meta": {"count": 2}
+}`}</pre>
+                </div>
+              </div>
+
+              <div class="json-tree-help-section">
+                <div class="json-tree-help-label">Example Queries</div>
+                <div class="json-tree-help-grid">
+                  <div class="help-item">
+                    <div class="help-query">people[0].name</div>
+                    <div class="help-desc">"Alice"</div>
+                  </div>
+                  <div class="help-item">
+                    <div class="help-query">people[*].name</div>
+                    <div class="help-desc">["Alice", "Bob"]</div>
+                  </div>
+                  <div class="help-item">
+                    <div class="help-query">people[?age > `25`].name</div>
+                    <div class="help-desc">["Bob"]</div>
+                  </div>
+                  <div class="help-item">
+                    <div class="help-query">meta.count</div>
+                    <div class="help-desc">2</div>
+                  </div>
+                  <div class="help-item">
+                    <div class="help-query">length(people)</div>
+                    <div class="help-desc">2</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
+      </div>
     </div>
 
     <div class="json-tree-actions">
+      <div class="json-tree-divider"></div>
       <button class="json-tree-action-btn" onclick={expandAll} disabled={treeNodes.length === 0} title="Expand All">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="13 7 7 12 13 17"/>
+          <polyline points="7 17 17 17"/>
+          <line x1="17" y1="7" x2="17" y2="17"/>
+          <path d="M7 12h10"/> 
+        </svg>
+        <!-- Custom Expand Icon (Horizontal Tree style) or generic Expand -->
+        <!-- Reverting to simpler icon for clarity if needed, but let's stick to previous or improved one -->
+         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
       </button>
@@ -561,3 +705,257 @@
     {/if}
   </div>
 </div>
+
+<style>
+  /* New Styles for JMESPath Toolbar */
+  .json-tree-query-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .json-tree-search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    height: 28px;
+  }
+
+  .json-tree-search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+  }
+
+  .json-tree-search-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .json-tree-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+    min-width: 0;
+  }
+
+  .json-tree-search-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .json-tree-clear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .json-tree-clear-btn:hover {
+    background: var(--text-secondary);
+    color: var(--bg-primary);
+  }
+
+  /* Help Button & Popover */
+  .json-tree-help {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .json-tree-help-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .json-tree-help-btn:hover,
+  .json-tree-help-btn.is-active {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  .json-tree-help-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: -50px;
+    width: 380px;
+    max-width: 90vw;
+    max-height: 400px;
+    padding: 0;
+    border-radius: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    color: var(--text-primary);
+    font-size: 12px;
+    overflow: hidden;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .json-tree-help-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .json-tree-help-title {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .json-tree-help-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .json-tree-help-link:hover {
+    text-decoration: underline;
+  }
+
+  .json-tree-help-content {
+    padding: 14px;
+    overflow-y: auto;
+  }
+
+  .json-tree-help-section {
+    margin-bottom: 16px;
+  }
+
+  .json-tree-help-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .json-tree-help-label {
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .json-tree-help-code-wrapper {
+    position: relative;
+  }
+
+  .json-tree-copy-code-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s ease;
+  }
+
+  .json-tree-help-code-wrapper:hover .json-tree-copy-code-btn {
+    opacity: 1;
+  }
+
+  .json-tree-copy-code-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--accent);
+  }
+
+  .json-tree-help-code-block {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    overflow-x: auto;
+  }
+
+  .json-tree-help-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .help-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--bg-primary);
+    padding: 8px 10px;
+  }
+
+  .help-item:hover {
+    background: var(--bg-secondary);
+  }
+
+  .help-query {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  .help-desc {
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-align: right;
+  }
+
+  .json-tree-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+</style>

@@ -140,6 +140,7 @@ body {
   height: 100%;
   min-height: 0;
   width: 100%;
+  position: relative;
 }
 
 .json-editor-main {
@@ -149,10 +150,13 @@ body {
   min-height: 0;
 }
 
-.json-editor-workspace.resizing-tree-view,
-.json-editor-workspace.resizing-tree-view * {
-  cursor: col-resize !important;
+.resizing-tree-view {
+  cursor: col-resize;
   user-select: none;
+}
+
+.resizing-tree-view * {
+  cursor: col-resize !important;
 }
 
 .json-tree-container {
@@ -160,25 +164,45 @@ body {
   height: 100%;
   min-height: 0;
   flex-shrink: 0;
+  overflow: visible;
+  border-left: 1px solid var(--border);
+  position: relative;
+  z-index: 3;
 }
 
 .json-tree-resizer {
-  width: 6px;
+  width: 4px;
   cursor: col-resize;
   align-self: stretch;
-  background: transparent;
+  background: var(--bg-secondary);
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  flex-shrink: 0;
+  transition: background 0.15s;
   touch-action: none;
+  position: relative;
 }
 
-.json-tree-resizer:hover,
+.json-tree-resizer:hover {
+  background: var(--accent, #3b82f6);
+  border-left-color: var(--border);
+  border-right-color: var(--border);
+}
+
 .json-tree-resizer:focus-visible,
-.json-editor-workspace.resizing-tree-view .json-tree-resizer {
+.resizing-tree-view .json-tree-resizer {
   background: var(--bg-secondary);
   border-left-color: var(--border);
   border-right-color: var(--border);
+}
+
+.json-tree-resizer::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 0;
+  bottom: 0;
 }
 
 /* Tree View Styles - Sidebar */
@@ -189,7 +213,7 @@ body {
   min-height: 0;
   background: var(--bg-primary);
   border-left: 1px solid var(--border);
-  overflow: hidden;
+  overflow: visible;
   flex: 1;
 }
 
@@ -223,57 +247,6 @@ body {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-}
-
-.json-tree-search-box {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.json-tree-search-box:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-.json-tree-search-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-size: 12px;
-  color: var(--text-primary);
-}
-
-.json-tree-search-input::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.5;
-}
-
-
-.json-tree-clear-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.json-tree-clear-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
 }
 
 .json-tree-actions {

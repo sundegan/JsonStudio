@@ -727,55 +727,6 @@
 </div>
 
 <style>
-  .json-editor-workspace {
-    display: flex;
-    height: 100%;
-    position: relative;
-  }
-  
-  .json-editor-main {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-  }
-  
-  .json-tree-resizer {
-    width: 4px;
-    background: var(--bg-secondary);
-    cursor: col-resize;
-    flex-shrink: 0;
-    transition: background 0.15s;
-    position: relative;
-  }
-  
-  .json-tree-resizer:hover {
-    background: var(--accent, #3b82f6);
-  }
-  
-  .json-tree-resizer::before {
-    content: '';
-    position: absolute;
-    left: -2px;
-    right: -2px;
-    top: 0;
-    bottom: 0;
-  }
-  
-  .json-tree-container {
-    flex-shrink: 0;
-    overflow: hidden;
-    border-left: 1px solid var(--border);
-  }
-  
-  .resizing-tree-view {
-    user-select: none;
-    cursor: col-resize;
-  }
-  
-  .resizing-tree-view * {
-    cursor: col-resize !important;
-  }
-
   :global {
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-8px); }

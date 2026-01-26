@@ -2,7 +2,7 @@
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { createEventDispatcher } from 'svelte';
   
-  const { leftTabs, rightTabs, leftActiveTabId, rightActiveTabId, isDarkMode } = $props<{
+  let { leftTabs, rightTabs, leftActiveTabId, rightActiveTabId, isDarkMode } = $props<{
     leftTabs: Tab[];
     rightTabs: Tab[];
     leftActiveTabId: string | null;
