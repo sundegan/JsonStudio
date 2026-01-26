@@ -22,8 +22,12 @@
   let treeError = $state('');
   let isLoading = $state(false);
   let previousContent = $state('');
+  let rootData = $state<unknown>(null);
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
+  let queryMatches = $state<Set<string>>(new Set());
+  let queryExpandedNodes = $state<Set<string>>(new Set());
+  let queryRunId = 0;
   let expandedNodes = $state<Set<string>>(new Set());
 
   // Build tree when content changes
@@ -34,10 +38,18 @@
     }
   });
 
+  $effect(() => {
+    const query = searchQuery.trim();
+    const data = rootData;
+    const nodes = treeNodes;
+    void updateQueryMatches(query, data, nodes);
+  });
+
   async function buildTree() {
     if (!content.trim()) {
       treeNodes = [];
       treeError = '';
+      rootData = null;
       return;
     }
 
@@ -50,6 +62,7 @@
       ]);
 
       const parsed = jsonSourceMap.parse(content);
+      rootData = parsed.data;
       const nodes = parseToTree(parsed.data, parsed.pointers, '');
       treeNodes = nodes;
       
@@ -60,6 +73,7 @@
     } catch (e) {
       treeError = e instanceof Error ? e.message : 'Failed to parse JSON';
       treeNodes = [];
+      rootData = null;
     } finally {
       isLoading = false;
     }
@@ -127,19 +141,25 @@
     return segment.replace(/~1/g, '/').replace(/~0/g, '~');
   }
 
-  function pointerToDotPath(path: string): string {
+  function pointerToJmesPath(path: string, data: unknown): string {
     if (!path || path === '/') return '';
     const segments = path.split('/').slice(1).map(decodePointerSegment);
     let result = '';
+    let current = data;
     for (const segment of segments) {
-      const isIndex = /^[0-9]+$/.test(segment);
-      const isIdentifier = /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(segment);
-      if (isIndex) {
+      const isArrayIndex = Array.isArray(current) && /^[0-9]+$/.test(segment);
+      if (isArrayIndex) {
         result += `[${segment}]`;
-      } else if (isIdentifier) {
-        result += result ? `.${segment}` : segment;
+        current = current[Number(segment)];
+        continue;
+      }
+      const isIdentifier = /^[A-Za-z_][0-9A-Za-z_]*$/.test(segment);
+      const token = isIdentifier ? segment : JSON.stringify(segment);
+      result = result ? `${result}.${token}` : token;
+      if (current && typeof current === 'object' && !Array.isArray(current)) {
+        current = (current as Record<string, unknown>)[segment];
       } else {
-        result += `[${JSON.stringify(segment)}]`;
+        current = undefined;
       }
     }
     return result;
@@ -232,23 +252,8 @@
     expandedNodes = new Set();
   }
 
-  function filterNodes(nodes: TreeNode[], query: string): TreeNode[] {
-    if (!query.trim()) return nodes;
-    
-    const lowerQuery = query.toLowerCase();
-    return nodes.filter(node => {
-      const keyMatch = node.key.toLowerCase().includes(lowerQuery);
-      const valueMatch = String(node.value).toLowerCase().includes(lowerQuery);
-      const hasMatchingChildren = node.children && filterNodes(node.children, query).length > 0;
-      
-      return keyMatch || valueMatch || hasMatchingChildren;
-    });
-  }
-
-  let filteredTree = $derived(filterNodes(treeNodes, searchQuery));
-
   async function copyEntry(node: TreeNode) {
-    const dotPath = pointerToDotPath(node.path) || node.key;
+    const dotPath = pointerToJmesPath(node.path, rootData) || node.key;
     const valueText = JSON.stringify(node.value) ?? 'null';
     const entryText = `${dotPath}: ${valueText}`;
 
@@ -272,6 +277,86 @@
 
   function isLastChild(nodes: TreeNode[], index: number): boolean {
     return index === nodes.length - 1;
+  }
+
+  function collectNodes(nodes: TreeNode[], list: TreeNode[]) {
+    nodes.forEach(node => {
+      list.push(node);
+      if (node.children) {
+        collectNodes(node.children, list);
+      }
+    });
+  }
+
+  function addAncestorPaths(path: string, expanded: Set<string>) {
+    if (!path || path === '/') return;
+    const segments = path.split('/').slice(1);
+    let current = '';
+    for (const segment of segments) {
+      current += `/${segment}`;
+      expanded.add(current);
+    }
+  }
+
+  async function updateQueryMatches(
+    query: string,
+    data: unknown,
+    nodes: TreeNode[]
+  ) {
+    const runId = ++queryRunId;
+    if (!query || !data || nodes.length === 0) {
+      queryMatches = new Set();
+      queryExpandedNodes = new Set();
+      return;
+    }
+
+    let result: unknown;
+    try {
+      const jmespath = await import('jmespath');
+      const search = jmespath.search ?? jmespath.default?.search ?? jmespath.default;
+      if (typeof search !== 'function') {
+        throw new Error('JMESPath search not available');
+      }
+      result = search(data, query);
+    } catch (e) {
+      if (runId !== queryRunId) return;
+      queryMatches = new Set();
+      queryExpandedNodes = new Set();
+      return;
+    }
+
+    if (runId !== queryRunId) return;
+    const resultItems = Array.isArray(result) ? result : [result];
+    const needsDeepEqual = resultItems.some(item => item && typeof item === 'object');
+    let deepEqual: ((a: unknown, b: unknown) => boolean) | null = null;
+    if (needsDeepEqual) {
+      const deepEqualModule = await import('fast-deep-equal');
+      deepEqual = deepEqualModule.default ?? deepEqualModule;
+    }
+
+    const allNodes: TreeNode[] = [];
+    collectNodes(nodes, allNodes);
+
+    const matched = new Set<string>();
+    const expanded = new Set<string>();
+    allNodes.forEach(node => {
+      for (const item of resultItems) {
+        if (item && typeof item === 'object') {
+          if (deepEqual && deepEqual(node.value, item)) {
+            matched.add(node.path);
+            addAncestorPaths(node.path, expanded);
+            break;
+          }
+        } else if (Object.is(node.value, item)) {
+          matched.add(node.path);
+          addAncestorPaths(node.path, expanded);
+          break;
+        }
+      }
+    });
+
+    queryMatches = matched;
+    queryExpandedNodes = expanded;
   }
 </script>
 
@@ -304,7 +389,7 @@
       </svg>
       <input
         class="json-tree-search-input"
-        placeholder="Filter..."
+        placeholder="JMESPath query"
         value={searchQuery}
         oninput={(e) => { searchQuery = e.currentTarget.value; }}
       />
@@ -373,12 +458,13 @@
     {:else}
       {#snippet renderNode(node: TreeNode, depth: number, isLast: boolean, parentLines: boolean[])}
         {@const hasChild = hasChildren(node)}
-        {@const isExpanded = expandedNodes.has(node.path)}
+        {@const isExpanded = expandedNodes.has(node.path) || queryExpandedNodes.has(node.path)}
         {@const isSelected = selectedPath === node.path}
+        {@const isMatched = queryMatches.has(node.path)}
         {@const childCount = getChildCount(node)}
         {@const showValue = node.type !== 'object' && node.type !== 'array'}
         
-        <div class="tree-node" class:tree-node-selected={isSelected}>
+        <div class="tree-node" class:tree-node-selected={isSelected} class:tree-node-matched={isMatched}>
           <div 
             class="tree-node-content"
             onclick={() => selectNode(node)}
@@ -468,8 +554,8 @@
       {/snippet}
 
       <div class="tree-list">
-        {#each filteredTree as node, i}
-          {@render renderNode(node, 0, isLastChild(filteredTree, i), [])}
+        {#each treeNodes as node, i}
+          {@render renderNode(node, 0, isLastChild(treeNodes, i), [])}
         {/each}
       </div>
     {/if}
