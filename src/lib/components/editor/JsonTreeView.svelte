@@ -123,6 +123,28 @@
     return segment.replace(/~/g, '~0').replace(/\//g, '~1');
   }
 
+  function decodePointerSegment(segment: string): string {
+    return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+  }
+
+  function pointerToDotPath(path: string): string {
+    if (!path || path === '/') return '';
+    const segments = path.split('/').slice(1).map(decodePointerSegment);
+    let result = '';
+    for (const segment of segments) {
+      const isIndex = /^[0-9]+$/.test(segment);
+      const isIdentifier = /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(segment);
+      if (isIndex) {
+        result += `[${segment}]`;
+      } else if (isIdentifier) {
+        result += result ? `.${segment}` : segment;
+      } else {
+        result += `[${JSON.stringify(segment)}]`;
+      }
+    }
+    return result;
+  }
+
   function getValueType(value: unknown): TreeNode['type'] {
     if (value === null) return 'null';
     if (Array.isArray(value)) return 'array';
@@ -225,10 +247,14 @@
 
   let filteredTree = $derived(filterNodes(treeNodes, searchQuery));
 
-  async function copyPath(path: string) {
+  async function copyEntry(node: TreeNode) {
+    const dotPath = pointerToDotPath(node.path) || node.key;
+    const valueText = JSON.stringify(node.value) ?? 'null';
+    const entryText = `${dotPath}: ${valueText}`;
+
     try {
-      await navigator.clipboard.writeText(path);
-      dispatch('toast', { message: 'Path copied' });
+      await navigator.clipboard.writeText(entryText);
+      dispatch('toast', { message: 'Path + value copied' });
     } catch (e) {}
   }
 
@@ -413,12 +439,13 @@
             <!-- Copy Path Button -->
             <button
               class="tree-copy-btn"
-              onclick={(e) => { e.stopPropagation(); copyPath(node.path); }}
-              title="Copy path"
+              onclick={(e) => { e.stopPropagation(); copyEntry(node); }}
+              title="Copy path + value"
               type="button"
             >
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
             </button>
           </div>

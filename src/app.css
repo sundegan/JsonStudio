@@ -1078,13 +1078,8 @@ body {
 .tree-type-null {
   width: 32px;
   color: var(--text-secondary);
-  background: rgba(128, 128, 128, 0.1);
-  font-size: 12px;
-}
-
-.tree-type-null {
-  color: var(--text-secondary);
   background: rgba(128, 128, 128, 0.15);
+  font-size: 12px;
   opacity: 0.7;
 }
 
