@@ -9,7 +9,6 @@
   import DiffTabBar from './DiffTabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
-  import JsonQueryPanel from './JsonQueryPanel.svelte';
   import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
@@ -50,7 +49,6 @@
   });
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
-  let isJsonQueryOpen = $state(false);
   const TREE_MIN_WIDTH = 260;
   const TREE_MAX_WIDTH = 640;
   let treeViewWidth = $state(320);
@@ -354,10 +352,6 @@
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
   }
 
-  function toggleJsonQueryPanel() {
-    isJsonQueryOpen = !isJsonQueryOpen;
-  }
-
   function toggleDiffMode() {
     if (isDiffMode) {
       // Exit diff mode: merge tabs
@@ -373,10 +367,6 @@
         monacoEditor?.setValue(currentTab.content);
       }
       return;
-    }
-
-    if (isJsonQueryOpen) {
-      isJsonQueryOpen = false;
     }
 
     // Enter diff mode: clone tabs to both sides
@@ -620,11 +610,9 @@
     content={content}
     activeTab={$activeTab}
     isDarkMode={isDarkMode}
-    isJsonQueryOpen={isJsonQueryOpen}
     editor={monacoEditor}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
-    onToggleJsonQuery={toggleJsonQueryPanel}
     onToggleTheme={toggleTheme}
     onOpenSettings={openSettings}
     onContentChange={handleToolbarContentChange}
@@ -692,14 +680,6 @@
                 onPaste={handleEditorPaste}
               />
 
-              {#if isJsonQueryOpen}
-                <JsonQueryPanel
-                  content={content}
-                  editor={monacoEditor}
-                  onClose={toggleJsonQueryPanel}
-                  on:toast={(event) => showToast(event.detail.message)}
-                />
-              {/if}
             </div>
           </div>
         {/if}
