@@ -2,6 +2,30 @@
 
 All notable changes to this project are documented here.
 
+## [0.4.0] - 2026-02-28
+
+### Added
+- **JMESPath query support**: replace the simple text filter in Tree View with full JMESPath expressions, enabling powerful JSON querying with real-time match highlighting and automatic ancestor expansion.
+- **New color themes**: add Dracula, Nord, Solarized Light, Quiet Light, and Catppuccin Latte themes for the editor.
+- **JSON file associations**: register `.json` file type in system so the OS can open JSON files directly with Json Studio.
+- **Tree View close button**: add a close button to quickly hide the Tree View panel.
+- **JMESPath help popover**: built-in quick reference with example data and common query patterns.
+
+### Improved
+- **Copy path + value**: Tree View copy button now copies both the JMESPath path and value (e.g. `users[0].name: "Alice"`) instead of just the JSON Pointer path.
+- **Expand/Collapse toggle**: merge expand-all and collapse-all into a single toggle button with dynamic icon.
+- **JSON error display**: show a clearer warning icon and "Invalid JSON Format" message instead of a text-only error.
+- **Settings panel**: refactor layout structure and styling for better readability and maintainability.
+- **Tree View layout**: improve toolbar spacing, alignment, and responsiveness across different panel widths.
+- **CSS architecture**: introduce CSS variables for JSON data type colors (object, array, string, number, boolean, null) for consistent theming.
+
+### Fixed
+- Fixed find widget hover event propagation causing unintended behavior in the Monaco editor.
+- Fixed editor content changes not being saved correctly when switching tabs.
+
+### Removed
+- Removed the standalone `JsonQueryPanel` component (functionality replaced by JMESPath query in Tree View).
+
 ## [0.3.0] - 2026-01-13
 
 ### Added

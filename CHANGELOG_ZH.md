@@ -2,6 +2,30 @@
 
 此文件用于记录项目的主要变更。
 
+## [0.4.0] - 2026-02-28
+
+### 新增
+- **JMESPath 查询支持**：用 JMESPath 表达式替代 Tree View 中的简单文本过滤，支持强大的 JSON 查询能力，实时高亮匹配节点并自动展开祖先路径。
+- **新增配色主题**：新增 Dracula、Nord、Solarized Light、Quiet Light、Catppuccin Latte 五款编辑器主题。
+- **JSON 文件关联**：在系统中注册 `.json` 文件类型，支持双击直接用 Json Studio 打开 JSON 文件。
+- **Tree View 关闭按钮**：新增关闭按钮，可快速隐藏 Tree View 面板。
+- **JMESPath 帮助弹窗**：内置快速参考文档，包含示例数据和常用查询模式。
+
+### 改进
+- **复制路径 + 值**：Tree View 复制按钮现在同时复制 JMESPath 路径和值（如 `users[0].name: "Alice"`），而不是仅复制 JSON Pointer 路径。
+- **展开/折叠切换**：将展开全部和折叠全部合并为一个切换按钮，图标随状态动态变化。
+- **JSON 错误提示**：显示更清晰的警告图标和 "Invalid JSON Format" 提示，替代纯文本错误信息。
+- **设置面板重构**：优化布局结构和样式，提升可读性和可维护性。
+- **Tree View 布局优化**：改善工具栏间距、对齐方式，提升不同面板宽度下的响应表现。
+- **CSS 架构优化**：引入 JSON 数据类型颜色 CSS 变量（object、array、string、number、boolean、null），统一主题配色。
+
+### 修复
+- 修复查找组件的 hover 事件冒泡导致 Monaco 编辑器出现意外行为的问题。
+- 修复切换标签页时编辑器内容变更未正确保存的问题。
+
+### 移除
+- 移除独立的 `JsonQueryPanel` 组件（功能已由 Tree View 中的 JMESPath 查询替代）。
+
 ## [0.3.0] - 2026-01-13
 
 ### 新增
