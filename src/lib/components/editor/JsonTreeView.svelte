@@ -397,33 +397,33 @@
 
   <!-- Toolbar -->
   <div class="json-tree-toolbar">
-    <div class="json-tree-query-group">
-      <div class="json-tree-search-box">
-        <svg class="json-tree-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          class="json-tree-search-input"
-          placeholder="JMESPath Query..."
-          value={searchQuery}
-          oninput={(e) => { searchQuery = e.currentTarget.value; }}
-          spellcheck="false"
-        />
-        {#if searchQuery}
-          <button
-            class="json-tree-clear-btn"
-            onclick={() => { searchQuery = ''; }}
-            title="Clear query"
-            type="button"
-          >
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        {/if}
-      </div>
+    <div class="json-tree-search-box">
+      <svg class="json-tree-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        class="json-tree-search-input"
+        placeholder="JMESPath Query..."
+        value={searchQuery}
+        oninput={(e) => { searchQuery = e.currentTarget.value; }}
+        spellcheck="false"
+      />
+      {#if searchQuery}
+        <button
+          class="json-tree-clear-btn"
+          onclick={() => { searchQuery = ''; }}
+          title="Clear query"
+          type="button"
+        >
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      {/if}
+    </div>
 
+    <div class="json-tree-toolbar-actions">
       <div
         class="json-tree-help"
         role="group"
@@ -438,10 +438,8 @@
           aria-expanded={helpOpen}
           aria-controls="jmespath-help"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <path d="M12 17h.01"/>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.75 3.75a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0ZM7.25 7.5a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .74.75v3.25h.25a.5.5 0 0 1 0 1h-1.5a.5.5 0 0 1 0-1h.25V8.25h-.01a.75.75 0 0 1-.49-.75Z"/>
           </svg>
         </button>
         
@@ -469,7 +467,6 @@
                     await openUrl('https://jmespath.org');
                   } catch (err) {
                     console.error('Failed to open link:', err);
-                    // Fallback for browser env if open() fails
                     window.open('https://jmespath.org', '_blank');
                   }
                 }}
@@ -547,10 +544,7 @@
           </div>
         {/if}
       </div>
-    </div>
 
-    <div class="json-tree-actions">
-      <div class="json-tree-divider"></div>
       <button 
         class="json-tree-action-btn" 
         onclick={isAllExpanded ? collapseAll : expandAll} 
@@ -712,12 +706,11 @@
 
 <style>
   /* New Styles for JMESPath Toolbar */
-  .json-tree-query-group {
-    flex: 1;
+  .json-tree-toolbar-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 0;
+    gap: 2px;
+    flex-shrink: 0;
   }
 
   .json-tree-search-box {
@@ -731,6 +724,8 @@
     border-radius: 6px;
     transition: all 0.2s ease;
     height: 28px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .json-tree-search-box:focus-within {
@@ -787,27 +782,30 @@
     position: relative;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .json-tree-help-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
     color: var(--text-secondary);
+    opacity: 0.4;
     background: transparent;
-    border: 1px solid transparent;
+    border: none;
     cursor: pointer;
     transition: all 0.15s ease;
+    overflow: visible;
   }
 
   .json-tree-help-btn:hover,
   .json-tree-help-btn.is-active {
-    background: var(--bg-tertiary);
+    opacity: 0.8;
     color: var(--text-primary);
-    border-color: var(--border);
   }
 
   .json-tree-help-popover {
@@ -956,10 +954,4 @@
     text-align: right;
   }
 
-  .json-tree-divider {
-    width: 1px;
-    height: 16px;
-    background: var(--border);
-    margin: 0 4px;
-  }
 </style>
