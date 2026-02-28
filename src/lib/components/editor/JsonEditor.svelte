@@ -67,7 +67,9 @@
     darkTheme: 'one-dark',
     lightTheme: 'vs',
     fontSize: 13,
+    lineHeight: 20,
     tabSize: 2,
+    showTreeView: true,
   });
   
   onMount(() => {

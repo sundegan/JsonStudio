@@ -30,6 +30,7 @@
   let queryExpandedNodes = $state<Set<string>>(new Set());
   let queryRunId = 0;
   let expandedNodes = $state<Set<string>>(new Set());
+  let isAllExpanded = $state(false);
   let helpOpen = $state(false);
 
   // Build tree when content changes
@@ -52,6 +53,7 @@
       treeNodes = [];
       treeError = '';
       rootData = null;
+      isAllExpanded = false;
       return;
     }
 
@@ -72,10 +74,12 @@
       if (nodes.length > 0) {
         expandedNodes = new Set(nodes.map(n => n.path));
       }
+      isAllExpanded = false;
     } catch (e) {
       treeError = e instanceof Error ? e.message : 'Failed to parse JSON';
       treeNodes = [];
       rootData = null;
+      isAllExpanded = false;
     } finally {
       isLoading = false;
     }
@@ -152,7 +156,7 @@
       const isArrayIndex = Array.isArray(current) && /^[0-9]+$/.test(segment);
       if (isArrayIndex) {
         result += `[${segment}]`;
-        current = current[Number(segment)];
+        current = (current as any)[Number(segment)];
         continue;
       }
       const isIdentifier = /^[A-Za-z_][0-9A-Za-z_]*$/.test(segment);
@@ -212,6 +216,7 @@
       expandedNodes.add(node.path);
     }
     expandedNodes = new Set(expandedNodes);
+    isAllExpanded = false;
   }
 
   function selectNode(node: TreeNode) {
@@ -248,10 +253,12 @@
     };
     collectPaths(treeNodes);
     expandedNodes = allPaths;
+    isAllExpanded = true;
   }
 
   function collapseAll() {
     expandedNodes = new Set();
+    isAllExpanded = false;
   }
 
   async function copyEntry(node: TreeNode) {
@@ -544,36 +551,24 @@
 
     <div class="json-tree-actions">
       <div class="json-tree-divider"></div>
-      <button class="json-tree-action-btn" onclick={expandAll} disabled={treeNodes.length === 0} title="Expand All">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="13 7 7 12 13 17"/>
-          <polyline points="7 17 17 17"/>
-          <line x1="17" y1="7" x2="17" y2="17"/>
-          <path d="M7 12h10"/> 
-        </svg>
-        <!-- Custom Expand Icon (Horizontal Tree style) or generic Expand -->
-        <!-- Reverting to simpler icon for clarity if needed, but let's stick to previous or improved one -->
-         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
-        </svg>
-      </button>
-      <button class="json-tree-action-btn" onclick={collapseAll} disabled={treeNodes.length === 0} title="Collapse All">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
+      <button 
+        class="json-tree-action-btn" 
+        onclick={isAllExpanded ? collapseAll : expandAll} 
+        disabled={treeNodes.length === 0} 
+        title={isAllExpanded ? "Collapse All" : "Expand All"}
+      >
+        {#if isAllExpanded}
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m17 11-5-5-5 5M17 18l-5-5-5 5"/>
+          </svg>
+        {:else}
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7 13 5 5 5-5M7 6l5 5 5-5"/>
+          </svg>
+        {/if}
       </button>
     </div>
   </div>
-
-  {#if treeError}
-    <div class="json-tree-error">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 8v4M12 16h.01"/>
-      </svg>
-      <span>{treeError}</span>
-    </div>
-  {/if}
 
   <!-- Tree Content -->
   <div class="json-tree-content">
@@ -584,7 +579,16 @@
         </svg>
         <div class="text-xs text-(--text-secondary) mt-2">Parsing...</div>
       </div>
-    {:else if treeNodes.length === 0 && !treeError}
+    {:else if treeError}
+      <div class="json-tree-empty">
+        <svg class="w-12 h-12 text-(--text-secondary) opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="text-xs font-medium text-(--text-primary) mt-3 opacity-70">Invalid JSON Format</div>
+      </div>
+    {:else if treeNodes.length === 0}
       <div class="json-tree-empty">
         <svg class="w-12 h-12 text-(--text-secondary) opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="2" width="6" height="6" rx="1"/>
