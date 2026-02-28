@@ -43,6 +43,19 @@
     "longDescription": "A modern JSON desktop application built with Tauri 2.0 and Rust, providing common features like formatting, compression, escaping, and comparison",
     "copyright": "Copyright © 2025 Json Studio",
     "category": "DeveloperTool",
+    "fileAssociations": [
+      {
+        "ext": [
+          "json"
+        ],
+        "name": "JSON Document",
+        "role": "Editor",
+        "rank": "Owner",
+        "contentTypes": [
+          "public.json"
+        ]
+      }
+    ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",

@@ -106,6 +106,161 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
     }
   },
 
+  // Dracula theme
+  'dracula': {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '6272a4', fontStyle: 'italic' },
+      { token: 'keyword', foreground: 'ff79c6' },
+      { token: 'string', foreground: 'f1fa8c' },
+      { token: 'string.key.json', foreground: '8be9fd' },
+      { token: 'string.value.json', foreground: 'f1fa8c' },
+      { token: 'number', foreground: 'bd93f9' },
+      { token: 'delimiter', foreground: 'f8f8f2' },
+      { token: 'type', foreground: 'ffb86c' },
+    ],
+    colors: {
+      'editor.background': '#282a36',
+      'editor.foreground': '#f8f8f2',
+      'editor.lineHighlightBackground': '#44475a',
+      'editor.selectionBackground': '#44475a',
+      'editorCursor.foreground': '#f8f8f2',
+      'editorLineNumber.foreground': '#6272a4',
+      'editorLineNumber.activeForeground': '#f8f8f2',
+      'editor.inactiveSelectionBackground': '#3a3d4b',
+      'editorIndentGuide.background': '#3b3f51',
+      'editorIndentGuide.activeBackground': '#545772',
+      'editorGutter.background': '#282a36',
+      'scrollbarSlider.background': '#6272a440',
+      'scrollbarSlider.hoverBackground': '#6272a480',
+    }
+  },
+
+  // Nord theme
+  'nord': {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '616e88', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '81a1c1' },
+      { token: 'string', foreground: 'a3be8c' },
+      { token: 'string.key.json', foreground: '88c0d0' },
+      { token: 'string.value.json', foreground: 'a3be8c' },
+      { token: 'number', foreground: 'b48ead' },
+      { token: 'delimiter', foreground: 'd8dee9' },
+      { token: 'type', foreground: 'ebcb8b' },
+    ],
+    colors: {
+      'editor.background': '#2e3440',
+      'editor.foreground': '#d8dee9',
+      'editor.lineHighlightBackground': '#353b49',
+      'editor.selectionBackground': '#434c5e',
+      'editorCursor.foreground': '#d8dee9',
+      'editorLineNumber.foreground': '#4c566a',
+      'editorLineNumber.activeForeground': '#d8dee9',
+      'editor.inactiveSelectionBackground': '#3b4252',
+      'editorIndentGuide.background': '#3b4252',
+      'editorIndentGuide.activeBackground': '#4c566a',
+      'editorGutter.background': '#2e3440',
+      'scrollbarSlider.background': '#4c566a40',
+      'scrollbarSlider.hoverBackground': '#4c566a80',
+    }
+  },
+
+  // Solarized Light theme
+  'solarized-light': {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '93a1a1', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '859900' },
+      { token: 'string', foreground: '2aa198' },
+      { token: 'string.key.json', foreground: '268bd2' },
+      { token: 'string.value.json', foreground: '2aa198' },
+      { token: 'number', foreground: 'd33682' },
+      { token: 'delimiter', foreground: '586e75' },
+      { token: 'type', foreground: 'b58900' },
+    ],
+    colors: {
+      'editor.background': '#fdf6e3',
+      'editor.foreground': '#586e75',
+      'editor.lineHighlightBackground': '#eee8d5',
+      'editor.selectionBackground': '#d1cbaf',
+      'editorCursor.foreground': '#586e75',
+      'editorLineNumber.foreground': '#93a1a1',
+      'editorLineNumber.activeForeground': '#586e75',
+      'editor.inactiveSelectionBackground': '#e8e2cc',
+      'editorIndentGuide.background': '#e6dfca',
+      'editorIndentGuide.activeBackground': '#d3cbb7',
+      'editorGutter.background': '#fdf6e3',
+      'scrollbarSlider.background': '#93a1a140',
+      'scrollbarSlider.hoverBackground': '#93a1a180',
+    }
+  },
+
+  // Quiet Light theme
+  'quiet-light': {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: 'aaaaaa', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '4b69c6' },
+      { token: 'string', foreground: '448c27' },
+      { token: 'string.key.json', foreground: '7a3e9d' },
+      { token: 'string.value.json', foreground: '448c27' },
+      { token: 'number', foreground: 'ab6526' },
+      { token: 'delimiter', foreground: '333333' },
+      { token: 'type', foreground: '7a3e9d' },
+    ],
+    colors: {
+      'editor.background': '#f5f5f5',
+      'editor.foreground': '#333333',
+      'editor.lineHighlightBackground': '#e4f6d4',
+      'editor.selectionBackground': '#c9d0d9',
+      'editorCursor.foreground': '#54494b',
+      'editorLineNumber.foreground': '#aaaaaa',
+      'editorLineNumber.activeForeground': '#333333',
+      'editor.inactiveSelectionBackground': '#d8dce2',
+      'editorIndentGuide.background': '#e0e0e0',
+      'editorIndentGuide.activeBackground': '#c8c8c8',
+      'editorGutter.background': '#f5f5f5',
+      'scrollbarSlider.background': '#aaaaaa40',
+      'scrollbarSlider.hoverBackground': '#aaaaaa80',
+    }
+  },
+
+  // Catppuccin Latte theme
+  'catppuccin-latte': {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '9ca0b0', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '8839ef' },
+      { token: 'string', foreground: '40a02b' },
+      { token: 'string.key.json', foreground: '1e66f5' },
+      { token: 'string.value.json', foreground: '40a02b' },
+      { token: 'number', foreground: 'fe640b' },
+      { token: 'delimiter', foreground: '4c4f69' },
+      { token: 'type', foreground: 'df8e1d' },
+    ],
+    colors: {
+      'editor.background': '#eff1f5',
+      'editor.foreground': '#4c4f69',
+      'editor.lineHighlightBackground': '#e6e9ef',
+      'editor.selectionBackground': '#bcc0cc',
+      'editorCursor.foreground': '#dc8a78',
+      'editorLineNumber.foreground': '#9ca0b0',
+      'editorLineNumber.activeForeground': '#4c4f69',
+      'editor.inactiveSelectionBackground': '#ccd0da',
+      'editorIndentGuide.background': '#dce0e8',
+      'editorIndentGuide.activeBackground': '#bcc0cc',
+      'editorGutter.background': '#eff1f5',
+      'scrollbarSlider.background': '#9ca0b040',
+      'scrollbarSlider.hoverBackground': '#9ca0b080',
+    }
+  },
+
   // GitHub Light theme
   'github-light': {
     base: 'vs',

@@ -94,217 +94,221 @@
 
 {#if isOpen}
   <div
-    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-[fadeIn_0.2s_ease-out]"
+    class="settings-backdrop"
     onclick={handleBackdropClick}
     role="dialog"
     aria-modal="true"
     aria-labelledby="settings-title"
   >
-    <div
-      class="bg-(--bg-primary) border border-(--border) rounded-xl shadow-2xl w-full max-w-xl h-[85vh] flex flex-col animate-[slideUp_0.2s_ease-out]"
-      onclick={(e) => e.stopPropagation()}
-    >
-      <div class="flex items-center justify-between px-6 py-4 border-b border-(--border) shrink-0">
-        <h2 id="settings-title" class="text-lg font-semibold text-(--text-primary)">Settings</h2>
+    <div class="settings-dialog" onclick={(e) => e.stopPropagation()}>
+      <!-- Header -->
+      <div class="settings-header">
+        <h2 id="settings-title" class="settings-title">Settings</h2>
         <button
-          class="w-8 h-8 flex items-center justify-center rounded-md text-(--text-secondary)
-                 hover:bg-(--bg-tertiary) hover:text-(--text-primary) transition-all"
+          class="settings-close-btn"
           onclick={() => { isOpen = false; }}
           type="button"
         >
-          <svg class="w-5 h-5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="w-4.5 h-4.5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-6 py-8">
-        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 8px;">
-          <h3 class="text-sm settings-text font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Appearance</h3>
-          
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-(--text-primary)">Theme</label>
-            <div class="flex gap-2">
-              <button
-                class="flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all {!settings.isDarkMode ? 'bg-(--accent) text-white' : 'bg-(--bg-secondary) text-(--text-secondary) hover:bg-(--bg-tertiary) border border-(--border)'}"
-                onclick={handleThemeModeToggle}
-              >Light</button>
-              <button
-                class="flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all {settings.isDarkMode ? 'bg-(--accent) text-white' : 'bg-(--bg-secondary) text-(--text-secondary) hover:bg-(--bg-tertiary) border border-(--border)'}"
-                onclick={handleThemeModeToggle}
-              >Dark</button>
-            </div>
-          </div>
+      <!-- Content -->
+      <div class="settings-body">
+        <!-- Appearance -->
+        <section class="settings-section">
+          <h3 class="settings-section-title">Appearance</h3>
 
-          {#if settings.isDarkMode}
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-(--text-primary)">Dark Theme</label>
-              <div class="space-y-1.5">
-                {#each darkThemes as theme}
-                  <button
-                    class="w-full flex items-center gap-3 py-2.5 px-3 rounded-md transition-all {settings.darkTheme === theme.id ? 'bg-(--accent)/10 border border-(--accent)/30' : 'hover:bg-(--bg-secondary) border border-transparent'}"
-                    onclick={() => handleDarkThemeSelect(theme.id)}
-                  >
-                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 {settings.darkTheme === theme.id ? 'border-(--accent) bg-(--accent)' : 'border-(--border)'}">
-                      {#if settings.darkTheme === theme.id}
-                        <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      {/if}
-                    </div>
-                    <div class="text-left flex-1">
-                      <div class="text-sm font-medium text-(--text-primary)">{theme.name}</div>
-                      <div class="text-xs text-(--text-secondary)">{theme.description}</div>
-                    </div>
-                  </button>
-                {/each}
+          <div class="settings-list">
+            <div class="settings-item">
+              <div class="settings-item-label">
+                <span class="settings-item-name">Theme</span>
+                <span class="settings-hint">Switch between light and dark appearance</span>
               </div>
-            </div>
-          {/if}
-
-          {#if !settings.isDarkMode}
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-(--text-primary)">Light Theme</label>
-              <div class="space-y-1.5">
-                {#each lightThemes as theme}
-                  <button
-                    class="w-full flex items-center gap-3 py-2.5 px-3 rounded-md transition-all {settings.lightTheme === theme.id ? 'bg-(--accent)/10 border border-(--accent)/30' : 'hover:bg-(--bg-secondary) border border-transparent'}"
-                    onclick={() => handleLightThemeSelect(theme.id)}
-                  >
-                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 {settings.lightTheme === theme.id ? 'border-(--accent) bg-(--accent)' : 'border-(--border)'}">
-                      {#if settings.lightTheme === theme.id}
-                        <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      {/if}
-                    </div>
-                    <div class="text-left flex-1">
-                      <div class="text-sm font-medium text-(--text-primary)">{theme.name}</div>
-                      <div class="text-xs text-(--text-secondary)">{theme.description}</div>
-                    </div>
-                  </button>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-
-        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 8px;">
-          <h3 class="text-sm settings-text font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Editor</h3>
-
-          <div class="space-y-1">
-            <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
-              <div class="flex-1 min-w-0">
-                <div class="text-sm settings-text text-(--text-primary)">Font Size</div>
-              </div>
-              <div class="relative w-32">
-                <input
-                  type="number"
-                  min="10"
-                  max="24"
-                  value={settings.fontSize}
-                  oninput={(e) => {
-                    const value = Number(e.currentTarget.value);
-                    if (value >= 10 && value <= 24) handleFontSizeChange(value);
-                  }}
-                  class="w-full px-2 py-1 pr-11 text-xs font-mono text-center rounded border transition-all"
-                  style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
-                />
-                <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">px</div>
-              </div>
-            </div>
-
-            <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
-              <div class="flex-1 min-w-0">
-                <div class="text-sm settings-text text-(--text-primary)">Line Height</div>
-              </div>
-              <div class="relative w-32">
-                <input
-                  type="number"
-                  min="14"
-                  max="36"
-                  value={settings.lineHeight}
-                  oninput={(e) => {
-                    const value = Number(e.currentTarget.value);
-                    if (value >= 14 && value <= 36) handleLineHeightChange(value);
-                  }}
-                  class="w-full px-2 py-1 pr-11 text-xs font-mono text-center rounded border transition-all"
-                  style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
-                />
-                <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">px</div>
-              </div>
-            </div>
-
-            <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
-              <div class="flex-1 min-w-0">
-                <div class="text-sm settings-text text-(--text-primary)">Indent Size</div>
-              </div>
-              <div class="relative w-32">
-                <input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={settings.tabSize}
-                  oninput={(e) => {
-                    const value = Number(e.currentTarget.value);
-                    if (value >= 1 && value <= 8) handleTabSizeChange(value);
-                  }}
-                  class="w-full px-2 py-1 pr-16 text-xs font-mono text-center rounded border transition-all"
-                  style="background-color: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); outline: none;"
-                />
-                <div class="absolute text-xs pointer-events-none" style="color: var(--text-secondary); right: 1rem; top: calc(50% + 1px); transform: translateY(-50%); line-height: 1; font-size: 0.75rem;">spaces</div>
-              </div>
-            </div>
-
-            <div class="flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)">
-              <div class="flex-1 min-w-0">
-                <div class="text-sm settings-text text-(--text-primary)">Tree View Sidebar</div>
-                <div class="text-xs settings-text text-(--text-secondary)">Show JSON structure panel beside editor</div>
-              </div>
-              <div class="flex items-center gap-2">
+              <div class="flex gap-2">
                 <button
-                  class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 {settings.showTreeView ? 'bg-(--accent)' : 'bg-(--border)'}"
+                  class="settings-theme-btn {!settings.isDarkMode ? 'is-active' : ''}"
+                  onclick={handleThemeModeToggle}
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                  Light
+                </button>
+                <button
+                  class="settings-theme-btn {settings.isDarkMode ? 'is-active' : ''}"
+                  onclick={handleThemeModeToggle}
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                  Dark
+                </button>
+              </div>
+            </div>
+
+            {#if settings.isDarkMode}
+              <div class="settings-item">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">Color Scheme</span>
+                  <span class="settings-hint">Choose a dark color scheme for the editor</span>
+                </div>
+                <div class="settings-theme-list">
+                  {#each darkThemes as theme}
+                    <button
+                      class="settings-theme-option {settings.darkTheme === theme.id ? 'is-active' : ''}"
+                      onclick={() => handleDarkThemeSelect(theme.id)}
+                    >
+                      <div class="settings-radio {settings.darkTheme === theme.id ? 'is-checked' : ''}">
+                        {#if settings.darkTheme === theme.id}<div class="settings-radio-dot"></div>{/if}
+                      </div>
+                      <div class="flex-1">
+                        <div class="settings-theme-option-name">{theme.name}</div>
+                        <div class="settings-hint">{theme.description}</div>
+                      </div>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+
+            {#if !settings.isDarkMode}
+              <div class="settings-item">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">Color Scheme</span>
+                  <span class="settings-hint">Choose a light color scheme for the editor</span>
+                </div>
+                <div class="settings-theme-list">
+                  {#each lightThemes as theme}
+                    <button
+                      class="settings-theme-option {settings.lightTheme === theme.id ? 'is-active' : ''}"
+                      onclick={() => handleLightThemeSelect(theme.id)}
+                    >
+                      <div class="settings-radio {settings.lightTheme === theme.id ? 'is-checked' : ''}">
+                        {#if settings.lightTheme === theme.id}<div class="settings-radio-dot"></div>{/if}
+                      </div>
+                      <div class="flex-1">
+                        <div class="settings-theme-option-name">{theme.name}</div>
+                        <div class="settings-hint">{theme.description}</div>
+                      </div>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+        </section>
+
+        <!-- Editor -->
+        <section class="settings-section">
+          <h3 class="settings-section-title">Editor</h3>
+
+          <div class="settings-list">
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">Font Size</span>
+                  <span class="settings-hint">Editor text size (10–24 px)</span>
+                </div>
+                <div class="settings-number-input">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize > 10) handleFontSizeChange(settings.fontSize - 1); }} disabled={settings.fontSize <= 10} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                  </button>
+                  <span class="settings-stepper-value">{settings.fontSize}</span>
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize < 24) handleFontSizeChange(settings.fontSize + 1); }} disabled={settings.fontSize >= 24} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">Line Height</span>
+                  <span class="settings-hint">Vertical spacing between lines (14–36 px)</span>
+                </div>
+                <div class="settings-number-input">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight > 14) handleLineHeightChange(settings.lineHeight - 1); }} disabled={settings.lineHeight <= 14} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                  </button>
+                  <span class="settings-stepper-value">{settings.lineHeight}</span>
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight < 36) handleLineHeightChange(settings.lineHeight + 1); }} disabled={settings.lineHeight >= 36} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">Indent Size</span>
+                  <span class="settings-hint">Spaces per indentation level (1–8 space)</span>
+                </div>
+                <div class="settings-number-input">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize > 1) handleTabSizeChange(settings.tabSize - 1); }} disabled={settings.tabSize <= 1} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                  </button>
+                  <span class="settings-stepper-value">{settings.tabSize}</span>
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize < 8) handleTabSizeChange(settings.tabSize + 1); }} disabled={settings.tabSize >= 8} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">Tree View Sidebar</span>
+                  <span class="settings-hint">Show JSON structure panel beside editor</span>
+                </div>
+                <button
+                  class="settings-toggle {settings.showTreeView ? 'is-on' : ''}"
                   onclick={() => handleTreeViewToggle(!settings.showTreeView)}
                   type="button"
                   aria-pressed={settings.showTreeView}
                 >
-                  <span
-                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 {settings.showTreeView ? 'translate-x-4' : 'translate-x-0'}"
-                  ></span>
+                  <span class="settings-toggle-thumb"></span>
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="space-y-6 p-6 rounded-lg" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
-          <h3 class="text-sm settings-text font-semibold uppercase tracking-wider pb-3" style="color: var(--text-secondary);">Shortcuts</h3>
+        <!-- Shortcuts -->
+        <section class="settings-section">
+          <h3 class="settings-section-title">Shortcuts</h3>
 
-          <div class="space-y-1">
+          <div class="settings-list">
             {#snippet shortcutRow(shortcut: typeof shortcuts.showApp)}
               {@const isModified = shortcut.currentKey !== shortcut.defaultKey}
-              <div 
-                class="group flex items-center py-2 px-3 -mx-3 rounded transition-colors hover:bg-(--bg-secondary)"
-              >
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm text-(--text-primary)">{shortcut.name}</div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <div class="w-7 flex items-center justify-end">
-                    {#if isModified}
-                      <button
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-200 w-5 h-5 flex items-center justify-center rounded hover:bg-(--bg-tertiary)"
-                        onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
-                        title="Reset to default"
-                        type="button"
-                      >
-                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-secondary);">
-                          <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-                          <path d="M21 3v5h-5"/>
-                        </svg>
-                      </button>
-                    {/if}
+              <div class="settings-item">
+                <div class="settings-item-row group">
+                  <div class="settings-item-label">
+                    <span class="settings-item-name">{shortcut.name}</span>
+                    <span class="settings-hint">{shortcut.description}</span>
                   </div>
-                  <ShortcutRecorder 
-                    value={shortcut.currentKey}
-                    onchange={(key) => shortcutsStore.updateShortcut(shortcut.id, key)}
-                  />
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 flex items-center justify-end">
+                      {#if isModified}
+                        <button
+                          class="settings-reset-btn"
+                          onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
+                          title="Reset to default"
+                          type="button"
+                        >
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                            <path d="M21 3v5h-5"/>
+                          </svg>
+                        </button>
+                      {/if}
+                    </div>
+                    <ShortcutRecorder 
+                      value={shortcut.currentKey}
+                      onchange={(key) => shortcutsStore.updateShortcut(shortcut.id, key)}
+                    />
+                  </div>
                 </div>
               </div>
             {/snippet}
@@ -312,17 +316,351 @@
             {@render shortcutRow(shortcuts.showApp)}
             {@render shortcutRow(shortcuts.formatClipboard)}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   </div>
 {/if}
 
 <style>
-  .settings-text {
-    letter-spacing: 0.02em;
+  /* Backdrop & Dialog */
+  .settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.2s ease-out;
   }
 
+  .settings-dialog {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+    width: 100%;
+    max-width: 720px;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.2s ease-out;
+  }
+
+  /* Header */
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .settings-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .settings-close-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .settings-close-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  /* Body */
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 28px;
+  }
+
+  /* Section */
+  .settings-section {
+    margin-bottom: 20px;
+  }
+
+  .settings-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .settings-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    padding-bottom: 10px;
+    margin-bottom: 0;
+  }
+
+  /* List & Items */
+  .settings-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .settings-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  }
+
+  .settings-item:last-child {
+    border-bottom: none;
+  }
+
+  .settings-item-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .settings-item-label {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .settings-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+  }
+
+  .settings-hint {
+    font-size: 11px;
+    line-height: 1.4;
+    color: color-mix(in srgb, var(--text-secondary) 60%, transparent);
+  }
+
+  /* Theme toggle buttons (Light / Dark) */
+  .settings-theme-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .settings-theme-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .settings-theme-btn.is-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* Theme option list (radio style) */
+  .settings-theme-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .settings-theme-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    width: 100%;
+  }
+
+  .settings-theme-option:hover {
+    background: var(--bg-primary);
+  }
+
+  .settings-theme-option.is-active {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .settings-theme-option-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* Radio dot */
+  .settings-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .settings-radio.is-checked {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .settings-radio-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  /* Number stepper */
+  .settings-number-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .settings-stepper-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+
+  .settings-stepper-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .settings-stepper-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--border) 100%, var(--text-secondary) 20%);
+  }
+
+  .settings-stepper-btn:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  .settings-stepper-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .settings-stepper-value {
+    min-width: 28px;
+    text-align: center;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* Toggle switch */
+  .settings-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    border: none;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .settings-toggle.is-on {
+    background: var(--accent);
+  }
+
+  .settings-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+
+  .settings-toggle.is-on .settings-toggle-thumb {
+    transform: translateX(16px);
+  }
+
+  /* Reset button (shortcuts) */
+  .settings-reset-btn {
+    opacity: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .group:hover .settings-reset-btn {
+    opacity: 1;
+  }
+
+  .settings-reset-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  /* Animations */
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -331,7 +669,7 @@
   @keyframes slideUp {
     from { 
       opacity: 0;
-      transform: translateY(20px) scale(0.95);
+      transform: translateY(16px) scale(0.97);
     }
     to { 
       opacity: 1;

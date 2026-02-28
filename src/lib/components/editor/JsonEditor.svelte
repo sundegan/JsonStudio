@@ -9,7 +9,6 @@
   import DiffTabBar from './DiffTabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
-  import JsonQueryPanel from './JsonQueryPanel.svelte';
   import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
@@ -50,7 +49,6 @@
   });
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
-  let isJsonQueryOpen = $state(false);
   const TREE_MIN_WIDTH = 260;
   const TREE_MAX_WIDTH = 640;
   let treeViewWidth = $state(320);
@@ -69,7 +67,9 @@
     darkTheme: 'one-dark',
     lightTheme: 'vs',
     fontSize: 13,
+    lineHeight: 20,
     tabSize: 2,
+    showTreeView: true,
   });
   
   onMount(() => {
@@ -354,10 +354,6 @@
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
   }
 
-  function toggleJsonQueryPanel() {
-    isJsonQueryOpen = !isJsonQueryOpen;
-  }
-
   function toggleDiffMode() {
     if (isDiffMode) {
       // Exit diff mode: merge tabs
@@ -373,10 +369,6 @@
         monacoEditor?.setValue(currentTab.content);
       }
       return;
-    }
-
-    if (isJsonQueryOpen) {
-      isJsonQueryOpen = false;
     }
 
     // Enter diff mode: clone tabs to both sides
@@ -569,6 +561,16 @@
     statsTimer = setTimeout(updateStats, 300);
   }
 
+  function handleToolbarContentChange(newValue: string) {
+    const currentTab = $activeTab;
+    content = newValue;
+    if (!currentTab) return;
+    tabsStore.updateTabContent(currentTab.id, newValue);
+    if (currentTab.filePath && !currentTab.isModified) {
+      tabsStore.updateTabModified(currentTab.id, true);
+    }
+  }
+
   function handleEditorPaste() {
     if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
     pasteFormatTimer = setTimeout(async () => {
@@ -610,14 +612,12 @@
     content={content}
     activeTab={$activeTab}
     isDarkMode={isDarkMode}
-    isJsonQueryOpen={isJsonQueryOpen}
     editor={monacoEditor}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
-    onToggleJsonQuery={toggleJsonQueryPanel}
     onToggleTheme={toggleTheme}
     onOpenSettings={openSettings}
-    onContentChange={(value) => { content = value; }}
+    onContentChange={handleToolbarContentChange}
     onStatsUpdate={updateStats}
     onStatsReset={resetStats}
     onToast={showToast}
@@ -682,14 +682,6 @@
                 onPaste={handleEditorPaste}
               />
 
-              {#if isJsonQueryOpen}
-                <JsonQueryPanel
-                  content={content}
-                  editor={monacoEditor}
-                  onClose={toggleJsonQueryPanel}
-                  on:toast={(event) => showToast(event.detail.message)}
-                />
-              {/if}
             </div>
           </div>
         {/if}
@@ -737,55 +729,6 @@
 </div>
 
 <style>
-  .json-editor-workspace {
-    display: flex;
-    height: 100%;
-    position: relative;
-  }
-  
-  .json-editor-main {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-  }
-  
-  .json-tree-resizer {
-    width: 4px;
-    background: var(--bg-secondary);
-    cursor: col-resize;
-    flex-shrink: 0;
-    transition: background 0.15s;
-    position: relative;
-  }
-  
-  .json-tree-resizer:hover {
-    background: var(--accent, #3b82f6);
-  }
-  
-  .json-tree-resizer::before {
-    content: '';
-    position: absolute;
-    left: -2px;
-    right: -2px;
-    top: 0;
-    bottom: 0;
-  }
-  
-  .json-tree-container {
-    flex-shrink: 0;
-    overflow: hidden;
-    border-left: 1px solid var(--border);
-  }
-  
-  .resizing-tree-view {
-    user-select: none;
-    cursor: col-resize;
-  }
-  
-  .resizing-tree-view * {
-    cursor: col-resize !important;
-  }
-
   :global {
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-8px); }

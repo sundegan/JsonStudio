@@ -11,11 +11,9 @@
     content,
     activeTab,
     isDarkMode,
-    isJsonQueryOpen,
     editor,
     tabSize,
     onToggleDiff,
-    onToggleJsonQuery,
     onToggleTheme,
     onOpenSettings,
     onContentChange,
@@ -27,11 +25,9 @@
     content: string;
     activeTab: Tab | null;
     isDarkMode: boolean;
-    isJsonQueryOpen: boolean;
     editor: MonacoEditor | null;
     tabSize: number;
     onToggleDiff: () => void;
-    onToggleJsonQuery: () => void;
     onToggleTheme: () => void;
     onOpenSettings: () => void;
     onContentChange: (value: string) => void;
@@ -527,25 +523,6 @@
         <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
         <path d="M12 4v16"/>
         <path d="M7 12h3M14 12h3"/>
-      </svg>
-    </button>
-
-    <!-- JSON Query toggle button -->
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             {isJsonQueryOpen ? 'text-(--accent) bg-(--accent)/10' : 'text-(--text-secondary)'}
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={onToggleJsonQuery}
-      disabled={isDiffMode}
-      title="JSON Query"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="m21 21-4.35-4.35"/>
-        <path d="M11 8v6M8 11h6"/>
       </svg>
     </button>
 
