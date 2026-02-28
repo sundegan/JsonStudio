@@ -7,20 +7,25 @@ export const darkThemes = [
   { id: 'one-dark', name: 'One Dark Pro', description: 'Atom style, soft colors' },
   { id: 'github-dark', name: 'GitHub Dark', description: 'GitHub official dark' },
   { id: 'tokyo-night', name: 'Tokyo Night', description: 'Modern Japanese aesthetics' },
+  { id: 'dracula', name: 'Dracula', description: 'Vibrant and iconic purple' },
+  { id: 'nord', name: 'Nord', description: 'Arctic, cool blue tones' },
 ] as const;
 
 // Light theme options (consistent with monacoThemes.ts config)
 export const lightThemes = [
   { id: 'vs', name: 'Visual Studio', description: 'Classic light theme' },
   { id: 'github-light', name: 'GitHub Light', description: 'GitHub official light' },
+  { id: 'solarized-light', name: 'Solarized Light', description: 'Warm, eye-friendly tones' },
+  { id: 'quiet-light', name: 'Quiet Light', description: 'Soft and minimal' },
+  { id: 'catppuccin-latte', name: 'Catppuccin Latte', description: 'Pastel and cozy' },
 ] as const;
 
 // Settings type definition
 export interface AppSettings {
   // Theme settings
   isDarkMode: boolean;
-  darkTheme: 'one-dark' | 'github-dark' | 'tokyo-night';
-  lightTheme: 'vs' | 'github-light';
+  darkTheme: 'one-dark' | 'github-dark' | 'tokyo-night' | 'dracula' | 'nord';
+  lightTheme: 'vs' | 'github-light' | 'solarized-light' | 'quiet-light' | 'catppuccin-latte';
   
   // Editor settings
   fontSize: number;

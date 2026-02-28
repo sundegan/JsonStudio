@@ -46,6 +46,18 @@ body {
   --success: #22c55e;
   --warning: #f59e0b;
   --error: #ef4444;
+  --json-object: #7ab0df;
+  --json-object-bg: rgba(122, 176, 223, 0.12);
+  --json-array: #c49bde;
+  --json-array-bg: rgba(196, 155, 222, 0.12);
+  --json-string: #a8d4a0;
+  --json-string-bg: rgba(168, 212, 160, 0.12);
+  --json-number: #e0b27e;
+  --json-number-bg: rgba(224, 178, 126, 0.12);
+  --json-boolean: #d4b96e;
+  --json-boolean-bg: rgba(212, 185, 110, 0.12);
+  --json-null: #808080;
+  --json-null-bg: rgba(128, 128, 128, 0.12);
 }
 
 .light {
@@ -62,6 +74,18 @@ body {
   --success: #188038;
   --warning: #f29900;
   --error: #d93025;
+  --json-object: #2872a8;
+  --json-object-bg: rgba(40, 114, 168, 0.08);
+  --json-array: #8544a8;
+  --json-array-bg: rgba(133, 68, 168, 0.08);
+  --json-string: #3a7d34;
+  --json-string-bg: rgba(58, 125, 52, 0.08);
+  --json-number: #b45e1a;
+  --json-number-bg: rgba(180, 94, 26, 0.08);
+  --json-boolean: #96750a;
+  --json-boolean-bg: rgba(150, 117, 10, 0.08);
+  --json-null: #8c8c8c;
+  --json-null-bg: rgba(140, 140, 140, 0.08);
 }
 
 ::-webkit-scrollbar {
@@ -464,42 +488,42 @@ body {
 
 .tree-type-object {
   width: 32px;
-  color: #61afef;
-  background: rgba(97, 175, 239, 0.15);
+  color: var(--json-object);
+  background: var(--json-object-bg);
   font-size: 10px;
   font-weight: 700;
 }
 
 .tree-type-array {
   width: 32px;
-  color: #c678dd;
-  background: rgba(198, 120, 221, 0.15);
+  color: var(--json-array);
+  background: var(--json-array-bg);
   font-size: 10px;
   font-weight: 700;
 }
 
 .tree-type-string {
   width: 30px;
-  color: #98c379;
-  background: rgba(152, 195, 121, 0.15);
+  color: var(--json-string);
+  background: var(--json-string-bg);
 }
 
 .tree-type-number {
   width: 34px;
-  color: #d19a66;
-  background: rgba(209, 154, 102, 0.15);
+  color: var(--json-number);
+  background: var(--json-number-bg);
 }
 
 .tree-type-boolean {
   width: 36px;
-  color: #e5c07b;
-  background: rgba(229, 192, 123, 0.15);
+  color: var(--json-boolean);
+  background: var(--json-boolean-bg);
 }
 
 .tree-type-null {
   width: 32px;
-  color: var(--text-secondary);
-  background: rgba(128, 128, 128, 0.15);
+  color: var(--json-null);
+  background: var(--json-null-bg);
   font-size: 12px;
   opacity: 0.7;
 }
@@ -535,19 +559,19 @@ body {
 }
 
 .tree-value-string {
-  color: #98c379;
+  color: var(--json-string);
 }
 
 .tree-value-number {
-  color: #d19a66;
+  color: var(--json-number);
 }
 
 .tree-value-boolean {
-  color: #e5c07b;
+  color: var(--json-boolean);
 }
 
 .tree-value-null {
-  color: var(--text-secondary);
+  color: var(--json-null);
   opacity: 0.7;
 }
 
