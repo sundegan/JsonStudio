@@ -41,9 +41,16 @@
   let container: HTMLDivElement;
   let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
+  let editorDomNode: HTMLElement | null = null;
+  let findWidgetHoverHandler: ((event: MouseEvent) => void) | null = null;
   
   // Flag: distinguish between internal edits and external updates
   let isInternalChange = false;
+  const findWidgetHoverSelectors = [
+    '.find-widget .button.codicon-widget-close',
+    '.find-widget .monaco-custom-toggle.codicon-find-selection',
+    '.find-widget .codicon-find-selection',
+  ].join(', ');
   
   // Watch value changes
   $effect(() => {
@@ -197,9 +204,26 @@
         onPaste(event);
       });
     }
+
+    editorDomNode = editor?.getDomNode() as HTMLElement | null;
+    if (editorDomNode) {
+      findWidgetHoverHandler = (event: MouseEvent) => {
+        const target = event.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest(findWidgetHoverSelectors)) {
+          event.stopImmediatePropagation();
+        }
+      };
+      editorDomNode.addEventListener('mouseover', findWidgetHoverHandler, true);
+    }
   });
   
   onDestroy(() => {
+    if (editorDomNode && findWidgetHoverHandler) {
+      editorDomNode.removeEventListener('mouseover', findWidgetHoverHandler, true);
+    }
+    findWidgetHoverHandler = null;
+    editorDomNode = null;
     editor?.dispose();
   });
   

@@ -2,7 +2,7 @@
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { createEventDispatcher, onMount } from 'svelte';
   
-  const { tabs, activeTabId, isDarkMode } = $props<{
+  let { tabs, activeTabId, isDarkMode } = $props<{
     tabs: Tab[];
     activeTabId: string | null;
     isDarkMode: boolean;
@@ -293,10 +293,7 @@
     grid-template-columns: 20px minmax(0, 1fr) 20px;
   }
   
-  .tab-button.dragging {
-    opacity: 0.5;
-  }
-  
+
   /* Drag indicator */
   .tab-button.drag-over::before {
     content: '';
