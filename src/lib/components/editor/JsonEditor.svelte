@@ -84,6 +84,7 @@
     let unlistenFormatted: (() => void) | null = null;
     let unlistenRaw: (() => void) | null = null;
     let unlistenFileDrop: (() => void) | null = null;
+    let unlistenOpenFile: (() => void) | null = null;
     
     (async () => {
       const { listen } = await import('@tauri-apps/api/event');
@@ -113,7 +114,6 @@
       });
 
       // Listen for file drop events
-      // Tauri 2.0 uses 'tauri://drag-drop' event
       unlistenFileDrop = await listen<{ paths: string[], position: { x: number, y: number } }>('tauri://drag-drop', async (event) => {
         const paths = event.payload?.paths;
         if (paths && paths.length > 0) {
@@ -122,16 +122,28 @@
             const fileContent = await readFile(filePath);
             const name = await getFileName(filePath);
             
-            const currentTab = $activeTab;
-            
-            // Always create a new tab for dropped files
             tabsStore.addTab(fileContent, filePath, name);
-            // Content and editor will be updated by $effect when tab switches
-            
             showToast(`Opened: ${name || 'file'}`);
           } catch (e) {
             showToast('Failed to open file');
             console.error('Drop file error:', e);
+          }
+        }
+      });
+
+      // Listen for file open events (macOS "Open With" / double-click)
+      unlistenOpenFile = await listen<string[]>('open-file', async (event) => {
+        const paths = event.payload;
+        if (!paths || paths.length === 0) return;
+        for (const filePath of paths) {
+          try {
+            const fileContent = await readFile(filePath);
+            const name = await getFileName(filePath);
+            tabsStore.addTab(fileContent, filePath, name);
+            showToast(`Opened: ${name || 'file'}`);
+          } catch (e) {
+            showToast('Failed to open file');
+            console.error('Open file error:', e);
           }
         }
       });
@@ -231,6 +243,7 @@
       if (unlistenFormatted) unlistenFormatted();
       if (unlistenRaw) unlistenRaw();
       if (unlistenFileDrop) unlistenFileDrop();
+      if (unlistenOpenFile) unlistenOpenFile();
       if (diffModeUnsubscribe) diffModeUnsubscribe();
       window.removeEventListener('keydown', handleKeydown);
     };
