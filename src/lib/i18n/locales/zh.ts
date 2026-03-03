@@ -80,9 +80,19 @@ export default {
   'settings.diffDesc': '切换对比模式',
   'settings.resetShortcut': '重置为默认',
 
+  // Toolbar - Codegen
+  'toolbar.codegen': '生成代码',
+  'toolbar.exitCodegen': '退出代码生成',
+
   // Convert
   'convert.copyResult': '复制转换结果',
   'convert.copied': '已复制',
+
+  // Codegen
+  'codegen.copyResult': '复制生成代码',
+  'codegen.copied': '已复制',
+  'codegen.classNamePlaceholder': '输入类名/接口名...',
+  'codegen.toggleDirection': '切换转换方向',
 
   // Tree View
   'treeView.title': '树形视图',
