@@ -318,7 +318,7 @@
   }
 </script>
 
-<div class="toolbar">
+<div class="je-toolbar">
   {#if isDiffMode}
     <!-- Diff mode: only show exit button -->
     <div class="toolbar-group">
@@ -434,7 +434,7 @@
 </div>
 
 <style>
-  .toolbar {
+  .je-toolbar {
     display: flex;
     align-items: center;
     gap: 0;
