@@ -389,11 +389,11 @@
         {$t('toolbar.diff')}
       </button>
       <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={!hasContent || isCodegenMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
-        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 4 20 7 17 10"/><path d="M4 12v-1a3 3 0 0 1 3-3h13"/><polyline points="7 20 4 17 7 14"/><path d="M20 12v1a3 3 0 0 1-3 3H4"/></svg>
         {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
       </button>
       <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={!hasContent || isConvertMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
-        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 1 12 7 18"/><polyline points="17 6 23 12 17 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
         {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
       </button>
     </div>
