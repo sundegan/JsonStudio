@@ -161,6 +161,7 @@ body {
 /* Editor workspace layout */
 .json-editor-workspace {
   display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
   width: 100%;

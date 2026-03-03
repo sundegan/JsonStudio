@@ -146,4 +146,11 @@ export default {
   'toast.clipboardPastedRaw': '剪贴板内容已粘贴（无效 JSON）',
   'toast.pinnedToTop': '已置顶',
   'toast.unpinnedFromTop': '已取消置顶',
+
+  // Fix JSON
+  'fixJson.fix': '修复 JSON',
+  'fixJson.dismiss': '忽略',
+  'fixJson.success': 'JSON 已修复',
+  'fixJson.failed': 'JSON 修复失败',
+  'fixJson.unrepairable': '无法自动修复，请手动检查',
 } as const;

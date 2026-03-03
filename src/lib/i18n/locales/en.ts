@@ -146,4 +146,11 @@ export default {
   'toast.clipboardPastedRaw': 'Clipboard content pasted (invalid JSON)',
   'toast.pinnedToTop': 'Pinned to top',
   'toast.unpinnedFromTop': 'Unpinned from top',
+
+  // Fix JSON
+  'fixJson.fix': 'Fix JSON',
+  'fixJson.dismiss': 'Dismiss',
+  'fixJson.success': 'JSON repaired successfully',
+  'fixJson.failed': 'Failed to repair JSON',
+  'fixJson.unrepairable': 'Cannot auto-fix, please check manually',
 } as const;

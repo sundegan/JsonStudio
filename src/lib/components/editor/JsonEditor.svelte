@@ -16,6 +16,8 @@
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
+  import { jsonrepair } from 'jsonrepair';
+  import { t } from '$lib/i18n';
 
   let content = $state('');
   let stats = $state<JsonStats>({
@@ -35,6 +37,9 @@
   let isDiffMode = $state(false);
   let isConvertMode = $state(false);
   let isCodegenMode = $state(false);
+  let jsonError = $state<{ message: string } | null>(null);
+  let isFixing = $state(false);
+  let jsonErrorTimer: ReturnType<typeof setTimeout> | null = null;
   let diffOriginal = $state('');
   let diffModified = $state('');
   let diffLineCount = $state(0);
@@ -264,6 +269,7 @@
         suppressNextEditorChange = false;
       });
     }
+    checkJsonError(currentTab.content);
   }
   
   $effect(() => {
@@ -556,9 +562,11 @@
         error_info: null,
       };
       tabsStore.updateTabStats(currentTab.id, stats);
+      jsonError = null;
       return;
     }
     statsTimer = setTimeout(updateStats, 300);
+    checkJsonError(newValue);
   }
 
   function handleToolbarContentChange(newValue: string) {
@@ -591,6 +599,50 @@
       tabsStore.updateTabStats(currentTab.id, stats);
     } catch (e) {}
   }
+
+  function checkJsonError(text: string) {
+    if (jsonErrorTimer) clearTimeout(jsonErrorTimer);
+    jsonErrorTimer = setTimeout(() => {
+      if (!text.trim()) {
+        jsonError = null;
+        return;
+      }
+      try {
+        JSON.parse(text);
+        jsonError = null;
+      } catch (e: any) {
+        jsonError = { message: e?.message || 'Invalid JSON' };
+      }
+    }, 500);
+  }
+
+  function fixJson() {
+    if (!content.trim() || isFixing) return;
+    isFixing = true;
+    try {
+      const repaired = jsonrepair(content);
+      const parsed = JSON.parse(repaired);
+      const formatted = JSON.stringify(parsed, null, tabSize);
+      content = formatted;
+      monacoEditor?.setValue(formatted);
+      const currentTab = $activeTab;
+      if (currentTab) {
+        tabsStore.updateTabContent(currentTab.id, formatted);
+        if (currentTab.filePath && !currentTab.isModified) {
+          tabsStore.updateTabModified(currentTab.id, true);
+        }
+      }
+      jsonError = null;
+      updateStats();
+      showToast($t('fixJson.success'));
+    } catch (e: any) {
+      jsonError = { message: $t('fixJson.unrepairable') };
+      showToast($t('fixJson.failed'));
+    } finally {
+      isFixing = false;
+    }
+  }
+
 
 </script>
 
@@ -676,6 +728,31 @@
           />
         {:else}
           <div class="json-editor-workspace">
+            {#if jsonError}
+              <div class="json-fix-bar">
+                <div class="json-fix-bar-left">
+                  <svg class="json-fix-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span class="json-fix-bar-msg">{jsonError.message}</span>
+                </div>
+                <div class="json-fix-bar-actions">
+                  <button class="json-fix-btn" onclick={fixJson} disabled={isFixing}>
+                    <svg class="json-fix-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    {$t('fixJson.fix')}
+                  </button>
+                  <button class="json-fix-dismiss" onclick={() => { jsonError = null; }} title={$t('fixJson.dismiss')}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            {/if}
             <div class="json-editor-main">
               <MonacoEditor
                 bind:this={monacoEditor}
@@ -742,5 +819,104 @@
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+  }
+
+  .json-fix-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 12px;
+    background: color-mix(in srgb, var(--error, #ef4444) 8%, var(--bg-secondary));
+    border-bottom: 1px solid color-mix(in srgb, var(--error, #ef4444) 25%, var(--border));
+    flex-shrink: 0;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .json-fix-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .json-fix-bar-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--error, #ef4444);
+    flex-shrink: 0;
+  }
+
+  .json-fix-bar-msg {
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .json-fix-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .json-fix-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-primary));
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .json-fix-btn:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .json-fix-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .json-fix-btn-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .json-fix-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+
+  .json-fix-dismiss:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .json-fix-dismiss svg {
+    width: 12px;
+    height: 12px;
   }
 </style>
