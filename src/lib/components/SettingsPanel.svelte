@@ -1,30 +1,17 @@
 <script lang="ts">
   import { settingsStore, darkThemes, lightThemes, type AppSettings } from '$lib/stores/settings';
   import { shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import { t, availableLocales, localeNames, type Locale } from '$lib/i18n';
   import ShortcutRecorder from './ShortcutRecorder.svelte';
 
   let isOpen = $state(false);
-  let shortcuts = $state<ShortcutsSettings>({
-    showApp: {
-      id: 'show_app',
-      name: 'Show App',
-      description: 'Bring Json Studio to front',
-      defaultKey: 'CommandOrControl+Shift+J',
-      currentKey: 'CommandOrControl+Shift+J'
-    },
-    formatClipboard: {
-      id: 'format_clipboard',
-      name: 'Format Clipboard',
-      description: 'Format JSON in clipboard and display',
-      defaultKey: 'CommandOrControl+Shift+V',
-      currentKey: 'CommandOrControl+Shift+V'
-    }
-  });
+  let shortcuts = $state<ShortcutsSettings | null>(null);
   
   let settings = $state<AppSettings>({
     isDarkMode: false,
     darkTheme: 'one-dark',
     lightTheme: 'vs',
+    language: 'zh',
     fontSize: 13,
     lineHeight: 20,
     tabSize: 2,
@@ -59,6 +46,10 @@
 
   function handleLightThemeSelect(themeId: string) {
     settingsStore.updateSetting('lightTheme', themeId as AppSettings['lightTheme']);
+  }
+
+  function handleLanguageChange(lang: Locale) {
+    settingsStore.updateSetting('language', lang);
   }
 
   function handleFontSizeChange(value: number) {
@@ -103,7 +94,7 @@
     <div class="settings-dialog" onclick={(e) => e.stopPropagation()}>
       <!-- Header -->
       <div class="settings-header">
-        <h2 id="settings-title" class="settings-title">Settings</h2>
+        <h2 id="settings-title" class="settings-title">{$t('settings.title')}</h2>
         <button
           class="settings-close-btn"
           onclick={() => { isOpen = false; }}
@@ -119,13 +110,32 @@
       <div class="settings-body">
         <!-- Appearance -->
         <section class="settings-section">
-          <h3 class="settings-section-title">Appearance</h3>
+          <h3 class="settings-section-title">{$t('settings.appearance')}</h3>
 
           <div class="settings-list">
+            <!-- Language -->
             <div class="settings-item">
               <div class="settings-item-label">
-                <span class="settings-item-name">Theme</span>
-                <span class="settings-hint">Switch between light and dark appearance</span>
+                <span class="settings-item-name">{$t('settings.language')}</span>
+                <span class="settings-hint">{$t('settings.languageHint')}</span>
+              </div>
+              <div class="flex gap-2">
+                {#each availableLocales as lang}
+                  <button
+                    class="settings-theme-btn {settings.language === lang ? 'is-active' : ''}"
+                    onclick={() => handleLanguageChange(lang)}
+                  >
+                    {localeNames[lang]}
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+            <!-- Theme -->
+            <div class="settings-item">
+              <div class="settings-item-label">
+                <span class="settings-item-name">{$t('settings.theme')}</span>
+                <span class="settings-hint">{$t('settings.themeHint')}</span>
               </div>
               <div class="flex gap-2">
                 <button
@@ -133,14 +143,14 @@
                   onclick={handleThemeModeToggle}
                 >
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                  Light
+                  {$t('settings.light')}
                 </button>
                 <button
                   class="settings-theme-btn {settings.isDarkMode ? 'is-active' : ''}"
                   onclick={handleThemeModeToggle}
                 >
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                  Dark
+                  {$t('settings.dark')}
                 </button>
               </div>
             </div>
@@ -148,8 +158,8 @@
             {#if settings.isDarkMode}
               <div class="settings-item">
                 <div class="settings-item-label">
-                  <span class="settings-item-name">Color Scheme</span>
-                  <span class="settings-hint">Choose a dark color scheme for the editor</span>
+                  <span class="settings-item-name">{$t('settings.colorScheme')}</span>
+                  <span class="settings-hint">{$t('settings.darkColorSchemeHint')}</span>
                 </div>
                 <div class="settings-theme-list">
                   {#each darkThemes as theme}
@@ -173,8 +183,8 @@
             {#if !settings.isDarkMode}
               <div class="settings-item">
                 <div class="settings-item-label">
-                  <span class="settings-item-name">Color Scheme</span>
-                  <span class="settings-hint">Choose a light color scheme for the editor</span>
+                  <span class="settings-item-name">{$t('settings.colorScheme')}</span>
+                  <span class="settings-hint">{$t('settings.lightColorSchemeHint')}</span>
                 </div>
                 <div class="settings-theme-list">
                   {#each lightThemes as theme}
@@ -199,14 +209,14 @@
 
         <!-- Editor -->
         <section class="settings-section">
-          <h3 class="settings-section-title">Editor</h3>
+          <h3 class="settings-section-title">{$t('settings.editor')}</h3>
 
           <div class="settings-list">
             <div class="settings-item">
               <div class="settings-item-row">
                 <div class="settings-item-label">
-                  <span class="settings-item-name">Font Size</span>
-                  <span class="settings-hint">Editor text size (10–24 px)</span>
+                  <span class="settings-item-name">{$t('settings.fontSize')}</span>
+                  <span class="settings-hint">{$t('settings.fontSizeHint')}</span>
                 </div>
                 <div class="settings-number-input">
                   <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize > 10) handleFontSizeChange(settings.fontSize - 1); }} disabled={settings.fontSize <= 10} type="button">
@@ -223,8 +233,8 @@
             <div class="settings-item">
               <div class="settings-item-row">
                 <div class="settings-item-label">
-                  <span class="settings-item-name">Line Height</span>
-                  <span class="settings-hint">Vertical spacing between lines (14–36 px)</span>
+                  <span class="settings-item-name">{$t('settings.lineHeight')}</span>
+                  <span class="settings-hint">{$t('settings.lineHeightHint')}</span>
                 </div>
                 <div class="settings-number-input">
                   <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight > 14) handleLineHeightChange(settings.lineHeight - 1); }} disabled={settings.lineHeight <= 14} type="button">
@@ -241,8 +251,8 @@
             <div class="settings-item">
               <div class="settings-item-row">
                 <div class="settings-item-label">
-                  <span class="settings-item-name">Indent Size</span>
-                  <span class="settings-hint">Spaces per indentation level (1–8 space)</span>
+                  <span class="settings-item-name">{$t('settings.indentSize')}</span>
+                  <span class="settings-hint">{$t('settings.indentSizeHint')}</span>
                 </div>
                 <div class="settings-number-input">
                   <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize > 1) handleTabSizeChange(settings.tabSize - 1); }} disabled={settings.tabSize <= 1} type="button">
@@ -259,8 +269,8 @@
             <div class="settings-item">
               <div class="settings-item-row">
                 <div class="settings-item-label">
-                  <span class="settings-item-name">Tree View Sidebar</span>
-                  <span class="settings-hint">Show JSON structure panel beside editor</span>
+                  <span class="settings-item-name">{$t('settings.treeView')}</span>
+                  <span class="settings-hint">{$t('settings.treeViewHint')}</span>
                 </div>
                 <button
                   class="settings-toggle {settings.showTreeView ? 'is-on' : ''}"
@@ -276,47 +286,65 @@
         </section>
 
         <!-- Shortcuts -->
+        {#if shortcuts}
         <section class="settings-section">
-          <h3 class="settings-section-title">Shortcuts</h3>
+          <h3 class="settings-section-title">{$t('settings.shortcuts')}</h3>
 
-          <div class="settings-list">
-            {#snippet shortcutRow(shortcut: typeof shortcuts.showApp)}
-              {@const isModified = shortcut.currentKey !== shortcut.defaultKey}
-              <div class="settings-item">
-                <div class="settings-item-row group">
-                  <div class="settings-item-label">
-                    <span class="settings-item-name">{shortcut.name}</span>
-                    <span class="settings-hint">{shortcut.description}</span>
+          {#snippet shortcutRow(nameKey: string, descKey: string, shortcut: import('$lib/stores/shortcuts').ShortcutConfig)}
+            {@const isModified = shortcut.currentKey !== shortcut.defaultKey}
+            <div class="settings-item">
+              <div class="settings-item-row group">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">{$t(nameKey)}</span>
+                  <span class="settings-hint">{$t(descKey)}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-7 flex items-center justify-end">
+                    {#if isModified}
+                      <button
+                        class="settings-reset-btn"
+                        onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
+                        title={$t('settings.resetShortcut')}
+                        type="button"
+                      >
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                          <path d="M21 3v5h-5"/>
+                        </svg>
+                      </button>
+                    {/if}
                   </div>
-                  <div class="flex items-center gap-2">
-                    <div class="w-7 flex items-center justify-end">
-                      {#if isModified}
-                        <button
-                          class="settings-reset-btn"
-                          onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
-                          title="Reset to default"
-                          type="button"
-                        >
-                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-                            <path d="M21 3v5h-5"/>
-                          </svg>
-                        </button>
-                      {/if}
-                    </div>
-                    <ShortcutRecorder 
-                      value={shortcut.currentKey}
-                      onchange={(key) => shortcutsStore.updateShortcut(shortcut.id, key)}
-                    />
-                  </div>
+                  <ShortcutRecorder 
+                    value={shortcut.currentKey}
+                    onchange={(key) => shortcutsStore.updateShortcut(shortcut.id, key)}
+                  />
                 </div>
               </div>
-            {/snippet}
+            </div>
+          {/snippet}
 
-            {@render shortcutRow(shortcuts.showApp)}
-            {@render shortcutRow(shortcuts.formatClipboard)}
+          <div class="settings-shortcut-group-label">{$t('settings.shortcutsGlobal')}</div>
+          <div class="settings-list">
+            {@render shortcutRow('settings.showApp', 'settings.showAppDesc', shortcuts.showApp)}
+            {@render shortcutRow('settings.formatClipboard', 'settings.formatClipboardDesc', shortcuts.formatClipboard)}
+          </div>
+
+          <div class="settings-shortcut-group-label">{$t('settings.shortcutsEditor')}</div>
+          <div class="settings-list">
+            {@render shortcutRow('settings.newFile', 'settings.newFileDesc', shortcuts.newFile)}
+            {@render shortcutRow('settings.openFile', 'settings.openFileDesc', shortcuts.openFile)}
+            {@render shortcutRow('settings.saveFile', 'settings.saveFileDesc', shortcuts.saveFile)}
+            {@render shortcutRow('settings.format', 'settings.formatDesc', shortcuts.format)}
+            {@render shortcutRow('settings.minify', 'settings.minifyDesc', shortcuts.minify)}
+            {@render shortcutRow('settings.escape', 'settings.escapeDesc', shortcuts.escape)}
+            {@render shortcutRow('settings.unescape', 'settings.unescapeDesc', shortcuts.unescape)}
+            {@render shortcutRow('settings.minifyEscape', 'settings.minifyEscapeDesc', shortcuts.minifyEscape)}
+            {@render shortcutRow('settings.foldAll', 'settings.foldAllDesc', shortcuts.foldAll)}
+            {@render shortcutRow('settings.unfoldAll', 'settings.unfoldAllDesc', shortcuts.unfoldAll)}
+            {@render shortcutRow('settings.diff', 'settings.diffDesc', shortcuts.diff)}
           </div>
         </section>
+        {/if}
       </div>
     </div>
   </div>
@@ -635,6 +663,18 @@
     transform: translateX(16px);
   }
 
+  /* Shortcut group label */
+  .settings-shortcut-group-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 10px 0 6px;
+  }
+
+  .settings-shortcut-group-label:first-of-type {
+    padding-top: 0;
+  }
+
   /* Reset button (shortcuts) */
   .settings-reset-btn {
     opacity: 0;
@@ -677,4 +717,3 @@
     }
   }
 </style>
-

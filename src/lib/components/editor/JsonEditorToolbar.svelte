@@ -2,7 +2,21 @@
   import { escapeString, unescapeString } from '$lib/services/json';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, getFileName } from '$lib/services/file';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
+  import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import { t } from '$lib/i18n';
   import type MonacoEditor from './MonacoEditor.svelte';
+
+  let shortcuts = $state<ShortcutsSettings | null>(null);
+
+  $effect(() => {
+    const unsubscribe = shortcutsStore.subscribe(s => { shortcuts = s; });
+    return () => unsubscribe();
+  });
+
+  function shortcutLabel(key: keyof ShortcutsSettings): string {
+    if (!shortcuts) return '';
+    return formatShortcutKey(shortcuts[key].currentKey);
+  }
 
   const LARGE_FILE_THRESHOLD = 1024 * 1024;
 
@@ -11,28 +25,30 @@
     content,
     activeTab,
     isDarkMode,
+    isAlwaysOnTop,
     editor,
     tabSize,
     onToggleDiff,
     onToggleTheme,
+    onToggleAlwaysOnTop,
     onOpenSettings,
     onContentChange,
     onStatsUpdate,
-    onStatsReset,
     onToast
   } = $props<{
     isDiffMode: boolean;
     content: string;
     activeTab: Tab | null;
     isDarkMode: boolean;
+    isAlwaysOnTop: boolean;
     editor: MonacoEditor | null;
     tabSize: number;
     onToggleDiff: () => void;
     onToggleTheme: () => void;
+    onToggleAlwaysOnTop: () => void;
     onOpenSettings: () => void;
     onContentChange: (value: string) => void;
     onStatsUpdate: () => Promise<void> | void;
-    onStatsReset: () => void;
     onToast: (message: string) => void;
   }>();
 
@@ -62,6 +78,30 @@
 
   export function newFile() {
     handleNewFile();
+  }
+
+  export async function minifyContent() {
+    await handleMinify();
+  }
+
+  export async function escapeContent() {
+    await handleEscape();
+  }
+
+  export async function unescapeContent() {
+    await handleUnescape();
+  }
+
+  export async function minifyEscapeContent() {
+    await handleMinifyEscape();
+  }
+
+  export function foldAllContent() {
+    handleFoldAll();
+  }
+
+  export function unfoldAllContent() {
+    handleUnfoldAll();
   }
 
   async function handleFormat() {
@@ -190,19 +230,6 @@
     }
   }
 
-  function handleClear() {
-    setContentValue('');
-    onStatsReset();
-  }
-
-  async function handleCopy() {
-    if (!content) return;
-    try {
-      await navigator.clipboard.writeText(content);
-      onToast('Copied');
-    } catch (e) {}
-  }
-
   function handleFoldAll() {
     editor?.foldAll();
   }
@@ -287,283 +314,208 @@
   }
 </script>
 
-<div class="flex items-center gap-0.5 px-2 py-1.5 bg-(--bg-secondary) border-b border-(--border) shrink-0">
-  <!-- File operations group -->
-  <div class="flex items-center">
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleNewFile}
-      disabled={isDiffMode}
-      title="New File (Cmd+N)"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <path d="M12 11v6M9 14h6"/>
-      </svg>
+<div class="toolbar">
+  <!-- 1. File operations -->
+  <div class="toolbar-group">
+    <button class="toolbar-btn" onclick={handleNewFile} disabled={isDiffMode} title="{$t('toolbar.new')} ({shortcutLabel('newFile')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
+      {$t('toolbar.new')}
     </button>
-
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleOpenFile}
-      disabled={isDiffMode}
-      title="Open File (Cmd+O)"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-      </svg>
-    </button>
-
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleSaveFile}
-      disabled={isDiffMode || !hasContent}
-      title="Save File (Cmd+S)"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-        <path d="M17 21v-8H7v8M7 3v5h8"/>
-      </svg>
+    <button class="toolbar-btn" onclick={handleOpenFile} disabled={isDiffMode} title="{$t('toolbar.open')} ({shortcutLabel('openFile')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+      {$t('toolbar.open')}
     </button>
   </div>
 
-  <div class="w-px h-4 bg-(--border) mx-1.5"></div>
+  <div class="toolbar-divider"></div>
 
-  <!-- Format operations group -->
-  <div class="flex items-center">
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--accent)
-             hover:bg-(--accent)/10
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleFormat}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Format"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 6h16M4 12h10M4 18h14"/>
-      </svg>
+  <!-- 2. JSON transform -->
+  <div class="toolbar-group">
+    <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h14"/></svg>
+      {$t('toolbar.format')}
     </button>
-
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleMinify}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Minify"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/>
-      </svg>
+    <button class="toolbar-btn" onclick={handleMinify} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M9 4l3 2 3-2"/><path d="M4 10h16M4 14h16"/><path d="M12 22v-4M9 20l3-2 3 2"/></svg>
+      {$t('toolbar.minify')}
+    </button>
+    <button class="toolbar-btn" onclick={handleEscape} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.escape')} ({shortcutLabel('escape')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+      {$t('toolbar.escape')}
+    </button>
+    <button class="toolbar-btn" onclick={handleUnescape} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.unescape')} ({shortcutLabel('unescape')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6"/></svg>
+      {$t('toolbar.unescape')}
+    </button>
+    <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.minifyEscape')} ({shortcutLabel('minifyEscape')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
+      {$t('toolbar.minifyEscape')}
     </button>
   </div>
 
-  <div class="w-px h-4 bg-(--border) mx-1.5"></div>
+  <div class="toolbar-divider"></div>
 
-  <!-- Fold operations group -->
-  <div class="flex items-center">
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleFoldAll}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Fold All"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 6h16M4 12h16M4 18h16"/>
-        <path d="M9 6v6l3-3-3-3"/>
-      </svg>
+  <!-- 3. Editor view -->
+  <div class="toolbar-group">
+    <button class="toolbar-btn" onclick={handleFoldAll} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
+      {$t('toolbar.foldAll')}
     </button>
-
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleUnfoldAll}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Unfold All"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 6h16M4 12h16M4 18h16"/>
-        <path d="M9 6v6l3 3 3-3V6"/>
-      </svg>
+    <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
+      {$t('toolbar.unfoldAll')}
     </button>
-  </div>
-
-  <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-  <!-- Escape operations group -->
-  <div class="flex items-center">
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleEscape}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Escape"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M7 8l-4 4 4 4M17 8l4 4-4 4"/>
-      </svg>
-    </button>
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleUnescape}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Unescape"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 8l4 4-4 4M15 8l-4 4 4 4"/>
-      </svg>
-    </button>
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleMinifyEscape}
-      disabled={isDiffMode || isProcessing || !hasContent}
-      title="Minify + Escape"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M8 12h8"/>
-      </svg>
+    <button class="toolbar-btn {isDiffMode ? 'is-active' : ''}" onclick={onToggleDiff} title="{isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')} ({shortcutLabel('diff')})">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
+      {isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')}
     </button>
   </div>
 
   <div class="flex-1"></div>
 
-  <!-- Right side operations group -->
-  <div class="flex items-center">
+  <!-- 4. App controls (icon-only) -->
+  <div class="toolbar-group">
     <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleCopy}
-      disabled={isDiffMode || !hasContent}
-      title="Copy"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="9" y="9" width="13" height="13" rx="2"/>
-        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-      </svg>
-    </button>
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--error)/10 hover:text-(--error)
-             active:scale-95
-             disabled:opacity-30 disabled:cursor-not-allowed
-             transition-all duration-150"
-      onclick={handleClear}
-      disabled={isDiffMode || !hasContent}
-      title="Clear"
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
-      </svg>
-    </button>
-
-    <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-    <!-- Diff toggle button -->
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             {isDiffMode ? 'text-(--accent) bg-(--accent)/10' : 'text-(--text-secondary)'}
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             transition-all duration-150"
-      onclick={onToggleDiff}
-      title={isDiffMode ? 'Exit Diff' : 'Diff'}
-    >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
-        <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
-        <path d="M12 4v16"/>
-        <path d="M7 12h3M14 12h3"/>
-      </svg>
-    </button>
-
-    <div class="w-px h-4 bg-(--border) mx-1.5"></div>
-
-    <!-- Theme toggle button -->
-    <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--warning)/10 hover:text-(--warning)
-             active:scale-95
-             transition-all duration-150"
+      class="toolbar-icon-btn"
       onclick={onToggleTheme}
-      title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+      title={isDarkMode ? $t('toolbar.lightMode') : $t('toolbar.darkMode')}
     >
       {#if isDarkMode}
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
         </svg>
       {:else}
-        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
         </svg>
       {/if}
     </button>
-
-    <!-- Settings button -->
     <button
-      class="w-8 h-8 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-tertiary) hover:text-(--text-primary)
-             active:scale-95
-             transition-all duration-150"
+      class="toolbar-icon-btn"
       onclick={onOpenSettings}
-      title="Settings"
+      title={$t('toolbar.settings')}
     >
-      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
         <circle cx="12" cy="12" r="3"/>
       </svg>
     </button>
+    <button
+      class="toolbar-icon-btn {isAlwaysOnTop ? 'is-active' : ''}"
+      onclick={onToggleAlwaysOnTop}
+      title={isAlwaysOnTop ? $t('toolbar.unpinFromTop') : $t('toolbar.pinToTop')}
+    >
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill={isAlwaysOnTop ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 1 1 1z"/>
+      </svg>
+    </button>
   </div>
 </div>
+
+<style>
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    padding: 3px 6px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 18px;
+    background: color-mix(in srgb, var(--text-secondary) 25%, transparent);
+    margin: 0 4px;
+  }
+
+  .toolbar-btn {
+    height: 26px;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .toolbar-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .toolbar-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .toolbar-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .toolbar-btn.is-primary {
+    color: var(--accent);
+  }
+
+  .toolbar-btn.is-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .toolbar-btn.is-active {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .toolbar-icon-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .toolbar-icon-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .toolbar-icon-btn:active {
+    transform: scale(0.95);
+  }
+
+  .toolbar-icon-btn.is-active {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .toolbar-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+</style>

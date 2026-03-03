@@ -13,6 +13,7 @@
   import JsonEditorToast from './JsonEditorToast.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
+  import { shortcutsStore } from '$lib/stores/shortcuts';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
 
   let content = $state('');
@@ -29,6 +30,7 @@
   let monacoEditor: MonacoEditor;
   let toolbarRef: JsonEditorToolbar | null = null;
   let settingsPanel: SettingsPanel | null = null;
+  let isAlwaysOnTop = $state(false);
   let isDiffMode = $state(false);
   let diffOriginal = $state('');
   let diffModified = $state('');
@@ -66,6 +68,7 @@
     isDarkMode: false,
     darkTheme: 'one-dark',
     lightTheme: 'vs',
+    language: 'zh',
     fontSize: 13,
     lineHeight: 20,
     tabSize: 2,
@@ -149,19 +152,18 @@
       });
     })();
     
-    // Keyboard shortcuts
+    shortcutsStore.init();
+
     const handleKeydown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
-      
-      // Cmd/Ctrl + T: New tab
+
+      // Fixed shortcuts (not customizable)
       if (cmdOrCtrl && e.key === 't') {
         e.preventDefault();
         tabsStore.addTab();
         return;
       }
-      
-      // Cmd/Ctrl + W: Close current tab
       if (cmdOrCtrl && e.key === 'w') {
         e.preventDefault();
         const currentTab = $activeTab;
@@ -174,8 +176,6 @@
         }
         return;
       }
-      
-      // Cmd/Ctrl + Tab: Next tab
       if (cmdOrCtrl && e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
         const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
@@ -183,8 +183,6 @@
         tabsStore.setActiveTab(tabsState.tabs[nextIndex].id);
         return;
       }
-      
-      // Cmd/Ctrl + Shift + Tab: Previous tab
       if (cmdOrCtrl && e.shiftKey && e.key === 'Tab') {
         e.preventDefault();
         const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
@@ -192,8 +190,6 @@
         tabsStore.setActiveTab(tabsState.tabs[prevIndex].id);
         return;
       }
-      
-      // Cmd/Ctrl + 1-9: Switch to specific tab
       if (cmdOrCtrl && e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const tabIndex = parseInt(e.key) - 1;
@@ -202,37 +198,35 @@
         }
         return;
       }
-      
-      // Cmd/Ctrl + N: New file
-      if (cmdOrCtrl && e.key === 'n') {
+      if (cmdOrCtrl && e.shiftKey && e.key === 'p') {
         e.preventDefault();
-        toolbarRef?.newFile();
+        toggleAlwaysOnTop();
+        return;
       }
-      
-      // Cmd/Ctrl + O: Open file
-      if (cmdOrCtrl && e.key === 'o') {
-        e.preventDefault();
-        toolbarRef?.openFile();
-      }
-      
-      // Cmd/Ctrl + S: Save file
-      if (cmdOrCtrl && e.key === 's') {
-        e.preventDefault();
-        toolbarRef?.saveFile();
-      }
-      
-      // Cmd/Ctrl + Shift + S: Save as
-      if (cmdOrCtrl && e.shiftKey && e.key === 's') {
-        e.preventDefault();
-        toolbarRef?.saveAsFile();
-      }
-
-      // Cmd/Ctrl + Shift + I: Open DevTools (only in development)
       if (cmdOrCtrl && e.shiftKey && e.key === 'i') {
         e.preventDefault();
-        // Only enable in development mode
         if (import.meta.env.DEV) {
           openDevTools();
+        }
+        return;
+      }
+
+      // Customizable shortcuts via shortcuts store
+      const matched = shortcutsStore.matchShortcut(e);
+      if (matched) {
+        e.preventDefault();
+        switch (matched) {
+          case 'new_file': toolbarRef?.newFile(); break;
+          case 'open_file': toolbarRef?.openFile(); break;
+          case 'save_file': toolbarRef?.saveFile(); break;
+          case 'format': toolbarRef?.formatContent(); break;
+          case 'minify': toolbarRef?.minifyContent(); break;
+          case 'escape': toolbarRef?.escapeContent(); break;
+          case 'unescape': toolbarRef?.unescapeContent(); break;
+          case 'minify_escape': toolbarRef?.minifyEscapeContent(); break;
+          case 'fold_all': toolbarRef?.foldAllContent(); break;
+          case 'unfold_all': toolbarRef?.unfoldAllContent(); break;
+          case 'diff': toggleDiffMode(); break;
         }
       }
     };
@@ -362,6 +356,17 @@
       }
     }, 200);
   });
+
+  async function toggleAlwaysOnTop() {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const newValue = !isAlwaysOnTop;
+      await getCurrentWindow().setAlwaysOnTop(newValue);
+      isAlwaysOnTop = newValue;
+    } catch (error) {
+      console.error('Failed to toggle always on top:', error);
+    }
+  }
 
   function toggleTheme() {
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
@@ -594,16 +599,6 @@
     }, 100);
   }
 
-  function resetStats() {
-    stats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
-  }
-
   async function updateStats() {
     if (!content.trim()) return;
     const currentTab = $activeTab;
@@ -625,14 +620,15 @@
     content={content}
     activeTab={$activeTab}
     isDarkMode={isDarkMode}
+    isAlwaysOnTop={isAlwaysOnTop}
     editor={monacoEditor}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
     onToggleTheme={toggleTheme}
+    onToggleAlwaysOnTop={toggleAlwaysOnTop}
     onOpenSettings={openSettings}
     onContentChange={handleToolbarContentChange}
     onStatsUpdate={updateStats}
-    onStatsReset={resetStats}
     onToast={showToast}
   />
   

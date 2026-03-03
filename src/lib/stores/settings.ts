@@ -1,6 +1,6 @@
 // Settings store - manages app global settings
 import { writable } from 'svelte/store';
-import { getAvailableThemeIds } from '$lib/config/monacoThemes';
+import { locale, type Locale } from '$lib/i18n';
 
 // Dark theme options (consistent with monacoThemes.ts config)
 export const darkThemes = [
@@ -27,6 +27,9 @@ export interface AppSettings {
   darkTheme: 'one-dark' | 'github-dark' | 'tokyo-night' | 'dracula' | 'nord';
   lightTheme: 'vs' | 'github-light' | 'solarized-light' | 'catppuccin-latte' | 'rose-ivy';
   
+  // Language
+  language: Locale;
+
   // Editor settings
   fontSize: number;
   lineHeight: number;
@@ -39,6 +42,7 @@ const defaultSettings: AppSettings = {
   isDarkMode: false,
   darkTheme: 'one-dark',
   lightTheme: 'vs',
+  language: 'zh',
   fontSize: 13,
   lineHeight: 20,
   tabSize: 2,
@@ -83,6 +87,7 @@ function createSettingsStore() {
     init() {
       const settings = loadSettings();
       set(settings);
+      locale.set(settings.language);
     },
     
     // Update single setting
@@ -93,6 +98,10 @@ function createSettingsStore() {
         return newSettings;
       });
       
+      if (key === 'language') {
+        locale.set(value as Locale);
+      }
+
       // If updating dark mode, sync macOS window theme
       if (key === 'isDarkMode') {
         try {
