@@ -416,7 +416,7 @@
       </svg>
       <input
         class="json-tree-search-input"
-        placeholder="JMESPath Query..."
+        placeholder={$t('treeView.searchPlaceholder')}
         value={searchQuery}
         oninput={(e) => { searchQuery = e.currentTarget.value; }}
         spellcheck="false"
@@ -823,9 +823,9 @@
   .json-tree-help-popover {
     position: absolute;
     top: calc(100% + 8px);
-    right: -50px;
+    right: 0;
     width: 380px;
-    max-width: 90vw;
+    max-width: calc(100vw - 20px);
     max-height: 400px;
     padding: 0;
     border-radius: 8px;

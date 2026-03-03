@@ -90,6 +90,7 @@ export default {
   'treeView.noDataHint': '输入有效的 JSON 查看结构',
   'treeView.copyPathValue': '复制路径 + 值',
   'treeView.pathValueCopied': '已复制路径 + 值',
+  'treeView.searchPlaceholder': 'JMESPath 查询...',
   'treeView.syntaxGuide': 'JMESPath 语法指南',
   'treeView.cheatSheet': 'JMESPath 速查表',
   'treeView.docs': '文档',

@@ -351,12 +351,6 @@
       <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
       {$t('toolbar.minifyEscape')}
     </button>
-  </div>
-
-  <div class="toolbar-divider"></div>
-
-  <!-- 3. Editor view -->
-  <div class="toolbar-group">
     <button class="toolbar-btn" onclick={handleFoldAll} disabled={isDiffMode || isProcessing || !hasContent} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
       <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
       {$t('toolbar.foldAll')}
@@ -365,6 +359,12 @@
       <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
       {$t('toolbar.unfoldAll')}
     </button>
+  </div>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- 3. Diff -->
+  <div class="toolbar-group">
     <button class="toolbar-btn {isDiffMode ? 'is-active' : ''}" onclick={onToggleDiff} title="{isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')} ({shortcutLabel('diff')})">
       <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
       {isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')}
@@ -417,8 +417,8 @@
   .toolbar {
     display: flex;
     align-items: center;
-    gap: 1px;
-    padding: 3px 6px;
+    gap: 0;
+    padding: 2px 6px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -427,28 +427,28 @@
   .toolbar-group {
     display: flex;
     align-items: center;
-    gap: 1px;
+    gap: 0;
   }
 
   .toolbar-divider {
     width: 1px;
     height: 18px;
     background: color-mix(in srgb, var(--text-secondary) 25%, transparent);
-    margin: 0 4px;
+    margin: 0 3px;
   }
 
   .toolbar-btn {
     height: 26px;
-    padding: 0 6px;
+    padding: 0 5px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 3px;
-    border-radius: 5px;
+    border-radius: 4px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;

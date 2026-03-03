@@ -90,6 +90,7 @@ export default {
   'treeView.noDataHint': 'Enter valid JSON to view structure',
   'treeView.copyPathValue': 'Copy path + value',
   'treeView.pathValueCopied': 'Path + value copied',
+  'treeView.searchPlaceholder': 'JMESPath Query...',
   'treeView.syntaxGuide': 'JMESPath Syntax Guide',
   'treeView.cheatSheet': 'JMESPath Cheat Sheet',
   'treeView.docs': 'Docs',
