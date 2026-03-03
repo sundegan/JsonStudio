@@ -29,6 +29,8 @@ quick-xml = { version = "0.39.2", features = ["serialize"] }
 toml = "1.0.3"
 csv = "1.4.0"
 heck = "0.5.0"
+image = { version = "0.25.9", default-features = false, features = ["png"] }
+base64 = "0.22.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.25"

@@ -1,9 +1,12 @@
 <script lang="ts">
   import { escapeString, unescapeString } from '$lib/services/json';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, getFileName } from '$lib/services/file';
+  import { exportJsonAsImage, copyImageToClipboard } from '$lib/services/exportImage';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import { settingsStore } from '$lib/stores/settings';
   import { t } from '$lib/i18n';
+  import type { EditorTheme } from '$lib/config/monacoThemes';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   let shortcuts = $state<ShortcutsSettings | null>(null);
@@ -57,11 +60,47 @@
     onOpenSettings: () => void;
     onContentChange: (value: string) => void;
     onStatsUpdate: () => Promise<void> | void;
-    onToast: (message: string) => void;
+    onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   }>();
 
   let isProcessing = $state(false);
+  let isExporting = $state(false);
   let hasContent = $derived(Boolean(content.trim()));
+
+  let appSettings = $state<import('$lib/stores/settings').AppSettings>({
+    isDarkMode: false, darkTheme: 'one-dark', lightTheme: 'vs',
+    language: 'zh', fontSize: 13, lineHeight: 20, tabSize: 2, showTreeView: true,
+  });
+
+  $effect(() => {
+    const unsub = settingsStore.subscribe(s => { appSettings = s; });
+    return () => unsub();
+  });
+
+  async function handleExportImage() {
+    if (!hasContent || isExporting) return;
+    isExporting = true;
+    try {
+      const currentTheme: EditorTheme = appSettings.isDarkMode
+        ? appSettings.darkTheme
+        : appSettings.lightTheme;
+      const blob = await exportJsonAsImage({
+        content,
+        theme: currentTheme,
+        fontSize: appSettings.fontSize,
+        lineHeight: appSettings.lineHeight,
+        tabSize: appSettings.tabSize,
+        fileName: activeTab?.fileName,
+      });
+      await copyImageToClipboard(blob);
+      onToast($t('toolbar.exportImageCopied'));
+    } catch (e: any) {
+      console.error('Export image failed:', e);
+      onToast($t('toolbar.exportImageFailed'), 'error');
+    } finally {
+      isExporting = false;
+    }
+  }
 
   function setContentValue(value: string) {
     onContentChange(value);
@@ -260,19 +299,19 @@
         onToast(`Opened: ${name || 'file'}`);
       }
     } catch (e) {
-      onToast('Failed to open file');
+      onToast('Failed to open file', 'error');
       console.error('Open file error:', e);
     }
   }
 
   async function handleSaveFile() {
     if (!content.trim()) {
-      onToast('Nothing to save');
+      onToast('Nothing to save', 'info');
       return;
     }
 
     if (!activeTab) {
-      onToast('No active tab');
+      onToast('No active tab', 'info');
       return;
     }
 
@@ -287,19 +326,19 @@
         await handleSaveAsFile();
       }
     } catch (e) {
-      onToast('Failed to save file');
+      onToast('Failed to save file', 'error');
       console.error('Save file error:', e);
     }
   }
 
   async function handleSaveAsFile() {
     if (!content.trim()) {
-      onToast('Nothing to save');
+      onToast('Nothing to save', 'info');
       return;
     }
 
     if (!activeTab) {
-      onToast('No active tab');
+      onToast('No active tab', 'info');
       return;
     }
 
@@ -311,7 +350,7 @@
         onToast(`Saved: ${name || 'file'}`);
       }
     } catch (e) {
-      onToast('Failed to save file');
+      onToast('Failed to save file', 'error');
       console.error('Save as file error:', e);
     }
   }
@@ -343,6 +382,10 @@
       <button class="toolbar-btn" onclick={handleOpenFile} title="{$t('toolbar.open')} ({shortcutLabel('openFile')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
         {$t('toolbar.open')}
+      </button>
+      <button class="toolbar-btn" onclick={handleExportImage} disabled={!hasContent || isExporting} title={$t('toolbar.exportImage')}>
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        {$t('toolbar.exportImage')}
       </button>
     </div>
 

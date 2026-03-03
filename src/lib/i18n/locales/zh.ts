@@ -147,6 +147,12 @@ export default {
   'toast.pinnedToTop': '已置顶',
   'toast.unpinnedFromTop': '已取消置顶',
 
+  // Export image
+  'toolbar.exportImage': '导出图片',
+  'toolbar.exportImageCopied': '图片已复制到剪贴板',
+  'toolbar.exportImageSaved': '图片已保存',
+  'toolbar.exportImageFailed': '导出图片失败',
+
   // Fix JSON
   'fixJson.fix': '修复 JSON',
   'fixJson.dismiss': '忽略',

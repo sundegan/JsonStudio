@@ -6,6 +6,7 @@ use commands::shortcuts::{show_main_window, format_clipboard_and_show, update_sh
 use commands::file::{open_file_dialog, save_file, save_file_dialog, read_file, is_json_file, get_file_name};
 use commands::convert::{json_to_yaml, json_to_toml, json_to_xml, json_to_csv, yaml_to_json, toml_to_json, xml_to_json, csv_to_json};
 use commands::codegen::{json_to_code, code_to_json};
+use commands::clipboard::copy_image_to_clipboard;
 use tauri::Emitter;
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -91,7 +92,8 @@ pub fn run() {
             xml_to_json,
             csv_to_json,
             json_to_code,
-            code_to_json
+            code_to_json,
+            copy_image_to_clipboard
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
