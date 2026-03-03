@@ -16,8 +16,8 @@ export default {
   'toolbar.unfoldAll': '展开',
   'toolbar.diff': '对比',
   'toolbar.exitDiff': '退出对比',
-  'toolbar.convert': '转换',
-  'toolbar.exitConvert': '退出转换',
+  'toolbar.convert': '格式转换',
+  'toolbar.exitConvert': '退出格式转换',
 
   // Toolbar - App controls
   'toolbar.lightMode': '亮色模式',

@@ -166,6 +166,7 @@
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
       tabSize,
       scrollBeyondLastLine: false,
+      lineNumbersMinChars: 3,
       renderLineHighlight: 'line',
       cursorBlinking: 'smooth',
       smoothScrolling: true,

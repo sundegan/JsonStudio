@@ -264,6 +264,7 @@
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
       contextmenu: false,
       renderLineHighlight: 'line' as const,
+      lineNumbersMinChars: 3,
       tabSize,
     };
 
