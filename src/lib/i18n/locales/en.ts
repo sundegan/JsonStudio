@@ -16,6 +16,8 @@ export default {
   'toolbar.unfoldAll': 'Unfold',
   'toolbar.diff': 'Diff',
   'toolbar.exitDiff': 'Exit Diff',
+  'toolbar.convert': 'Convert',
+  'toolbar.exitConvert': 'Exit Convert',
 
   // Toolbar - App controls
   'toolbar.lightMode': 'Light Mode',
@@ -77,6 +79,10 @@ export default {
   'settings.diff': 'Diff',
   'settings.diffDesc': 'Toggle diff mode',
   'settings.resetShortcut': 'Reset to default',
+
+  // Convert
+  'convert.copyResult': 'Copy result',
+  'convert.copied': 'Copied',
 
   // Tree View
   'treeView.title': 'Tree View',

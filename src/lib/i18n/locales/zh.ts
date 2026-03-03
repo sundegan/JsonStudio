@@ -16,6 +16,8 @@ export default {
   'toolbar.unfoldAll': '展开',
   'toolbar.diff': '对比',
   'toolbar.exitDiff': '退出对比',
+  'toolbar.convert': '转换',
+  'toolbar.exitConvert': '退出转换',
 
   // Toolbar - App controls
   'toolbar.lightMode': '亮色模式',
@@ -77,6 +79,10 @@ export default {
   'settings.diff': '对比',
   'settings.diffDesc': '切换对比模式',
   'settings.resetShortcut': '重置为默认',
+
+  // Convert
+  'convert.copyResult': '复制转换结果',
+  'convert.copied': '已复制',
 
   // Tree View
   'treeView.title': '树形视图',

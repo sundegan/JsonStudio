@@ -5,6 +5,7 @@
   import { tabsStore, activeTab } from '$lib/stores/tabs';
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
+  import ConvertView from './ConvertView.svelte';
   import TabBar from './TabBar.svelte';
   import DiffTabBar from './DiffTabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
@@ -32,6 +33,7 @@
   let settingsPanel: SettingsPanel | null = null;
   let isAlwaysOnTop = $state(false);
   let isDiffMode = $state(false);
+  let isConvertMode = $state(false);
   let diffOriginal = $state('');
   let diffModified = $state('');
   let diffLineCount = $state(0);
@@ -384,7 +386,10 @@
       return;
     }
 
-    // Enter diff mode: clone tabs to both sides
+    if (isConvertMode) {
+      isConvertMode = false;
+    }
+
     tabsStore.enterDiffMode();
     isDiffMode = true;
     diffLineCount = 0;
@@ -412,6 +417,24 @@
         error_info: null,
       };
     }
+  }
+
+  function toggleConvertMode() {
+    if (isConvertMode) {
+      isConvertMode = false;
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
+      return;
+    }
+
+    if (isDiffMode) {
+      toggleDiffMode();
+    }
+    isConvertMode = true;
   }
 
   function openSettings() {
@@ -609,23 +632,27 @@
 
 <div class="flex flex-col h-full overflow-hidden">
   <!-- Toolbar -->
-  <JsonEditorToolbar
-    bind:this={toolbarRef}
-    isDiffMode={isDiffMode}
-    content={content}
-    activeTab={$activeTab}
-    isDarkMode={isDarkMode}
-    isAlwaysOnTop={isAlwaysOnTop}
-    editor={monacoEditor}
-    tabSize={tabSize}
-    onToggleDiff={toggleDiffMode}
-    onToggleTheme={toggleTheme}
-    onToggleAlwaysOnTop={toggleAlwaysOnTop}
-    onOpenSettings={openSettings}
-    onContentChange={handleToolbarContentChange}
-    onStatsUpdate={updateStats}
-    onToast={showToast}
-  />
+  {#if !isConvertMode}
+    <JsonEditorToolbar
+      bind:this={toolbarRef}
+      isDiffMode={isDiffMode}
+      isConvertMode={isConvertMode}
+      content={content}
+      activeTab={$activeTab}
+      isDarkMode={isDarkMode}
+      isAlwaysOnTop={isAlwaysOnTop}
+      editor={monacoEditor}
+      tabSize={tabSize}
+      onToggleDiff={toggleDiffMode}
+      onToggleConvert={toggleConvertMode}
+      onToggleTheme={toggleTheme}
+      onToggleAlwaysOnTop={toggleAlwaysOnTop}
+      onOpenSettings={openSettings}
+      onContentChange={handleToolbarContentChange}
+      onStatsUpdate={updateStats}
+      onToast={showToast}
+    />
+  {/if}
   
   <!-- Main content area: Tab Bar + Editor + Tree View -->
   <div class="flex flex-1 min-h-0" class:resizing-tree-view={isResizingTreeView}>
@@ -633,7 +660,6 @@
     <div class="flex flex-col flex-1 min-w-0">
       <!-- Tab Bar - show different tab bars based on mode -->
       {#if isDiffMode && diffModeState}
-        <!-- Diff mode: show DiffTabBar with independent left/right tabs -->
         <DiffTabBar 
           leftTabs={diffModeState.leftTabs}
           rightTabs={diffModeState.rightTabs}
@@ -643,8 +669,7 @@
           on:leftTabChange={handleDiffLeftTabChange}
           on:rightTabChange={handleDiffRightTabChange}
         />
-      {:else if tabsState.tabs.length > 1}
-        <!-- Normal mode: only show when multiple tabs exist -->
+      {:else if !isConvertMode && tabsState.tabs.length > 1}
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
@@ -671,6 +696,17 @@
               />
             </div>
           </div>
+        {:else if isConvertMode}
+          <ConvertView
+            inputValue={content}
+            theme={monacoTheme}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            tabSize={tabSize}
+            onInputChange={handleToolbarContentChange}
+            onToast={showToast}
+            onExit={toggleConvertMode}
+          />
         {:else}
           <div class="json-editor-workspace">
             <div class="json-editor-main">
@@ -685,7 +721,6 @@
                 onChange={handleEditorChange}
                 onPaste={handleEditorPaste}
               />
-
             </div>
           </div>
         {/if}
@@ -697,7 +732,7 @@
     </div>
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
-    {#if showTreeView && !isDiffMode}
+    {#if showTreeView && !isDiffMode && !isConvertMode}
       <div
         class="json-tree-resizer"
         role="separator"
@@ -716,17 +751,19 @@
     {/if}
   </div>
 
-  <JsonEditorStatusBar
-    isDiffMode={isDiffMode}
-    diffLineCount={diffLineCount}
-    diffLeftStats={diffLeftStats}
-    diffRightStats={diffRightStats}
-    diffOriginal={diffOriginal}
-    diffModified={diffModified}
-    activeTab={$activeTab}
-    stats={stats}
-    content={content}
-  />
+  {#if !isConvertMode}
+    <JsonEditorStatusBar
+      isDiffMode={isDiffMode}
+      diffLineCount={diffLineCount}
+      diffLeftStats={diffLeftStats}
+      diffRightStats={diffRightStats}
+      diffOriginal={diffOriginal}
+      diffModified={diffModified}
+      activeTab={$activeTab}
+      stats={stats}
+      content={content}
+    />
+  {/if}
 
   <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />

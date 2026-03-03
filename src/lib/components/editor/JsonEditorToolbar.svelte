@@ -22,6 +22,7 @@
 
   const {
     isDiffMode,
+    isConvertMode,
     content,
     activeTab,
     isDarkMode,
@@ -29,6 +30,7 @@
     editor,
     tabSize,
     onToggleDiff,
+    onToggleConvert,
     onToggleTheme,
     onToggleAlwaysOnTop,
     onOpenSettings,
@@ -37,6 +39,7 @@
     onToast
   } = $props<{
     isDiffMode: boolean;
+    isConvertMode: boolean;
     content: string;
     activeTab: Tab | null;
     isDarkMode: boolean;
@@ -44,6 +47,7 @@
     editor: MonacoEditor | null;
     tabSize: number;
     onToggleDiff: () => void;
+    onToggleConvert: () => void;
     onToggleTheme: () => void;
     onToggleAlwaysOnTop: () => void;
     onOpenSettings: () => void;
@@ -363,11 +367,15 @@
 
   <div class="toolbar-divider"></div>
 
-  <!-- 3. Diff -->
+  <!-- 3. Diff & Convert -->
   <div class="toolbar-group">
-    <button class="toolbar-btn {isDiffMode ? 'is-active' : ''}" onclick={onToggleDiff} title="{isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')} ({shortcutLabel('diff')})">
+    <button class="toolbar-btn {isDiffMode ? 'is-active' : ''}" onclick={onToggleDiff} disabled={isConvertMode} title="{isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')} ({shortcutLabel('diff')})">
       <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
       {isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')}
+    </button>
+    <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isDiffMode || !hasContent} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
+      <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h12"/><path d="M18 15l3 3-3 3"/></svg>
+      {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
     </button>
   </div>
 
