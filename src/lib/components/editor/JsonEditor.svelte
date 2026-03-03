@@ -28,6 +28,7 @@
     error_info: null,
   });
   let toastMsg = $state('');
+  let toastType = $state<'success' | 'error' | 'info'>('success');
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor: MonacoEditor;
@@ -129,7 +130,7 @@
             tabsStore.addTab(fileContent, filePath, name);
             showToast(`Opened: ${name || 'file'}`);
           } catch (e) {
-            showToast('Failed to open file');
+            showToast('Failed to open file', 'error');
             console.error('Drop file error:', e);
           }
         }
@@ -146,7 +147,7 @@
             tabsStore.addTab(fileContent, filePath, name);
             showToast(`Opened: ${name || 'file'}`);
           } catch (e) {
-            showToast('Failed to open file');
+            showToast('Failed to open file', 'error');
             console.error('Open file error:', e);
           }
         }
@@ -453,8 +454,9 @@
     }
   }
 
-  function showToast(msg: string) {
+  function showToast(msg: string, type: 'success' | 'error' | 'info' = 'success') {
     toastMsg = msg;
+    toastType = type;
   }
 
   function clampTreeWidth(width: number) {
@@ -637,7 +639,7 @@
       showToast($t('fixJson.success'));
     } catch (e: any) {
       jsonError = { message: $t('fixJson.unrepairable') };
-      showToast($t('fixJson.failed'));
+      showToast($t('fixJson.failed'), 'error');
     } finally {
       isFixing = false;
     }
@@ -770,7 +772,7 @@
         {/if}
 
         {#if toastMsg}
-          <JsonEditorToast message={toastMsg} on:close={() => { toastMsg = ''; }} />
+          <JsonEditorToast message={toastMsg} type={toastType} on:close={() => { toastMsg = ''; }} />
         {/if}
       </div>
     </div>
