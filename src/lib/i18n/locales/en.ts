@@ -93,6 +93,7 @@ export default {
   'codegen.copied': 'Copied',
   'codegen.classNamePlaceholder': 'Enter class/interface name...',
   'codegen.toggleDirection': 'Toggle conversion direction',
+  'codegen.reverseNotSupported': 'Reverse conversion is not supported for this language',
 
   // Tree View
   'treeView.title': 'Tree View',

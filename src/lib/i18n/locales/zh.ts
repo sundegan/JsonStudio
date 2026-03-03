@@ -93,6 +93,7 @@ export default {
   'codegen.copied': '已复制',
   'codegen.classNamePlaceholder': '输入类名/接口名...',
   'codegen.toggleDirection': '切换转换方向',
+  'codegen.reverseNotSupported': '该语言暂不支持反向转换',
 
   // Tree View
   'treeView.title': '树形视图',

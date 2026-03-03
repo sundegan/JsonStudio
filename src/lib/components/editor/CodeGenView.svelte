@@ -3,7 +3,7 @@
   import loader from '@monaco-editor/loader';
   import type * as Monaco from 'monaco-editor';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
-  import { generateCode, codeToJson, CODEGEN_LANGUAGES, type CodegenLanguage } from '$lib/services/codegen';
+  import { generateCode, codeToJson, supportsReverse, CODEGEN_LANGUAGES, type CodegenLanguage } from '$lib/services/codegen';
   import { t } from '$lib/i18n';
 
   type Direction = 'json2code' | 'code2json';
@@ -81,6 +81,10 @@
     const lang = selectedLang;
     const cls = className;
     const dir = direction;
+    if (dir === 'code2json' && !supportsReverse(lang)) {
+      direction = 'json2code';
+      return;
+    }
     if (pendingLang !== lang || pendingClassName !== cls || pendingDirection !== dir) {
       pendingLang = lang;
       pendingClassName = cls;
@@ -144,7 +148,10 @@
     className = (e.target as HTMLInputElement).value;
   }
 
+  let canReverse = $derived(supportsReverse(selectedLang));
+
   function toggleDirection() {
+    if (!canReverse) return;
     const oldLeft = leftEditor?.getValue() || '';
     const oldRight = rightEditor?.getValue() || '';
 
@@ -301,8 +308,10 @@
       <div class="cg-divider-line"></div>
       <button
         class="cg-divider-icon"
+        class:is-disabled={!canReverse}
         onclick={toggleDirection}
-        title={$t('codegen.toggleDirection')}
+        title={canReverse ? $t('codegen.toggleDirection') : $t('codegen.reverseNotSupported')}
+        disabled={!canReverse}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           {#if direction === 'json2code'}
@@ -562,10 +571,15 @@
     padding: 0;
   }
 
-  .cg-divider-icon:hover {
+  .cg-divider-icon:hover:not(:disabled) {
     background: var(--accent);
     border-color: var(--accent);
     color: white;
+  }
+
+  .cg-divider-icon.is-disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 
   .cg-divider-icon svg {

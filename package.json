@@ -27,6 +27,7 @@
     "jmespath": "^0.16.0",
     "json-source-map": "^0.6.1",
     "monaco-editor": "^0.55.1",
+    "quicktype-core": "^23.2.6",
     "tailwind-merge": "^3.4.0",
     "tailwind-variants": "^3.2.2"
   },

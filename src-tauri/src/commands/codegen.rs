@@ -1,3 +1,4 @@
+use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -27,20 +28,6 @@ pub fn json_to_code(content: &str, language: &str, class_name: &str) -> Result<S
     };
 
     match language {
-        "typescript" => Ok(gen_typescript(&value, name)),
-        "rust" => Ok(gen_rust(&value, name)),
-        "go" => Ok(gen_go(&value, name)),
-        "java" => Ok(gen_java(&value, name)),
-        "python" => Ok(gen_python(&value, name)),
-        "kotlin" => Ok(gen_kotlin(&value, name)),
-        "swift" => Ok(gen_swift(&value, name)),
-        "csharp" => Ok(gen_csharp(&value, name)),
-        "dart" => Ok(gen_dart(&value, name)),
-        "php" => Ok(gen_php(&value, name)),
-        "ruby" => Ok(gen_ruby(&value, name)),
-        "scala" => Ok(gen_scala(&value, name)),
-        "cpp" => Ok(gen_cpp(&value, name)),
-        "sql" => Ok(gen_sql(&value, name)),
         "protobuf" => Ok(gen_protobuf(&value, name)),
         "thrift" => Ok(gen_thrift(&value, name)),
         _ => Err(format!("Unsupported language: {}", language)),
@@ -191,62 +178,16 @@ fn collect_structs(value: &Value, name: &str) -> CollectResult {
 
 // --- Helpers ---
 
-fn split_words(s: &str) -> Vec<String> {
-    let mut words = Vec::new();
-    let mut current = String::new();
-    for c in s.chars() {
-        if c == '_' || c == '-' || c == ' ' {
-            if !current.is_empty() {
-                words.push(current.clone());
-                current.clear();
-            }
-        } else if c.is_uppercase() && !current.is_empty() {
-            words.push(current.clone());
-            current.clear();
-            current.push(c);
-        } else {
-            current.push(c);
-        }
-    }
-    if !current.is_empty() {
-        words.push(current);
-    }
-    words
-}
-
 fn to_pascal_case(s: &str) -> String {
-    split_words(s)
-        .iter()
-        .map(|w| {
-            let mut chars = w.chars();
-            match chars.next() {
-                Some(c) => c.to_uppercase().to_string() + chars.as_str(),
-                None => String::new(),
-            }
-        })
-        .collect()
+    s.to_upper_camel_case()
 }
 
 fn to_camel_case(s: &str) -> String {
-    let pascal = to_pascal_case(s);
-    let mut chars = pascal.chars();
-    match chars.next() {
-        Some(c) => c.to_lowercase().to_string() + chars.as_str(),
-        None => String::new(),
-    }
+    s.to_lower_camel_case()
 }
 
 fn to_snake_case(s: &str) -> String {
-    let mut result = String::new();
-    for (i, c) in s.chars().enumerate() {
-        if c.is_uppercase() && i > 0 {
-            result.push('_');
-        }
-        result.push(c.to_lowercase().next().unwrap_or(c));
-    }
-    result
-        .replace('-', "_")
-        .replace(' ', "_")
+    s.to_snake_case()
 }
 
 fn singularize(s: &str) -> String {
@@ -274,703 +215,6 @@ fn singularize(s: &str) -> String {
     } else {
         format!("{}_item", s)
     }
-}
-
-// --- TypeScript ---
-
-fn ts_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "string".into(),
-        JsonType::Number | JsonType::Integer => "number".into(),
-        JsonType::Boolean => "boolean".into(),
-        JsonType::Null => "null".into(),
-        JsonType::Array(inner) => format!("{}[]", ts_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "any".into(),
-        JsonType::Optional(inner) => format!("{} | null", ts_type(inner)),
-    }
-}
-
-fn gen_typescript(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = ts_type(inner);
-        out.push_str(&format!("type {} = {}[];\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("interface {} {{\n", sname));
-        for (key, ftype) in fields {
-            let optional = matches!(ftype, JsonType::Optional(_));
-            let type_str = ts_type(ftype);
-            if optional {
-                out.push_str(&format!("  {}?: {};\n", key, type_str));
-            } else {
-                out.push_str(&format!("  {}: {};\n", key, type_str));
-            }
-        }
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Rust ---
-
-fn rust_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "String".into(),
-        JsonType::Number => "f64".into(),
-        JsonType::Integer => "i64".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "Option<()>".into(),
-        JsonType::Array(inner) => format!("Vec<{}>", rust_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "serde_json::Value".into(),
-        JsonType::Optional(inner) => format!("Option<{}>", rust_type(inner)),
-    }
-}
-
-fn gen_rust(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::from("use serde::{Deserialize, Serialize};\n\n");
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = rust_type(inner);
-        out.push_str(&format!("pub type {} = Vec<{}>;\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str("#[derive(Debug, Clone, Serialize, Deserialize)]\n");
-        out.push_str(&format!("pub struct {} {{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_snake_case(key);
-            let type_str = rust_type(ftype);
-            if field_name != *key {
-                out.push_str(&format!("    #[serde(rename = \"{}\")]\n", key));
-            }
-            out.push_str(&format!("    pub {}: {},\n", field_name, type_str));
-        }
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Go ---
-
-fn go_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "string".into(),
-        JsonType::Number => "float64".into(),
-        JsonType::Integer => "int64".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "interface{}".into(),
-        JsonType::Array(inner) => format!("[]{}", go_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "interface{}".into(),
-        JsonType::Optional(inner) => format!("*{}", go_type(inner)),
-    }
-}
-
-fn gen_go(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = go_type(inner);
-        out.push_str(&format!("type {} []{}\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("type {} struct {{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_pascal_case(key);
-            let type_str = go_type(ftype);
-            out.push_str(&format!(
-                "\t{} {} `json:\"{}\"`\n",
-                field_name, type_str, key
-            ));
-        }
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Java ---
-
-fn java_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "String".into(),
-        JsonType::Number => "double".into(),
-        JsonType::Integer => "long".into(),
-        JsonType::Boolean => "boolean".into(),
-        JsonType::Null => "Object".into(),
-        JsonType::Array(inner) => format!("List<{}>", java_boxed_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "Object".into(),
-        JsonType::Optional(inner) => java_boxed_type(inner),
-    }
-}
-
-fn java_boxed_type(t: &JsonType) -> String {
-    match t {
-        JsonType::Number => "Double".into(),
-        JsonType::Integer => "Long".into(),
-        JsonType::Boolean => "Boolean".into(),
-        _ => java_type(t),
-    }
-}
-
-fn gen_java(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    let is_top_array = matches!(&result.top_level_type, JsonType::Array(_));
-    let has_list = is_top_array || result.structs.values().any(|fields| {
-        fields.values().any(|t| matches!(t, JsonType::Array(_)))
-    });
-    if has_list {
-        out.push_str("import java.util.List;\n\n");
-    }
-    if is_top_array {
-        if let JsonType::Array(inner) = &result.top_level_type {
-            let item_type = java_type(inner);
-            let wrapper_name = to_pascal_case(name);
-            let field_name = to_camel_case(&format!("{}s", name));
-            out.push_str(&format!("public class {} {{\n", wrapper_name));
-            out.push_str(&format!("    private List<{}> {};\n\n", item_type, field_name));
-            out.push_str(&format!(
-                "    public List<{}> get{}s() {{ return this.{}; }}\n",
-                item_type, wrapper_name, field_name
-            ));
-            out.push_str(&format!(
-                "    public void set{}s(List<{}> {}) {{ this.{} = {}; }}\n",
-                wrapper_name, item_type, field_name, field_name, field_name
-            ));
-            out.push_str("}\n\n");
-        }
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("public class {} {{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_camel_case(key);
-            let type_str = java_type(ftype);
-            out.push_str(&format!("    private {} {};\n", type_str, field_name));
-        }
-        out.push('\n');
-        for (key, ftype) in fields {
-            let field_name = to_camel_case(key);
-            let type_str = java_type(ftype);
-            let getter = format!("get{}", to_pascal_case(key));
-            let setter = format!("set{}", to_pascal_case(key));
-            out.push_str(&format!(
-                "    public {} {}() {{ return this.{}; }}\n",
-                type_str, getter, field_name
-            ));
-            out.push_str(&format!(
-                "    public void {}({} {}) {{ this.{} = {}; }}\n",
-                setter, type_str, field_name, field_name, field_name
-            ));
-        }
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Python ---
-
-fn python_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "str".into(),
-        JsonType::Number => "float".into(),
-        JsonType::Integer => "int".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "None".into(),
-        JsonType::Array(inner) => format!("list[{}]", python_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "Any".into(),
-        JsonType::Optional(inner) => format!("Optional[{}]", python_type(inner)),
-    }
-}
-
-fn gen_python(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::from("from dataclasses import dataclass\nfrom typing import Optional, Any\n\n\n");
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = python_type(inner);
-        out.push_str(&format!("{} = list[{}]\n\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str("@dataclass\n");
-        out.push_str(&format!("class {}:\n", sname));
-        if fields.is_empty() {
-            out.push_str("    pass\n");
-        } else {
-            for (key, ftype) in fields {
-                let field_name = to_snake_case(key);
-                let type_str = python_type(ftype);
-                out.push_str(&format!("    {}: {}\n", field_name, type_str));
-            }
-        }
-        out.push_str("\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Kotlin ---
-
-fn kotlin_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "String".into(),
-        JsonType::Number => "Double".into(),
-        JsonType::Integer => "Long".into(),
-        JsonType::Boolean => "Boolean".into(),
-        JsonType::Null => "Any?".into(),
-        JsonType::Array(inner) => format!("List<{}>", kotlin_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "Any".into(),
-        JsonType::Optional(inner) => format!("{}?", kotlin_type(inner)),
-    }
-}
-
-fn gen_kotlin(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = kotlin_type(inner);
-        out.push_str(&format!("typealias {} = List<{}>\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("data class {}(\n", sname));
-        let field_list: Vec<String> = fields
-            .iter()
-            .map(|(key, ftype)| {
-                let field_name = to_camel_case(key);
-                let type_str = kotlin_type(ftype);
-                let default = if matches!(ftype, JsonType::Optional(_)) {
-                    " = null"
-                } else {
-                    ""
-                };
-                format!("    val {}: {}{}", field_name, type_str, default)
-            })
-            .collect();
-        out.push_str(&field_list.join(",\n"));
-        out.push_str("\n)\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Swift ---
-
-fn swift_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "String".into(),
-        JsonType::Number => "Double".into(),
-        JsonType::Integer => "Int".into(),
-        JsonType::Boolean => "Bool".into(),
-        JsonType::Null => "Any?".into(),
-        JsonType::Array(inner) => format!("[{}]", swift_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "Any".into(),
-        JsonType::Optional(inner) => format!("{}?", swift_type(inner)),
-    }
-}
-
-fn gen_swift(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = swift_type(inner);
-        out.push_str(&format!("typealias {} = [{}]\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("struct {}: Codable {{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_camel_case(key);
-            let type_str = swift_type(ftype);
-            if field_name != *key {
-                out.push_str(&format!("    let {}: {}\n", field_name, type_str));
-            } else {
-                out.push_str(&format!("    let {}: {}\n", field_name, type_str));
-            }
-        }
-
-        let needs_coding_keys = fields.keys().any(|k| to_camel_case(k) != *k);
-        if needs_coding_keys {
-            out.push_str("\n    enum CodingKeys: String, CodingKey {\n");
-            for key in fields.keys() {
-                let field_name = to_camel_case(key);
-                if field_name != *key {
-                    out.push_str(&format!("        case {} = \"{}\"\n", field_name, key));
-                } else {
-                    out.push_str(&format!("        case {}\n", field_name));
-                }
-            }
-            out.push_str("    }\n");
-        }
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- C# ---
-
-fn csharp_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "string".into(),
-        JsonType::Number => "double".into(),
-        JsonType::Integer => "long".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "object?".into(),
-        JsonType::Array(inner) => format!("List<{}>", csharp_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "object".into(),
-        JsonType::Optional(inner) => format!("{}?", csharp_type(inner)),
-    }
-}
-
-fn gen_csharp(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    let is_top_array = matches!(&result.top_level_type, JsonType::Array(_));
-    let has_list = is_top_array || result.structs.values().any(|fields| {
-        fields.values().any(|t| matches!(t, JsonType::Array(_)))
-    });
-    if has_list {
-        out.push_str("using System.Collections.Generic;\n\n");
-    }
-    if is_top_array {
-        if let JsonType::Array(inner) = &result.top_level_type {
-            let item_type = csharp_type(inner);
-            let wrapper_name = to_pascal_case(name);
-            let prop_name = format!("{}s", wrapper_name);
-            out.push_str(&format!("public class {}\n{{\n", wrapper_name));
-            out.push_str(&format!(
-                "    public List<{}> {} {{ get; set; }}\n",
-                item_type, prop_name
-            ));
-            out.push_str("}\n\n");
-        }
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("public class {}\n{{\n", sname));
-        for (key, ftype) in fields {
-            let prop_name = to_pascal_case(key);
-            let type_str = csharp_type(ftype);
-            out.push_str(&format!(
-                "    public {} {} {{ get; set; }}\n",
-                type_str, prop_name
-            ));
-        }
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Dart ---
-
-fn dart_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "String".into(),
-        JsonType::Number => "double".into(),
-        JsonType::Integer => "int".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "dynamic".into(),
-        JsonType::Array(inner) => format!("List<{}>", dart_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "dynamic".into(),
-        JsonType::Optional(inner) => format!("{}?", dart_type(inner)),
-    }
-}
-
-fn gen_dart(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = dart_type(inner);
-        out.push_str(&format!("typedef {} = List<{}>;\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("class {} {{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_camel_case(key);
-            let type_str = dart_type(ftype);
-            out.push_str(&format!("  final {} {};\n", type_str, field_name));
-        }
-        out.push('\n');
-        // Constructor
-        out.push_str(&format!("  {}({{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_camel_case(key);
-            let required = !matches!(ftype, JsonType::Optional(_));
-            if required {
-                out.push_str(&format!("    required this.{},\n", field_name));
-            } else {
-                out.push_str(&format!("    this.{},\n", field_name));
-            }
-        }
-        out.push_str("  });\n\n");
-        // fromJson factory
-        out.push_str(&format!(
-            "  factory {}.fromJson(Map<String, dynamic> json) {{\n",
-            sname
-        ));
-        out.push_str(&format!("    return {}(\n", sname));
-        for (key, _ftype) in fields {
-            let field_name = to_camel_case(key);
-            out.push_str(&format!("      {}: json['{}'],\n", field_name, key));
-        }
-        out.push_str("    );\n");
-        out.push_str("  }\n\n");
-        // toJson
-        out.push_str("  Map<String, dynamic> toJson() {\n");
-        out.push_str("    return {\n");
-        for (key, _ftype) in fields {
-            let field_name = to_camel_case(key);
-            out.push_str(&format!("      '{}': {},\n", key, field_name));
-        }
-        out.push_str("    };\n");
-        out.push_str("  }\n");
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- PHP ---
-
-fn php_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "string".into(),
-        JsonType::Number => "float".into(),
-        JsonType::Integer => "int".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "mixed".into(),
-        JsonType::Array(inner) => format!("array<{}>", php_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "mixed".into(),
-        JsonType::Optional(inner) => format!("?{}", php_type(inner)),
-    }
-}
-
-fn gen_php(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::from("<?php\n\n");
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = php_type(inner);
-        let wrapper_name = to_pascal_case(name);
-        let field_name = to_camel_case(&format!("{}s", name));
-        out.push_str(&format!("class {}\n{{\n", wrapper_name));
-        out.push_str(&format!("    /** @var array<{}> */\n", item_type));
-        out.push_str(&format!("    public array ${};\n\n", field_name));
-        out.push_str(&format!("    public function __construct(array ${}) {{\n", field_name));
-        out.push_str(&format!("        $this->{} = ${};\n", field_name, field_name));
-        out.push_str("    }\n");
-        out.push_str("}\n\n");
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("class {}\n{{\n", sname));
-        for (key, ftype) in fields {
-            let type_str = php_type(ftype);
-            out.push_str(&format!(
-                "    public {} ${};\n",
-                type_str, to_camel_case(key)
-            ));
-        }
-        out.push('\n');
-        // Constructor
-        out.push_str("    public function __construct(\n");
-        let field_list: Vec<String> = fields
-            .iter()
-            .map(|(key, ftype)| {
-                let type_str = php_type(ftype);
-                format!("        {} ${}", type_str, to_camel_case(key))
-            })
-            .collect();
-        out.push_str(&field_list.join(",\n"));
-        out.push_str("\n    ) {\n");
-        for key in fields.keys() {
-            let field_name = to_camel_case(key);
-            out.push_str(&format!(
-                "        $this->{} = ${};\n",
-                field_name, field_name
-            ));
-        }
-        out.push_str("    }\n");
-        out.push_str("}\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Ruby ---
-
-fn gen_ruby(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = match inner.as_ref() {
-            JsonType::Object(n) => n.clone(),
-            _ => "Object".into(),
-        };
-        let wrapper_name = to_pascal_case(name);
-        let field_name = to_snake_case(&format!("{}s", name));
-        out.push_str(&format!("class {}\n", wrapper_name));
-        out.push_str(&format!("  attr_accessor :{}\n\n", field_name));
-        out.push_str(&format!("  # @return [Array<{}>]\n", item_type));
-        out.push_str(&format!("  def initialize({}: [])\n", field_name));
-        out.push_str(&format!("    @{} = {}\n", field_name, field_name));
-        out.push_str("  end\n");
-        out.push_str("end\n\n");
-    }
-    for (sname, fields) in &result.structs {
-        let attrs: Vec<String> = fields.keys().map(|k| format!(":{}", to_snake_case(k))).collect();
-        out.push_str(&format!("class {}\n", sname));
-        out.push_str(&format!("  attr_accessor {}\n\n", attrs.join(", ")));
-        // initialize
-        let params: Vec<String> = fields.keys().map(|k| format!("{}: nil", to_snake_case(k))).collect();
-        out.push_str(&format!("  def initialize({})\n", params.join(", ")));
-        for key in fields.keys() {
-            let field_name = to_snake_case(key);
-            out.push_str(&format!("    @{} = {}\n", field_name, field_name));
-        }
-        out.push_str("  end\n");
-        out.push_str("end\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- Scala ---
-
-fn scala_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "String".into(),
-        JsonType::Number => "Double".into(),
-        JsonType::Integer => "Long".into(),
-        JsonType::Boolean => "Boolean".into(),
-        JsonType::Null => "Any".into(),
-        JsonType::Array(inner) => format!("List[{}]", scala_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "Any".into(),
-        JsonType::Optional(inner) => format!("Option[{}]", scala_type(inner)),
-    }
-}
-
-fn gen_scala(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = scala_type(inner);
-        out.push_str(&format!("type {} = List[{}]\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("case class {}(\n", sname));
-        let field_list: Vec<String> = fields
-            .iter()
-            .map(|(key, ftype)| {
-                let field_name = to_camel_case(key);
-                let type_str = scala_type(ftype);
-                let default = if matches!(ftype, JsonType::Optional(_)) {
-                    " = None"
-                } else {
-                    ""
-                };
-                format!("  {}: {}{}", field_name, type_str, default)
-            })
-            .collect();
-        out.push_str(&field_list.join(",\n"));
-        out.push_str("\n)\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- C++ ---
-
-fn cpp_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "std::string".into(),
-        JsonType::Number => "double".into(),
-        JsonType::Integer => "int64_t".into(),
-        JsonType::Boolean => "bool".into(),
-        JsonType::Null => "std::nullptr_t".into(),
-        JsonType::Array(inner) => format!("std::vector<{}>", cpp_type(inner)),
-        JsonType::Object(name) => name.clone(),
-        JsonType::Any => "nlohmann::json".into(),
-        JsonType::Optional(inner) => format!("std::optional<{}>", cpp_type(inner)),
-    }
-}
-
-fn gen_cpp(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::from("#include <string>\n#include <vector>\n#include <optional>\n#include <cstdint>\n\n");
-    if let JsonType::Array(inner) = &result.top_level_type {
-        let item_type = cpp_type(inner);
-        out.push_str(&format!("using {} = std::vector<{}>;\n\n", to_pascal_case(name), item_type));
-    }
-    for (sname, fields) in &result.structs {
-        out.push_str(&format!("struct {} {{\n", sname));
-        for (key, ftype) in fields {
-            let field_name = to_snake_case(key);
-            let type_str = cpp_type(ftype);
-            out.push_str(&format!("    {} {};\n", type_str, field_name));
-        }
-        out.push_str("};\n\n");
-    }
-    out.trim_end().to_string()
-}
-
-// --- SQL (CREATE TABLE) ---
-
-fn sql_type(t: &JsonType) -> String {
-    match t {
-        JsonType::String => "TEXT".into(),
-        JsonType::Number => "REAL".into(),
-        JsonType::Integer => "BIGINT".into(),
-        JsonType::Boolean => "BOOLEAN".into(),
-        JsonType::Null => "TEXT".into(),
-        JsonType::Array(_) => "JSON".into(),
-        JsonType::Object(_) => "JSON".into(),
-        JsonType::Any => "JSON".into(),
-        JsonType::Optional(inner) => sql_type(inner),
-    }
-}
-
-fn sql_col_for_field(key: &str, ftype: &JsonType) -> String {
-    let col_name = to_snake_case(key);
-    let is_optional = matches!(ftype, JsonType::Optional(_));
-
-    // Unwrap Optional to get inner type
-    let inner = match ftype {
-        JsonType::Optional(inner) => inner.as_ref(),
-        _ => ftype,
-    };
-
-    match inner {
-        JsonType::Object(ref_name) => {
-            // Foreign key reference to the related table
-            let ref_table = to_snake_case(ref_name);
-            let nullable = if is_optional { "" } else { " NOT NULL" };
-            format!("    {}_id BIGINT{} REFERENCES {}(id)", col_name, nullable, ref_table)
-        }
-        _ => {
-            let type_str = sql_type(ftype);
-            let nullable = if is_optional { "" } else { " NOT NULL" };
-            format!("    {} {}{}", col_name, type_str, nullable)
-        }
-    }
-}
-
-fn gen_sql(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
-    let mut out = String::new();
-
-    // Generate tables in reverse order so referenced tables come first
-    let struct_list: Vec<_> = result.structs.iter().collect();
-    for (sname, fields) in struct_list.iter().rev() {
-        let table_name = to_snake_case(sname);
-        out.push_str(&format!("CREATE TABLE {} (\n", table_name));
-        out.push_str("    id BIGINT PRIMARY KEY AUTO_INCREMENT,\n");
-        let field_lines: Vec<String> = fields
-            .iter()
-            .map(|(key, ftype)| sql_col_for_field(key, ftype))
-            .collect();
-        out.push_str(&field_lines.join(",\n"));
-        out.push_str("\n);\n\n");
-    }
-    out.trim_end().to_string()
 }
 
 // --- Protobuf ---
@@ -1130,22 +374,26 @@ fn parse_code_to_json(content: &str, language: &str, _class_name: &str) -> Resul
         "python" => parse_python_to_json(content),
         "ruby" => parse_ruby_to_json(content),
         "cpp" => parse_cpp_to_json(content),
-        "sql" => parse_sql_to_json(content),
         "protobuf" => parse_protobuf_to_json(content),
         "thrift" => parse_thrift_to_json(content),
+        "javascript" => parse_javascript_to_json(content),
+        "objectivec" => parse_objectivec_to_json(content),
+        "elm" => parse_elm_to_json(content),
+        "haskell" => parse_haskell_to_json(content),
+        "crystal" => parse_crystal_to_json(content),
+        "elixir" => parse_elixir_to_json(content),
+        "pike" => parse_pike_to_json(content),
         _ => Err(format!("Unsupported language for reverse conversion: {}", language)),
     }?;
 
     let converted = match language {
-        // snake_case → camelCase
-        "rust" | "python" | "cpp" | "ruby" | "sql" | "protobuf" | "thrift" => {
+        "rust" | "python" | "cpp" | "ruby" | "protobuf" | "thrift"
+        | "crystal" | "elixir" | "pike" => {
             convert_fields_only(result, &to_camel_case)
         }
-        // PascalCase → camelCase
-        "csharp" => {
+        "csharp" | "objectivec" => {
             convert_fields_only(result, &to_camel_case)
         }
-        // Already camelCase or uses json tags
         _ => result,
     };
 
@@ -1683,65 +931,6 @@ fn parse_cpp_to_json(content: &str) -> Result<Value, String> {
     parse_typed_class_to_json(content, "cpp")
 }
 
-// --- SQL parser ---
-
-fn parse_sql_to_json(content: &str) -> Result<Value, String> {
-    let mut result = serde_json::Map::new();
-    let mut current_fields: Option<(String, serde_json::Map<String, Value>)> = None;
-
-    let upper = content.to_uppercase();
-    for (i, line) in content.lines().enumerate() {
-        let upper_line = upper.lines().nth(i).unwrap_or("");
-        let trimmed = line.trim();
-
-        if upper_line.trim().starts_with("CREATE TABLE") {
-            if let Some((name, fields)) = current_fields.take() {
-                result.insert(name, Value::Object(fields));
-            }
-            let name = trimmed
-                .split_whitespace()
-                .nth(2)
-                .unwrap_or("")
-                .trim_matches(|c: char| c == '(' || c == '`' || c == '"' || c == '[' || c == ']')
-                .to_string();
-            if !name.is_empty() {
-                current_fields = Some((name, serde_json::Map::new()));
-            }
-        } else if trimmed.starts_with(')') {
-            if let Some((name, fields)) = current_fields.take() {
-                result.insert(name, Value::Object(fields));
-            }
-        } else if let Some((_, ref mut fields)) = current_fields {
-            let clean = trimmed.trim_end_matches(',').trim();
-            if clean.is_empty() || upper_line.trim().starts_with("PRIMARY") || upper_line.trim().starts_with("CONSTRAINT")
-                || upper_line.trim().starts_with("INDEX") || upper_line.trim().starts_with("UNIQUE")
-                || upper_line.trim().starts_with("FOREIGN") || upper_line.trim().starts_with("KEY")
-            {
-                continue;
-            }
-            let parts: Vec<&str> = clean.split_whitespace().collect();
-            if parts.len() >= 2 {
-                let col_name = parts[0].trim_matches(|c: char| c == '`' || c == '"' || c == '[' || c == ']');
-                let col_type = parts[1];
-                if col_name.to_uppercase() != "ID" || !upper_line.contains("PRIMARY") {
-                    fields.insert(col_name.to_string(), default_value_for_type(col_type));
-                }
-            }
-        }
-    }
-    if let Some((name, fields)) = current_fields {
-        result.insert(name, Value::Object(fields));
-    }
-
-    if result.len() == 1 {
-        Ok(result.into_iter().next().unwrap().1)
-    } else if result.is_empty() {
-        Err("No CREATE TABLE statement found".into())
-    } else {
-        Ok(Value::Object(result))
-    }
-}
-
 // --- Protobuf parser ---
 
 fn parse_protobuf_to_json(content: &str) -> Result<Value, String> {
@@ -1862,85 +1051,604 @@ fn parse_thrift_to_json(content: &str) -> Result<Value, String> {
     }
 }
 
+// --- JavaScript parser (quicktype typeMap format) ---
+
+fn parse_javascript_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // Match: "ClassName": o([
+        if trimmed.contains("\": o([") {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+            if let Some(start) = trimmed.find('"') {
+                if let Some(end) = trimmed[start + 1..].find('"') {
+                    current_name = Some(trimmed[start + 1..start + 1 + end].to_string());
+                }
+            }
+        }
+        // Match: { json: "fieldName", js: "fieldName", typ: ... },
+        if trimmed.starts_with("{ json:") || trimmed.starts_with("{json:") {
+            if let Some(json_start) = trimmed.find("json:") {
+                let after = &trimmed[json_start + 5..];
+                let after = after.trim().trim_start_matches('"');
+                if let Some(end) = after.find('"') {
+                    let field_name = &after[..end];
+                    let typ_val = if trimmed.contains("typ: \"\"") || trimmed.contains("typ: ''") {
+                        Value::String(String::new())
+                    } else if trimmed.contains("typ: 0") {
+                        Value::Number(serde_json::Number::from(0))
+                    } else if trimmed.contains("typ: true") || trimmed.contains("typ: false") {
+                        Value::Bool(false)
+                    } else if trimmed.contains("typ: a(") {
+                        Value::Array(vec![])
+                    } else if trimmed.contains("typ: r(") {
+                        Value::Object(serde_json::Map::new())
+                    } else {
+                        Value::Null
+                    };
+                    current_fields.insert(field_name.to_string(), typ_val);
+                }
+            }
+        }
+    }
+    if let Some(name) = current_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No type definition found in JavaScript code".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+// --- Objective-C parser ---
+
+fn parse_objectivec_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // @interface ClassName : NSObject
+        if trimmed.starts_with("@interface ") {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+            let rest = &trimmed["@interface ".len()..];
+            let name = rest.split(|c: char| c.is_whitespace() || c == ':' || c == '(')
+                .next().unwrap_or("").trim().to_string();
+            if !name.is_empty() {
+                current_name = Some(name);
+            }
+        }
+        // @end
+        if trimmed == "@end" {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+        }
+        // @property (nonatomic, ...) Type *name;
+        if trimmed.starts_with("@property") && current_name.is_some() {
+            let prop_part = if let Some(paren_end) = trimmed.find(')') {
+                trimmed[paren_end + 1..].trim()
+            } else {
+                &trimmed["@property".len()..].trim()
+            };
+            let clean = prop_part.trim_end_matches(';').trim();
+            let parts: Vec<&str> = clean.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let field_name = parts.last().unwrap().trim_start_matches('*');
+                let type_str = parts[..parts.len() - 1].join(" ").replace('*', "").trim().to_string();
+                current_fields.insert(field_name.to_string(), objc_default_value(&type_str));
+            }
+        }
+    }
+    if let Some(name) = current_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No @interface definition found".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+fn objc_default_value(type_str: &str) -> Value {
+    let t = type_str.trim();
+    match t {
+        "NSString" => Value::String(String::new()),
+        "NSInteger" | "NSUInteger" | "int" | "long" | "NSNumber" => Value::Number(serde_json::Number::from(0)),
+        "CGFloat" | "double" | "float" => Value::Number(serde_json::Number::from_f64(0.0).unwrap()),
+        "BOOL" => Value::Bool(false),
+        _ if t.starts_with("NSArray") || t.starts_with("NSMutableArray") => Value::Array(vec![]),
+        _ if t.starts_with("NSDictionary") || t.starts_with("NSMutableDictionary") => Value::Object(serde_json::Map::new()),
+        _ => Value::Object(serde_json::Map::new()),
+    }
+}
+
+// --- Elm parser ---
+
+fn parse_elm_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // type alias Name =
+        if trimmed.starts_with("type alias ") {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+            let rest = &trimmed["type alias ".len()..];
+            let name = rest.split(|c: char| c.is_whitespace() || c == '=')
+                .next().unwrap_or("").trim().to_string();
+            if !name.is_empty() {
+                current_name = Some(name);
+            }
+        }
+        // { fieldName : Type  or  , fieldName : Type
+        if (trimmed.starts_with('{') || trimmed.starts_with(',')) && trimmed.contains(':') && current_name.is_some() {
+            let field_part = trimmed.trim_start_matches(['{', ',', ' ']);
+            if let Some(colon) = field_part.find(':') {
+                let key = field_part[..colon].trim();
+                let type_str = field_part[colon + 1..].trim().trim_end_matches('}').trim();
+                if !key.is_empty() {
+                    current_fields.insert(key.to_string(), elm_default_value(type_str));
+                }
+            }
+        }
+        // closing }
+        if trimmed == "}" && current_name.is_some() {
+            if let Some(name) = current_name.take() {
+                result.insert(name, Value::Object(current_fields.clone()));
+                current_fields.clear();
+            }
+        }
+    }
+    if let Some(name) = current_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No type alias definition found".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+fn elm_default_value(type_str: &str) -> Value {
+    let t = type_str.trim();
+    match t {
+        "String" => Value::String(String::new()),
+        "Int" => Value::Number(serde_json::Number::from(0)),
+        "Float" => Value::Number(serde_json::Number::from_f64(0.0).unwrap()),
+        "Bool" => Value::Bool(false),
+        _ if t.starts_with("Array ") || t.starts_with("List ") => Value::Array(vec![]),
+        _ if t.starts_with("Maybe ") => Value::Null,
+        _ => Value::Object(serde_json::Map::new()),
+    }
+}
+
+// --- Haskell parser ---
+
+fn parse_haskell_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+    let mut in_from_json = false;
+    let mut from_json_name: Option<String> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // instance FromJSON ClassName where
+        if trimmed.starts_with("instance FromJSON ") && trimmed.ends_with("where") {
+            let name = trimmed["instance FromJSON ".len()..].trim_end_matches("where").trim().to_string();
+            if !name.is_empty() {
+                in_from_json = true;
+                from_json_name = Some(name);
+            }
+        }
+
+        // v .: "fieldName" — extract JSON key from FromJSON instance
+        if in_from_json && trimmed.contains(".: \"") {
+            if let Some(start) = trimmed.find(".: \"") {
+                let after = &trimmed[start + 4..];
+                if let Some(end) = after.find('"') {
+                    let json_key = &after[..end];
+                    current_fields.insert(json_key.to_string(), Value::Null);
+                }
+            }
+        }
+
+        // End of FromJSON instance (next instance or blank line after fields)
+        if in_from_json && (trimmed.starts_with("instance ToJSON") || (trimmed.is_empty() && !current_fields.is_empty())) {
+            if let Some(name) = from_json_name.take() {
+                result.insert(name, Value::Object(current_fields.clone()));
+                current_fields.clear();
+            }
+            in_from_json = false;
+        }
+
+        // data ClassName = ClassName { field :: Type, ... }
+        if trimmed.starts_with("data ") && trimmed.contains("=") {
+            let rest = &trimmed["data ".len()..];
+            let name = rest.split(|c: char| c.is_whitespace() || c == '=')
+                .next().unwrap_or("").trim().to_string();
+            if !name.is_empty() {
+                current_name = Some(name);
+            }
+        }
+
+        // { fieldName :: Type  or  , fieldName :: Type
+        if (trimmed.starts_with('{') || trimmed.starts_with(',')) && trimmed.contains("::") && current_name.is_some() {
+            let field_part = trimmed.trim_start_matches(['{', ',', ' ']);
+            if let Some(dcolon) = field_part.find("::") {
+                let _key = field_part[..dcolon].trim();
+                let type_str = field_part[dcolon + 2..].trim().trim_end_matches('}').trim();
+                // We'll use the data definition only if no FromJSON instance is found
+                if !result.contains_key(current_name.as_ref().unwrap()) {
+                    let val = haskell_default_value(type_str);
+                    // Store with the Haskell field name; will be overridden by FromJSON keys
+                    current_fields.insert(_key.to_string(), val);
+                }
+            }
+        }
+
+        if trimmed.starts_with("} deriving") && current_name.is_some() {
+            if let Some(name) = current_name.take() {
+                if !result.contains_key(&name) && !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                }
+                current_fields.clear();
+            }
+        }
+    }
+
+    // Flush remaining
+    if let Some(name) = from_json_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields.clone()));
+            current_fields.clear();
+        }
+    }
+    if let Some(name) = current_name {
+        if !result.contains_key(&name) && !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    // FromJSON instances have the correct JSON keys; prefer them
+    // For entries from data definitions, replace with FromJSON if available
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No data definition found".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+fn haskell_default_value(type_str: &str) -> Value {
+    let t = type_str.trim();
+    match t {
+        "Text" | "String" => Value::String(String::new()),
+        "Int" | "Integer" => Value::Number(serde_json::Number::from(0)),
+        "Double" | "Float" => Value::Number(serde_json::Number::from_f64(0.0).unwrap()),
+        "Bool" => Value::Bool(false),
+        _ if t.starts_with("Vector ") || t.starts_with("[") => Value::Array(vec![]),
+        _ if t.starts_with("Maybe ") => Value::Null,
+        _ => Value::Object(serde_json::Map::new()),
+    }
+}
+
+// --- Crystal parser ---
+
+fn parse_crystal_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("class ") {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+            let name = trimmed["class ".len()..].split(|c: char| c.is_whitespace() || c == '<')
+                .next().unwrap_or("").trim().to_string();
+            if !name.is_empty() {
+                current_name = Some(name);
+            }
+        }
+        // property name : Type
+        if trimmed.starts_with("property ") && current_name.is_some() {
+            let rest = &trimmed["property ".len()..];
+            if let Some(colon) = rest.find(':') {
+                let key = rest[..colon].trim();
+                let type_str = rest[colon + 1..].trim();
+                if !key.is_empty() {
+                    current_fields.insert(key.to_string(), crystal_default_value(type_str));
+                }
+            }
+        }
+        if trimmed == "end" {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+        }
+    }
+    if let Some(name) = current_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No class definition found".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+fn crystal_default_value(type_str: &str) -> Value {
+    let t = type_str.trim().trim_end_matches('?');
+    match t {
+        "String" => Value::String(String::new()),
+        "Int32" | "Int64" | "Int" => Value::Number(serde_json::Number::from(0)),
+        "Float32" | "Float64" | "Float" => Value::Number(serde_json::Number::from_f64(0.0).unwrap()),
+        "Bool" => Value::Bool(false),
+        _ if t.starts_with("Array(") => Value::Array(vec![]),
+        _ if t.starts_with("Hash(") => Value::Object(serde_json::Map::new()),
+        "Nil" => Value::Null,
+        _ => Value::Object(serde_json::Map::new()),
+    }
+}
+
+// --- Elixir parser ---
+
+fn parse_elixir_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+    let mut in_type = false;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // defmodule Name do
+        if trimmed.starts_with("defmodule ") && trimmed.ends_with(" do") {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+            let name = trimmed["defmodule ".len()..trimmed.len() - 3].trim().to_string();
+            if !name.is_empty() {
+                current_name = Some(name);
+                in_type = false;
+            }
+        }
+        // @type t :: %__MODULE__{
+        if trimmed.contains("@type") && trimmed.contains("%__MODULE__{") {
+            in_type = true;
+        }
+        // field: Type()  inside @type
+        if in_type && trimmed.contains(':') && !trimmed.starts_with("@") && !trimmed.starts_with("}") {
+            let clean = trimmed.trim_end_matches([',', ' ']);
+            if let Some(colon) = clean.find(':') {
+                let key = clean[..colon].trim();
+                let type_str = clean[colon + 1..].trim();
+                if !key.is_empty() && !key.starts_with("@") && !key.starts_with("%") {
+                    current_fields.insert(key.to_string(), elixir_default_value(type_str));
+                }
+            }
+        }
+        if trimmed == "}" || trimmed.starts_with("}") {
+            in_type = false;
+        }
+        if trimmed == "end" {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+        }
+    }
+    if let Some(name) = current_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No defmodule definition found".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+fn elixir_default_value(type_str: &str) -> Value {
+    let t = type_str.trim();
+    if t.contains("String.t()") || t == "String.t()" {
+        Value::String(String::new())
+    } else if t == "integer()" || t == "non_neg_integer()" || t == "pos_integer()" {
+        Value::Number(serde_json::Number::from(0))
+    } else if t == "float()" || t == "number()" {
+        Value::Number(serde_json::Number::from_f64(0.0).unwrap())
+    } else if t == "boolean()" {
+        Value::Bool(false)
+    } else if t.starts_with("[") || t.starts_with("list(") {
+        Value::Array(vec![])
+    } else if t == "nil" {
+        Value::Null
+    } else {
+        Value::Object(serde_json::Map::new())
+    }
+}
+
+// --- Pike parser ---
+
+fn parse_pike_to_json(content: &str) -> Result<Value, String> {
+    let mut result = serde_json::Map::new();
+    let mut current_name: Option<String> = None;
+    let mut current_fields = serde_json::Map::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // class ClassName {
+        if trimmed.starts_with("class ") && trimmed.ends_with('{') {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+            let name = trimmed["class ".len()..].split(|c: char| c.is_whitespace() || c == '{')
+                .next().unwrap_or("").trim().to_string();
+            if !name.is_empty() {
+                current_name = Some(name);
+            }
+        }
+        // type  name;  // json: "jsonKey"
+        if current_name.is_some() && !trimmed.starts_with("//") && !trimmed.starts_with("class ")
+            && !trimmed.starts_with("string encode_json") && !trimmed.starts_with("mapping")
+            && !trimmed.starts_with("return ") && !trimmed.starts_with("retval.")
+            && trimmed.contains(';')
+        {
+            let clean = trimmed.split(';').next().unwrap_or("").trim();
+            let parts: Vec<&str> = clean.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let type_str = parts[0];
+                let field_name = parts[1];
+                // Check for json: "key" comment
+                let json_key = if let Some(json_comment) = trimmed.find("// json: \"") {
+                    let after = &trimmed[json_comment + 10..];
+                    after.split('"').next().unwrap_or(field_name)
+                } else {
+                    field_name
+                };
+                if !type_str.is_empty() && !json_key.is_empty()
+                    && !type_str.starts_with("mapping") && !type_str.starts_with("return")
+                {
+                    current_fields.insert(json_key.to_string(), pike_default_value(type_str));
+                }
+            }
+        }
+        if trimmed == "}" {
+            if let Some(name) = current_name.take() {
+                if !current_fields.is_empty() {
+                    result.insert(name, Value::Object(current_fields.clone()));
+                    current_fields.clear();
+                }
+            }
+        }
+    }
+    if let Some(name) = current_name {
+        if !current_fields.is_empty() {
+            result.insert(name, Value::Object(current_fields));
+        }
+    }
+
+    if result.len() == 1 {
+        Ok(result.into_iter().next().unwrap().1)
+    } else if result.is_empty() {
+        Err("No class definition found".into())
+    } else {
+        Ok(Value::Object(result))
+    }
+}
+
+fn pike_default_value(type_str: &str) -> Value {
+    let t = type_str.trim();
+    match t {
+        "string" => Value::String(String::new()),
+        "int" => Value::Number(serde_json::Number::from(0)),
+        "float" => Value::Number(serde_json::Number::from_f64(0.0).unwrap()),
+        "bool" => Value::Bool(false),
+        _ if t.starts_with("array") => Value::Array(vec![]),
+        _ if t.starts_with("mapping") => Value::Object(serde_json::Map::new()),
+        _ => Value::Object(serde_json::Map::new()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // ========== 1. Top-level structure tests ==========
+    // ========== 1. Type inference tests (collect_structs) ==========
 
     #[test]
     fn test_top_level_object() {
         let json = r#"{"name":"Alice","age":30}"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let go = gen_go(&value, "MyModel");
-        assert!(go.contains("type MyModel struct {"), "Go:\n{}", go);
-        assert!(!go.contains("MyModelItem"), "Go should not have Item:\n{}", go);
-
-        let ts = gen_typescript(&value, "MyModel");
-        assert!(ts.contains("interface MyModel {"), "TS:\n{}", ts);
+        let result = collect_structs(&value, "MyModel");
+        assert!(result.structs.contains_key("MyModel"));
+        assert!(matches!(result.top_level_type, JsonType::Object(_)));
+        let fields = &result.structs["MyModel"];
+        assert!(matches!(fields["name"], JsonType::String));
+        assert!(matches!(fields["age"], JsonType::Integer));
     }
 
     #[test]
     fn test_top_level_array_of_objects() {
         let json = r#"[{"name":"Alice","age":30},{"name":"Bob","age":25}]"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let go = gen_go(&value, "MyModel");
-        assert!(go.contains("type MyModel []MyModelItem"), "Go:\n{}", go);
-        assert!(go.contains("type MyModelItem struct {"), "Go:\n{}", go);
-        assert!(!go.contains("type MyModel struct"), "Go should not have MyModel struct:\n{}", go);
+        let result = collect_structs(&value, "MyModel");
+        assert!(matches!(result.top_level_type, JsonType::Array(_)));
+        assert!(result.structs.contains_key("MyModelItem"));
     }
 
     #[test]
-    fn test_top_level_array_all_languages() {
+    fn test_top_level_array_protobuf_thrift() {
         let json = r#"[{"name":"test","value":42}]"#;
         let value: Value = serde_json::from_str(json).unwrap();
 
-        let ts = gen_typescript(&value, "MyModel");
-        assert!(ts.contains("type MyModel = MyModelItem[];"), "TS:\n{}", ts);
-        assert!(ts.contains("interface MyModelItem {"), "TS:\n{}", ts);
-
-        let rs = gen_rust(&value, "MyModel");
-        assert!(rs.contains("pub type MyModel = Vec<MyModelItem>;"), "Rust:\n{}", rs);
-
-        let go = gen_go(&value, "MyModel");
-        assert!(go.contains("type MyModel []MyModelItem"), "Go:\n{}", go);
-
-        // Languages with type aliases
-        let java = gen_java(&value, "MyModel");
-        assert!(java.contains("public class MyModel {"), "Java wrapper:\n{}", java);
-        assert!(java.contains("List<MyModelItem>"), "Java:\n{}", java);
-
-        let py = gen_python(&value, "MyModel");
-        assert!(py.contains("MyModel = list[MyModelItem]"), "Python:\n{}", py);
-
-        let kt = gen_kotlin(&value, "MyModel");
-        assert!(kt.contains("typealias MyModel = List<MyModelItem>"), "Kotlin:\n{}", kt);
-
-        let sw = gen_swift(&value, "MyModel");
-        assert!(sw.contains("typealias MyModel = [MyModelItem]"), "Swift:\n{}", sw);
-
-        let cs = gen_csharp(&value, "MyModel");
-        assert!(cs.contains("public class MyModel"), "C# wrapper:\n{}", cs);
-        assert!(cs.contains("List<MyModelItem>"), "C#:\n{}", cs);
-
-        let dart = gen_dart(&value, "MyModel");
-        assert!(dart.contains("typedef MyModel = List<MyModelItem>;"), "Dart:\n{}", dart);
-
-        let php = gen_php(&value, "MyModel");
-        assert!(php.contains("class MyModel"), "PHP wrapper:\n{}", php);
-        assert!(php.contains("array<MyModelItem>"), "PHP:\n{}", php);
-
-        let rb = gen_ruby(&value, "MyModel");
-        assert!(rb.contains("class MyModel"), "Ruby wrapper:\n{}", rb);
-        assert!(rb.contains("Array<MyModelItem>"), "Ruby:\n{}", rb);
-
-        let sc = gen_scala(&value, "MyModel");
-        assert!(sc.contains("type MyModel = List[MyModelItem]"), "Scala:\n{}", sc);
-
-        let cpp = gen_cpp(&value, "MyModel");
-        assert!(cpp.contains("using MyModel = std::vector<MyModelItem>;"), "C++:\n{}", cpp);
-
-        // Languages with wrapper message/struct
         let proto = gen_protobuf(&value, "MyModel");
         assert!(proto.contains("message MyModel {"), "Protobuf wrapper:\n{}", proto);
         assert!(proto.contains("repeated MyModelItem"), "Protobuf:\n{}", proto);
@@ -1952,12 +1660,12 @@ mod tests {
 
     #[test]
     fn test_reject_primitive_json() {
-        assert!(json_to_code("42", "go", "X").is_err());
-        assert!(json_to_code("\"hello\"", "go", "X").is_err());
-        assert!(json_to_code("true", "go", "X").is_err());
-        assert!(json_to_code("null", "go", "X").is_err());
-        assert!(json_to_code("[]", "go", "X").is_err());
-        assert!(json_to_code("[1,2,3]", "go", "X").is_err());
+        assert!(json_to_code("42", "protobuf", "X").is_err());
+        assert!(json_to_code("\"hello\"", "protobuf", "X").is_err());
+        assert!(json_to_code("true", "protobuf", "X").is_err());
+        assert!(json_to_code("null", "protobuf", "X").is_err());
+        assert!(json_to_code("[]", "protobuf", "X").is_err());
+        assert!(json_to_code("[1,2,3]", "protobuf", "X").is_err());
     }
 
     // ========== 2. Singularize tests ==========
@@ -1971,11 +1679,9 @@ mod tests {
         assert_eq!(singularize("addresses"), "address");
         assert_eq!(singularize("boxes"), "box");
         assert_eq!(singularize("classes"), "class");
-        // Already singular
         assert_eq!(singularize("address"), "address_item");
         assert_eq!(singularize("status"), "status_item");
         assert_eq!(singularize("bus"), "bus_item");
-        // Non-plural ending
         assert_eq!(singularize("data"), "data_item");
     }
 
@@ -1985,37 +1691,34 @@ mod tests {
     fn test_nested_object() {
         let json = r#"{"user":{"name":"Alice","profile":{"bio":"hello","age":30}}}"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let go = gen_go(&value, "Root");
-        assert!(go.contains("type Root struct {"), "Go:\n{}", go);
-        assert!(go.contains("type User struct {"), "Go:\n{}", go);
-        assert!(go.contains("type Profile struct {"), "Go:\n{}", go);
+        let result = collect_structs(&value, "Root");
+        assert!(result.structs.contains_key("Root"));
+        assert!(result.structs.contains_key("User"));
+        assert!(result.structs.contains_key("Profile"));
     }
 
     #[test]
     fn test_nested_array_of_objects_in_field() {
         let json = r#"{"users":[{"name":"Alice","age":30},{"name":"Bob","email":"b@c.com"}]}"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let ts = gen_typescript(&value, "Root");
-        // "users" array should merge fields from both objects
-        assert!(ts.contains("interface Root {"), "TS:\n{}", ts);
-        assert!(ts.contains("interface User {"), "TS:\n{}", ts);
-        // "email" only in second object -> optional
-        assert!(ts.contains("email?:"), "email should be optional.\n{}", ts);
-        // "age" only in first object -> optional
-        assert!(ts.contains("age?:"), "age should be optional.\n{}", ts);
-        // "name" in both -> required
-        assert!(ts.contains("  name: string;"), "name should be required.\n{}", ts);
+        let result = collect_structs(&value, "Root");
+        assert!(result.structs.contains_key("Root"));
+        assert!(result.structs.contains_key("User"));
+        let user_fields = &result.structs["User"];
+        assert!(matches!(user_fields.get("email"), Some(JsonType::Optional(_))), "email should be optional");
+        assert!(matches!(user_fields.get("age"), Some(JsonType::Optional(_))), "age should be optional");
+        assert!(matches!(user_fields.get("name"), Some(JsonType::String)), "name should be required");
     }
 
     #[test]
     fn test_deeply_nested_array() {
         let json = r#"[{"email_title":"test","policy_query_param":{"broker_id":99,"product_filter":{"product_ids":[],"product_type_list":[-1]}}}]"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let go = gen_go(&value, "MyModel");
-        assert!(go.contains("type MyModel []MyModelItem"), "Go:\n{}", go);
-        assert!(go.contains("type MyModelItem struct {"), "Go:\n{}", go);
-        assert!(go.contains("type PolicyQueryParam struct {"), "Go:\n{}", go);
-        assert!(go.contains("type ProductFilter struct {"), "Go:\n{}", go);
+        let result = collect_structs(&value, "MyModel");
+        assert!(matches!(result.top_level_type, JsonType::Array(_)));
+        assert!(result.structs.contains_key("MyModelItem"));
+        assert!(result.structs.contains_key("PolicyQueryParam"));
+        assert!(result.structs.contains_key("ProductFilter"));
     }
 
     // ========== 4. Null handling in merge ==========
@@ -2024,78 +1727,31 @@ mod tests {
     fn test_merge_with_null_values() {
         let json = r#"[{"name":"Alice","email":"a@b.com"},{"name":"Bob","email":null}]"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let ts = gen_typescript(&value, "Data");
-        // email is null in one object -> should be optional with string type
-        assert!(ts.contains("email?:"), "email should be optional.\n{}", ts);
-        assert!(ts.contains("string"), "email should still be string type.\n{}", ts);
-        // name is present in both -> required
-        assert!(ts.contains("  name: string;"), "name should be required.\n{}", ts);
+        let result = collect_structs(&value, "Data");
+        let fields = &result.structs["DataItem"];
+        assert!(matches!(fields.get("email"), Some(JsonType::Optional(_))), "email should be optional");
+        assert!(matches!(fields.get("name"), Some(JsonType::String)), "name should be required");
     }
 
     #[test]
     fn test_merge_missing_keys() {
         let json = r#"[{"a":1,"b":"x"},{"a":2}]"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let ts = gen_typescript(&value, "Data");
-        // "b" missing in second object -> optional
-        assert!(ts.contains("b?:"), "b should be optional.\n{}", ts);
-        // "a" in both -> required
-        assert!(ts.contains("  a: number;"), "a should be required.\n{}", ts);
+        let result = collect_structs(&value, "Data");
+        let fields = &result.structs["DataItem"];
+        assert!(matches!(fields.get("b"), Some(JsonType::Optional(_))), "b should be optional");
+        assert!(matches!(fields.get("a"), Some(JsonType::Integer)), "a should be required integer");
     }
 
-    // ========== 5. SQL generation ==========
-
-    #[test]
-    fn test_sql_simple_object() {
-        let json = r#"{"name":"Alice","age":30,"active":true}"#;
-        let value: Value = serde_json::from_str(json).unwrap();
-        let sql = gen_sql(&value, "User");
-        assert!(sql.contains("CREATE TABLE user ("), "SQL:\n{}", sql);
-        assert!(sql.contains("name TEXT NOT NULL"), "SQL:\n{}", sql);
-        assert!(sql.contains("age BIGINT NOT NULL"), "SQL:\n{}", sql);
-        assert!(sql.contains("active BOOLEAN NOT NULL"), "SQL:\n{}", sql);
-    }
-
-    #[test]
-    fn test_sql_nested_object_generates_fk() {
-        let json = r#"{"name":"test","config":{"timeout":30,"retries":3}}"#;
-        let value: Value = serde_json::from_str(json).unwrap();
-        let sql = gen_sql(&value, "Service");
-        // Parent table should have FK reference, not JSON column
-        assert!(sql.contains("config_id BIGINT NOT NULL REFERENCES config(id)"), "SQL should have FK.\n{}", sql);
-        // Child table should exist
-        assert!(sql.contains("CREATE TABLE config ("), "SQL should have config table.\n{}", sql);
-        assert!(sql.contains("timeout BIGINT NOT NULL"), "SQL:\n{}", sql);
-    }
-
-    #[test]
-    fn test_sql_top_level_array() {
-        let json = r#"[{"name":"test","value":42}]"#;
-        let value: Value = serde_json::from_str(json).unwrap();
-        let sql = gen_sql(&value, "MyModel");
-        assert!(sql.contains("CREATE TABLE"), "SQL should generate table.\n{}", sql);
-    }
-
-    #[test]
-    fn test_sql_array_field_uses_json() {
-        let json = r#"{"tags":["a","b"],"count":1}"#;
-        let value: Value = serde_json::from_str(json).unwrap();
-        let sql = gen_sql(&value, "Item");
-        assert!(sql.contains("tags JSON NOT NULL"), "Array field should be JSON.\n{}", sql);
-    }
-
-    // ========== 6. Empty object ==========
+    // ========== 5. Empty object ==========
 
     #[test]
     fn test_empty_object() {
         let json = r#"{}"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let ts = gen_typescript(&value, "Empty");
-        assert!(ts.contains("interface Empty {"), "TS:\n{}", ts);
-
-        let py = gen_python(&value, "Empty");
-        assert!(py.contains("class Empty:"), "Python:\n{}", py);
-        assert!(py.contains("pass"), "Python empty class should have pass.\n{}", py);
+        let result = collect_structs(&value, "Empty");
+        assert!(result.structs.contains_key("Empty"));
+        assert!(result.structs["Empty"].is_empty());
     }
 
     // ========== 7. PascalCase / naming tests ==========
@@ -2115,10 +1771,11 @@ mod tests {
     fn test_object_with_mixed_nested() {
         let json = r#"{"id":1,"name":"test","tags":["a","b"],"meta":{"key":"val"}}"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let go = gen_go(&value, "Item");
-        assert!(go.contains("type Item struct {"), "Go:\n{}", go);
-        assert!(go.contains("type Meta struct {"), "Go:\n{}", go);
-        assert!(go.contains("[]string"), "Go tags should be []string.\n{}", go);
+        let result = collect_structs(&value, "Item");
+        assert!(result.structs.contains_key("Item"));
+        assert!(result.structs.contains_key("Meta"));
+        let fields = &result.structs["Item"];
+        assert!(matches!(fields.get("tags"), Some(JsonType::Array(_))));
     }
 
     // ========== 9. Float vs Integer ==========
@@ -2127,14 +1784,11 @@ mod tests {
     fn test_float_vs_integer() {
         let json = r#"{"count":42,"price":19.99,"ratio":0.5}"#;
         let value: Value = serde_json::from_str(json).unwrap();
-        let ts = gen_typescript(&value, "Product");
-        // All should be "number" in TypeScript
-        assert!(ts.contains("count: number"), "TS:\n{}", ts);
-        assert!(ts.contains("price: number"), "TS:\n{}", ts);
-
-        let go = gen_go(&value, "Product");
-        assert!(go.contains("Count int64"), "Go count should be int64.\n{}", go);
-        assert!(go.contains("Price float64"), "Go price should be float64.\n{}", go);
+        let result = collect_structs(&value, "Product");
+        let fields = &result.structs["Product"];
+        assert!(matches!(fields.get("count"), Some(JsonType::Integer)));
+        assert!(matches!(fields.get("price"), Some(JsonType::Number)));
+        assert!(matches!(fields.get("ratio"), Some(JsonType::Number)));
     }
 
     // ========== 10. Null field handling ==========
@@ -2179,25 +1833,7 @@ mod tests {
         assert!(thrift.contains("struct MyModelItem {"), "Thrift item:\n{}", thrift);
     }
 
-    #[test]
-    fn test_java_wrapper_class() {
-        let json = r#"[{"name":"test"}]"#;
-        let value: Value = serde_json::from_str(json).unwrap();
-        let java = gen_java(&value, "MyModel");
-        assert!(java.contains("public class MyModel {"), "Java wrapper:\n{}", java);
-        assert!(java.contains("List<MyModelItem>"), "Java list:\n{}", java);
-        assert!(java.contains("public class MyModelItem {"), "Java item:\n{}", java);
-    }
-
-    #[test]
-    fn test_csharp_wrapper_class() {
-        let json = r#"[{"name":"test"}]"#;
-        let value: Value = serde_json::from_str(json).unwrap();
-        let cs = gen_csharp(&value, "MyModel");
-        assert!(cs.contains("public class MyModel"), "C# wrapper:\n{}", cs);
-        assert!(cs.contains("List<MyModelItem>"), "C# list:\n{}", cs);
-        assert!(cs.contains("public class MyModelItem"), "C# item:\n{}", cs);
-    }
+    // ========== 12. code_to_json field name conversion ==========
 
     #[test]
     fn test_code_to_json_protobuf_field_names() {
@@ -2282,18 +1918,4 @@ interface MyModel {
         assert!(obj.contains_key("brokerId"), "TS should keep camelCase");
     }
 
-    #[test]
-    fn test_code_to_json_sql_field_names() {
-        let sql = r#"
-CREATE TABLE my_model (
-    id BIGINT PRIMARY KEY,
-    email_title VARCHAR(255),
-    broker_id BIGINT
-);
-"#;
-        let result = parse_code_to_json(sql, "sql", "MyModel").unwrap();
-        let obj = result.as_object().unwrap();
-        assert!(obj.contains_key("emailTitle"), "SQL snake_case → camelCase: {:?}", obj.keys().collect::<Vec<_>>());
-        assert!(obj.contains_key("brokerId"), "SQL snake_case → camelCase");
-    }
 }
