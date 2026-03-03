@@ -37,6 +37,78 @@
   let isSyncingLeft = false;
   let convertTimer: ReturnType<typeof setTimeout> | null = null;
   let copied = $state(false);
+  let csvDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
+
+  const RAINBOW_COLORS = [
+    '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4',
+    '#42d4f4', '#f032e6', '#bfef45', '#fabed4', '#469990',
+  ];
+
+  function parseCsvColumns(line: string): { start: number; end: number }[] {
+    const cols: { start: number; end: number }[] = [];
+    let i = 0;
+    let colStart = 0;
+    while (i <= line.length) {
+      if (i === line.length) {
+        cols.push({ start: colStart, end: i });
+        break;
+      }
+      if (line[i] === '"') {
+        i++;
+        while (i < line.length) {
+          if (line[i] === '"') {
+            if (i + 1 < line.length && line[i + 1] === '"') {
+              i += 2;
+            } else {
+              i++;
+              break;
+            }
+          } else {
+            i++;
+          }
+        }
+      } else if (line[i] === ',') {
+        cols.push({ start: colStart, end: i });
+        i++;
+        colStart = i;
+      } else {
+        i++;
+      }
+    }
+    return cols;
+  }
+
+  function applyCsvRainbow() {
+    if (!rightEditor || !monaco || selectedFormat !== 'csv') {
+      if (csvDecorations) { csvDecorations.clear(); csvDecorations = null; }
+      return;
+    }
+    const model = rightEditor.getModel();
+    if (!model) return;
+
+    const lineCount = model.getLineCount();
+    const decorations: Monaco.editor.IModelDeltaDecoration[] = [];
+
+    for (let lineNum = 1; lineNum <= lineCount; lineNum++) {
+      const lineContent = model.getLineContent(lineNum);
+      if (!lineContent) continue;
+      const cols = parseCsvColumns(lineContent);
+      for (let colIdx = 0; colIdx < cols.length; colIdx++) {
+        const col = cols[colIdx];
+        if (col.start >= col.end) continue;
+        const colorIdx = colIdx % RAINBOW_COLORS.length;
+        decorations.push({
+          range: new monaco.Range(lineNum, col.start + 1, lineNum, col.end + 1),
+          options: { inlineClassName: `csv-rainbow-col-${colorIdx}` },
+        });
+      }
+    }
+
+    if (csvDecorations) {
+      csvDecorations.clear();
+    }
+    csvDecorations = rightEditor.createDecorationsCollection(decorations);
+  }
 
   $effect(() => {
     const val = inputValue;
@@ -68,9 +140,15 @@
     }
   });
 
+  let pendingFormat: ConvertFormat | null = null;
+
   $effect(() => {
-    void selectedFormat;
-    doConvert(leftEditor?.getValue() || inputValue);
+    const fmt = selectedFormat;
+    if (pendingFormat !== fmt) {
+      pendingFormat = fmt;
+      const content = leftEditor?.getValue() || inputValue;
+      doConvert(content);
+    }
   });
 
   async function doConvert(content: string) {
@@ -84,14 +162,22 @@
     convertError = '';
 
     try {
-      const result = await convertJson(content, selectedFormat);
+      const fmt = selectedFormat;
+      const result = await convertJson(content, fmt);
       if (rightEditor) {
         const model = rightEditor.getModel();
         if (model) {
-          const fmt = CONVERT_FORMATS.find(f => f.id === selectedFormat);
-          monaco?.editor.setModelLanguage(model, fmt?.lang || 'plaintext');
+          const fmtInfo = CONVERT_FORMATS.find(f => f.id === fmt);
+          monaco?.editor.setModelLanguage(model, fmtInfo?.lang || 'plaintext');
         }
         rightEditor.setValue(result);
+        if (fmt === 'csv') {
+          applyCsvRainbow();
+        } else if (csvDecorations) {
+          csvDecorations.clear();
+          csvDecorations = null;
+        }
+        scheduleScrollWidthFix(rightEditor);
       }
     } catch (e: any) {
       convertError = typeof e === 'string' ? e : e?.message || 'Conversion failed';
@@ -99,6 +185,41 @@
     } finally {
       isConverting = false;
     }
+  }
+
+  let scrollFixTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleScrollWidthFix(editor: Monaco.editor.IStandaloneCodeEditor) {
+    if (scrollFixTimer) clearTimeout(scrollFixTimer);
+    scrollFixTimer = setTimeout(() => {
+      scrollFixTimer = null;
+      const model = editor.getModel();
+      if (!model || !monaco) return;
+      let maxLen = 0;
+      let longestLine = 1;
+      for (let i = 1; i <= model.getLineCount(); i++) {
+        const len = model.getLineLength(i);
+        if (len > maxLen) {
+          maxLen = len;
+          longestLine = i;
+        }
+      }
+      const currentScrollWidth = editor.getScrollWidth();
+      const fontInfo = editor.getOption(monaco.editor.EditorOption.fontInfo);
+      const neededWidth = Math.ceil(maxLen * fontInfo.typicalHalfwidthCharacterWidth);
+      if (neededWidth <= currentScrollWidth) return;
+
+      editor.updateOptions({ smoothScrolling: false });
+      editor.revealPosition(
+        { lineNumber: longestLine, column: maxLen + 1 },
+        1 /* Immediate */
+      );
+      setTimeout(() => {
+        editor.setScrollLeft(0, 1 /* Immediate */);
+        editor.setScrollTop(0, 1 /* Immediate */);
+        editor.updateOptions({ smoothScrolling: true });
+      }, 30);
+    }, 100);
   }
 
   function handleLeftChange(value: string) {
@@ -119,10 +240,19 @@
     } catch (_) {}
   }
 
+  function registerCsvLanguage(m: typeof Monaco) {
+    if (m.languages.getLanguages().some(l => l.id === 'csv')) return;
+    m.languages.register({ id: 'csv' });
+    m.languages.setMonarchTokensProvider('csv', {
+      tokenizer: { root: [[/./, '']] },
+    });
+  }
+
   onMount(async () => {
     const monacoInstance = await loader.init();
     monaco = monacoInstance;
     registerMonacoThemes(monacoInstance);
+    registerCsvLanguage(monacoInstance);
 
     const commonOptions: Monaco.editor.IStandaloneEditorConstructionOptions = {
       theme,
@@ -148,6 +278,8 @@
       value: '',
       language: 'yaml',
       readOnly: true,
+      wordWrap: 'off',
+      stopRenderingLineAfter: -1,
     });
 
     leftEditor!.onDidChangeModelContent(() => {
@@ -160,6 +292,7 @@
 
   onDestroy(() => {
     if (convertTimer) clearTimeout(convertTimer);
+    if (scrollFixTimer) clearTimeout(scrollFixTimer);
     leftEditor?.dispose();
     rightEditor?.dispose();
   });
@@ -326,12 +459,6 @@
     color: var(--accent);
   }
 
-  .cv-pane-hint {
-    font-size: 11px;
-    color: var(--text-secondary);
-    opacity: 0.6;
-  }
-
   .cv-pane-actions {
     display: flex;
     align-items: center;
@@ -478,4 +605,16 @@
     width: 100%;
     height: 100%;
   }
+
+  /* Rainbow CSV column colors */
+  :global(.csv-rainbow-col-0) { color: #e6194b !important; }
+  :global(.csv-rainbow-col-1) { color: #3cb44b !important; }
+  :global(.csv-rainbow-col-2) { color: #4363d8 !important; }
+  :global(.csv-rainbow-col-3) { color: #f58231 !important; }
+  :global(.csv-rainbow-col-4) { color: #911eb4 !important; }
+  :global(.csv-rainbow-col-5) { color: #42d4f4 !important; }
+  :global(.csv-rainbow-col-6) { color: #f032e6 !important; }
+  :global(.csv-rainbow-col-7) { color: #bfef45 !important; }
+  :global(.csv-rainbow-col-8) { color: #fabed4 !important; }
+  :global(.csv-rainbow-col-9) { color: #469990 !important; }
 </style>
