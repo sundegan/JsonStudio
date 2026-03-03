@@ -329,7 +329,7 @@
             {@render shortcutRow('settings.formatClipboard', 'settings.formatClipboardDesc', shortcuts.formatClipboard)}
           </div>
 
-          <div class="settings-shortcut-group-label">{$t('settings.shortcutsEditor')}</div>
+          <div class="settings-shortcut-group-label">{$t('settings.shortcutsApp')}</div>
           <div class="settings-list">
             {@render shortcutRow('settings.newFile', 'settings.newFileDesc', shortcuts.newFile)}
             {@render shortcutRow('settings.openFile', 'settings.openFileDesc', shortcuts.openFile)}

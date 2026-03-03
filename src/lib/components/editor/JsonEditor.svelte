@@ -198,11 +198,6 @@
         }
         return;
       }
-      if (cmdOrCtrl && e.shiftKey && e.key === 'p') {
-        e.preventDefault();
-        toggleAlwaysOnTop();
-        return;
-      }
       if (cmdOrCtrl && e.shiftKey && e.key === 'i') {
         e.preventDefault();
         if (import.meta.env.DEV) {

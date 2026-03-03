@@ -49,7 +49,7 @@ export default {
 
   'settings.shortcuts': 'Shortcuts',
   'settings.shortcutsGlobal': 'Global Shortcuts',
-  'settings.shortcutsEditor': 'Editor Shortcuts',
+  'settings.shortcutsApp': 'App Shortcuts',
   'settings.showApp': 'Show App',
   'settings.showAppDesc': 'Bring Json Studio to front',
   'settings.formatClipboard': 'Format Clipboard',
