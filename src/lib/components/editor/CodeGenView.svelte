@@ -314,13 +314,8 @@
         disabled={!canReverse}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          {#if direction === 'json2code'}
-            <path d="M5 12h14"/>
-            <path d="M13 6l6 6-6 6"/>
-          {:else}
-            <path d="M19 12H5"/>
-            <path d="M11 18l-6-6 6-6"/>
-          {/if}
+          <path d="M4 9h16l-4-4"/>
+          <path d="M20 15H4l4 4"/>
         </svg>
       </button>
       <div class="cg-divider-line"></div>
@@ -552,39 +547,55 @@
   }
 
   .cg-divider-icon {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    color: var(--accent);
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     padding: 0;
+    animation: cg-pulse 2s ease-in-out 3;
   }
 
   .cg-divider-icon:hover:not(:disabled) {
     background: var(--accent);
     border-color: var(--accent);
     color: white;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  .cg-divider-icon:active:not(:disabled) {
+    transform: translate(-50%, -50%) scale(0.95);
   }
 
   .cg-divider-icon.is-disabled {
     opacity: 0.35;
     cursor: not-allowed;
+    animation: none;
+    background: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-secondary);
   }
 
   .cg-divider-icon svg {
     width: 16px;
     height: 16px;
+  }
+
+  @keyframes cg-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
   }
 
   /* Action button */

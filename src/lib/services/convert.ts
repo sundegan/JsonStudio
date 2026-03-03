@@ -21,3 +21,16 @@ export async function convertJson(content: string, format: ConvertFormat): Promi
       return await invoke<string>('json_to_csv', { content });
   }
 }
+
+export async function convertToJson(content: string, format: ConvertFormat): Promise<string> {
+  switch (format) {
+    case 'yaml':
+      return await invoke<string>('yaml_to_json', { content });
+    case 'xml':
+      return await invoke<string>('xml_to_json', { content });
+    case 'toml':
+      return await invoke<string>('toml_to_json', { content });
+    case 'csv':
+      return await invoke<string>('csv_to_json', { content });
+  }
+}

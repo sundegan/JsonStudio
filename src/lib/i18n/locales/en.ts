@@ -87,6 +87,7 @@ export default {
   // Convert
   'convert.copyResult': 'Copy result',
   'convert.copied': 'Copied',
+  'convert.toggleDirection': 'Toggle conversion direction',
 
   // Codegen
   'codegen.copyResult': 'Copy generated code',

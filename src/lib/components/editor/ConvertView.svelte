@@ -3,8 +3,10 @@
   import loader from '@monaco-editor/loader';
   import type * as Monaco from 'monaco-editor';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
-  import { convertJson, CONVERT_FORMATS, type ConvertFormat } from '$lib/services/convert';
+  import { convertJson, convertToJson, CONVERT_FORMATS, type ConvertFormat } from '$lib/services/convert';
   import { t } from '$lib/i18n';
+
+  type Direction = 'json2fmt' | 'fmt2json';
 
   let {
     inputValue = '',
@@ -32,6 +34,7 @@
   let rightEditor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
   let selectedFormat = $state<ConvertFormat>('yaml');
+  let direction = $state<Direction>('json2fmt');
   let convertError = $state('');
   let isConverting = $state(false);
   let isSyncingLeft = false;
@@ -111,6 +114,7 @@
   }
 
   $effect(() => {
+    if (direction !== 'json2fmt') return;
     const val = inputValue;
     if (leftEditor && val !== leftEditor.getValue()) {
       isSyncingLeft = true;
@@ -141,11 +145,14 @@
   });
 
   let pendingFormat: ConvertFormat | null = null;
+  let pendingDirection: Direction | null = null;
 
   $effect(() => {
     const fmt = selectedFormat;
-    if (pendingFormat !== fmt) {
+    const dir = direction;
+    if (pendingFormat !== fmt || pendingDirection !== dir) {
       pendingFormat = fmt;
+      pendingDirection = dir;
       const content = leftEditor?.getValue() || inputValue;
       doConvert(content);
     }
@@ -163,21 +170,38 @@
 
     try {
       const fmt = selectedFormat;
-      const result = await convertJson(content, fmt);
-      if (rightEditor) {
-        const model = rightEditor.getModel();
-        if (model) {
-          const fmtInfo = CONVERT_FORMATS.find(f => f.id === fmt);
-          monaco?.editor.setModelLanguage(model, fmtInfo?.lang || 'plaintext');
+      let result: string;
+
+      if (direction === 'json2fmt') {
+        result = await convertJson(content, fmt);
+        if (rightEditor) {
+          const model = rightEditor.getModel();
+          if (model) {
+            const fmtInfo = CONVERT_FORMATS.find(f => f.id === fmt);
+            monaco?.editor.setModelLanguage(model, fmtInfo?.lang || 'plaintext');
+          }
+          rightEditor.setValue(result);
+          if (fmt === 'csv') {
+            applyCsvRainbow();
+          } else if (csvDecorations) {
+            csvDecorations.clear();
+            csvDecorations = null;
+          }
+          scheduleScrollWidthFix(rightEditor);
         }
-        rightEditor.setValue(result);
-        if (fmt === 'csv') {
-          applyCsvRainbow();
-        } else if (csvDecorations) {
-          csvDecorations.clear();
-          csvDecorations = null;
+      } else {
+        result = await convertToJson(content, fmt);
+        if (rightEditor) {
+          const model = rightEditor.getModel();
+          if (model) {
+            monaco?.editor.setModelLanguage(model, 'json');
+          }
+          rightEditor.setValue(result);
+          if (csvDecorations) {
+            csvDecorations.clear();
+            csvDecorations = null;
+          }
         }
-        scheduleScrollWidthFix(rightEditor);
       }
     } catch (e: any) {
       convertError = typeof e === 'string' ? e : e?.message || 'Conversion failed';
@@ -224,9 +248,52 @@
 
   function handleLeftChange(value: string) {
     if (isSyncingLeft) return;
-    onInputChange(value);
+    if (direction === 'json2fmt') {
+      onInputChange(value);
+    }
     if (convertTimer) clearTimeout(convertTimer);
     convertTimer = setTimeout(() => doConvert(value), 300);
+  }
+
+  function toggleDirection() {
+    const oldLeft = leftEditor?.getValue() || '';
+    const oldRight = rightEditor?.getValue() || '';
+
+    direction = direction === 'json2fmt' ? 'fmt2json' : 'json2fmt';
+
+    if (leftEditor && rightEditor && monaco) {
+      isSyncingLeft = true;
+      leftEditor.setValue(oldRight);
+      rightEditor.setValue('');
+
+      const leftModel = leftEditor.getModel();
+      if (leftModel) {
+        if (direction === 'json2fmt') {
+          monaco.editor.setModelLanguage(leftModel, 'json');
+        } else {
+          const fmtInfo = CONVERT_FORMATS.find(f => f.id === selectedFormat);
+          monaco.editor.setModelLanguage(leftModel, fmtInfo?.lang || 'plaintext');
+        }
+      }
+
+      leftEditor.updateOptions({ readOnly: false });
+      rightEditor.updateOptions({ readOnly: true });
+
+      isSyncingLeft = false;
+      convertError = '';
+
+      doConvert(oldRight);
+    }
+  }
+
+  function updateLeftLanguage() {
+    if (!leftEditor || !monaco) return;
+    const model = leftEditor.getModel();
+    if (!model) return;
+    if (direction === 'fmt2json') {
+      const fmtInfo = CONVERT_FORMATS.find(f => f.id === selectedFormat);
+      monaco.editor.setModelLanguage(model, fmtInfo?.lang || 'plaintext');
+    }
   }
 
   async function copyResult() {
@@ -291,6 +358,13 @@
     doConvert(inputValue);
   });
 
+  $effect(() => {
+    const _fmt = selectedFormat;
+    if (direction === 'fmt2json') {
+      updateLeftLanguage();
+    }
+  });
+
   onDestroy(() => {
     if (convertTimer) clearTimeout(convertTimer);
     if (scrollFixTimer) clearTimeout(scrollFixTimer);
@@ -301,7 +375,7 @@
 
 <div class="cv">
   <div class="cv-body">
-    <!-- Left pane: JSON input -->
+    <!-- Left pane -->
     <div class="cv-pane">
       <div class="cv-pane-header">
         <div class="cv-pane-header-left">
@@ -311,7 +385,20 @@
               <path d="M12 19l-7-7 7-7"/>
             </svg>
           </button>
-          <div class="cv-pane-badge cv-badge-json">JSON</div>
+          {#if direction === 'json2fmt'}
+            <div class="cv-pane-badge cv-badge-json">JSON</div>
+          {:else}
+            <div class="cv-format-selector">
+              {#each CONVERT_FORMATS as fmt}
+                <button
+                  class="cv-format-btn {selectedFormat === fmt.id ? 'is-active' : ''}"
+                  onclick={() => { selectedFormat = fmt.id; }}
+                >
+                  {fmt.label}
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
       </div>
       <div class="cv-editor">
@@ -319,30 +406,40 @@
       </div>
     </div>
 
-    <!-- Center divider with arrow -->
+    <!-- Center divider with direction toggle -->
     <div class="cv-divider">
       <div class="cv-divider-line"></div>
-      <div class="cv-divider-icon">
+      <button
+        class="cv-divider-icon"
+        onclick={toggleDirection}
+        title={$t('convert.toggleDirection')}
+      >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14"/>
-          <path d="M13 6l6 6-6 6"/>
+          <path d="M4 9h16l-4-4"/>
+          <path d="M20 15H4l4 4"/>
         </svg>
-      </div>
+      </button>
       <div class="cv-divider-line"></div>
     </div>
 
-    <!-- Right pane: converted output -->
+    <!-- Right pane -->
     <div class="cv-pane">
       <div class="cv-pane-header">
-        <div class="cv-format-selector">
-          {#each CONVERT_FORMATS as fmt}
-            <button
-              class="cv-format-btn {selectedFormat === fmt.id ? 'is-active' : ''}"
-              onclick={() => { selectedFormat = fmt.id; }}
-            >
-              {fmt.label}
-            </button>
-          {/each}
+        <div class="cv-header-controls">
+          {#if direction === 'json2fmt'}
+            <div class="cv-format-selector">
+              {#each CONVERT_FORMATS as fmt}
+                <button
+                  class="cv-format-btn {selectedFormat === fmt.id ? 'is-active' : ''}"
+                  onclick={() => { selectedFormat = fmt.id; }}
+                >
+                  {fmt.label}
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <div class="cv-pane-badge cv-badge-json">JSON</div>
+          {/if}
         </div>
         <div class="cv-pane-actions">
           <button
@@ -482,26 +579,52 @@
   }
 
   .cv-divider-icon {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
-    opacity: 0.6;
+    color: var(--accent);
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    animation: cv-pulse 2s ease-in-out 3;
+  }
+
+  .cv-divider-icon:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  .cv-divider-icon:active {
+    transform: translate(-50%, -50%) scale(0.95);
   }
 
   .cv-divider-icon svg {
     width: 16px;
     height: 16px;
+  }
+
+  @keyframes cv-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+
+  .cv-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   /* Format selector */

@@ -87,6 +87,7 @@ export default {
   // Convert
   'convert.copyResult': '复制转换结果',
   'convert.copied': '已复制',
+  'convert.toggleDirection': '切换转换方向',
 
   // Codegen
   'codegen.copyResult': '复制生成代码',
