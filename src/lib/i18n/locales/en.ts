@@ -80,9 +80,19 @@ export default {
   'settings.diffDesc': 'Toggle diff mode',
   'settings.resetShortcut': 'Reset to default',
 
+  // Toolbar - Codegen
+  'toolbar.codegen': 'Codegen',
+  'toolbar.exitCodegen': 'Exit Codegen',
+
   // Convert
   'convert.copyResult': 'Copy result',
   'convert.copied': 'Copied',
+
+  // Codegen
+  'codegen.copyResult': 'Copy generated code',
+  'codegen.copied': 'Copied',
+  'codegen.classNamePlaceholder': 'Enter class/interface name...',
+  'codegen.toggleDirection': 'Toggle conversion direction',
 
   // Tree View
   'treeView.title': 'Tree View',

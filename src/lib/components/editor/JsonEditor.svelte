@@ -6,6 +6,7 @@
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import ConvertView from './ConvertView.svelte';
+  import CodeGenView from './CodeGenView.svelte';
   import TabBar from './TabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
@@ -33,6 +34,7 @@
   let isAlwaysOnTop = $state(false);
   let isDiffMode = $state(false);
   let isConvertMode = $state(false);
+  let isCodegenMode = $state(false);
   let diffOriginal = $state('');
   let diffModified = $state('');
   let diffLineCount = $state(0);
@@ -368,6 +370,9 @@
     if (isConvertMode) {
       isConvertMode = false;
     }
+    if (isCodegenMode) {
+      isCodegenMode = false;
+    }
 
     const emptyStats: JsonStats = {
       valid: false,
@@ -400,7 +405,31 @@
     if (isDiffMode) {
       toggleDiffMode();
     }
+    if (isCodegenMode) {
+      isCodegenMode = false;
+    }
     isConvertMode = true;
+  }
+
+  function toggleCodegenMode() {
+    if (isCodegenMode) {
+      isCodegenMode = false;
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
+      return;
+    }
+
+    if (isDiffMode) {
+      isDiffMode = false;
+    }
+    if (isConvertMode) {
+      isConvertMode = false;
+    }
+    isCodegenMode = true;
   }
 
   function openSettings() {
@@ -567,11 +596,12 @@
 
 <div class="flex flex-col h-full overflow-hidden">
   <!-- Toolbar -->
-  {#if !isConvertMode}
+  {#if !isConvertMode && !isCodegenMode}
     <JsonEditorToolbar
       bind:this={toolbarRef}
       isDiffMode={isDiffMode}
       isConvertMode={isConvertMode}
+      isCodegenMode={isCodegenMode}
       content={content}
       activeTab={$activeTab}
       isDarkMode={isDarkMode}
@@ -580,6 +610,7 @@
       tabSize={tabSize}
       onToggleDiff={toggleDiffMode}
       onToggleConvert={toggleConvertMode}
+      onToggleCodegen={toggleCodegenMode}
       onToggleTheme={toggleTheme}
       onToggleAlwaysOnTop={toggleAlwaysOnTop}
       onOpenSettings={openSettings}
@@ -594,7 +625,7 @@
     <!-- Left section: Tab Bar + Editor -->
     <div class="flex flex-col flex-1 min-w-0">
       <!-- Tab Bar - show different tab bars based on mode -->
-      {#if !isDiffMode && !isConvertMode && tabsState.tabs.length > 1}
+      {#if !isDiffMode && !isConvertMode && !isCodegenMode && tabsState.tabs.length > 1}
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
@@ -632,6 +663,17 @@
             onToast={showToast}
             onExit={toggleConvertMode}
           />
+        {:else if isCodegenMode}
+          <CodeGenView
+            inputValue={content}
+            theme={monacoTheme}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            tabSize={tabSize}
+            onInputChange={handleToolbarContentChange}
+            onToast={showToast}
+            onExit={toggleCodegenMode}
+          />
         {:else}
           <div class="json-editor-workspace">
             <div class="json-editor-main">
@@ -657,7 +699,7 @@
     </div>
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
-    {#if showTreeView && !isDiffMode && !isConvertMode}
+    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode}
       <div
         class="json-tree-resizer"
         role="separator"
@@ -676,7 +718,7 @@
     {/if}
   </div>
 
-  {#if !isConvertMode}
+  {#if !isConvertMode && !isCodegenMode}
     <JsonEditorStatusBar
       isDiffMode={isDiffMode}
       diffLineCount={diffLineCount}

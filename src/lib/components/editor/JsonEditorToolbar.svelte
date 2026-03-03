@@ -23,6 +23,7 @@
   const {
     isDiffMode,
     isConvertMode,
+    isCodegenMode,
     content,
     activeTab,
     isDarkMode,
@@ -31,6 +32,7 @@
     tabSize,
     onToggleDiff,
     onToggleConvert,
+    onToggleCodegen,
     onToggleTheme,
     onToggleAlwaysOnTop,
     onOpenSettings,
@@ -40,6 +42,7 @@
   } = $props<{
     isDiffMode: boolean;
     isConvertMode: boolean;
+    isCodegenMode: boolean;
     content: string;
     activeTab: Tab | null;
     isDarkMode: boolean;
@@ -48,6 +51,7 @@
     tabSize: number;
     onToggleDiff: () => void;
     onToggleConvert: () => void;
+    onToggleCodegen: () => void;
     onToggleTheme: () => void;
     onToggleAlwaysOnTop: () => void;
     onOpenSettings: () => void;
@@ -378,15 +382,19 @@
 
     <div class="toolbar-divider"></div>
 
-    <!-- 3. Diff & Convert -->
+    <!-- 3. Diff, Convert & Codegen -->
     <div class="toolbar-group">
-      <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode} title="{$t('toolbar.diff')} ({shortcutLabel('diff')})">
+      <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode} title="{$t('toolbar.diff')} ({shortcutLabel('diff')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
         {$t('toolbar.diff')}
       </button>
-      <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={!hasContent} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
+      <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={!hasContent || isCodegenMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
+      </button>
+      <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={!hasContent || isConvertMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
       </button>
     </div>
   {/if}
