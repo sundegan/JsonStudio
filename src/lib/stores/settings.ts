@@ -16,8 +16,8 @@ export const lightThemes = [
   { id: 'vs', name: 'Visual Studio', description: 'Classic light theme' },
   { id: 'github-light', name: 'GitHub Light', description: 'GitHub official light' },
   { id: 'solarized-light', name: 'Solarized Light', description: 'Warm, eye-friendly tones' },
-  { id: 'quiet-light', name: 'Quiet Light', description: 'Soft and minimal' },
   { id: 'catppuccin-latte', name: 'Catppuccin Latte', description: 'Pastel and cozy' },
+  { id: 'rose-ivy', name: 'Rose Ivy', description: 'Rose-pink keys, ivy-green values' },
 ] as const;
 
 // Settings type definition
@@ -25,7 +25,7 @@ export interface AppSettings {
   // Theme settings
   isDarkMode: boolean;
   darkTheme: 'one-dark' | 'github-dark' | 'tokyo-night' | 'dracula' | 'nord';
-  lightTheme: 'vs' | 'github-light' | 'solarized-light' | 'quiet-light' | 'catppuccin-latte';
+  lightTheme: 'vs' | 'github-light' | 'solarized-light' | 'catppuccin-latte' | 'rose-ivy';
   
   // Editor settings
   fontSize: number;

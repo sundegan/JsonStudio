@@ -199,37 +199,6 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
     }
   },
 
-  // Quiet Light theme
-  'quiet-light': {
-    base: 'vs',
-    inherit: true,
-    rules: [
-      { token: 'comment', foreground: 'aaaaaa', fontStyle: 'italic' },
-      { token: 'keyword', foreground: '4b69c6' },
-      { token: 'string', foreground: '448c27' },
-      { token: 'string.key.json', foreground: '7a3e9d' },
-      { token: 'string.value.json', foreground: '448c27' },
-      { token: 'number', foreground: 'ab6526' },
-      { token: 'delimiter', foreground: '333333' },
-      { token: 'type', foreground: '7a3e9d' },
-    ],
-    colors: {
-      'editor.background': '#f5f5f5',
-      'editor.foreground': '#333333',
-      'editor.lineHighlightBackground': '#e4f6d4',
-      'editor.selectionBackground': '#c9d0d9',
-      'editorCursor.foreground': '#54494b',
-      'editorLineNumber.foreground': '#aaaaaa',
-      'editorLineNumber.activeForeground': '#333333',
-      'editor.inactiveSelectionBackground': '#d8dce2',
-      'editorIndentGuide.background': '#e0e0e0',
-      'editorIndentGuide.activeBackground': '#c8c8c8',
-      'editorGutter.background': '#f5f5f5',
-      'scrollbarSlider.background': '#aaaaaa40',
-      'scrollbarSlider.hoverBackground': '#aaaaaa80',
-    }
-  },
-
   // Catppuccin Latte theme
   'catppuccin-latte': {
     base: 'vs',
@@ -258,6 +227,37 @@ export const monacoThemes: Record<string, MonacoThemeConfig> = {
       'editorGutter.background': '#eff1f5',
       'scrollbarSlider.background': '#9ca0b040',
       'scrollbarSlider.hoverBackground': '#9ca0b080',
+    }
+  },
+
+  // Rose Ivy theme (light, rose-pink keys + ivy-green values)
+  'rose-ivy': {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '9e9e9e', fontStyle: 'italic' },
+      { token: 'keyword', foreground: 'a626a4' },
+      { token: 'string', foreground: 'a626a4' },
+      { token: 'string.key.json', foreground: '6d0a62' },
+      { token: 'string.value.json', foreground: '3abf4a' },
+      { token: 'number', foreground: '4078f2' },
+      { token: 'delimiter', foreground: '3b3b3b' },
+      { token: 'type', foreground: 'c18401' },
+    ],
+    colors: {
+      'editor.background': '#fafafa',
+      'editor.foreground': '#3b3b3b',
+      'editor.lineHighlightBackground': '#f0f0f0',
+      'editor.selectionBackground': '#c8dcc9',
+      'editorCursor.foreground': '#2e9e38',
+      'editorLineNumber.foreground': '#b0b0b0',
+      'editorLineNumber.activeForeground': '#3b3b3b',
+      'editor.inactiveSelectionBackground': '#e8dfe7',
+      'editorIndentGuide.background': '#e0e0e0',
+      'editorIndentGuide.activeBackground': '#c8c8c8',
+      'editorGutter.background': '#fafafa',
+      'scrollbarSlider.background': '#b0b0b040',
+      'scrollbarSlider.hoverBackground': '#b0b0b080',
     }
   },
 
