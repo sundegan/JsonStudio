@@ -78,6 +78,26 @@ export default {
   'settings.diffDesc': 'Toggle diff mode',
   'settings.resetShortcut': 'Reset to default',
 
+  // Tree View
+  'treeView.title': 'Tree View',
+  'treeView.hide': 'Hide Tree View',
+  'treeView.expandAll': 'Expand All',
+  'treeView.collapseAll': 'Collapse All',
+  'treeView.clearQuery': 'Clear query',
+  'treeView.parsing': 'Parsing...',
+  'treeView.invalidJson': 'Invalid JSON Format',
+  'treeView.noData': 'No JSON Data',
+  'treeView.noDataHint': 'Enter valid JSON to view structure',
+  'treeView.copyPathValue': 'Copy path + value',
+  'treeView.pathValueCopied': 'Path + value copied',
+  'treeView.syntaxGuide': 'JMESPath Syntax Guide',
+  'treeView.cheatSheet': 'JMESPath Cheat Sheet',
+  'treeView.docs': 'Docs',
+  'treeView.exampleData': 'Example JSON Data',
+  'treeView.copyExample': 'Copy example',
+  'treeView.exampleCopied': 'Example JSON copied',
+  'treeView.exampleQueries': 'Example Queries',
+
   // Status bar
   'status.keys': 'keys',
   'status.levels': 'levels',
