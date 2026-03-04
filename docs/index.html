@@ -141,6 +141,7 @@ a:hover{opacity:.85}
 .feature-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;transition:all .3s;position:relative;overflow:hidden}
 .feature-card:hover{border-color:rgba(245,197,66,.3);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
 .feature-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:17px}
+.feature-icon svg{width:20px;height:20px}
 .feature-icon.c1{background:rgba(52,211,153,.1);color:var(--green)}
 .feature-icon.c2{background:rgba(96,165,250,.1);color:var(--blue)}
 .feature-icon.c3{background:rgba(167,139,250,.1);color:var(--purple)}
@@ -167,15 +168,28 @@ a:hover{opacity:.85}
 .workflow-steps::before{content:'';position:absolute;top:32px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--border),var(--border),transparent)}
 .workflow-step{text-align:center;position:relative}
 .step-num{width:64px;height:64px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;position:relative;z-index:1;transition:all .3s}
+.step-num svg{width:32px;height:32px}
+.workflow-step:nth-child(1) .step-num{background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.3)}
+.workflow-step:nth-child(1) .step-num svg{color:var(--blue)}
+.workflow-step:nth-child(2) .step-num{background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.3)}
+.workflow-step:nth-child(2) .step-num svg{color:var(--orange)}
+.workflow-step:nth-child(3) .step-num{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3)}
+.workflow-step:nth-child(3) .step-num svg{color:var(--purple)}
+.workflow-step:nth-child(4) .step-num{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)}
+.workflow-step:nth-child(4) .step-num svg{color:var(--green)}
 .workflow-step:hover .step-num{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 24px var(--accent-glow)}
 .workflow-step h4{font-size:15px;font-weight:700;margin-bottom:6px}
 .workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
 
 /* ── Tech ── */
-.tech-grid{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;max-width:700px;margin:0 auto}
-.tech-pill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);padding:10px 20px;border-radius:12px;font-size:14px;font-weight:600;color:var(--text2);transition:all .2s}
-.tech-pill:hover{border-color:var(--accent);color:var(--text);background:var(--accent-glow)}
-.tech-pill span.emoji{font-size:18px}
+.tech-grid{display:flex;gap:20px;justify-content:center;flex-wrap:nowrap;max-width:900px;margin:0 auto}
+.tech-pill{display:flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:600;transition:all .2s;border:none}
+.tech-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.tech-pill:nth-child(1){background:rgba(251,146,60,.15);color:var(--orange)}
+.tech-pill:nth-child(2){background:rgba(96,165,250,.15);color:var(--blue)}
+.tech-pill:nth-child(3){background:rgba(52,211,153,.15);color:var(--green)}
+.tech-pill:nth-child(4){background:rgba(167,139,250,.15);color:var(--purple)}
+.tech-pill:nth-child(5){background:rgba(244,114,182,.15);color:var(--pink)}
 
 /* ── CTA ── */
 .cta{padding:80px 24px;text-align:center;position:relative;overflow:hidden}
@@ -208,6 +222,7 @@ a:hover{opacity:.85}
   .nav-link{display:none}
   .comparison th,.comparison td{padding:10px 12px;font-size:13px}
   .workflow-steps{grid-template-columns:1fr}
+  .tech-grid{flex-wrap:wrap}
 }
 </style>
 </head>
@@ -250,6 +265,7 @@ a:hover{opacity:.85}
 <!-- Stats -->
 <section class="stats">
   <div class="stats-grid">
+    <div class="stat-item"><div class="stat-value">$0</div><div class="stat-label" data-i18n="stat_free">Free & Open Source</div></div>
     <div class="stat-item"><div class="stat-value">&lt;1s</div><div class="stat-label" data-i18n="stat_launch">Launch Time</div></div>
     <div class="stat-item"><div class="stat-value">3</div><div class="stat-label" data-i18n="stat_platform">Platforms</div></div>
     <div class="stat-item"><div class="stat-value">10+</div><div class="stat-label" data-i18n="stat_themes">Themes</div></div>
@@ -277,7 +293,7 @@ a:hover{opacity:.85}
 <section class="section" id="features">
   <div class="section-header">
     <h2 class="section-title" data-i18n="features_title"><span class="gold">Core</span> Features</h2>
-    <p class="section-desc" data-i18n="features_desc">A professional JSON toolkit that replaces a dozen online tools. Everything runs locally, fast and private.</p>
+    <p class="section-desc" data-i18n="features_desc">A professional JSON toolkit that replaces online tools and dramatically boosts your daily workflow.</p>
   </div>
 
   <div class="showcase">
@@ -286,7 +302,7 @@ a:hover{opacity:.85}
       <div class="showcase-text">
         <span class="showcase-badge green" data-i18n="s1_badge">EDITOR</span>
         <h3 data-i18n="s1_title">Professional-Grade JSON Editor</h3>
-        <p data-i18n="s1_desc">Built on Monaco Editor (the engine behind VS Code), providing a top-tier editing experience for JSON.</p>
+        <p data-i18n="s1_desc">Built on Monaco Editor (the engine of VS Code), providing a top-tier editing experience for JSON.</p>
         <ul>
           <li data-i18n="s1_f1">Syntax highlighting with bracket pair colorization</li>
           <li data-i18n="s1_f2">Multi-tab editing with drag-and-drop reordering</li>
@@ -301,7 +317,7 @@ a:hover{opacity:.85}
     <!-- 2. Tree & Query -->
     <div class="showcase-row">
       <div class="showcase-text">
-        <span class="showcase-badge blue" data-i18n="s2_badge">EXPLORE</span>
+        <span class="showcase-badge blue" data-i18n="s2_badge">NAVIGATE</span>
         <h3 data-i18n="s2_title">Tree View & JMESPath Query</h3>
         <p data-i18n="s2_desc">Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.</p>
         <ul>
@@ -341,7 +357,6 @@ a:hover{opacity:.85}
           <li data-i18n="s4_f1">One-click schema generation from JSON data</li>
           <li data-i18n="s4_f2">Validate JSON against any JSON Schema with detailed error reports</li>
           <li data-i18n="s4_f3">Dedicated schema page with side-by-side editing</li>
-          <li data-i18n="s4_f4">Support for JSON Schema Draft-07</li>
         </ul>
       </div>
       <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_schema">Schema screenshot</span></div>
@@ -391,47 +406,65 @@ a:hover{opacity:.85}
   </div>
   <div class="features-grid">
     <div class="feature-card">
-      <div class="feature-icon c6">🩹</div>
+      <div class="feature-icon c6">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
       <h3 data-i18n="m1_title">JSON Repair</h3>
       <p data-i18n="m1_desc">One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c1">🪶</div>
+      <div class="feature-icon c1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
+      </div>
       <h3 data-i18n="m2_title">Lightweight</h3>
       <p data-i18n="m2_desc">Small install size and low memory footprint, powered by Tauri and Rust.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c2">🚀</div>
+      <div class="feature-icon c2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      </div>
       <h3 data-i18n="m3_title">Instant Launch</h3>
       <p data-i18n="m3_desc">Launches in under a second. No loading screens, no waiting.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c3">💻</div>
+      <div class="feature-icon c3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+      </div>
       <h3 data-i18n="m4_title">Cross-Platform</h3>
       <p data-i18n="m4_desc">Available on macOS, Windows, and Linux with native look and feel.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c4">🎨</div>
+      <div class="feature-icon c4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+      </div>
       <h3 data-i18n="m5_title">10+ Themes</h3>
       <p data-i18n="m5_desc">Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c5">🖼️</div>
+      <div class="feature-icon c5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </div>
       <h3 data-i18n="m6_title">Image Export</h3>
       <p data-i18n="m6_desc">Export JSON as a beautiful image with watermark, powered by Rust-native rendering.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c1">🔢</div>
+      <div class="feature-icon c1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      </div>
       <h3 data-i18n="m7_title">JSON Statistics</h3>
       <p data-i18n="m7_desc">Real-time display of key count, nesting depth, byte size, and line count.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c2">🌐</div>
+      <div class="feature-icon c2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
       <h3 data-i18n="m8_title">i18n Support</h3>
       <p data-i18n="m8_desc">Full Chinese and English interface with one-click language switching.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon c3">🔒</div>
+      <div class="feature-icon c3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
       <h3 data-i18n="m9_title">100% Offline</h3>
       <p data-i18n="m9_desc">All data stays on your machine. No server, no upload, complete privacy.</p>
     </div>
@@ -463,7 +496,7 @@ a:hover{opacity:.85}
         <tr><td data-i18n="cmp_r7">Global Shortcuts & Custom Keybindings</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td data-i18n="cmp_r8">Image Export</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td data-i18n="cmp_r9">Local File Operations</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td data-i18n="cmp_r10">Custom Settings (Theme, Font, Spacing...)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r10">Custom Settings (Theme, Font, Spacing, Shortcuts...)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td data-i18n="cmp_r11">JSON Schema Generation & Validation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
         <tr><td data-i18n="cmp_r12">Code Generation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
         <tr><td data-i18n="cmp_r13">Format Conversion (YAML/XML/...)</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
@@ -482,22 +515,30 @@ a:hover{opacity:.85}
   <div class="workflow">
     <div class="workflow-steps">
       <div class="workflow-step">
-        <div class="step-num">📥</div>
+        <div class="step-num">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
         <h4 data-i18n="wf1_title">Download</h4>
         <p data-i18n="wf1_desc">Grab the installer for your platform from GitHub Releases.</p>
       </div>
       <div class="workflow-step">
-        <div class="step-num">🚀</div>
+        <div class="step-num">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+        </div>
         <h4 data-i18n="wf2_title">Launch</h4>
         <p data-i18n="wf2_desc">Open the app — it launches in under a second.</p>
       </div>
       <div class="workflow-step">
-        <div class="step-num">📋</div>
+        <div class="step-num">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </div>
         <h4 data-i18n="wf3_title">Paste</h4>
         <p data-i18n="wf3_desc">Paste your JSON and it's auto-formatted instantly.</p>
       </div>
       <div class="workflow-step">
-        <div class="step-num">✨</div>
+        <div class="step-num">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
         <h4 data-i18n="wf4_title">Done</h4>
         <p data-i18n="wf4_desc">Explore, convert, compare, generate code — all at your fingertips.</p>
       </div>
@@ -512,11 +553,11 @@ a:hover{opacity:.85}
     <p class="section-desc" data-i18n="tech_desc">Leveraging the best tools for performance, security, and developer experience.</p>
   </div>
   <div class="tech-grid">
-    <div class="tech-pill"><span class="emoji">🦀</span> Rust</div>
-    <div class="tech-pill"><span class="emoji">⚡</span> Tauri 2.0</div>
-    <div class="tech-pill"><span class="emoji">🔥</span> Svelte 5</div>
-    <div class="tech-pill"><span class="emoji">📝</span> Monaco Editor</div>
-    <div class="tech-pill"><span class="emoji">🎨</span> Tailwind CSS</div>
+    <div class="tech-pill">Rust</div>
+    <div class="tech-pill">Tauri 2.0</div>
+    <div class="tech-pill">Svelte 5</div>
+    <div class="tech-pill">Monaco Editor</div>
+    <div class="tech-pill">Tailwind CSS</div>
   </div>
 </section>
 
@@ -554,16 +595,16 @@ en:{
   nav_features:'Features',nav_compare:'Compare',nav_screenshots:'Screenshots',
   hero_desc:'A fast, modern, and efficient JSON desktop tool. Format, validate, convert, query, generate code — all in one app, powered by Tauri & Rust.',
   hero_download:'Download Now',hero_github:'View on GitHub',
-  stat_launch:'Launch Time',stat_platform:'Platforms',stat_themes:'Themes',stat_local:'Local & Private',
+  stat_free:'Free & Open Source',stat_launch:'Launch Time',stat_platform:'Platforms',stat_themes:'Themes',stat_local:'Local & Private',
   screenshot_placeholder:'Application screenshots coming soon',tab_dark:'Dark Theme',tab_light:'Light Theme',
   features_title:'<span class="gold">Core</span> Features',
-  features_desc:'A professional JSON toolkit that replaces a dozen online tools. Everything runs locally, fast and private.',
+  features_desc:'A professional JSON toolkit that replaces online tools and dramatically boosts your daily workflow — everything runs locally, fast and private.',
   s1_badge:'EDITOR',s1_title:'Professional-Grade JSON Editor',
-  s1_desc:'Built on Monaco Editor (the engine behind VS Code), providing a top-tier editing experience for JSON.',
+  s1_desc:'Built on Monaco Editor (the engine of VS Code), providing a top-tier editing experience for JSON.',
   s1_f1:'Syntax highlighting with bracket pair colorization',s1_f2:'Multi-tab editing with drag-and-drop reordering',
   s1_f3:'Code folding, minimap, and find & replace',s1_f4:'Auto-format on paste for instant prettification',
-  s1_f5:'10+ color themes including Dracula, Nord, and One Dark',
-  s2_badge:'EXPLORE',s2_title:'Tree View & JMESPath Query',
+  s1_f5:'Light/dark mode toggle + 10+ color themes including Dracula, Nord, and One Dark',
+  s2_badge:'NAVIGATE',s2_title:'Tree View & JMESPath Query',
   s2_desc:'Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.',
   s2_f1:'Collapsible tree with type-colored icons',s2_f2:'Click any node to jump to its position in the editor',
   s2_f3:'Copy path and value with one click',s2_f4:'Full JMESPath query support with real-time highlighting',
@@ -575,7 +616,7 @@ en:{
   s4_badge:'SCHEMA',s4_title:'JSON Schema Generation & Validation',
   s4_desc:'Generate JSON Schema from any JSON data, or validate your data against an existing schema — all in a dedicated view.',
   s4_f1:'One-click schema generation from JSON data',s4_f2:'Validate JSON against any JSON Schema with detailed error reports',
-  s4_f3:'Dedicated schema page with side-by-side editing',s4_f4:'Support for JSON Schema Draft-07',
+  s4_f3:'Dedicated schema page with side-by-side editing',
   img_schema:'Schema screenshot',
   s5_badge:'EFFICIENCY',s5_title:'Shortcuts & Workflow Boost',
   s5_desc:'Native desktop shortcuts that web tools simply can\'t offer — dramatically speed up your daily JSON workflow.',
@@ -586,14 +627,14 @@ en:{
   s6_desc:'A comprehensive toolbox for comparing, repairing, and exporting JSON data.',
   s6_f1:'Side-by-side diff with inline change highlighting',s6_f2:'Diff line count statistics in status bar',
   s6_f3:'Escape / unescape / minify utilities',s6_f4:'Drag & drop JSON files to open instantly',
-  s6_f5:'Export JSON as image with syntax highlighting & watermark',
+  s6_f5:'Export JSON as beautiful images with syntax highlighting for easy sharing',
   more_title:'And <span class="gold">Much</span> More',more_desc:'Every detail is crafted for developer productivity.',
   m1_title:'JSON Repair',m1_desc:'One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.',
   m2_title:'Lightweight',m2_desc:'Small install size and low memory footprint, powered by Tauri and Rust.',
   m3_title:'Instant Launch',m3_desc:'Launches in under a second. No loading screens, no waiting.',
   m4_title:'Cross-Platform',m4_desc:'Available on macOS, Windows, and Linux with native look and feel.',
   m5_title:'10+ Themes',m5_desc:'Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.',
-  m6_title:'Image Export',m6_desc:'Export JSON as a beautiful image with watermark, powered by Rust-native rendering.',
+  m6_title:'Image Export',m6_desc:'Export JSON as beautiful images with syntax highlighting for easy sharing, powered by Rust-native rendering.',
   m7_title:'JSON Statistics',m7_desc:'Real-time display of key count, nesting depth, byte size, and line count.',
   m8_title:'i18n Support',m8_desc:'Full Chinese and English interface with one-click language switching.',
   m9_title:'100% Offline',m9_desc:'All data stays on your machine. No server, no upload, complete privacy.',
@@ -602,7 +643,7 @@ en:{
   cmp_r1:'Offline / No Internet Required',cmp_r2:'Data Privacy (100% Local)',cmp_r3:'Large JSON Data Performance',
   cmp_r4:'Multi-tab Editing',cmp_r5:'Tree View & JMESPath Query',cmp_r6:'Ad-Free Experience',
   cmp_r7:'Global Shortcuts & Custom Keybindings',cmp_r8:'Image Export',
-  cmp_r9:'Local File Operations',cmp_r10:'Custom Settings (Theme, Font, Spacing...)',
+  cmp_r9:'Local File Operations',cmp_r10:'Custom Settings (Theme, Font, Spacing, Shortcuts...)',
   cmp_r11:'JSON Schema Generation & Validation',cmp_r12:'Code Generation',
   cmp_r13:'Format Conversion (YAML/XML/...)',cmp_r14:'Diff Compare',
   wf_title:'Get Started in <span class="gold">Seconds</span>',wf_desc:'No sign-up, no configuration. Download and start working with JSON immediately.',
@@ -619,16 +660,16 @@ zh:{
   nav_features:'功能',nav_compare:'对比',nav_screenshots:'截图',
   hero_desc:'快速、现代、高效的 JSON 桌面工具。格式化、验证、转换、查询、代码生成——一个应用全搞定，基于 Tauri 和 Rust 构建。',
   hero_download:'立即下载',hero_github:'查看 GitHub',
-  stat_launch:'启动时间',stat_platform:'个平台',stat_themes:'款主题',stat_local:'本地 & 隐私',
+  stat_free:'免费开源',stat_launch:'启动时间',stat_platform:'个平台',stat_themes:'款主题',stat_local:'本地 & 隐私',
   screenshot_placeholder:'应用截图即将上线',tab_dark:'深色主题',tab_light:'浅色主题',
   features_title:'<span class="gold">核心</span>功能',
-  features_desc:'一个专业的 JSON 工具箱，替代十几个在线工具。所有操作本地运行，快速且保护隐私。',
+  features_desc:'一个专业的 JSON 工具箱，替代在线工具，大幅提升你的日常工作效率，所有操作本地运行，快速且保护隐私。',
   s1_badge:'编辑器',s1_title:'专业级 JSON 编辑器',
-  s1_desc:'基于 Monaco Editor（VS Code 的编辑器内核）打造，提供顶级的 JSON 编辑体验。',
+  s1_desc:'基于 Monaco Editor（VS Code编辑器内核）打造，提供顶级的 JSON 编辑体验。',
   s1_f1:'语法高亮与括号对着色',s1_f2:'多标签页编辑，支持拖拽排序',
   s1_f3:'代码折叠、缩略图和查找替换',s1_f4:'粘贴自动格式化，即时美化',
-  s1_f5:'10+ 配色主题，包括 Dracula、Nord、One Dark',
-  s2_badge:'探索',s2_title:'树视图与 JMESPath 查询',
+  s1_f5:'明暗模式切换 + 10+ 配色主题，包括 Dracula、Nord、One Dark',
+  s2_badge:'导航',s2_title:'树视图与 JMESPath 查询',
   s2_desc:'将复杂的 JSON 结构可视化为交互式树形图，轻松导航、搜索和查询。',
   s2_f1:'可折叠树结构，节点按类型着色',s2_f2:'点击节点跳转到编辑器对应位置',
   s2_f3:'一键复制路径和值',s2_f4:'完整的 JMESPath 查询支持，实时高亮匹配',
@@ -638,7 +679,7 @@ zh:{
   s3_f1:'双向转换：JSON ↔ YAML、XML、TOML、CSV',s3_f2:'CSV 彩虹列高亮，提升可读性',
   s3_f3:'生成 TypeScript、Go、Python、Java、Rust 等语言代码',s3_f4:'反向转换：粘贴代码提取 JSON',
   s4_badge:'SCHEMA',s4_title:'JSON Schema 生成与验证',
-  s4_desc:'从任意 JSON 数据一键生成 Schema，或用现有 Schema 验证数据——在专属页面中完成。',
+  s4_desc:'从任意 JSON 数据一键生成 Schema，或用现有 Schema 验证数据',
   s4_f1:'一键从 JSON 数据生成 Schema',s4_f2:'根据 JSON Schema 验证数据，提供详细错误报告',
   s4_f3:'专属 Schema 页面，支持并排编辑',s4_f4:'支持 JSON Schema Draft-07',
   img_schema:'Schema 截图',
@@ -651,14 +692,14 @@ zh:{
   s6_desc:'用于对比、修复和导出 JSON 数据的综合工具箱。',
   s6_f1:'并排 Diff 对比，内联变更高亮',s6_f2:'状态栏显示差异行数统计',
   s6_f3:'转义 / 反转义 / 压缩工具',s6_f4:'拖拽 JSON 文件即可打开',
-  s6_f5:'导出 JSON 为带语法高亮和水印的图片',
+  s6_f5:'导出 JSON 为带语法高亮的美观图片，便于向他人分享',
   more_title:'还有<span class="gold">更多</span>',more_desc:'每个细节都为开发者效率而打造。',
   m1_title:'JSON 修复',m1_desc:'一键自动修复无效 JSON——修复缺失引号、尾逗号等常见问题。',
   m2_title:'轻量小巧',m2_desc:'安装包小、内存占用低，基于 Tauri 和 Rust 构建。',
   m3_title:'秒级启动',m3_desc:'不到一秒即可启动，无加载画面，无需等待。',
   m4_title:'跨平台',m4_desc:'支持 macOS、Windows 和 Linux，原生外观和体验。',
   m5_title:'10+ 主题',m5_desc:'Dracula、Nord、One Dark、Solarized 等，一键切换明暗主题。',
-  m6_title:'图片导出',m6_desc:'将 JSON 导出为带水印的精美图片，基于 Rust 原生渲染引擎。',
+  m6_title:'图片导出',m6_desc:'导出 JSON 为带语法高亮的美观图片，便于向他人分享，基于 Rust 原生渲染引擎。',
   m7_title:'JSON 统计',m7_desc:'实时显示键数量、嵌套深度、字节大小和行数。',
   m8_title:'国际化',m8_desc:'完整的中英文界面，一键切换语言。',
   m9_title:'完全离线',m9_desc:'所有数据留在本地，无服务器、无上传，完全保护隐私。',
