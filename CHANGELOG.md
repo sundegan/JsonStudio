@@ -2,6 +2,31 @@
 
 All notable changes to this project are documented here.
 
+## [0.5.0] - 2026-03-04
+
+### Added
+- Image export powered by Rust-native rendering, with watermark and clipboard support.
+- JSON Schema generation and validation.
+- Generate class/struct code in multiple programming languages from JSON data, and reverse conversion.
+- Bidirectional conversion between JSON and YAML, XML, TOML, CSV, with rainbow column highlighting for CSV.
+- One-click JSON data repair.
+- Full Chinese/English internationalization, with language selector in settings.
+- Customizable editor shortcuts in settings panel.
+- New Rose Ivy light theme.
+
+### Improved
+- Toolbar layout reorganized with clearer group dividers and icon refinements.
+- Tree View layout and responsiveness.
+- Diff editor styles, removed standalone DiffTabBar component.
+
+### Fixed
+- Fixed file association opening blank on cold start due to race condition.
+- Fixed image export blank/blurry for large content.
+
+### Removed
+- Diff mode keyboard shortcut.
+- Quiet Light theme (replaced by Rose Ivy).
+
 ## [0.4.0] - 2026-02-28
 
 ### Added
