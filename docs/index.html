@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JsonStudio - Fast, Modern JSON Desktop Tool | Format, Validate, Convert & Query</title>
+<meta name="description" content="JsonStudio is a free, open-source JSON desktop app built with Tauri & Rust. Format, validate, diff, convert (YAML/XML/TOML/CSV), generate code, query with JMESPath, and more. Available on macOS, Windows & Linux.">
+<meta name="keywords" content="JSON, JSON editor, JSON formatter, JSON viewer, JSON validator, JSON diff, JSON converter, JSON to YAML, JSON to XML, JSON Schema, JMESPath, code generation, desktop app, Tauri, Rust, open source, macOS, Windows, Linux">
+<meta name="author" content="sundegan">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://sundegan.github.io/JsonStudio/">
+
+<!-- Open Graph -->
+<meta property="og:title" content="JsonStudio - Fast, Modern JSON Desktop Tool">
+<meta property="og:description" content="Free & open-source JSON desktop app. Format, validate, diff, convert, query, and generate code — all offline, powered by Tauri & Rust. Available on macOS, Windows & Linux.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sundegan.github.io/JsonStudio/">
+<meta property="og:image" content="https://sundegan.github.io/JsonStudio/icon.png">
+<meta property="og:site_name" content="JsonStudio">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JsonStudio - Fast, Modern JSON Desktop Tool">
+<meta name="twitter:description" content="Free & open-source JSON desktop app. Format, validate, diff, convert, query, and generate code — all offline, powered by Tauri & Rust.">
+<meta name="twitter:image" content="https://sundegan.github.io/JsonStudio/icon.png">
+
+<!-- Favicon -->
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "JsonStudio",
+  "description": "A fast, modern, and efficient JSON desktop tool. Format, validate, convert, query, generate code — all in one app.",
+  "url": "https://sundegan.github.io/JsonStudio/",
+  "image": "https://sundegan.github.io/JsonStudio/icon.png",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "sundegan", "url": "https://github.com/sundegan" },
+  "license": "https://opensource.org/licenses/MIT",
+  "downloadUrl": "https://github.com/sundegan/JsonStudio/releases"
+}
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a26;--bg4:#222232;
+  --text:#e8e8f0;--text2:#9898b0;--text3:#6868a0;
+  --accent:#f5c542;--accent2:#e8a820;--accent-glow:rgba(245,197,66,.12);--accent-glow2:rgba(245,197,66,.06);
+  --green:#34d399;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--orange:#fb923c;
+  --border:#2a2a3a;--card:#13131c;
+  --radius:16px;--radius-sm:10px;
+  --max-w:1140px;
+}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:all .2s}
+a:hover{opacity:.85}
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+
+/* ── Nav ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);background:rgba(10,10,15,.75);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--text)}
+.nav-brand img{width:38px;height:38px;border-radius:8px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-link{color:var(--text2);font-size:14px;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s}
+.nav-link:hover{color:var(--text);background:var(--bg3);opacity:1}
+.lang-btn{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;cursor:pointer;transition:all .2s;font-family:inherit}
+.lang-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-github{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
+.nav-github:hover{border-color:var(--accent);background:var(--accent-glow);opacity:1}
+.nav-github svg{width:17px;height:17px}
+
+/* ── Hero ── */
+.hero{padding:130px 24px 60px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1000px;height:1000px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
+.hero-icon{width:96px;height:96px;border-radius:24px;margin:0 auto 28px;position:relative;box-shadow:0 0 80px rgba(245,197,66,.18),0 0 0 1px rgba(245,197,66,.1)}
+.hero h1{font-size:clamp(42px,7vw,72px);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;position:relative;line-height:1.1}
+.hero h1 .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(17px,2.5vw,21px);color:var(--text2);max-width:620px;margin:0 auto 36px;position:relative;line-height:1.6}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,197,66,.35);opacity:1}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--border);color:var(--text);font-weight:600;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s}
+.btn-outline:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);opacity:1}
+.btn-primary svg,.btn-outline svg{width:18px;height:18px}
+
+/* ── Stats ── */
+.stats{padding:20px 24px 60px;position:relative}
+.stats-grid{display:flex;justify-content:center;gap:48px;flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-value{font-size:32px;font-weight:800;background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:13px;color:var(--text3);margin-top:4px;font-weight:500}
+
+/* ── Screenshots ── */
+.screenshots{padding:20px 24px 80px}
+.screenshots-inner{max-width:var(--max-w);margin:0 auto}
+.screenshot-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center}
+.screenshot-placeholder{color:var(--text3);font-size:15px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.screenshot-placeholder svg{width:48px;height:48px;opacity:.3}
+.screenshot-tabs{display:flex;gap:8px;justify-content:center;margin-top:16px}
+.screenshot-tab{padding:7px 18px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text3);background:transparent;border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:inherit}
+.screenshot-tab.active{color:var(--accent);border-color:var(--accent);background:var(--accent-glow)}
+
+/* ── Section common ── */
+.section{padding:80px 24px}
+.section-header{text-align:center;margin-bottom:56px}
+.section-title{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;line-height:1.2}
+.section-title .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-desc{color:var(--text2);font-size:17px;max-width:540px;margin:0 auto}
+
+/* ── Feature Showcase (alternating rows) ── */
+.showcase{max-width:var(--max-w);margin:0 auto}
+.showcase-row{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-bottom:80px}
+.showcase-row:nth-child(even){direction:rtl}
+.showcase-row:nth-child(even)>*{direction:ltr}
+.showcase-text{display:flex;flex-direction:column;gap:16px}
+.showcase-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;border-radius:20px;width:fit-content}
+.showcase-badge.green{color:var(--green);background:rgba(52,211,153,.1)}
+.showcase-badge.blue{color:var(--blue);background:rgba(96,165,250,.1)}
+.showcase-badge.purple{color:var(--purple);background:rgba(167,139,250,.1)}
+.showcase-badge.pink{color:var(--pink);background:rgba(244,114,182,.1)}
+.showcase-badge.orange{color:var(--orange);background:rgba(251,146,60,.1)}
+.showcase-text h3{font-size:28px;font-weight:700;line-height:1.3}
+.showcase-text p{color:var(--text2);font-size:15px;line-height:1.7}
+.showcase-text ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.showcase-text li{display:flex;align-items:flex-start;gap:10px;color:var(--text2);font-size:14px}
+.showcase-text li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:1px}
+.showcase-visual{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.showcase-visual-placeholder{color:var(--text3);font-size:14px;opacity:.5}
+
+/* ── Feature Grid (smaller features) ── */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:var(--max-w);margin:0 auto}
+.feature-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;transition:all .3s;position:relative;overflow:hidden}
+.feature-card:hover{border-color:rgba(245,197,66,.3);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.feature-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:17px}
+.feature-icon.c1{background:rgba(52,211,153,.1);color:var(--green)}
+.feature-icon.c2{background:rgba(96,165,250,.1);color:var(--blue)}
+.feature-icon.c3{background:rgba(167,139,250,.1);color:var(--purple)}
+.feature-icon.c4{background:rgba(244,114,182,.1);color:var(--pink)}
+.feature-icon.c5{background:rgba(251,146,60,.1);color:var(--orange)}
+.feature-icon.c6{background:var(--accent-glow);color:var(--accent)}
+.feature-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.feature-card p{color:var(--text2);font-size:12.5px;line-height:1.5}
+
+/* ── Comparison ── */
+.comparison{max-width:800px;margin:0 auto}
+.comparison table{width:100%;border-collapse:collapse}
+.comparison th,.comparison td{padding:14px 20px;text-align:left;border-bottom:1px solid var(--border);font-size:14px}
+.comparison th{color:var(--text2);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+.comparison td:first-child{color:var(--text);font-weight:500}
+.comparison .check{color:var(--green);font-weight:700;font-size:16px}
+.comparison .cross{color:var(--text3);font-size:16px}
+.comparison .highlight{background:var(--accent-glow2)}
+.comparison thead th:last-child{color:var(--accent)}
+
+/* ── Workflow ── */
+.workflow{max-width:var(--max-w);margin:0 auto}
+.workflow-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;position:relative}
+.workflow-steps::before{content:'';position:absolute;top:32px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--border),var(--border),transparent)}
+.workflow-step{text-align:center;position:relative}
+.step-num{width:64px;height:64px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;position:relative;z-index:1;transition:all .3s}
+.workflow-step:hover .step-num{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 24px var(--accent-glow)}
+.workflow-step h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
+
+/* ── Tech ── */
+.tech-grid{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;max-width:700px;margin:0 auto}
+.tech-pill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);padding:10px 20px;border-radius:12px;font-size:14px;font-weight:600;color:var(--text2);transition:all .2s}
+.tech-pill:hover{border-color:var(--accent);color:var(--text);background:var(--accent-glow)}
+.tech-pill span.emoji{font-size:18px}
+
+/* ── CTA ── */
+.cta{padding:80px 24px;text-align:center;position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;bottom:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
+.cta h2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;position:relative}
+.cta p{color:var(--text2);font-size:17px;margin-bottom:32px;position:relative}
+.cta .hero-actions{position:relative}
+
+/* ── Footer ── */
+.footer{border-top:1px solid var(--border);padding:28px 24px}
+.footer-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-left{color:var(--text3);font-size:13px}
+.footer-links{display:flex;gap:20px}
+.footer-links a{color:var(--text3);font-size:13px;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .showcase-row{grid-template-columns:1fr;gap:32px}
+  .showcase-row:nth-child(even){direction:ltr}
+  .features-grid{grid-template-columns:1fr 1fr}
+  .stats-grid{gap:32px}
+  .workflow-steps{grid-template-columns:1fr 1fr}
+  .workflow-steps::before{display:none}
+}
+@media(max-width:640px){
+  .features-grid{grid-template-columns:1fr}
+  .hero-actions{flex-direction:column;align-items:center}
+  .footer-inner{flex-direction:column;text-align:center}
+  .nav-link{display:none}
+  .comparison th,.comparison td{padding:10px 12px;font-size:13px}
+  .workflow-steps{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
+    <div class="nav-right">
+      <a href="#features" class="nav-link" data-i18n="nav_features">Features</a>
+      <a href="#compare" class="nav-link" data-i18n="nav_compare">Compare</a>
+      <a href="#screenshots" class="nav-link" data-i18n="nav_screenshots">Screenshots</a>
+      <button class="lang-btn" onclick="toggleLang()">中文</button>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <img src="icon.png" alt="JsonStudio" class="hero-icon">
+  <h1><span class="gold">Json</span>Studio</h1>
+  <p class="hero-sub" data-i18n="hero_desc">A fast, modern, and efficient JSON desktop tool. Format, validate, convert, query, generate code — all in one app, powered by Tauri & Rust.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span data-i18n="hero_download">Download Now</span>
+    </a>
+    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      <span data-i18n="hero_github">View on GitHub</span>
+    </a>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat-item"><div class="stat-value">&lt;1s</div><div class="stat-label" data-i18n="stat_launch">Launch Time</div></div>
+    <div class="stat-item"><div class="stat-value">3</div><div class="stat-label" data-i18n="stat_platform">Platforms</div></div>
+    <div class="stat-item"><div class="stat-value">10+</div><div class="stat-label" data-i18n="stat_themes">Themes</div></div>
+    <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label" data-i18n="stat_local">Local & Private</div></div>
+  </div>
+</section>
+
+<!-- Screenshots -->
+<section class="screenshots" id="screenshots">
+  <div class="screenshots-inner">
+    <div class="screenshot-box">
+      <div class="screenshot-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span data-i18n="screenshot_placeholder">Application screenshots coming soon</span>
+      </div>
+    </div>
+    <div class="screenshot-tabs">
+      <button class="screenshot-tab active" data-i18n="tab_dark">Dark Theme</button>
+      <button class="screenshot-tab" data-i18n="tab_light">Light Theme</button>
+    </div>
+  </div>
+</section>
+
+<!-- Feature Showcase -->
+<section class="section" id="features">
+  <div class="section-header">
+    <h2 class="section-title" data-i18n="features_title"><span class="gold">Core</span> Features</h2>
+    <p class="section-desc" data-i18n="features_desc">A professional JSON toolkit that replaces a dozen online tools. Everything runs locally, fast and private.</p>
+  </div>
+
+  <div class="showcase">
+    <!-- 1. Editor -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge green" data-i18n="s1_badge">EDITOR</span>
+        <h3 data-i18n="s1_title">Professional-Grade JSON Editor</h3>
+        <p data-i18n="s1_desc">Built on Monaco Editor (the engine behind VS Code), providing a top-tier editing experience for JSON.</p>
+        <ul>
+          <li data-i18n="s1_f1">Syntax highlighting with bracket pair colorization</li>
+          <li data-i18n="s1_f2">Multi-tab editing with drag-and-drop reordering</li>
+          <li data-i18n="s1_f3">Code folding, minimap, and find & replace</li>
+          <li data-i18n="s1_f4">Auto-format on paste for instant prettification</li>
+          <li data-i18n="s1_f5">10+ color themes including Dracula, Nord, and One Dark</li>
+        </ul>
+      </div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_editor">Editor screenshot</span></div>
+    </div>
+
+    <!-- 2. Tree & Query -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge blue" data-i18n="s2_badge">EXPLORE</span>
+        <h3 data-i18n="s2_title">Tree View & JMESPath Query</h3>
+        <p data-i18n="s2_desc">Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.</p>
+        <ul>
+          <li data-i18n="s2_f1">Collapsible tree with type-colored icons</li>
+          <li data-i18n="s2_f2">Click any node to jump to its position in the editor</li>
+          <li data-i18n="s2_f3">Copy path and value with one click</li>
+          <li data-i18n="s2_f4">Full JMESPath query support with real-time highlighting</li>
+          <li data-i18n="s2_f5">Resizable panel width for comfortable viewing</li>
+        </ul>
+      </div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_tree">Tree View screenshot</span></div>
+    </div>
+
+    <!-- 3. Convert & Codegen -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge purple" data-i18n="s3_badge">CONVERT</span>
+        <h3 data-i18n="s3_title">Format Conversion & Code Generation</h3>
+        <p data-i18n="s3_desc">Convert JSON to other formats or generate type-safe code in your favorite programming language.</p>
+        <ul>
+          <li data-i18n="s3_f1">Bidirectional conversion: JSON ↔ YAML, XML, TOML, CSV</li>
+          <li data-i18n="s3_f2">CSV rainbow column highlighting for readability</li>
+          <li data-i18n="s3_f3">Generate TypeScript, Go, Python, Java, Rust, and more</li>
+          <li data-i18n="s3_f4">Reverse conversion: paste code to extract JSON</li>
+        </ul>
+      </div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_convert">Conversion screenshot</span></div>
+    </div>
+
+    <!-- 4. JSON Schema -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge pink" data-i18n="s4_badge">SCHEMA</span>
+        <h3 data-i18n="s4_title">JSON Schema Generation & Validation</h3>
+        <p data-i18n="s4_desc">Generate JSON Schema from any JSON data, or validate your data against an existing schema — all in a dedicated view.</p>
+        <ul>
+          <li data-i18n="s4_f1">One-click schema generation from JSON data</li>
+          <li data-i18n="s4_f2">Validate JSON against any JSON Schema with detailed error reports</li>
+          <li data-i18n="s4_f3">Dedicated schema page with side-by-side editing</li>
+          <li data-i18n="s4_f4">Support for JSON Schema Draft-07</li>
+        </ul>
+      </div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_schema">Schema screenshot</span></div>
+    </div>
+
+    <!-- 5. Efficiency & Shortcuts -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge orange" data-i18n="s5_badge">EFFICIENCY</span>
+        <h3 data-i18n="s5_title">Shortcuts & Workflow Boost</h3>
+        <p data-i18n="s5_desc">Native desktop shortcuts that web tools simply can't offer — dramatically speed up your daily JSON workflow.</p>
+        <ul>
+          <li data-i18n="s5_f1">Global shortcut to launch or bring the app to front instantly</li>
+          <li data-i18n="s5_f2">One-key paste & format: auto-beautify clipboard JSON</li>
+          <li data-i18n="s5_f3">Window always-on-top toggle for multitasking</li>
+          <li data-i18n="s5_f4">All editor shortcuts fully customizable in settings</li>
+          <li data-i18n="s5_f5">File association: double-click .json to open directly</li>
+        </ul>
+      </div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_settings">Settings screenshot</span></div>
+    </div>
+
+    <!-- 6. Diff & More Tools -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge green" data-i18n="s6_badge">TOOLS</span>
+        <h3 data-i18n="s6_title">Diff Compare & More Tools</h3>
+        <p data-i18n="s6_desc">A comprehensive toolbox for comparing, repairing, and exporting JSON data.</p>
+        <ul>
+          <li data-i18n="s6_f1">Side-by-side diff with inline change highlighting</li>
+          <li data-i18n="s6_f2">Diff line count statistics in status bar</li>
+          <li data-i18n="s6_f3">Escape / unescape / minify utilities</li>
+          <li data-i18n="s6_f4">Drag & drop JSON files to open instantly</li>
+          <li data-i18n="s6_f5">Export JSON as image with syntax highlighting & watermark</li>
+        </ul>
+      </div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder" data-i18n="img_diff">Diff screenshot</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- More Features Grid -->
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title" data-i18n="more_title">And <span class="gold">Much</span> More</h2>
+    <p class="section-desc" data-i18n="more_desc">Every detail is crafted for developer productivity.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon c6">🩹</div>
+      <h3 data-i18n="m1_title">JSON Repair</h3>
+      <p data-i18n="m1_desc">One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c1">🪶</div>
+      <h3 data-i18n="m2_title">Lightweight</h3>
+      <p data-i18n="m2_desc">Small install size and low memory footprint, powered by Tauri and Rust.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c2">🚀</div>
+      <h3 data-i18n="m3_title">Instant Launch</h3>
+      <p data-i18n="m3_desc">Launches in under a second. No loading screens, no waiting.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c3">💻</div>
+      <h3 data-i18n="m4_title">Cross-Platform</h3>
+      <p data-i18n="m4_desc">Available on macOS, Windows, and Linux with native look and feel.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c4">🎨</div>
+      <h3 data-i18n="m5_title">10+ Themes</h3>
+      <p data-i18n="m5_desc">Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c5">🖼️</div>
+      <h3 data-i18n="m6_title">Image Export</h3>
+      <p data-i18n="m6_desc">Export JSON as a beautiful image with watermark, powered by Rust-native rendering.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c1">🔢</div>
+      <h3 data-i18n="m7_title">JSON Statistics</h3>
+      <p data-i18n="m7_desc">Real-time display of key count, nesting depth, byte size, and line count.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c2">🌐</div>
+      <h3 data-i18n="m8_title">i18n Support</h3>
+      <p data-i18n="m8_desc">Full Chinese and English interface with one-click language switching.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c3">🔒</div>
+      <h3 data-i18n="m9_title">100% Offline</h3>
+      <p data-i18n="m9_desc">All data stays on your machine. No server, no upload, complete privacy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section class="section" id="compare">
+  <div class="section-header">
+    <h2 class="section-title" data-i18n="cmp_title">Why <span class="gold">JsonStudio</span>?</h2>
+    <p class="section-desc" data-i18n="cmp_desc">See how JsonStudio compares to online JSON tools and other editors.</p>
+  </div>
+  <div class="comparison">
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="cmp_feature">Feature</th>
+          <th data-i18n="cmp_online">Online Tools</th>
+          <th>JsonStudio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td data-i18n="cmp_r1">Offline / No Internet Required</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r2">Data Privacy (100% Local)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r3">Large JSON Data Performance</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r4">Multi-tab Editing</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r5">Tree View & JMESPath Query</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r6">Ad-Free Experience</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r7">Global Shortcuts & Custom Keybindings</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r8">Image Export</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r9">Local File Operations</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r10">Custom Settings (Theme, Font, Spacing...)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r11">JSON Schema Generation & Validation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r12">Code Generation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r13">Format Conversion (YAML/XML/...)</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+        <tr><td data-i18n="cmp_r14">Diff Compare</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Workflow -->
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title" data-i18n="wf_title">Get Started in <span class="gold">Seconds</span></h2>
+    <p class="section-desc" data-i18n="wf_desc">No sign-up, no configuration. Download and start working with JSON immediately.</p>
+  </div>
+  <div class="workflow">
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="step-num">📥</div>
+        <h4 data-i18n="wf1_title">Download</h4>
+        <p data-i18n="wf1_desc">Grab the installer for your platform from GitHub Releases.</p>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">🚀</div>
+        <h4 data-i18n="wf2_title">Launch</h4>
+        <p data-i18n="wf2_desc">Open the app — it launches in under a second.</p>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">📋</div>
+        <h4 data-i18n="wf3_title">Paste</h4>
+        <p data-i18n="wf3_desc">Paste your JSON and it's auto-formatted instantly.</p>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">✨</div>
+        <h4 data-i18n="wf4_title">Done</h4>
+        <p data-i18n="wf4_desc">Explore, convert, compare, generate code — all at your fingertips.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title" data-i18n="tech_title">Built with <span class="gold">Modern</span> Tech</h2>
+    <p class="section-desc" data-i18n="tech_desc">Leveraging the best tools for performance, security, and developer experience.</p>
+  </div>
+  <div class="tech-grid">
+    <div class="tech-pill"><span class="emoji">🦀</span> Rust</div>
+    <div class="tech-pill"><span class="emoji">⚡</span> Tauri 2.0</div>
+    <div class="tech-pill"><span class="emoji">🔥</span> Svelte 5</div>
+    <div class="tech-pill"><span class="emoji">📝</span> Monaco Editor</div>
+    <div class="tech-pill"><span class="emoji">🎨</span> Tailwind CSS</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2 data-i18n="cta_title">Ready to Supercharge Your JSON Workflow?</h2>
+  <p data-i18n="cta_desc">Free, open source, and available on all major platforms.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span data-i18n="hero_download">Download Now</span>
+    </a>
+    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      <span data-i18n="hero_github">View on GitHub</span>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">&copy; 2025 JsonStudio · <span data-i18n="footer_license">MIT License</span></div>
+    <div class="footer-links">
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" data-i18n="footer_releases">Releases</a>
+      <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank" data-i18n="footer_issues">Issues</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const i18n={
+en:{
+  nav_features:'Features',nav_compare:'Compare',nav_screenshots:'Screenshots',
+  hero_desc:'A fast, modern, and efficient JSON desktop tool. Format, validate, convert, query, generate code — all in one app, powered by Tauri & Rust.',
+  hero_download:'Download Now',hero_github:'View on GitHub',
+  stat_launch:'Launch Time',stat_platform:'Platforms',stat_themes:'Themes',stat_local:'Local & Private',
+  screenshot_placeholder:'Application screenshots coming soon',tab_dark:'Dark Theme',tab_light:'Light Theme',
+  features_title:'<span class="gold">Core</span> Features',
+  features_desc:'A professional JSON toolkit that replaces a dozen online tools. Everything runs locally, fast and private.',
+  s1_badge:'EDITOR',s1_title:'Professional-Grade JSON Editor',
+  s1_desc:'Built on Monaco Editor (the engine behind VS Code), providing a top-tier editing experience for JSON.',
+  s1_f1:'Syntax highlighting with bracket pair colorization',s1_f2:'Multi-tab editing with drag-and-drop reordering',
+  s1_f3:'Code folding, minimap, and find & replace',s1_f4:'Auto-format on paste for instant prettification',
+  s1_f5:'10+ color themes including Dracula, Nord, and One Dark',
+  s2_badge:'EXPLORE',s2_title:'Tree View & JMESPath Query',
+  s2_desc:'Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.',
+  s2_f1:'Collapsible tree with type-colored icons',s2_f2:'Click any node to jump to its position in the editor',
+  s2_f3:'Copy path and value with one click',s2_f4:'Full JMESPath query support with real-time highlighting',
+  s2_f5:'Resizable panel width for comfortable viewing',
+  s3_badge:'CONVERT',s3_title:'Format Conversion & Code Generation',
+  s3_desc:'Convert JSON to other formats or generate type-safe code in your favorite programming language.',
+  s3_f1:'Bidirectional conversion: JSON ↔ YAML, XML, TOML, CSV',s3_f2:'CSV rainbow column highlighting for readability',
+  s3_f3:'Generate TypeScript, Go, Python, Java, Rust, and more',s3_f4:'Reverse conversion: paste code to extract JSON',
+  s4_badge:'SCHEMA',s4_title:'JSON Schema Generation & Validation',
+  s4_desc:'Generate JSON Schema from any JSON data, or validate your data against an existing schema — all in a dedicated view.',
+  s4_f1:'One-click schema generation from JSON data',s4_f2:'Validate JSON against any JSON Schema with detailed error reports',
+  s4_f3:'Dedicated schema page with side-by-side editing',s4_f4:'Support for JSON Schema Draft-07',
+  img_schema:'Schema screenshot',
+  s5_badge:'EFFICIENCY',s5_title:'Shortcuts & Workflow Boost',
+  s5_desc:'Native desktop shortcuts that web tools simply can\'t offer — dramatically speed up your daily JSON workflow.',
+  s5_f1:'Global shortcut to launch or bring the app to front instantly',s5_f2:'One-key paste & format: auto-beautify clipboard JSON',
+  s5_f3:'Window always-on-top toggle for multitasking',s5_f4:'All editor shortcuts fully customizable in settings',
+  s5_f5:'File association: double-click .json to open directly',img_settings:'Settings screenshot',
+  s6_badge:'TOOLS',s6_title:'Diff Compare & More Tools',
+  s6_desc:'A comprehensive toolbox for comparing, repairing, and exporting JSON data.',
+  s6_f1:'Side-by-side diff with inline change highlighting',s6_f2:'Diff line count statistics in status bar',
+  s6_f3:'Escape / unescape / minify utilities',s6_f4:'Drag & drop JSON files to open instantly',
+  s6_f5:'Export JSON as image with syntax highlighting & watermark',
+  more_title:'And <span class="gold">Much</span> More',more_desc:'Every detail is crafted for developer productivity.',
+  m1_title:'JSON Repair',m1_desc:'One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.',
+  m2_title:'Lightweight',m2_desc:'Small install size and low memory footprint, powered by Tauri and Rust.',
+  m3_title:'Instant Launch',m3_desc:'Launches in under a second. No loading screens, no waiting.',
+  m4_title:'Cross-Platform',m4_desc:'Available on macOS, Windows, and Linux with native look and feel.',
+  m5_title:'10+ Themes',m5_desc:'Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.',
+  m6_title:'Image Export',m6_desc:'Export JSON as a beautiful image with watermark, powered by Rust-native rendering.',
+  m7_title:'JSON Statistics',m7_desc:'Real-time display of key count, nesting depth, byte size, and line count.',
+  m8_title:'i18n Support',m8_desc:'Full Chinese and English interface with one-click language switching.',
+  m9_title:'100% Offline',m9_desc:'All data stays on your machine. No server, no upload, complete privacy.',
+  cmp_title:'Why <span class="gold">JsonStudio</span>?',cmp_desc:'See how JsonStudio compares to online JSON tools and other editors.',
+  cmp_feature:'Feature',cmp_online:'Online Tools',
+  cmp_r1:'Offline / No Internet Required',cmp_r2:'Data Privacy (100% Local)',cmp_r3:'Large JSON Data Performance',
+  cmp_r4:'Multi-tab Editing',cmp_r5:'Tree View & JMESPath Query',cmp_r6:'Ad-Free Experience',
+  cmp_r7:'Global Shortcuts & Custom Keybindings',cmp_r8:'Image Export',
+  cmp_r9:'Local File Operations',cmp_r10:'Custom Settings (Theme, Font, Spacing...)',
+  cmp_r11:'JSON Schema Generation & Validation',cmp_r12:'Code Generation',
+  cmp_r13:'Format Conversion (YAML/XML/...)',cmp_r14:'Diff Compare',
+  wf_title:'Get Started in <span class="gold">Seconds</span>',wf_desc:'No sign-up, no configuration. Download and start working with JSON immediately.',
+  wf1_title:'Download',wf1_desc:'Grab the installer for your platform from GitHub Releases.',
+  wf2_title:'Launch',wf2_desc:'Open the app — it launches in under a second.',
+  wf3_title:'Paste',wf3_desc:'Paste your JSON and it\'s auto-formatted instantly.',
+  wf4_title:'Done',wf4_desc:'Explore, convert, compare, generate code — all at your fingertips.',
+  tech_title:'Built with <span class="gold">Modern</span> Tech',tech_desc:'Leveraging the best tools for performance, security, and developer experience.',
+  cta_title:'Ready to Supercharge Your JSON Workflow?',cta_desc:'Free, open source, and available on all major platforms.',
+  footer_license:'MIT License',footer_releases:'Releases',footer_issues:'Issues',
+  img_editor:'Editor screenshot',img_tree:'Tree View screenshot',img_convert:'Conversion screenshot',img_schema:'Schema screenshot',img_settings:'Settings screenshot',img_diff:'Diff screenshot',
+},
+zh:{
+  nav_features:'功能',nav_compare:'对比',nav_screenshots:'截图',
+  hero_desc:'快速、现代、高效的 JSON 桌面工具。格式化、验证、转换、查询、代码生成——一个应用全搞定，基于 Tauri 和 Rust 构建。',
+  hero_download:'立即下载',hero_github:'查看 GitHub',
+  stat_launch:'启动时间',stat_platform:'个平台',stat_themes:'款主题',stat_local:'本地 & 隐私',
+  screenshot_placeholder:'应用截图即将上线',tab_dark:'深色主题',tab_light:'浅色主题',
+  features_title:'<span class="gold">核心</span>功能',
+  features_desc:'一个专业的 JSON 工具箱，替代十几个在线工具。所有操作本地运行，快速且保护隐私。',
+  s1_badge:'编辑器',s1_title:'专业级 JSON 编辑器',
+  s1_desc:'基于 Monaco Editor（VS Code 的编辑器内核）打造，提供顶级的 JSON 编辑体验。',
+  s1_f1:'语法高亮与括号对着色',s1_f2:'多标签页编辑，支持拖拽排序',
+  s1_f3:'代码折叠、缩略图和查找替换',s1_f4:'粘贴自动格式化，即时美化',
+  s1_f5:'10+ 配色主题，包括 Dracula、Nord、One Dark',
+  s2_badge:'探索',s2_title:'树视图与 JMESPath 查询',
+  s2_desc:'将复杂的 JSON 结构可视化为交互式树形图，轻松导航、搜索和查询。',
+  s2_f1:'可折叠树结构，节点按类型着色',s2_f2:'点击节点跳转到编辑器对应位置',
+  s2_f3:'一键复制路径和值',s2_f4:'完整的 JMESPath 查询支持，实时高亮匹配',
+  s2_f5:'面板宽度可调节，舒适查看',
+  s3_badge:'转换',s3_title:'格式转换与代码生成',
+  s3_desc:'将 JSON 转换为其他格式，或生成你喜欢的编程语言的类型安全代码。',
+  s3_f1:'双向转换：JSON ↔ YAML、XML、TOML、CSV',s3_f2:'CSV 彩虹列高亮，提升可读性',
+  s3_f3:'生成 TypeScript、Go、Python、Java、Rust 等语言代码',s3_f4:'反向转换：粘贴代码提取 JSON',
+  s4_badge:'SCHEMA',s4_title:'JSON Schema 生成与验证',
+  s4_desc:'从任意 JSON 数据一键生成 Schema，或用现有 Schema 验证数据——在专属页面中完成。',
+  s4_f1:'一键从 JSON 数据生成 Schema',s4_f2:'根据 JSON Schema 验证数据，提供详细错误报告',
+  s4_f3:'专属 Schema 页面，支持并排编辑',s4_f4:'支持 JSON Schema Draft-07',
+  img_schema:'Schema 截图',
+  s5_badge:'效率',s5_title:'快捷键与工作流加速',
+  s5_desc:'原生桌面快捷键是网页工具无法实现的——大幅提升你的日常 JSON 工作效率。',
+  s5_f1:'全局快捷键一键启动或唤起应用到前台',s5_f2:'一键粘贴格式化：自动美化剪贴板中的 JSON',
+  s5_f3:'窗口置顶切换，方便多任务协作',s5_f4:'所有编辑器快捷键均可在设置中自定义',
+  s5_f5:'文件关联：双击 .json 文件直接打开',img_settings:'设置截图',
+  s6_badge:'工具',s6_title:'Diff 对比与更多工具',
+  s6_desc:'用于对比、修复和导出 JSON 数据的综合工具箱。',
+  s6_f1:'并排 Diff 对比，内联变更高亮',s6_f2:'状态栏显示差异行数统计',
+  s6_f3:'转义 / 反转义 / 压缩工具',s6_f4:'拖拽 JSON 文件即可打开',
+  s6_f5:'导出 JSON 为带语法高亮和水印的图片',
+  more_title:'还有<span class="gold">更多</span>',more_desc:'每个细节都为开发者效率而打造。',
+  m1_title:'JSON 修复',m1_desc:'一键自动修复无效 JSON——修复缺失引号、尾逗号等常见问题。',
+  m2_title:'轻量小巧',m2_desc:'安装包小、内存占用低，基于 Tauri 和 Rust 构建。',
+  m3_title:'秒级启动',m3_desc:'不到一秒即可启动，无加载画面，无需等待。',
+  m4_title:'跨平台',m4_desc:'支持 macOS、Windows 和 Linux，原生外观和体验。',
+  m5_title:'10+ 主题',m5_desc:'Dracula、Nord、One Dark、Solarized 等，一键切换明暗主题。',
+  m6_title:'图片导出',m6_desc:'将 JSON 导出为带水印的精美图片，基于 Rust 原生渲染引擎。',
+  m7_title:'JSON 统计',m7_desc:'实时显示键数量、嵌套深度、字节大小和行数。',
+  m8_title:'国际化',m8_desc:'完整的中英文界面，一键切换语言。',
+  m9_title:'完全离线',m9_desc:'所有数据留在本地，无服务器、无上传，完全保护隐私。',
+  cmp_title:'为什么选择 <span class="gold">JsonStudio</span>？',cmp_desc:'看看 JsonStudio 与在线 JSON 工具和其他编辑器的对比。',
+  cmp_feature:'功能',cmp_online:'在线工具',
+  cmp_r1:'离线使用 / 无需联网',cmp_r2:'数据隐私（100% 本地处理）',cmp_r3:'大 JSON 数据性能',
+  cmp_r4:'多标签页编辑',cmp_r5:'树视图与 JMESPath 查询',cmp_r6:'无广告体验',
+  cmp_r7:'全局快捷键与自定义键绑定',cmp_r8:'图片导出',
+  cmp_r9:'本地文件操作',cmp_r10:'自定义设置（主题、字号、间距等）',
+  cmp_r11:'JSON Schema 生成与验证',cmp_r12:'代码生成',
+  cmp_r13:'格式转换（YAML/XML/...）',cmp_r14:'Diff 对比',
+  wf_title:'<span class="gold">秒级</span>上手',wf_desc:'无需注册，无需配置。下载即用，立即开始处理 JSON。',
+  wf1_title:'下载',wf1_desc:'从 GitHub Releases 获取你平台的安装包。',
+  wf2_title:'启动',wf2_desc:'打开应用——不到一秒即可启动。',
+  wf3_title:'粘贴',wf3_desc:'粘贴你的 JSON，自动格式化。',
+  wf4_title:'完成',wf4_desc:'探索、转换、对比、生成代码——尽在指尖。',
+  tech_title:'基于<span class="gold">现代</span>技术构建',tech_desc:'利用最佳工具实现高性能、安全性和开发者体验。',
+  cta_title:'准备好提升你的 JSON 工作流了吗？',cta_desc:'免费、开源，支持所有主流平台。',
+  footer_license:'MIT 许可证',footer_releases:'版本发布',footer_issues:'问题反馈',
+  img_editor:'编辑器截图',img_tree:'树视图截图',img_convert:'转换截图',img_schema:'Schema 截图',img_settings:'设置截图',img_diff:'对比截图',
+}};
+
+let currentLang='en';
+function toggleLang(){currentLang=currentLang==='en'?'zh':'en';applyLang()}
+function applyLang(){
+  document.querySelector('.lang-btn').textContent=currentLang==='en'?'中文':'English';
+  document.documentElement.lang=currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const t=i18n[currentLang][el.getAttribute('data-i18n')];
+    if(t){if(t.includes('<')){el.innerHTML=t}else{el.textContent=t}}
+  });
+}
+document.querySelectorAll('.screenshot-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.screenshot-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
