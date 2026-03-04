@@ -89,8 +89,6 @@
         theme: currentTheme,
         fontSize: appSettings.fontSize,
         lineHeight: appSettings.lineHeight,
-        tabSize: appSettings.tabSize,
-        fileName: activeTab?.fileName,
       });
       await copyImageToClipboard(blob);
       onToast($t('toolbar.exportImageCopied'));

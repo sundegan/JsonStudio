@@ -1,20 +1,18 @@
 import { toBlob } from 'html-to-image';
 import { invoke } from '@tauri-apps/api/core';
 import { monacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
+import { base } from '$app/paths';
 
 interface ExportOptions {
   content: string;
   theme: EditorTheme;
   fontSize?: number;
   lineHeight?: number;
-  tabSize?: number;
-  fileName?: string;
 }
 
 interface ThemeColors {
   background: string;
   foreground: string;
-  lineNumber: string;
   keyColor: string;
   stringColor: string;
   numberColor: string;
@@ -25,56 +23,77 @@ interface ThemeColors {
 
 function getThemeColors(theme: EditorTheme): ThemeColors {
   const config = monacoThemes[theme];
+  const base = config?.base ?? theme;
+  const isDark = base === 'vs-dark' || base === 'hc-black';
 
-  if (config) {
-    const rules = config.rules;
-    const findColor = (token: string) =>
-      rules.find(r => r.token === token)?.foreground;
+  const normalize = (value?: string): string | undefined => {
+    if (!value) return undefined;
+    if (value.startsWith('#')) return value;
+    if (/^[0-9a-fA-F]{6,8}$/.test(value)) return `#${value}`;
+    return value;
+  };
 
-    return {
-      background: config.colors['editor.background'] || '#1e1e1e',
-      foreground: config.colors['editor.foreground'] || '#d4d4d4',
-      lineNumber: config.colors['editorLineNumber.foreground'] || '#858585',
-      keyColor: `#${findColor('string.key.json') || findColor('keyword') || 'e06c75'}`,
-      stringColor: `#${findColor('string.value.json') || findColor('string') || '98c379'}`,
-      numberColor: `#${findColor('number') || 'd19a66'}`,
-      booleanColor: `#${findColor('keyword') || 'c678dd'}`,
-      nullColor: `#${findColor('keyword') || 'c678dd'}`,
-      delimiterColor: `#${findColor('delimiter') || 'abb2bf'}`,
-    };
-  }
+  const getTokenColor = (tokens: string[], fallback: string): string => {
+    if (!config?.rules?.length) return fallback;
+    for (const token of tokens) {
+      const rule = config.rules.find((item) => item.token === token && item.foreground);
+      const color = normalize(rule?.foreground);
+      if (color) return color;
+    }
+    return fallback;
+  };
 
-  if (theme === 'vs-dark' || theme === 'hc-black') {
-    return {
-      background: '#1e1e1e',
-      foreground: '#d4d4d4',
-      lineNumber: '#858585',
-      keyColor: '#9cdcfe',
-      stringColor: '#ce9178',
-      numberColor: '#b5cea8',
-      booleanColor: '#569cd6',
-      nullColor: '#569cd6',
-      delimiterColor: '#d4d4d4',
-    };
-  }
+  const defaultBackground = isDark ? '#1E1E1E' : '#FFFFFF';
+  const defaultForeground = isDark ? '#D4D4D4' : '#1E1E1E';
+
+  const background = normalize(config?.colors?.['editor.background']) ?? defaultBackground;
+  const foreground = normalize(config?.colors?.['editor.foreground']) ?? defaultForeground;
+  const delimiterColor = getTokenColor(['delimiter'], foreground);
 
   return {
-    background: '#ffffff',
-    foreground: '#24292f',
-    lineNumber: '#8c959f',
-    keyColor: '#0550ae',
-    stringColor: '#0a3069',
-    numberColor: '#0550ae',
-    booleanColor: '#cf222e',
-    nullColor: '#cf222e',
-    delimiterColor: '#24292f',
+    background,
+    foreground,
+    keyColor: getTokenColor(['string.key.json', 'string'], foreground),
+    stringColor: getTokenColor(['string.value.json', 'string'], foreground),
+    numberColor: getTokenColor(['number'], foreground),
+    booleanColor: getTokenColor(['keyword'], foreground),
+    nullColor: getTokenColor(['keyword'], foreground),
+    delimiterColor,
   };
 }
 
-function tokenizeJson(content: string, colors: ThemeColors): string {
+function getBracketHighlightColors(): string[] {
+  const container = document.createElement('div');
+  container.className = 'monaco-editor';
+  container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;visibility:hidden;';
+  const spans: HTMLSpanElement[] = [];
+  for (let i = 0; i < 6; i++) {
+    const span = document.createElement('span');
+    span.className = `bracket-highlighting-${i}`;
+    span.textContent = '{}';
+    spans.push(span);
+    container.appendChild(span);
+  }
+  document.body.appendChild(container);
+
+  const colors: string[] = [];
+  for (const span of spans) {
+    const color = getComputedStyle(span).color;
+    if (color && color !== 'inherit' && color !== 'transparent') {
+      colors.push(color);
+    }
+  }
+
+  document.body.removeChild(container);
+  return colors;
+}
+
+function tokenizeJson(content: string, colors: ThemeColors, bracketColors: string[]): string {
   const lines = content.split('\n');
   const htmlLines: string[] = [];
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const bracketPalette = bracketColors.length ? bracketColors : [colors.delimiterColor];
+  let depth = 0;
 
   for (const line of lines) {
     let html = '';
@@ -135,8 +154,32 @@ function tokenizeJson(content: string, colors: ThemeColors): string {
         continue;
       }
 
-      if ('{}[]:,'.includes(ch)) {
-        html += `<span style="color:${colors.delimiterColor}">${esc(ch)}</span>`;
+      if (ch === '{' || ch === '}') {
+        if (ch === '}') depth = Math.max(depth - 1, 0);
+        const color = bracketPalette[depth % bracketPalette.length];
+        html += `<span style="color:${color};font-weight:700;">${esc(ch)}</span>`;
+        if (ch === '{') depth++;
+        i++;
+        continue;
+      }
+      
+      if (ch === '[' || ch === ']') {
+        if (ch === ']') depth = Math.max(depth - 1, 0);
+        const color = bracketPalette[depth % bracketPalette.length];
+        html += `<span style="color:${color};font-weight:700;">${esc(ch)}</span>`;
+        if (ch === '[') depth++;
+        i++;
+        continue;
+      }
+
+      if (ch === ':') {
+        html += `<span style="color:${colors.delimiterColor};font-weight:700;">${esc(ch)}</span>`;
+        i++;
+        continue;
+      }
+      
+      if (ch === ',') {
+        html += `<span style="color:${colors.delimiterColor};font-weight:700;">${esc(ch)}</span>`;
         i++;
         continue;
       }
@@ -150,82 +193,73 @@ function tokenizeJson(content: string, colors: ThemeColors): string {
   return htmlLines.join('\n');
 }
 
+async function loadIconBitmap(iconUrl: string): Promise<ImageBitmap> {
+  const url = `${iconUrl}${iconUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to load icon (${response.status})`);
+  }
+  const blob = await response.blob();
+  return createImageBitmap(blob);
+}
+
 export async function exportJsonAsImage(options: ExportOptions): Promise<Blob> {
   const {
     content,
     theme,
-    fontSize = 13,
-    lineHeight = 20,
-    fileName,
+    fontSize = 14,
+    lineHeight = 22,
   } = options;
 
+  const exportFontSize = Math.max(fontSize, 15);
+  const exportLineHeight = Math.max(lineHeight, Math.round(exportFontSize * 1.6));
+
   const colors = getThemeColors(theme);
-  const tokenizedHtml = tokenizeJson(content, colors);
-  const lines = content.split('\n');
-  const lineCount = lines.length;
-  const lineNumWidth = String(lineCount).length;
-
-  const lineNumbersHtml = lines
-    .map((_, i) => `<span style="display:block;text-align:right;color:${colors.lineNumber};user-select:none;padding-right:16px;min-width:${lineNumWidth + 1}ch">${i + 1}</span>`)
-    .join('');
-
+  const bracketColors = getBracketHighlightColors();
+  const tokenizedHtml = tokenizeJson(content, colors, bracketColors);
   const isDark = theme === 'vs-dark' || theme === 'hc-black' ||
     (monacoThemes[theme]?.base === 'vs-dark');
 
-  const headerBg = isDark
-    ? 'rgba(255,255,255,0.06)'
-    : 'rgba(0,0,0,0.04)';
-  const headerBorder = isDark
-    ? 'rgba(255,255,255,0.08)'
-    : 'rgba(0,0,0,0.08)';
-  const headerTextColor = isDark
-    ? 'rgba(255,255,255,0.5)'
-    : 'rgba(0,0,0,0.45)';
-  const dotColors = ['#ff5f57', '#febc2e', '#28c840'];
+  const watermarkColor = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)';
+  const iconUrl = base ? `${base}/app-icon.png` : '/app-icon.png';
+  const exportPixelRatio = 3;
+  const watermark = {
+    text: 'JsonStudio',
+    fontSize: 14,
+    fontWeight: 600,
+    fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+    iconSize: 28,
+    gap: 0,
+    paddingRight: 24,
+    paddingBottom: 20,
+  };
 
   const container = document.createElement('div');
   container.style.cssText = `position:fixed;left:-9999px;top:-9999px;z-index:-1;`;
   container.innerHTML = `
     <div id="json-export-root" style="
+      position:relative;
       display:inline-block;
       background:${colors.background};
-      border-radius:10px;
-      overflow:hidden;
-      font-family:'JetBrains Mono','Fira Code','SF Mono',Consolas,monospace;
-      font-size:${fontSize}px;
-      line-height:${lineHeight}px;
-      max-width:960px;
-      box-shadow:0 8px 32px rgba(0,0,0,0.2);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      width:fit-content;
+      min-width:400px;
+      max-width:1200px;
     ">
-      <div style="
-        display:flex;
-        align-items:center;
-        gap:8px;
-        padding:10px 16px;
-        background:${headerBg};
-        border-bottom:1px solid ${headerBorder};
-      ">
-        <div style="display:flex;gap:6px;">
-          ${dotColors.map(c => `<div style="width:10px;height:10px;border-radius:50%;background:${c}"></div>`).join('')}
-        </div>
-        ${fileName ? `<span style="flex:1;text-align:center;font-size:12px;color:${headerTextColor};font-weight:500;">${fileName}</span>` : `<span style="flex:1"></span>`}
-        <div style="width:42px"></div>
-      </div>
-      <div style="display:flex;padding:12px 0;">
-        <pre style="margin:0;font:inherit;line-height:${lineHeight}px;padding:0 0 0 12px;flex-shrink:0;">${lineNumbersHtml}</pre>
-        <pre style="margin:0;font:inherit;line-height:${lineHeight}px;padding:0 16px 0 0;white-space:pre;overflow:visible;">${tokenizedHtml}</pre>
-      </div>
-      <div style="
-        padding:6px 16px;
-        background:${headerBg};
-        border-top:1px solid ${headerBorder};
-        font-size:11px;
-        color:${headerTextColor};
-        display:flex;
-        justify-content:space-between;
-      ">
-        <span>JSON · ${lineCount} lines</span>
-        <span>JsonStudio</span>
+      <!-- Code Content -->
+      <div style="padding:32px 32px 64px 32px;">
+        <pre style="
+          margin:0;
+          font-family:'JetBrains Mono','Fira Code','SF Mono',Consolas,'Courier New',monospace;
+          font-size:${exportFontSize}px;
+          line-height:${exportLineHeight}px;
+          font-weight:600;
+          color:${colors.foreground};
+          padding:0;
+          white-space:pre-wrap;
+          word-break:break-all;
+          overflow:visible;
+        ">${tokenizedHtml}</pre>
       </div>
     </div>
   `;
@@ -235,12 +269,65 @@ export async function exportJsonAsImage(options: ExportOptions): Promise<Blob> {
   try {
     const node = container.querySelector('#json-export-root') as HTMLElement;
     const blob = await toBlob(node, {
-      pixelRatio: 2,
+      pixelRatio: exportPixelRatio,
       backgroundColor: colors.background,
       skipFonts: true,
+      cacheBust: true,
     });
     if (!blob) throw new Error('Failed to generate image');
-    return blob;
+    const imageBitmap = await createImageBitmap(blob);
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = imageBitmap.width;
+      canvas.height = imageBitmap.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to create canvas context');
+
+      ctx.drawImage(imageBitmap, 0, 0);
+
+      const iconBitmap = await loadIconBitmap(iconUrl);
+
+      const scale = exportPixelRatio;
+      const iconSizePx = Math.round(watermark.iconSize * scale);
+      const gapPx = Math.round(watermark.gap * scale);
+      const paddingRightPx = Math.round(watermark.paddingRight * scale);
+      const paddingBottomPx = Math.round(watermark.paddingBottom * scale);
+      const fontSizePx = Math.round(watermark.fontSize * scale);
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      ctx.font = `${watermark.fontWeight} ${fontSizePx}px ${watermark.fontFamily}`;
+      ctx.fillStyle = watermarkColor;
+      ctx.textBaseline = 'middle';
+
+      const textWidth = ctx.measureText(watermark.text).width;
+      const xRight = canvas.width - paddingRightPx;
+      const yBottom = canvas.height - paddingBottomPx;
+      const textX = Math.round(xRight - textWidth);
+      const centerY = Math.round(yBottom - Math.max(iconSizePx, fontSizePx) / 2);
+      const iconX = Math.round(textX - gapPx - iconSizePx);
+      const iconY = Math.round(centerY - iconSizePx / 2);
+
+      ctx.drawImage(iconBitmap, iconX, iconY, iconSizePx, iconSizePx);
+      ctx.fillText(watermark.text, textX, centerY);
+
+      const finalBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (!result) {
+            reject(new Error('Failed to generate final image'));
+            return;
+          }
+          resolve(result);
+        }, 'image/png');
+      });
+      iconBitmap.close();
+      return finalBlob;
+    } finally {
+      if ('close' in imageBitmap) {
+        imageBitmap.close();
+      }
+    }
   } finally {
     document.body.removeChild(container);
   }
