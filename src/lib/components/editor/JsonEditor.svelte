@@ -5,15 +5,20 @@
   import { tabsStore, activeTab } from '$lib/stores/tabs';
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
+  import ConvertView from './ConvertView.svelte';
+  import CodeGenView from './CodeGenView.svelte';
+  import SchemaView from './SchemaView.svelte';
   import TabBar from './TabBar.svelte';
-  import DiffTabBar from './DiffTabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
+  import { shortcutsStore } from '$lib/stores/shortcuts';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
+  import { jsonrepair } from 'jsonrepair';
+  import { t } from '$lib/i18n';
 
   let content = $state('');
   let stats = $state<JsonStats>({
@@ -24,12 +29,20 @@
     error_info: null,
   });
   let toastMsg = $state('');
+  let toastType = $state<'success' | 'error' | 'info'>('success');
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor: MonacoEditor;
   let toolbarRef: JsonEditorToolbar | null = null;
   let settingsPanel: SettingsPanel | null = null;
+  let isAlwaysOnTop = $state(false);
   let isDiffMode = $state(false);
+  let isConvertMode = $state(false);
+  let isCodegenMode = $state(false);
+  let isSchemaMode = $state(false);
+  let jsonError = $state<{ message: string } | null>(null);
+  let isFixing = $state(false);
+  let jsonErrorTimer: ReturnType<typeof setTimeout> | null = null;
   let diffOriginal = $state('');
   let diffModified = $state('');
   let diffLineCount = $state(0);
@@ -59,26 +72,34 @@
     activeTabId: null
   });
   
-  let diffModeState = $state<import('$lib/stores/tabs').DiffModeState | null>(null);
-  let diffModeUnsubscribe: (() => void) | null = null;
   
   let settings = $state<import('$lib/stores/settings').AppSettings>({
     isDarkMode: false,
     darkTheme: 'one-dark',
     lightTheme: 'vs',
+    language: 'zh',
     fontSize: 13,
     lineHeight: 20,
     tabSize: 2,
     showTreeView: true,
   });
   
+  async function openFilePaths(paths: string[]) {
+    for (const filePath of paths) {
+      try {
+        const fileContent = await readFile(filePath);
+        const name = await getFileName(filePath);
+        tabsStore.addTab(fileContent, filePath, name);
+        showToast(`Opened: ${name || 'file'}`);
+      } catch (e) {
+        showToast('Failed to open file', 'error');
+        console.error('Open file error:', e);
+      }
+    }
+  }
+
   onMount(() => {
     settingsStore.init();
-    
-    // Subscribe to diff mode state changes
-    diffModeUnsubscribe = tabsStore.subscribeDiffMode((newState) => {
-      diffModeState = newState;
-    });
     
     // Listen to clipboard formatting events
     let unlistenFormatted: (() => void) | null = null;
@@ -117,17 +138,7 @@
       unlistenFileDrop = await listen<{ paths: string[], position: { x: number, y: number } }>('tauri://drag-drop', async (event) => {
         const paths = event.payload?.paths;
         if (paths && paths.length > 0) {
-          const filePath = paths[0];
-          try {
-            const fileContent = await readFile(filePath);
-            const name = await getFileName(filePath);
-            
-            tabsStore.addTab(fileContent, filePath, name);
-            showToast(`Opened: ${name || 'file'}`);
-          } catch (e) {
-            showToast('Failed to open file');
-            console.error('Drop file error:', e);
-          }
+          await openFilePaths([paths[0]]);
         }
       });
 
@@ -135,33 +146,33 @@
       unlistenOpenFile = await listen<string[]>('open-file', async (event) => {
         const paths = event.payload;
         if (!paths || paths.length === 0) return;
-        for (const filePath of paths) {
-          try {
-            const fileContent = await readFile(filePath);
-            const name = await getFileName(filePath);
-            tabsStore.addTab(fileContent, filePath, name);
-            showToast(`Opened: ${name || 'file'}`);
-          } catch (e) {
-            showToast('Failed to open file');
-            console.error('Open file error:', e);
-          }
-        }
+        await openFilePaths(paths);
       });
+
+      // Retrieve files queued before frontend was ready (cold start)
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const pending = await invoke<string[]>('get_pending_files');
+        if (pending && pending.length > 0) {
+          await openFilePaths(pending);
+        }
+      } catch (e) {
+        console.error('Failed to get pending files:', e);
+      }
     })();
     
-    // Keyboard shortcuts
+    shortcutsStore.init();
+
     const handleKeydown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
-      
-      // Cmd/Ctrl + T: New tab
+
+      // Fixed shortcuts (not customizable)
       if (cmdOrCtrl && e.key === 't') {
         e.preventDefault();
         tabsStore.addTab();
         return;
       }
-      
-      // Cmd/Ctrl + W: Close current tab
       if (cmdOrCtrl && e.key === 'w') {
         e.preventDefault();
         const currentTab = $activeTab;
@@ -174,8 +185,6 @@
         }
         return;
       }
-      
-      // Cmd/Ctrl + Tab: Next tab
       if (cmdOrCtrl && e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
         const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
@@ -183,8 +192,6 @@
         tabsStore.setActiveTab(tabsState.tabs[nextIndex].id);
         return;
       }
-      
-      // Cmd/Ctrl + Shift + Tab: Previous tab
       if (cmdOrCtrl && e.shiftKey && e.key === 'Tab') {
         e.preventDefault();
         const currentIndex = tabsState.tabs.findIndex(t => t.id === tabsState.activeTabId);
@@ -192,8 +199,6 @@
         tabsStore.setActiveTab(tabsState.tabs[prevIndex].id);
         return;
       }
-      
-      // Cmd/Ctrl + 1-9: Switch to specific tab
       if (cmdOrCtrl && e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const tabIndex = parseInt(e.key) - 1;
@@ -202,37 +207,29 @@
         }
         return;
       }
-      
-      // Cmd/Ctrl + N: New file
-      if (cmdOrCtrl && e.key === 'n') {
-        e.preventDefault();
-        toolbarRef?.newFile();
-      }
-      
-      // Cmd/Ctrl + O: Open file
-      if (cmdOrCtrl && e.key === 'o') {
-        e.preventDefault();
-        toolbarRef?.openFile();
-      }
-      
-      // Cmd/Ctrl + S: Save file
-      if (cmdOrCtrl && e.key === 's') {
-        e.preventDefault();
-        toolbarRef?.saveFile();
-      }
-      
-      // Cmd/Ctrl + Shift + S: Save as
-      if (cmdOrCtrl && e.shiftKey && e.key === 's') {
-        e.preventDefault();
-        toolbarRef?.saveAsFile();
-      }
-
-      // Cmd/Ctrl + Shift + I: Open DevTools (only in development)
       if (cmdOrCtrl && e.shiftKey && e.key === 'i') {
         e.preventDefault();
-        // Only enable in development mode
         if (import.meta.env.DEV) {
           openDevTools();
+        }
+        return;
+      }
+
+      // Customizable shortcuts via shortcuts store
+      const matched = shortcutsStore.matchShortcut(e);
+      if (matched) {
+        e.preventDefault();
+        switch (matched) {
+          case 'new_file': toolbarRef?.newFile(); break;
+          case 'open_file': toolbarRef?.openFile(); break;
+          case 'save_file': toolbarRef?.saveFile(); break;
+          case 'format': toolbarRef?.formatContent(); break;
+          case 'minify': toolbarRef?.minifyContent(); break;
+          case 'escape': toolbarRef?.escapeContent(); break;
+          case 'unescape': toolbarRef?.unescapeContent(); break;
+          case 'minify_escape': toolbarRef?.minifyEscapeContent(); break;
+          case 'fold_all': toolbarRef?.foldAllContent(); break;
+          case 'unfold_all': toolbarRef?.unfoldAllContent(); break;
         }
       }
     };
@@ -244,7 +241,6 @@
       if (unlistenRaw) unlistenRaw();
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
-      if (diffModeUnsubscribe) diffModeUnsubscribe();
       window.removeEventListener('keydown', handleKeydown);
     };
   });
@@ -280,6 +276,7 @@
         suppressNextEditorChange = false;
       });
     }
+    checkJsonError(currentTab.content);
   }
   
   $effect(() => {
@@ -340,28 +337,31 @@
   });
 
   $effect(() => {
-    if (!isDiffMode || !diffModeState) return;
+    if (!isDiffMode) return;
     if (diffLeftTimer) clearTimeout(diffLeftTimer);
     diffLeftTimer = setTimeout(() => {
       updateDiffStatsForSide('left');
-      // Save left side content to left active tab
-      if (diffModeState?.leftActiveTabId) {
-        tabsStore.updateDiffLeftTabContent(diffModeState.leftActiveTabId, diffOriginal);
-      }
     }, 200);
   });
 
   $effect(() => {
-    if (!isDiffMode || !diffModeState) return;
+    if (!isDiffMode) return;
     if (diffRightTimer) clearTimeout(diffRightTimer);
     diffRightTimer = setTimeout(() => {
       updateDiffStatsForSide('right');
-      // Save right side content to right active tab
-      if (diffModeState?.rightActiveTabId) {
-        tabsStore.updateDiffRightTabContent(diffModeState.rightActiveTabId, diffModified);
-      }
     }, 200);
   });
+
+  async function toggleAlwaysOnTop() {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const newValue = !isAlwaysOnTop;
+      await getCurrentWindow().setAlwaysOnTop(newValue);
+      isAlwaysOnTop = newValue;
+    } catch (error) {
+      console.error('Failed to toggle always on top:', error);
+    }
+  }
 
   function toggleTheme() {
     settingsStore.updateSetting('isDarkMode', !isDarkMode);
@@ -369,12 +369,8 @@
 
   function toggleDiffMode() {
     if (isDiffMode) {
-      // Exit diff mode: merge tabs
-      tabsStore.exitDiffMode();
-      // diffModeState will be set to null via subscription
       isDiffMode = false;
       
-      // Sync content back to normal mode
       const currentTab = $activeTab;
       if (currentTab) {
         content = currentTab.content;
@@ -384,34 +380,102 @@
       return;
     }
 
-    // Enter diff mode: clone tabs to both sides
-    tabsStore.enterDiffMode();
+    if (isConvertMode) {
+      isConvertMode = false;
+    }
+    if (isCodegenMode) {
+      isCodegenMode = false;
+    }
+    if (isSchemaMode) {
+      isSchemaMode = false;
+    }
+
+    const emptyStats: JsonStats = {
+      valid: false,
+      key_count: 0,
+      depth: 0,
+      byte_size: 0,
+      error_info: null,
+    };
+
     isDiffMode = true;
     diffLineCount = 0;
-    
-    // Get the latest diff mode state (subscription is synchronous, so state is already updated)
-    const latestDiffState = tabsStore.getDiffModeState();
-    if (latestDiffState) {
-      const leftTab = latestDiffState.leftTabs.find(t => t.id === latestDiffState.leftActiveTabId);
-      const rightTab = latestDiffState.rightTabs.find(t => t.id === latestDiffState.rightActiveTabId);
-      
-      diffOriginal = leftTab?.content || '';
-      diffModified = rightTab?.content || '';
-      diffLeftStats = leftTab?.stats || {
-        valid: false,
-        key_count: 0,
-        depth: 0,
-        byte_size: 0,
-        error_info: null,
-      };
-      diffRightStats = rightTab?.stats || {
-        valid: false,
-        key_count: 0,
-        depth: 0,
-        byte_size: 0,
-        error_info: null,
-      };
+    diffOriginal = content;
+    diffModified = '';
+    diffLeftStats = { ...stats };
+    diffRightStats = emptyStats;
+  }
+
+  function toggleConvertMode() {
+    if (isConvertMode) {
+      isConvertMode = false;
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
+      return;
     }
+
+    if (isDiffMode) {
+      toggleDiffMode();
+    }
+    if (isCodegenMode) {
+      isCodegenMode = false;
+    }
+    if (isSchemaMode) {
+      isSchemaMode = false;
+    }
+    isConvertMode = true;
+  }
+
+  function toggleCodegenMode() {
+    if (isCodegenMode) {
+      isCodegenMode = false;
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
+      return;
+    }
+
+    if (isDiffMode) {
+      isDiffMode = false;
+    }
+    if (isConvertMode) {
+      isConvertMode = false;
+    }
+    if (isSchemaMode) {
+      isSchemaMode = false;
+    }
+    isCodegenMode = true;
+  }
+
+  function toggleSchemaMode() {
+    if (isSchemaMode) {
+      isSchemaMode = false;
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
+      return;
+    }
+
+    if (isDiffMode) {
+      isDiffMode = false;
+    }
+    if (isConvertMode) {
+      isConvertMode = false;
+    }
+    if (isCodegenMode) {
+      isCodegenMode = false;
+    }
+    isSchemaMode = true;
   }
 
   function openSettings() {
@@ -429,8 +493,9 @@
     }
   }
 
-  function showToast(msg: string) {
+  function showToast(msg: string, type: 'success' | 'error' | 'info' = 'success') {
     toastMsg = msg;
+    toastType = type;
   }
 
   function clampTreeWidth(width: number) {
@@ -484,14 +549,10 @@
   }
 
   async function updateDiffStatsForSide(side: 'left' | 'right') {
-    if (!diffModeState) return;
-    
     const value = side === 'left' ? diffOriginal : diffModified;
-    const tabId = side === 'left' ? diffModeState!.leftActiveTabId : diffModeState!.rightActiveTabId;
-    if (!tabId) return;
     
     if (!value.trim()) {
-      const emptyStats = {
+      const emptyStats: JsonStats = {
         valid: false,
         key_count: 0,
         depth: 0,
@@ -500,10 +561,8 @@
       };
       if (side === 'left') {
         diffLeftStats = emptyStats;
-        tabsStore.updateDiffLeftTabStats(tabId, emptyStats);
       } else {
         diffRightStats = emptyStats;
-        tabsStore.updateDiffRightTabStats(tabId, emptyStats);
       }
       return;
     }
@@ -512,37 +571,12 @@
       const result = await getJsonStats(value);
       if (side === 'left') {
         diffLeftStats = result;
-        tabsStore.updateDiffLeftTabStats(tabId, result);
       } else {
         diffRightStats = result;
-        tabsStore.updateDiffRightTabStats(tabId, result);
       }
     } catch (e) {}
   }
   
-  function handleDiffLeftTabChange(event: CustomEvent<{ tabId: string }>) {
-    // Use getDiffModeState() to get the latest state immediately
-    const latestState = tabsStore.getDiffModeState();
-    if (!latestState) return;
-    const tab = latestState.leftTabs.find(t => t.id === event.detail.tabId);
-    if (tab) {
-      diffOriginal = tab.content;
-      diffLeftStats = tab.stats;
-    }
-  }
-  
-  function handleDiffRightTabChange(event: CustomEvent<{ tabId: string }>) {
-    // Use getDiffModeState() to get the latest state immediately
-    const latestState = tabsStore.getDiffModeState();
-    if (!latestState) return;
-    const tab = latestState.rightTabs.find(t => t.id === event.detail.tabId);
-    if (tab) {
-      diffModified = tab.content;
-      diffRightStats = tab.stats;
-    }
-  }
-
-
   function handleEditorChange(newValue: string) {
     const currentTab = $activeTab;
     if (!currentTab) return;
@@ -569,9 +603,11 @@
         error_info: null,
       };
       tabsStore.updateTabStats(currentTab.id, stats);
+      jsonError = null;
       return;
     }
     statsTimer = setTimeout(updateStats, 300);
+    checkJsonError(newValue);
   }
 
   function handleToolbarContentChange(newValue: string) {
@@ -594,16 +630,6 @@
     }, 100);
   }
 
-  function resetStats() {
-    stats = {
-      valid: false,
-      key_count: 0,
-      depth: 0,
-      byte_size: 0,
-      error_info: null,
-    };
-  }
-
   async function updateStats() {
     if (!content.trim()) return;
     const currentTab = $activeTab;
@@ -615,45 +641,86 @@
     } catch (e) {}
   }
 
+  function checkJsonError(text: string) {
+    if (jsonErrorTimer) clearTimeout(jsonErrorTimer);
+    jsonErrorTimer = setTimeout(() => {
+      if (!text.trim()) {
+        jsonError = null;
+        return;
+      }
+      try {
+        JSON.parse(text);
+        jsonError = null;
+      } catch (e: any) {
+        jsonError = { message: e?.message || 'Invalid JSON' };
+      }
+    }, 500);
+  }
+
+  function fixJson() {
+    if (!content.trim() || isFixing) return;
+    isFixing = true;
+    try {
+      const repaired = jsonrepair(content);
+      const parsed = JSON.parse(repaired);
+      const formatted = JSON.stringify(parsed, null, tabSize);
+      content = formatted;
+      monacoEditor?.setValue(formatted);
+      const currentTab = $activeTab;
+      if (currentTab) {
+        tabsStore.updateTabContent(currentTab.id, formatted);
+        if (currentTab.filePath && !currentTab.isModified) {
+          tabsStore.updateTabModified(currentTab.id, true);
+        }
+      }
+      jsonError = null;
+      updateStats();
+      showToast($t('fixJson.success'));
+    } catch (e: any) {
+      jsonError = { message: $t('fixJson.unrepairable') };
+      showToast($t('fixJson.failed'), 'error');
+    } finally {
+      isFixing = false;
+    }
+  }
+
+
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
   <!-- Toolbar -->
-  <JsonEditorToolbar
-    bind:this={toolbarRef}
-    isDiffMode={isDiffMode}
-    content={content}
-    activeTab={$activeTab}
-    isDarkMode={isDarkMode}
-    editor={monacoEditor}
-    tabSize={tabSize}
-    onToggleDiff={toggleDiffMode}
-    onToggleTheme={toggleTheme}
-    onOpenSettings={openSettings}
-    onContentChange={handleToolbarContentChange}
-    onStatsUpdate={updateStats}
-    onStatsReset={resetStats}
-    onToast={showToast}
-  />
+  {#if !isConvertMode && !isCodegenMode && !isSchemaMode}
+    <JsonEditorToolbar
+      bind:this={toolbarRef}
+      isDiffMode={isDiffMode}
+      isConvertMode={isConvertMode}
+      isCodegenMode={isCodegenMode}
+      isSchemaMode={isSchemaMode}
+      content={content}
+      activeTab={$activeTab}
+      isDarkMode={isDarkMode}
+      isAlwaysOnTop={isAlwaysOnTop}
+      editor={monacoEditor}
+      tabSize={tabSize}
+      onToggleDiff={toggleDiffMode}
+      onToggleConvert={toggleConvertMode}
+      onToggleCodegen={toggleCodegenMode}
+      onToggleSchema={toggleSchemaMode}
+      onToggleTheme={toggleTheme}
+      onToggleAlwaysOnTop={toggleAlwaysOnTop}
+      onOpenSettings={openSettings}
+      onContentChange={handleToolbarContentChange}
+      onStatsUpdate={updateStats}
+      onToast={showToast}
+    />
+  {/if}
   
   <!-- Main content area: Tab Bar + Editor + Tree View -->
   <div class="flex flex-1 min-h-0" class:resizing-tree-view={isResizingTreeView}>
     <!-- Left section: Tab Bar + Editor -->
     <div class="flex flex-col flex-1 min-w-0">
       <!-- Tab Bar - show different tab bars based on mode -->
-      {#if isDiffMode && diffModeState}
-        <!-- Diff mode: show DiffTabBar with independent left/right tabs -->
-        <DiffTabBar 
-          leftTabs={diffModeState.leftTabs}
-          rightTabs={diffModeState.rightTabs}
-          leftActiveTabId={diffModeState.leftActiveTabId}
-          rightActiveTabId={diffModeState.rightActiveTabId}
-          isDarkMode={isDarkMode}
-          on:leftTabChange={handleDiffLeftTabChange}
-          on:rightTabChange={handleDiffRightTabChange}
-        />
-      {:else if tabsState.tabs.length > 1}
-        <!-- Normal mode: only show when multiple tabs exist -->
+      {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && tabsState.tabs.length > 1}
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
@@ -680,8 +747,66 @@
               />
             </div>
           </div>
+        {:else if isConvertMode}
+          <ConvertView
+            inputValue={content}
+            theme={monacoTheme}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            tabSize={tabSize}
+            onInputChange={handleToolbarContentChange}
+            onToast={showToast}
+            onExit={toggleConvertMode}
+          />
+        {:else if isCodegenMode}
+          <CodeGenView
+            inputValue={content}
+            theme={monacoTheme}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            tabSize={tabSize}
+            onInputChange={handleToolbarContentChange}
+            onToast={showToast}
+            onExit={toggleCodegenMode}
+          />
+        {:else if isSchemaMode}
+          <SchemaView
+            inputValue={content}
+            theme={monacoTheme}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            tabSize={tabSize}
+            onInputChange={handleToolbarContentChange}
+            onToast={showToast}
+            onExit={toggleSchemaMode}
+          />
         {:else}
           <div class="json-editor-workspace">
+            {#if jsonError}
+              <div class="json-fix-bar">
+                <div class="json-fix-bar-left">
+                  <svg class="json-fix-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span class="json-fix-bar-msg">{jsonError.message}</span>
+                </div>
+                <div class="json-fix-bar-actions">
+                  <button class="json-fix-btn" onclick={fixJson} disabled={isFixing}>
+                    <svg class="json-fix-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    {$t('fixJson.fix')}
+                  </button>
+                  <button class="json-fix-dismiss" onclick={() => { jsonError = null; }} title={$t('fixJson.dismiss')}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            {/if}
             <div class="json-editor-main">
               <MonacoEditor
                 bind:this={monacoEditor}
@@ -694,19 +819,18 @@
                 onChange={handleEditorChange}
                 onPaste={handleEditorPaste}
               />
-
             </div>
           </div>
         {/if}
 
         {#if toastMsg}
-          <JsonEditorToast message={toastMsg} on:close={() => { toastMsg = ''; }} />
+          <JsonEditorToast message={toastMsg} type={toastType} on:close={() => { toastMsg = ''; }} />
         {/if}
       </div>
     </div>
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
-    {#if showTreeView && !isDiffMode}
+    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode}
       <div
         class="json-tree-resizer"
         role="separator"
@@ -725,17 +849,19 @@
     {/if}
   </div>
 
-  <JsonEditorStatusBar
-    isDiffMode={isDiffMode}
-    diffLineCount={diffLineCount}
-    diffLeftStats={diffLeftStats}
-    diffRightStats={diffRightStats}
-    diffOriginal={diffOriginal}
-    diffModified={diffModified}
-    activeTab={$activeTab}
-    stats={stats}
-    content={content}
-  />
+  {#if !isConvertMode && !isCodegenMode && !isSchemaMode}
+    <JsonEditorStatusBar
+      isDiffMode={isDiffMode}
+      diffLineCount={diffLineCount}
+      diffLeftStats={diffLeftStats}
+      diffRightStats={diffRightStats}
+      diffOriginal={diffOriginal}
+      diffModified={diffModified}
+      activeTab={$activeTab}
+      stats={stats}
+      content={content}
+    />
+  {/if}
 
   <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />
@@ -747,5 +873,104 @@
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+  }
+
+  .json-fix-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 12px;
+    background: color-mix(in srgb, var(--error, #ef4444) 8%, var(--bg-secondary));
+    border-bottom: 1px solid color-mix(in srgb, var(--error, #ef4444) 25%, var(--border));
+    flex-shrink: 0;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .json-fix-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .json-fix-bar-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--error, #ef4444);
+    flex-shrink: 0;
+  }
+
+  .json-fix-bar-msg {
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .json-fix-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .json-fix-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-primary));
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .json-fix-btn:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .json-fix-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .json-fix-btn-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .json-fix-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+
+  .json-fix-dismiss:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .json-fix-dismiss svg {
+    width: 12px;
+    height: 12px;
   }
 </style>

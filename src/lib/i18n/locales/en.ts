@@ -1,0 +1,179 @@
+export default {
+  // Toolbar - File operations
+  'toolbar.new': 'New',
+  'toolbar.open': 'Open',
+  'toolbar.save': 'Save',
+
+  // Toolbar - JSON transform
+  'toolbar.format': 'Prettify',
+  'toolbar.minify': 'Minify',
+  'toolbar.escape': 'Escape',
+  'toolbar.unescape': 'Unescape',
+  'toolbar.minifyEscape': 'Min+Esc',
+
+  // Toolbar - Editor view
+  'toolbar.foldAll': 'Fold',
+  'toolbar.unfoldAll': 'Unfold',
+  'toolbar.diff': 'Diff',
+  'toolbar.exitDiff': 'Exit Diff',
+  'toolbar.convert': 'Convert',
+  'toolbar.exitConvert': 'Exit Convert',
+
+  // Toolbar - App controls
+  'toolbar.lightMode': 'Light Mode',
+  'toolbar.darkMode': 'Dark Mode',
+  'toolbar.settings': 'Settings',
+  'toolbar.pinToTop': 'Pin to Top',
+  'toolbar.unpinFromTop': 'Unpin from Top',
+
+  // Settings panel
+  'settings.title': 'Settings',
+  'settings.appearance': 'Appearance',
+  'settings.theme': 'Theme',
+  'settings.themeHint': 'Switch between light and dark appearance',
+  'settings.light': 'Light',
+  'settings.dark': 'Dark',
+  'settings.colorScheme': 'Color Scheme',
+  'settings.darkColorSchemeHint': 'Choose a dark color scheme for the editor',
+  'settings.lightColorSchemeHint': 'Choose a light color scheme for the editor',
+  'settings.language': 'Language',
+  'settings.languageHint': 'Choose interface display language',
+
+  'settings.editor': 'Editor',
+  'settings.fontSize': 'Font Size',
+  'settings.fontSizeHint': 'Editor text size (10–24 px)',
+  'settings.lineHeight': 'Line Height',
+  'settings.lineHeightHint': 'Vertical spacing between lines (14–36 px)',
+  'settings.indentSize': 'Indent Size',
+  'settings.indentSizeHint': 'Spaces per indentation level (1–8)',
+  'settings.treeView': 'Tree View Sidebar',
+  'settings.treeViewHint': 'Show JSON structure panel beside editor',
+
+  'settings.shortcuts': 'Shortcuts',
+  'settings.shortcutsGlobal': 'Global Shortcuts',
+  'settings.shortcutsApp': 'App Shortcuts',
+  'settings.showApp': 'Show App',
+  'settings.showAppDesc': 'Bring Json Studio to front',
+  'settings.formatClipboard': 'Format Clipboard',
+  'settings.formatClipboardDesc': 'Format JSON in clipboard and display',
+  'settings.newFile': 'New File',
+  'settings.newFileDesc': 'Create a new tab',
+  'settings.openFile': 'Open File',
+  'settings.openFileDesc': 'Open a local file',
+  'settings.saveFile': 'Save File',
+  'settings.saveFileDesc': 'Save current file',
+  'settings.format': 'Format',
+  'settings.formatDesc': 'Format JSON',
+  'settings.minify': 'Minify',
+  'settings.minifyDesc': 'Minify JSON',
+  'settings.escape': 'Escape',
+  'settings.escapeDesc': 'Escape JSON string',
+  'settings.unescape': 'Unescape',
+  'settings.unescapeDesc': 'Unescape JSON string',
+  'settings.minifyEscape': 'Minify + Escape',
+  'settings.minifyEscapeDesc': 'Minify and escape JSON',
+  'settings.foldAll': 'Fold All',
+  'settings.foldAllDesc': 'Fold all JSON nodes',
+  'settings.unfoldAll': 'Unfold All',
+  'settings.unfoldAllDesc': 'Unfold all JSON nodes',
+  'settings.diff': 'Diff',
+  'settings.diffDesc': 'Toggle diff mode',
+  'settings.resetShortcut': 'Reset to default',
+
+  // Toolbar - Codegen
+  'toolbar.codegen': 'Codegen',
+  'toolbar.exitCodegen': 'Exit Codegen',
+
+  // Convert
+  'convert.copyResult': 'Copy result',
+  'convert.copied': 'Copied',
+  'convert.toggleDirection': 'Toggle conversion direction',
+
+  // Codegen
+  'codegen.copyResult': 'Copy generated code',
+  'codegen.copied': 'Copied',
+  'codegen.classNamePlaceholder': 'Enter class/interface name...',
+  'codegen.toggleDirection': 'Toggle conversion direction',
+  'codegen.reverseNotSupported': 'Reverse conversion is not supported for this language',
+
+  // Tree View
+  'treeView.title': 'Tree View',
+  'treeView.hide': 'Hide Tree View',
+  'treeView.expandAll': 'Expand All',
+  'treeView.collapseAll': 'Collapse All',
+  'treeView.clearQuery': 'Clear query',
+  'treeView.parsing': 'Parsing...',
+  'treeView.invalidJson': 'Invalid JSON Format',
+  'treeView.noData': 'No JSON Data',
+  'treeView.noDataHint': 'Enter valid JSON to view structure',
+  'treeView.copyPathValue': 'Copy path + value',
+  'treeView.pathValueCopied': 'Path + value copied',
+  'treeView.searchPlaceholder': 'JMESPath Query...',
+  'treeView.syntaxGuide': 'JMESPath Syntax Guide',
+  'treeView.cheatSheet': 'JMESPath Cheat Sheet',
+  'treeView.docs': 'Docs',
+  'treeView.exampleData': 'Example JSON Data',
+  'treeView.copyExample': 'Copy example',
+  'treeView.exampleCopied': 'Example JSON copied',
+  'treeView.exampleQueries': 'Example Queries',
+
+  // Status bar
+  'status.keys': 'keys',
+  'status.levels': 'levels',
+  'status.lines': 'lines',
+  'status.diff': 'Diff',
+  'status.modified': 'Modified',
+
+  // Tab bar
+  'tab.newTab': 'New Tab',
+  'tab.closeTab': 'Close',
+  'tab.pinTab': 'Pin Tab',
+  'tab.unpinTab': 'Unpin Tab',
+  'tab.closeOtherTabs': 'Close Other Tabs',
+  'tab.closeAllTabs': 'Close All Tabs',
+  'tab.unsavedConfirm': 'has unsaved changes. Close anyway?',
+
+  // Toast messages
+  'toast.copied': 'Copied',
+  'toast.newTabCreated': 'New tab created',
+  'toast.opened': 'Opened',
+  'toast.saved': 'Saved',
+  'toast.nothingToSave': 'Nothing to save',
+  'toast.noActiveTab': 'No active tab',
+  'toast.failedToOpen': 'Failed to open file',
+  'toast.failedToSave': 'Failed to save file',
+  'toast.clipboardFormatted': 'Clipboard content formatted',
+  'toast.clipboardPastedRaw': 'Clipboard content pasted (invalid JSON)',
+  'toast.pinnedToTop': 'Pinned to top',
+  'toast.unpinnedFromTop': 'Unpinned from top',
+
+  // Toolbar - Schema
+  'toolbar.schema': 'Schema',
+  'toolbar.exitSchema': 'Exit Schema',
+
+  // Schema
+  'schema.tabGenerate': 'Generate',
+  'schema.tabValidate': 'Validate',
+  'schema.generateHint': 'Auto-generate schema from JSON',
+  'schema.validateBtn': 'Validate',
+  'schema.copySchema': 'Copy schema',
+  'schema.copied': 'Copied',
+  'schema.valid': 'Valid',
+  'schema.invalid': 'Invalid',
+  'schema.validToast': 'JSON matches schema',
+  'schema.emptyJson': 'Please enter JSON data on the left',
+  'schema.emptySchema': 'Please enter a JSON Schema',
+
+  // Export image
+  'toolbar.exportImage': 'Export Image',
+  'toolbar.exportImageCopied': 'Image copied to clipboard',
+  'toolbar.exportImageSaved': 'Image saved',
+  'toolbar.exportImageFailed': 'Failed to export image',
+
+  // Fix JSON
+  'fixJson.fix': 'Fix JSON',
+  'fixJson.dismiss': 'Dismiss',
+  'fixJson.success': 'JSON repaired successfully',
+  'fixJson.failed': 'Failed to repair JSON',
+  'fixJson.unrepairable': 'Cannot auto-fix, please check manually',
+} as const;

@@ -134,6 +134,9 @@
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
       contextmenu: false,
       renderIndicators: false,
+      lineNumbersMinChars: 3,
+      glyphMargin: false,
+      lineDecorationsWidth: 0,
     });
 
     diffEditor = createdDiffEditor;
@@ -142,6 +145,17 @@
     originalModel = createdOriginalModel;
     modifiedModel = createdModifiedModel;
     createdDiffEditor.setModel({ original: createdOriginalModel, modified: createdModifiedModel });
+
+    const editorOptions: Monaco.editor.IEditorOptions = {
+      glyphMargin: false,
+      lineDecorationsWidth: 0,
+      lineNumbersMinChars: 3,
+      folding: true,
+      showFoldingControls: 'always',
+      foldingStrategy: 'indentation',
+    };
+    createdDiffEditor.getOriginalEditor().updateOptions(editorOptions);
+    createdDiffEditor.getModifiedEditor().updateOptions(editorOptions);
 
     createdOriginalModel.onDidChangeContent(() => {
       if (isSyncingOriginal) return;
@@ -166,4 +180,17 @@
   });
 </script>
 
-<div bind:this={container} class="w-full h-full min-h-[200px]"></div>
+<div bind:this={container} class="diff-editor-container"></div>
+
+<style>
+  .diff-editor-container {
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+  }
+
+  .diff-editor-container :global(.margin > .toolbar) {
+    display: none !important;
+    width: 0 !important;
+  }
+</style>

@@ -161,6 +161,7 @@ body {
 /* Editor workspace layout */
 .json-editor-workspace {
   display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
   width: 100%;
@@ -340,7 +341,7 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   font-family: 'JetBrains Mono', 'Monaco', 'Menlo', monospace;
   font-size: 13px;
 }
@@ -356,6 +357,8 @@ body {
 
 .tree-list {
   padding: 8px 0 8px 8px;
+  width: fit-content;
+  min-width: 100%;
 }
 
 /* Tree node styling */
@@ -561,7 +564,8 @@ body {
   align-items: center;
   gap: 0;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .tree-colon {

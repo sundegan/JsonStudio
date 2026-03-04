@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { settingsStore } from '$lib/stores/settings';
+  import { t } from '$lib/i18n';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   type TreeNode = {
@@ -269,7 +270,7 @@
 
     try {
       await navigator.clipboard.writeText(entryText);
-      dispatch('toast', { message: 'Path + value copied' });
+      dispatch('toast', { message: $t('treeView.pathValueCopied') });
     } catch (e) {}
   }
 
@@ -392,12 +393,12 @@
           <path d="M18 14v-3"/>
         </svg>
       </div>
-      <div style="font-size: 14px;" class="font-semibold text-(--text-primary)">Tree View</div>
+      <div style="font-size: 14px;" class="font-semibold text-(--text-primary)">{$t('treeView.title')}</div>
     </div>
     <button
       class="json-tree-close-btn"
       onclick={() => settingsStore.updateSetting('showTreeView', false)}
-      title="Hide Tree View"
+      title={$t('treeView.hide')}
       type="button"
     >
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -415,7 +416,7 @@
       </svg>
       <input
         class="json-tree-search-input"
-        placeholder="JMESPath Query..."
+        placeholder={$t('treeView.searchPlaceholder')}
         value={searchQuery}
         oninput={(e) => { searchQuery = e.currentTarget.value; }}
         spellcheck="false"
@@ -424,7 +425,7 @@
         <button
           class="json-tree-clear-btn"
           onclick={() => { searchQuery = ''; }}
-          title="Clear query"
+          title={$t('treeView.clearQuery')}
           type="button"
         >
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -445,7 +446,7 @@
           class:is-active={helpOpen}
           onclick={(e) => { e.stopPropagation(); helpOpen = !helpOpen; }}
           type="button"
-          title="JMESPath Syntax Guide"
+          title={$t('treeView.syntaxGuide')}
           aria-expanded={helpOpen}
           aria-controls="jmespath-help"
         >
@@ -465,7 +466,7 @@
             onkeydown={(e) => e.key === 'Escape' && hideHelp()}
           >
             <div class="json-tree-help-header">
-              <span class="json-tree-help-title">JMESPath Cheat Sheet</span>
+              <span class="json-tree-help-title">{$t('treeView.cheatSheet')}</span>
               <a 
                 href="https://jmespath.org" 
                 target="_blank" 
@@ -482,7 +483,7 @@
                   }
                 }}
               >
-                Docs
+                {$t('treeView.docs')}
                 <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                   <polyline points="15 3 21 3 21 9"/>
@@ -493,7 +494,7 @@
             
             <div class="json-tree-help-content">
               <div class="json-tree-help-section">
-                <div class="json-tree-help-label">Example JSON Data</div>
+                <div class="json-tree-help-label">{$t('treeView.exampleData')}</div>
                 <div class="json-tree-help-code-wrapper">
                   <button
                     class="json-tree-copy-code-btn"
@@ -506,9 +507,9 @@
   ],
   "meta": {"count": 2}
 }`);
-                      dispatch('toast', { message: 'Example JSON copied' });
+                      dispatch('toast', { message: $t('treeView.exampleCopied') });
                     }}
-                    title="Copy example"
+                    title={$t('treeView.copyExample')}
                     type="button"
                   >
                     <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -527,7 +528,7 @@
               </div>
 
               <div class="json-tree-help-section">
-                <div class="json-tree-help-label">Example Queries</div>
+                <div class="json-tree-help-label">{$t('treeView.exampleQueries')}</div>
                 <div class="json-tree-help-grid">
                   <div class="help-item">
                     <div class="help-query">people[0].name</div>
@@ -560,7 +561,7 @@
         class="json-tree-action-btn" 
         onclick={isAllExpanded ? collapseAll : expandAll} 
         disabled={treeNodes.length === 0} 
-        title={isAllExpanded ? "Collapse All" : "Expand All"}
+        title={isAllExpanded ? $t('treeView.collapseAll') : $t('treeView.expandAll')}
       >
         {#if isAllExpanded}
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -582,7 +583,7 @@
         <svg class="w-8 h-8 text-(--text-secondary) animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
         </svg>
-        <div class="text-xs text-(--text-secondary) mt-2">Parsing...</div>
+        <div class="text-xs text-(--text-secondary) mt-2">{$t('treeView.parsing')}</div>
       </div>
     {:else if treeError}
       <div class="json-tree-empty">
@@ -591,7 +592,7 @@
           <line x1="12" y1="9" x2="12" y2="13"/>
           <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
-        <div class="text-xs font-medium text-(--text-primary) mt-3 opacity-70">Invalid JSON Format</div>
+        <div class="text-xs font-medium text-(--text-primary) mt-3 opacity-70">{$t('treeView.invalidJson')}</div>
       </div>
     {:else if treeNodes.length === 0}
       <div class="json-tree-empty">
@@ -605,8 +606,8 @@
           <path d="M6 14v-3"/>
           <path d="M18 14v-3"/>
         </svg>
-        <div class="text-xs font-medium text-(--text-primary) mt-3 opacity-60">No JSON Data</div>
-        <div class="text-xs text-(--text-secondary) mt-1 opacity-50">Enter valid JSON to view structure</div>
+        <div class="text-xs font-medium text-(--text-primary) mt-3 opacity-60">{$t('treeView.noData')}</div>
+        <div class="text-xs text-(--text-secondary) mt-1 opacity-50">{$t('treeView.noDataHint')}</div>
       </div>
     {:else}
       {#snippet renderNode(node: TreeNode, depth: number, isLast: boolean, parentLines: boolean[])}
@@ -679,7 +680,7 @@
             <button
               class="tree-copy-btn"
               onclick={(e) => { e.stopPropagation(); copyEntry(node); }}
-              title="Copy path + value"
+              title={$t('treeView.copyPathValue')}
               type="button"
             >
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -822,9 +823,9 @@
   .json-tree-help-popover {
     position: absolute;
     top: calc(100% + 8px);
-    right: -50px;
+    right: 0;
     width: 380px;
-    max-width: 90vw;
+    max-width: calc(100vw - 20px);
     max-height: 400px;
     padding: 0;
     border-radius: 8px;

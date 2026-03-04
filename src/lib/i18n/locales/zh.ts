@@ -1,0 +1,179 @@
+export default {
+  // Toolbar - File operations
+  'toolbar.new': '新建',
+  'toolbar.open': '打开',
+  'toolbar.save': '保存',
+
+  // Toolbar - JSON transform
+  'toolbar.format': '美化',
+  'toolbar.minify': '压缩',
+  'toolbar.escape': '转义',
+  'toolbar.unescape': '反转义',
+  'toolbar.minifyEscape': '压缩转义',
+
+  // Toolbar - Editor view
+  'toolbar.foldAll': '折叠',
+  'toolbar.unfoldAll': '展开',
+  'toolbar.diff': '对比',
+  'toolbar.exitDiff': '退出对比',
+  'toolbar.convert': '格式转换',
+  'toolbar.exitConvert': '退出格式转换',
+
+  // Toolbar - App controls
+  'toolbar.lightMode': '亮色模式',
+  'toolbar.darkMode': '暗色模式',
+  'toolbar.settings': '设置',
+  'toolbar.pinToTop': '置顶',
+  'toolbar.unpinFromTop': '取消置顶',
+
+  // Settings panel
+  'settings.title': '设置',
+  'settings.appearance': '外观',
+  'settings.theme': '主题',
+  'settings.themeHint': '切换亮色和暗色外观',
+  'settings.light': '亮色',
+  'settings.dark': '暗色',
+  'settings.colorScheme': '配色方案',
+  'settings.darkColorSchemeHint': '选择编辑器暗色配色方案',
+  'settings.lightColorSchemeHint': '选择编辑器亮色配色方案',
+  'settings.language': '语言',
+  'settings.languageHint': '选择界面显示语言',
+
+  'settings.editor': '编辑器',
+  'settings.fontSize': '字体大小',
+  'settings.fontSizeHint': '编辑器文字大小（10–24 px）',
+  'settings.lineHeight': '行高',
+  'settings.lineHeightHint': '行间垂直间距（14–36 px）',
+  'settings.indentSize': '缩进大小',
+  'settings.indentSizeHint': '每级缩进空格数（1–8）',
+  'settings.treeView': 'JSON 树形视图',
+  'settings.treeViewHint': '在编辑器旁显示 JSON 树形视图',
+
+  'settings.shortcuts': '快捷键',
+  'settings.shortcutsGlobal': '全局快捷键',
+  'settings.shortcutsApp': '应用快捷键',
+  'settings.showApp': '显示应用',
+  'settings.showAppDesc': '将 Json Studio 置于前台',
+  'settings.formatClipboard': '格式化剪贴板',
+  'settings.formatClipboardDesc': '格式化剪贴板中的内容并显示',
+  'settings.newFile': '新建文件',
+  'settings.newFileDesc': '创建新标签页',
+  'settings.openFile': '打开文件',
+  'settings.openFileDesc': '打开本地文件',
+  'settings.saveFile': '保存文件',
+  'settings.saveFileDesc': '保存当前文件',
+  'settings.format': '格式化',
+  'settings.formatDesc': '格式化 JSON',
+  'settings.minify': '压缩',
+  'settings.minifyDesc': '压缩 JSON',
+  'settings.escape': '转义',
+  'settings.escapeDesc': '转义 JSON 字符串',
+  'settings.unescape': '反转义',
+  'settings.unescapeDesc': '反转义 JSON 字符串',
+  'settings.minifyEscape': '压缩转义',
+  'settings.minifyEscapeDesc': '压缩并转义 JSON',
+  'settings.foldAll': '折叠全部',
+  'settings.foldAllDesc': '折叠所有 JSON 节点',
+  'settings.unfoldAll': '展开全部',
+  'settings.unfoldAllDesc': '展开所有 JSON 节点',
+  'settings.diff': '对比',
+  'settings.diffDesc': '切换对比模式',
+  'settings.resetShortcut': '重置为默认',
+
+  // Toolbar - Codegen
+  'toolbar.codegen': '生成代码',
+  'toolbar.exitCodegen': '退出代码生成',
+
+  // Convert
+  'convert.copyResult': '复制转换结果',
+  'convert.copied': '已复制',
+  'convert.toggleDirection': '切换转换方向',
+
+  // Codegen
+  'codegen.copyResult': '复制生成代码',
+  'codegen.copied': '已复制',
+  'codegen.classNamePlaceholder': '输入类名/接口名...',
+  'codegen.toggleDirection': '切换转换方向',
+  'codegen.reverseNotSupported': '该语言暂不支持反向转换',
+
+  // Tree View
+  'treeView.title': '树形视图',
+  'treeView.hide': '隐藏树形视图',
+  'treeView.expandAll': '全部展开',
+  'treeView.collapseAll': '全部折叠',
+  'treeView.clearQuery': '清除查询',
+  'treeView.parsing': '解析中...',
+  'treeView.invalidJson': '无效的 JSON 格式',
+  'treeView.noData': '暂无 JSON 数据',
+  'treeView.noDataHint': '输入有效的 JSON 查看结构',
+  'treeView.copyPathValue': '复制路径 + 值',
+  'treeView.pathValueCopied': '已复制路径 + 值',
+  'treeView.searchPlaceholder': 'JMESPath 查询...',
+  'treeView.syntaxGuide': 'JMESPath 语法指南',
+  'treeView.cheatSheet': 'JMESPath 速查表',
+  'treeView.docs': '文档',
+  'treeView.exampleData': '示例 JSON 数据',
+  'treeView.copyExample': '复制示例',
+  'treeView.exampleCopied': '已复制示例 JSON',
+  'treeView.exampleQueries': '示例查询',
+
+  // Status bar
+  'status.keys': '个键',
+  'status.levels': '层',
+  'status.lines': '行',
+  'status.diff': '差异',
+  'status.modified': '已修改',
+
+  // Tab bar
+  'tab.newTab': '新标签页',
+  'tab.closeTab': '关闭',
+  'tab.pinTab': '固定标签页',
+  'tab.unpinTab': '取消固定',
+  'tab.closeOtherTabs': '关闭其他标签页',
+  'tab.closeAllTabs': '关闭所有标签页',
+  'tab.unsavedConfirm': '有未保存的更改，确定关闭吗？',
+
+  // Toast messages
+  'toast.copied': '已复制',
+  'toast.newTabCreated': '已创建新标签页',
+  'toast.opened': '已打开',
+  'toast.saved': '已保存',
+  'toast.nothingToSave': '没有内容可保存',
+  'toast.noActiveTab': '没有活动标签页',
+  'toast.failedToOpen': '打开文件失败',
+  'toast.failedToSave': '保存文件失败',
+  'toast.clipboardFormatted': '剪贴板内容已格式化',
+  'toast.clipboardPastedRaw': '剪贴板内容已粘贴（无效 JSON）',
+  'toast.pinnedToTop': '已置顶',
+  'toast.unpinnedFromTop': '已取消置顶',
+
+  // Toolbar - Schema
+  'toolbar.schema': 'Schema',
+  'toolbar.exitSchema': '退出 Schema',
+
+  // Schema
+  'schema.tabGenerate': '生成',
+  'schema.tabValidate': '校验',
+  'schema.generateHint': '根据 JSON 自动生成 Schema',
+  'schema.validateBtn': '校验',
+  'schema.copySchema': '复制 Schema',
+  'schema.copied': '已复制',
+  'schema.valid': '通过',
+  'schema.invalid': '不通过',
+  'schema.validToast': 'JSON 符合 Schema',
+  'schema.emptyJson': '请在左侧输入 JSON 数据',
+  'schema.emptySchema': '请输入 JSON Schema',
+
+  // Export image
+  'toolbar.exportImage': '导出图片',
+  'toolbar.exportImageCopied': '图片已复制到剪贴板',
+  'toolbar.exportImageSaved': '图片已保存',
+  'toolbar.exportImageFailed': '导出图片失败',
+
+  // Fix JSON
+  'fixJson.fix': '修复 JSON',
+  'fixJson.dismiss': '忽略',
+  'fixJson.success': 'JSON 已修复',
+  'fixJson.failed': 'JSON 修复失败',
+  'fixJson.unrepairable': '无法自动修复，请手动检查',
+} as const;
