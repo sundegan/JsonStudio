@@ -432,7 +432,7 @@
 
     <!-- 3. Diff, Convert & Codegen -->
     <div class="toolbar-group">
-      <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} title="{$t('toolbar.diff')} ({shortcutLabel('diff')})">
+      <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} title={$t('toolbar.diff')}>
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
         {$t('toolbar.diff')}
       </button>
@@ -514,10 +514,10 @@
   }
 
   .toolbar-divider {
-    width: 1px;
+    width: 2px;
     height: 18px;
-    background: color-mix(in srgb, var(--text-secondary) 25%, transparent);
-    margin: 0 3px;
+    background: var(--border);
+    margin: 0 6px;
   }
 
   .toolbar-btn {

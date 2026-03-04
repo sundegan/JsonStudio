@@ -230,7 +230,6 @@
           case 'minify_escape': toolbarRef?.minifyEscapeContent(); break;
           case 'fold_all': toolbarRef?.foldAllContent(); break;
           case 'unfold_all': toolbarRef?.unfoldAllContent(); break;
-          case 'diff': toggleDiffMode(); break;
         }
       }
     };

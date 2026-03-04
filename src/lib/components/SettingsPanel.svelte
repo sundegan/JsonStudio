@@ -341,7 +341,6 @@
             {@render shortcutRow('settings.minifyEscape', 'settings.minifyEscapeDesc', shortcuts.minifyEscape)}
             {@render shortcutRow('settings.foldAll', 'settings.foldAllDesc', shortcuts.foldAll)}
             {@render shortcutRow('settings.unfoldAll', 'settings.unfoldAllDesc', shortcuts.unfoldAll)}
-            {@render shortcutRow('settings.diff', 'settings.diffDesc', shortcuts.diff)}
           </div>
         </section>
         {/if}

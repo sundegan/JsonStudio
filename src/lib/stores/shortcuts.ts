@@ -24,7 +24,6 @@ export interface ShortcutsSettings {
   minifyEscape: ShortcutConfig;
   foldAll: ShortcutConfig;
   unfoldAll: ShortcutConfig;
-  diff: ShortcutConfig;
 }
 
 const defaultShortcuts: ShortcutsSettings = {
@@ -113,13 +112,6 @@ const defaultShortcuts: ShortcutsSettings = {
     description: 'Unfold all JSON nodes',
     defaultKey: 'CommandOrControl+Shift+]',
     currentKey: 'CommandOrControl+Shift+]',
-  },
-  diff: {
-    id: 'diff',
-    name: 'Diff',
-    description: 'Toggle diff mode',
-    defaultKey: 'CommandOrControl+Shift+D',
-    currentKey: 'CommandOrControl+Shift+D',
   },
 };
 

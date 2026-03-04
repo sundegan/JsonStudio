@@ -496,15 +496,10 @@ fn generate_image(request: ExportRequest) -> Result<String, String> {
     let wm_pad_right = (wm.font_size * 0.5 * sf).round();
     let wm_pad_bottom = (wm.font_size * 1.0 * sf).round();
 
-    let json_color = if request.is_dark {
+    let wm_color = if request.is_dark {
         Rgba([255, 200, 60, 210])
     } else {
-        Rgba([200, 140, 0, 190])
-    };
-    let studio_color = if request.is_dark {
-        Rgba([220, 160, 80, 180])
-    } else {
-        Rgba([180, 110, 30, 160])
+        Rgba([200, 150, 0, 190])
     };
 
     let wm_sf = sf.max(1.0);
@@ -521,11 +516,10 @@ fn generate_image(request: ExportRequest) -> Result<String, String> {
     };
 
     let wm_adv_bold = wm_render_cache.advance_bold;
-    let json_w = 4.0 * wm_adv_bold;
-    let studio_w = 6.0 * wm_adv_bold;
+    let wm_text_w = 10.0 * wm_adv_bold;
 
     let x_right = render_w as f32 - wm_pad_right;
-    let text_x = (x_right - json_w - studio_w).round();
+    let text_x = (x_right - wm_text_w).round();
     let icon_x = (text_x - wm_gap * wm_sf - wm_icon_size as f32).round().max(0.0) as u32;
 
     let ascent = wm_render_cache.ascent;
@@ -545,8 +539,7 @@ fn generate_image(request: ExportRequest) -> Result<String, String> {
     let icon_y = (glyph_center - icon_h / 2.0).round().max(0.0) as u32;
 
     overlay_cached_icon(&mut buf, stride, render_w, render_h, &wm_icon_rgba, wm_icon_size, icon_x, icon_y);
-    draw_cached_text(&mut buf, stride, img_w, img_h, &wm_render_cache, "Json", text_x, text_y, json_color, true, &font_bold);
-    draw_cached_text(&mut buf, stride, img_w, img_h, &wm_render_cache, "Studio", text_x + json_w, text_y, studio_color, true, &font_bold);
+    draw_cached_text(&mut buf, stride, img_w, img_h, &wm_render_cache, "JsonStudio", text_x, text_y, wm_color, true, &font_bold);
 
     let compression = if buf_len < 6_000_000 {
         png::Compression::High
