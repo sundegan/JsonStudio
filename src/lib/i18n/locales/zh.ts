@@ -147,6 +147,23 @@ export default {
   'toast.pinnedToTop': '已置顶',
   'toast.unpinnedFromTop': '已取消置顶',
 
+  // Toolbar - Schema
+  'toolbar.schema': 'Schema',
+  'toolbar.exitSchema': '退出 Schema',
+
+  // Schema
+  'schema.tabGenerate': '生成',
+  'schema.tabValidate': '校验',
+  'schema.generateHint': '根据 JSON 自动生成 Schema',
+  'schema.validateBtn': '校验',
+  'schema.copySchema': '复制 Schema',
+  'schema.copied': '已复制',
+  'schema.valid': '通过',
+  'schema.invalid': '不通过',
+  'schema.validToast': 'JSON 符合 Schema',
+  'schema.emptyJson': '请在左侧输入 JSON 数据',
+  'schema.emptySchema': '请输入 JSON Schema',
+
   // Export image
   'toolbar.exportImage': '导出图片',
   'toolbar.exportImageCopied': '图片已复制到剪贴板',

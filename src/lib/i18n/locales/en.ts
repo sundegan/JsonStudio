@@ -147,6 +147,23 @@ export default {
   'toast.pinnedToTop': 'Pinned to top',
   'toast.unpinnedFromTop': 'Unpinned from top',
 
+  // Toolbar - Schema
+  'toolbar.schema': 'Schema',
+  'toolbar.exitSchema': 'Exit Schema',
+
+  // Schema
+  'schema.tabGenerate': 'Generate',
+  'schema.tabValidate': 'Validate',
+  'schema.generateHint': 'Auto-generate schema from JSON',
+  'schema.validateBtn': 'Validate',
+  'schema.copySchema': 'Copy schema',
+  'schema.copied': 'Copied',
+  'schema.valid': 'Valid',
+  'schema.invalid': 'Invalid',
+  'schema.validToast': 'JSON matches schema',
+  'schema.emptyJson': 'Please enter JSON data on the left',
+  'schema.emptySchema': 'Please enter a JSON Schema',
+
   // Export image
   'toolbar.exportImage': 'Export Image',
   'toolbar.exportImageCopied': 'Image copied to clipboard',

@@ -7,6 +7,7 @@
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import ConvertView from './ConvertView.svelte';
   import CodeGenView from './CodeGenView.svelte';
+  import SchemaView from './SchemaView.svelte';
   import TabBar from './TabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
@@ -38,6 +39,7 @@
   let isDiffMode = $state(false);
   let isConvertMode = $state(false);
   let isCodegenMode = $state(false);
+  let isSchemaMode = $state(false);
   let jsonError = $state<{ message: string } | null>(null);
   let isFixing = $state(false);
   let jsonErrorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -380,6 +382,9 @@
     if (isCodegenMode) {
       isCodegenMode = false;
     }
+    if (isSchemaMode) {
+      isSchemaMode = false;
+    }
 
     const emptyStats: JsonStats = {
       valid: false,
@@ -415,6 +420,9 @@
     if (isCodegenMode) {
       isCodegenMode = false;
     }
+    if (isSchemaMode) {
+      isSchemaMode = false;
+    }
     isConvertMode = true;
   }
 
@@ -436,7 +444,34 @@
     if (isConvertMode) {
       isConvertMode = false;
     }
+    if (isSchemaMode) {
+      isSchemaMode = false;
+    }
     isCodegenMode = true;
+  }
+
+  function toggleSchemaMode() {
+    if (isSchemaMode) {
+      isSchemaMode = false;
+      const currentTab = $activeTab;
+      if (currentTab) {
+        content = currentTab.content;
+        stats = currentTab.stats;
+        monacoEditor?.setValue(currentTab.content);
+      }
+      return;
+    }
+
+    if (isDiffMode) {
+      isDiffMode = false;
+    }
+    if (isConvertMode) {
+      isConvertMode = false;
+    }
+    if (isCodegenMode) {
+      isCodegenMode = false;
+    }
+    isSchemaMode = true;
   }
 
   function openSettings() {
@@ -650,12 +685,13 @@
 
 <div class="flex flex-col h-full overflow-hidden">
   <!-- Toolbar -->
-  {#if !isConvertMode && !isCodegenMode}
+  {#if !isConvertMode && !isCodegenMode && !isSchemaMode}
     <JsonEditorToolbar
       bind:this={toolbarRef}
       isDiffMode={isDiffMode}
       isConvertMode={isConvertMode}
       isCodegenMode={isCodegenMode}
+      isSchemaMode={isSchemaMode}
       content={content}
       activeTab={$activeTab}
       isDarkMode={isDarkMode}
@@ -665,6 +701,7 @@
       onToggleDiff={toggleDiffMode}
       onToggleConvert={toggleConvertMode}
       onToggleCodegen={toggleCodegenMode}
+      onToggleSchema={toggleSchemaMode}
       onToggleTheme={toggleTheme}
       onToggleAlwaysOnTop={toggleAlwaysOnTop}
       onOpenSettings={openSettings}
@@ -679,7 +716,7 @@
     <!-- Left section: Tab Bar + Editor -->
     <div class="flex flex-col flex-1 min-w-0">
       <!-- Tab Bar - show different tab bars based on mode -->
-      {#if !isDiffMode && !isConvertMode && !isCodegenMode && tabsState.tabs.length > 1}
+      {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && tabsState.tabs.length > 1}
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
@@ -727,6 +764,17 @@
             onInputChange={handleToolbarContentChange}
             onToast={showToast}
             onExit={toggleCodegenMode}
+          />
+        {:else if isSchemaMode}
+          <SchemaView
+            inputValue={content}
+            theme={monacoTheme}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            tabSize={tabSize}
+            onInputChange={handleToolbarContentChange}
+            onToast={showToast}
+            onExit={toggleSchemaMode}
           />
         {:else}
           <div class="json-editor-workspace">
@@ -778,7 +826,7 @@
     </div>
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
-    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode}
+    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode}
       <div
         class="json-tree-resizer"
         role="separator"
@@ -797,7 +845,7 @@
     {/if}
   </div>
 
-  {#if !isConvertMode && !isCodegenMode}
+  {#if !isConvertMode && !isCodegenMode && !isSchemaMode}
     <JsonEditorStatusBar
       isDiffMode={isDiffMode}
       diffLineCount={diffLineCount}
