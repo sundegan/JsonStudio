@@ -84,6 +84,20 @@
     showTreeView: true,
   });
   
+  async function openFilePaths(paths: string[]) {
+    for (const filePath of paths) {
+      try {
+        const fileContent = await readFile(filePath);
+        const name = await getFileName(filePath);
+        tabsStore.addTab(fileContent, filePath, name);
+        showToast(`Opened: ${name || 'file'}`);
+      } catch (e) {
+        showToast('Failed to open file', 'error');
+        console.error('Open file error:', e);
+      }
+    }
+  }
+
   onMount(() => {
     settingsStore.init();
     
@@ -124,17 +138,7 @@
       unlistenFileDrop = await listen<{ paths: string[], position: { x: number, y: number } }>('tauri://drag-drop', async (event) => {
         const paths = event.payload?.paths;
         if (paths && paths.length > 0) {
-          const filePath = paths[0];
-          try {
-            const fileContent = await readFile(filePath);
-            const name = await getFileName(filePath);
-            
-            tabsStore.addTab(fileContent, filePath, name);
-            showToast(`Opened: ${name || 'file'}`);
-          } catch (e) {
-            showToast('Failed to open file', 'error');
-            console.error('Drop file error:', e);
-          }
+          await openFilePaths([paths[0]]);
         }
       });
 
@@ -142,18 +146,19 @@
       unlistenOpenFile = await listen<string[]>('open-file', async (event) => {
         const paths = event.payload;
         if (!paths || paths.length === 0) return;
-        for (const filePath of paths) {
-          try {
-            const fileContent = await readFile(filePath);
-            const name = await getFileName(filePath);
-            tabsStore.addTab(fileContent, filePath, name);
-            showToast(`Opened: ${name || 'file'}`);
-          } catch (e) {
-            showToast('Failed to open file', 'error');
-            console.error('Open file error:', e);
-          }
-        }
+        await openFilePaths(paths);
       });
+
+      // Retrieve files queued before frontend was ready (cold start)
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const pending = await invoke<string[]>('get_pending_files');
+        if (pending && pending.length > 0) {
+          await openFilePaths(pending);
+        }
+      } catch (e) {
+        console.error('Failed to get pending files:', e);
+      }
     })();
     
     shortcutsStore.init();
