@@ -534,7 +534,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0;
-    animation: sv-pulse 2s ease-in-out 3;
+    animation: sv-pulse 2s ease-in-out infinite;
   }
 
   .sv-divider-icon.is-static {
