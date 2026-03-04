@@ -5,7 +5,7 @@ export default {
   'toolbar.save': 'Save',
 
   // Toolbar - JSON transform
-  'toolbar.format': 'Format',
+  'toolbar.format': 'Prettify',
   'toolbar.minify': 'Minify',
   'toolbar.escape': 'Escape',
   'toolbar.unescape': 'Unescape',

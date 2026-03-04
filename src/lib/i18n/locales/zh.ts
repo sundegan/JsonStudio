@@ -5,7 +5,7 @@ export default {
   'toolbar.save': '保存',
 
   // Toolbar - JSON transform
-  'toolbar.format': '格式化',
+  'toolbar.format': '美化',
   'toolbar.minify': '压缩',
   'toolbar.escape': '转义',
   'toolbar.unescape': '反转义',

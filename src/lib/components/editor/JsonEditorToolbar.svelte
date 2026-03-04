@@ -392,7 +392,10 @@
     <!-- 2. JSON transform -->
     <div class="toolbar-group">
       <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing || !hasContent} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
-        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h14"/></svg>
+        <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
+          <path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
+        </svg>
         {$t('toolbar.format')}
       </button>
       <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing || !hasContent} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
