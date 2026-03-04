@@ -5,3 +5,4 @@ pub mod file;
 pub mod convert;
 pub mod codegen;
 pub mod clipboard;
+pub mod export_image;

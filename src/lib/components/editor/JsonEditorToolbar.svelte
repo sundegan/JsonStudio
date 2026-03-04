@@ -88,13 +88,13 @@
       const currentTheme: EditorTheme = appSettings.isDarkMode
         ? appSettings.darkTheme
         : appSettings.lightTheme;
-      const blob = await exportJsonAsImage({
+      const pngBase64 = await exportJsonAsImage({
         content,
         theme: currentTheme,
         fontSize: appSettings.fontSize,
         lineHeight: appSettings.lineHeight,
       });
-      await copyImageToClipboard(blob);
+      await copyImageToClipboard(pngBase64);
       onToast($t('toolbar.exportImageCopied'));
     } catch (e: any) {
       console.error('Export image failed:', e);
