@@ -1,59 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JsonStudio | JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, Code Gen</title>
-<meta name="description" content="JsonStudio is a free, open-source JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
-<meta name="keywords" content="JSON prettify, JSON viewer, JSON diff, JSON converter, JSON schema, code gen, JSON minify, JSON escape, JSON unescape, JSON editor, JSON to YAML, JSON to XML, JMESPath, offline JSON tool, desktop JSON app, Tauri, Rust, macOS, Windows, Linux">
+<title>JsonStudio | JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema、Code Gen</title>
+<meta name="description" content="JsonStudio 是免费开源 JSON 桌面应用，聚焦 JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema 与 Code Gen，并提供压缩/转义工具。">
+<meta name="keywords" content="JSON 美化, JSON 查看, JSON Diff, JSON Converter, JSON Schema, Code Gen, JSON 压缩, JSON 转义, JSON 反转义, JSON 编辑器, JSON 转 YAML, JSON 转 XML, JMESPath, 离线 JSON 工具, 桌面 JSON 工具">
 <meta name="author" content="sundegan">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="theme-color" content="#0a0a0f">
 <meta name="application-name" content="JsonStudio">
-<link rel="canonical" href="https://sundegan.github.io/JsonStudio/">
+<link rel="canonical" href="https://sundegan.github.io/JsonStudio/zh/">
 <link rel="alternate" hreflang="en" href="https://sundegan.github.io/JsonStudio/">
 <link rel="alternate" hreflang="zh-CN" href="https://sundegan.github.io/JsonStudio/zh/">
 <link rel="alternate" hreflang="x-default" href="https://sundegan.github.io/JsonStudio/">
 
 <!-- Open Graph -->
-<meta property="og:title" content="JsonStudio | JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, Code Gen">
-<meta property="og:description" content="JsonStudio is a free, open-source JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
+<meta property="og:title" content="JsonStudio | JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema、Code Gen">
+<meta property="og:description" content="JsonStudio 是免费开源 JSON 桌面应用，聚焦 JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema 与 Code Gen，并提供压缩/转义工具。">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://sundegan.github.io/JsonStudio/">
+<meta property="og:url" content="https://sundegan.github.io/JsonStudio/zh/">
 <meta property="og:image" content="https://sundegan.github.io/JsonStudio/icon.png">
-<meta property="og:image:alt" content="JsonStudio app icon">
+<meta property="og:image:alt" content="JsonStudio 应用图标">
 <meta property="og:image:type" content="image/png">
 <meta property="og:site_name" content="JsonStudio">
-<meta property="og:locale" content="en_US">
-<meta property="og:locale:alternate" content="zh_CN">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JsonStudio | JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, Code Gen">
-<meta name="twitter:description" content="JsonStudio is a free, open-source JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
+<meta name="twitter:title" content="JsonStudio | JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema、Code Gen">
+<meta name="twitter:description" content="JsonStudio 是免费开源 JSON 桌面应用，聚焦 JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema 与 Code Gen，并提供压缩/转义工具。">
 <meta name="twitter:image" content="https://sundegan.github.io/JsonStudio/icon.png">
-<meta name="twitter:image:alt" content="JsonStudio app icon">
+<meta name="twitter:image:alt" content="JsonStudio 应用图标">
 
 <!-- Favicon -->
-<link rel="icon" href="icon.png" type="image/png">
-<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="../icon.png" type="image/png">
+<link rel="apple-touch-icon" href="../icon.png">
 
 <!-- Structured Data -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "@id": "https://sundegan.github.io/JsonStudio/#softwareapplication",
+  "@id": "https://sundegan.github.io/JsonStudio/zh/#softwareapplication",
   "name": "JsonStudio",
   "alternateName": "Json Studio",
-  "description": "JsonStudio is a free, open-source JSON desktop app for JSON prettify, JSON viewer, JSON diff, JSON converter, JSON Schema, and code generation, plus minify/escape tools.",
-  "url": "https://sundegan.github.io/JsonStudio/",
+  "description": "JsonStudio 是免费开源 JSON 桌面应用，支持 JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema 与代码生成，并提供压缩/转义工具。",
+  "url": "https://sundegan.github.io/JsonStudio/zh/",
   "image": "https://sundegan.github.io/JsonStudio/icon.png",
   "screenshot": "https://sundegan.github.io/JsonStudio/icon.png",
   "applicationCategory": "DeveloperApplication",
   "applicationSubCategory": "JSON Editor",
   "operatingSystem": "macOS, Windows, Linux",
-  "inLanguage": ["en", "zh-CN"],
+  "inLanguage": ["zh-CN", "en"],
   "isAccessibleForFree": true,
   "offers": {
     "@type": "Offer",
@@ -70,12 +70,12 @@
     "https://github.com/sundegan/JsonStudio/releases"
   ],
   "featureList": [
-    "JSON prettify and viewer",
-    "JSON diff comparison",
-    "JSON converter with YAML, XML, TOML, and CSV",
-    "JSON Schema generation and validation",
-    "Code generation for TypeScript, Go, Python, Java, and Rust",
-    "JSON minify, escape, and unescape"
+    "JSON 美化与查看",
+    "JSON Diff 对比",
+    "JSON Converter（YAML、XML、TOML、CSV）",
+    "JSON Schema 生成与验证",
+    "TypeScript、Go、Python、Java、Rust 代码生成",
+    "JSON 压缩、转义与反转义"
   ]
 }
 </script>
@@ -263,12 +263,12 @@ a:hover{opacity:.85}
 <!-- Nav -->
 <nav class="nav">
   <div class="nav-inner">
-    <a href="#" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
+    <a href="#" class="nav-brand"><img src="../icon.png" alt="JsonStudio">JsonStudio</a>
     <div class="nav-right">
-      <a href="#features" class="nav-link">Features</a>
-      <a href="#compare" class="nav-link">Compare</a>
-      <a href="#screenshots" class="nav-link">Screenshots</a>
-      <a href="zh/" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+      <a href="#features" class="nav-link">功能</a>
+      <a href="#compare" class="nav-link">对比</a>
+      <a href="#screenshots" class="nav-link">截图</a>
+      <a href="../" class="lang-btn" hreflang="en" lang="en">English</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         Star
@@ -279,17 +279,17 @@ a:hover{opacity:.85}
 
 <!-- Hero -->
 <section class="hero">
-  <img src="icon.png" alt="JsonStudio" class="hero-icon">
+  <img src="../icon.png" alt="JsonStudio" class="hero-icon">
   <h1><span class="gold">Json</span>Studio</h1>
-  <p class="hero-sub">A fast, modern, and efficient JSON desktop tool. Prettify, view, diff, convert, validate, and generate code — all in one app, powered by Tauri & Rust.</p>
+  <p class="hero-sub">快速、现代、高效的 JSON 桌面工具。美化、查看、Diff、转换、校验、代码生成——一个应用全搞定，基于 Tauri 和 Rust 构建。</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Download Now</span>
+      <span>立即下载</span>
     </a>
     <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
       <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      <span>View on GitHub</span>
+      <span>查看 GitHub</span>
     </a>
   </div>
 </section>
@@ -297,11 +297,11 @@ a:hover{opacity:.85}
 <!-- Stats -->
 <section class="stats">
   <div class="stats-grid">
-    <div class="stat-item"><div class="stat-value">$0</div><div class="stat-label">Free & Open Source</div></div>
-    <div class="stat-item"><div class="stat-value">&lt;1s</div><div class="stat-label">Launch Time</div></div>
-    <div class="stat-item"><div class="stat-value">3</div><div class="stat-label">Platforms</div></div>
-    <div class="stat-item"><div class="stat-value">10+</div><div class="stat-label">Themes</div></div>
-    <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label">Local & Private</div></div>
+    <div class="stat-item"><div class="stat-value">$0</div><div class="stat-label">免费开源</div></div>
+    <div class="stat-item"><div class="stat-value">&lt;1s</div><div class="stat-label">启动时间</div></div>
+    <div class="stat-item"><div class="stat-value">3</div><div class="stat-label">个平台</div></div>
+    <div class="stat-item"><div class="stat-value">10+</div><div class="stat-label">款主题</div></div>
+    <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label">本地 & 隐私</div></div>
   </div>
 </section>
 
@@ -311,12 +311,12 @@ a:hover{opacity:.85}
     <div class="screenshot-box">
       <div class="screenshot-placeholder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        <span>Application screenshots coming soon</span>
+        <span>应用截图即将上线</span>
       </div>
     </div>
     <div class="screenshot-tabs">
-      <button class="screenshot-tab active">Dark Theme</button>
-      <button class="screenshot-tab">Light Theme</button>
+      <button class="screenshot-tab active">深色主题</button>
+      <button class="screenshot-tab">浅色主题</button>
     </div>
   </div>
 </section>
@@ -324,108 +324,108 @@ a:hover{opacity:.85}
 <!-- Feature Showcase -->
 <section class="section" id="features">
   <div class="section-header">
-    <h2 class="section-title"><span class="gold">Core</span> Features</h2>
-    <p class="section-desc">Built for daily JSON work: Prettify, Viewer, Diff, Converter, JSON Schema, Code Gen, and Minify/Escape.</p>
+    <h2 class="section-title"><span class="gold">核心</span>功能</h2>
+    <p class="section-desc">专为日常 JSON 工作打造：美化、查看、Diff、Converter、Schema、Code Gen、压缩/转义，一站式完成。</p>
   </div>
 
   <div class="showcase">
     <!-- 1. Editor -->
     <div class="showcase-row">
       <div class="showcase-text">
-        <span class="showcase-badge green">EDITOR</span>
-        <h3>Professional JSON Prettify & Viewer</h3>
-        <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON prettify and viewing experience.</p>
+        <span class="showcase-badge green">编辑器</span>
+        <h3>专业级 JSON 美化与查看器</h3>
+        <p>基于 Monaco Editor（VS Code 编辑器内核）打造，提供顶级的 JSON 美化与查看体验。</p>
         <ul>
-          <li>Syntax highlighting with bracket pair colorization</li>
-          <li>Multi-tab editing with drag-and-drop reordering</li>
-          <li>Code folding, minimap, and find & replace</li>
-          <li>Auto-prettify on paste for instantly clean JSON</li>
-          <li>10+ color themes including Dracula, Nord, and One Dark</li>
+          <li>语法高亮与括号对着色</li>
+          <li>多标签页编辑，支持拖拽排序</li>
+          <li>代码折叠、缩略图和查找替换</li>
+          <li>粘贴自动美化，瞬间得到干净 JSON</li>
+          <li>明暗模式切换 + 10+ 配色主题，包括 Dracula、Nord、One Dark</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Editor screenshot</span></div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder">编辑器截图</span></div>
     </div>
 
     <!-- 2. Tree & Query -->
     <div class="showcase-row">
       <div class="showcase-text">
-        <span class="showcase-badge blue">NAVIGATE</span>
-        <h3>Tree View & JMESPath Query</h3>
-        <p>Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.</p>
+        <span class="showcase-badge blue">导航</span>
+        <h3>树视图与 JMESPath 查询</h3>
+        <p>将复杂的 JSON 结构可视化为交互式树形图，轻松导航、搜索和查询。</p>
         <ul>
-          <li>Collapsible tree with type-colored icons</li>
-          <li>Click any node to jump to its position in the editor</li>
-          <li>Copy path and value with one click</li>
-          <li>Full JMESPath query support with real-time highlighting</li>
-          <li>Resizable panel width for comfortable viewing</li>
+          <li>可折叠树结构，节点按类型着色</li>
+          <li>点击节点跳转到编辑器对应位置</li>
+          <li>一键复制路径和值</li>
+          <li>完整的 JMESPath 查询支持，实时高亮匹配</li>
+          <li>面板宽度可调节，舒适查看</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Tree View screenshot</span></div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder">树视图截图</span></div>
     </div>
 
     <!-- 3. Convert & Codegen -->
     <div class="showcase-row">
       <div class="showcase-text">
-        <span class="showcase-badge purple">CONVERT</span>
-        <h3>JSON Converter & Code Gen</h3>
-        <p>Convert JSON to YAML, XML, TOML, and CSV, or generate type-safe code in your favorite language.</p>
+        <span class="showcase-badge purple">转换</span>
+        <h3>JSON Converter 与 Code Gen</h3>
+        <p>将 JSON 转换到 YAML、XML、TOML、CSV，或生成你偏好的类型安全代码。</p>
         <ul>
-          <li>Bidirectional conversion: JSON ↔ YAML, XML, TOML, CSV</li>
-          <li>CSV rainbow column highlighting for readability</li>
-          <li>Generate TypeScript, Go, Python, Java, Rust, and more</li>
-          <li>Reverse conversion: paste code to extract JSON</li>
+          <li>双向转换：JSON ↔ YAML、XML、TOML、CSV</li>
+          <li>CSV 彩虹列高亮，提升可读性</li>
+          <li>生成 TypeScript、Go、Python、Java、Rust 等语言代码</li>
+          <li>反向转换：粘贴代码提取 JSON</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Conversion screenshot</span></div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder">转换截图</span></div>
     </div>
 
     <!-- 4. JSON Schema -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge pink">SCHEMA</span>
-        <h3>JSON Schema Generation & Validation</h3>
-        <p>Generate JSON Schema from any JSON data, or validate your data against an existing schema — all in a dedicated view.</p>
+        <h3>JSON Schema 生成与验证</h3>
+        <p>从任意 JSON 数据一键生成 Schema，或用现有 Schema 验证数据。</p>
         <ul>
-          <li>One-click schema generation from JSON data</li>
-          <li>Validate JSON against any JSON Schema with detailed error reports</li>
-          <li>Dedicated schema page with side-by-side editing</li>
+          <li>一键从 JSON 数据生成 Schema</li>
+          <li>根据 JSON Schema 验证数据，提供详细错误报告</li>
+          <li>专属 Schema 页面，支持并排编辑</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Schema screenshot</span></div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder">Schema 截图</span></div>
     </div>
 
     <!-- 5. Efficiency & Shortcuts -->
     <div class="showcase-row">
       <div class="showcase-text">
-        <span class="showcase-badge orange">EFFICIENCY</span>
-        <h3>Shortcuts & Workflow Boost</h3>
-        <p>Native desktop shortcuts that web tools simply can't offer — dramatically speed up your daily JSON workflow.</p>
+        <span class="showcase-badge orange">效率</span>
+        <h3>快捷键与工作流加速</h3>
+        <p>原生桌面快捷键是网页工具无法实现的——大幅提升你的日常 JSON 工作效率。</p>
         <ul>
-          <li>Global shortcut to launch or bring the app to front instantly</li>
-          <li>One-key paste & prettify: clean up clipboard JSON instantly</li>
-          <li>Window always-on-top toggle for multitasking</li>
-          <li>All editor shortcuts fully customizable in settings</li>
-          <li>File association: double-click .json to open directly</li>
+          <li>全局快捷键一键启动或唤起应用到前台</li>
+          <li>一键粘贴并美化：立即清理剪贴板中的 JSON</li>
+          <li>窗口置顶切换，方便多任务协作</li>
+          <li>所有编辑器快捷键均可在设置中自定义</li>
+          <li>文件关联：双击 .json 文件直接打开</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Settings screenshot</span></div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder">设置截图</span></div>
     </div>
 
     <!-- 6. Diff & More Tools -->
     <div class="showcase-row">
       <div class="showcase-text">
-        <span class="showcase-badge green">TOOLS</span>
-        <h3>JSON Diff, Minify/Escape & More Tools</h3>
-        <p>A practical toolbox focused on JSON Diff, minify/escape, repair, and export.</p>
+        <span class="showcase-badge green">工具</span>
+        <h3>JSON Diff、压缩转义与更多工具</h3>
+        <p>围绕 JSON Diff、压缩/转义、修复与导出的实用工具箱。</p>
         <ul>
-          <li>Side-by-side diff with inline change highlighting</li>
-          <li>Diff line count statistics in status bar</li>
-          <li>Escape / unescape / minify utilities</li>
-          <li>Drag & drop JSON files to open instantly</li>
-          <li>Export JSON as beautiful images with syntax highlighting for easy sharing</li>
+          <li>并排 Diff 对比，内联变更高亮</li>
+          <li>状态栏显示差异行数统计</li>
+          <li>转义 / 反转义 / 压缩工具</li>
+          <li>拖拽 JSON 文件即可打开</li>
+          <li>导出 JSON 为带语法高亮的美观图片，便于向他人分享</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Diff screenshot</span></div>
+      <div class="showcase-visual"><span class="showcase-visual-placeholder">对比截图</span></div>
     </div>
   </div>
 </section>
@@ -433,72 +433,72 @@ a:hover{opacity:.85}
 <!-- More Features Grid -->
 <section class="section">
   <div class="section-header">
-    <h2 class="section-title">And <span class="gold">Much</span> More</h2>
-    <p class="section-desc">Every detail is crafted for developer productivity.</p>
+    <h2 class="section-title">还有<span class="gold">更多</span></h2>
+    <p class="section-desc">每个细节都为开发者效率而打造。</p>
   </div>
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon c6">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
       </div>
-      <h3>JSON Repair</h3>
-      <p>One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.</p>
+      <h3>JSON 修复</h3>
+      <p>一键自动修复无效 JSON——修复缺失引号、尾逗号等常见问题。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
       </div>
-      <h3>Lightweight</h3>
-      <p>Small install size and low memory footprint, powered by Tauri and Rust.</p>
+      <h3>轻量小巧</h3>
+      <p>安装包小、内存占用低，基于 Tauri 和 Rust 构建。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c2">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
       </div>
-      <h3>Instant Launch</h3>
-      <p>Launches in under a second. No loading screens, no waiting.</p>
+      <h3>秒级启动</h3>
+      <p>不到一秒即可启动，无加载画面，无需等待。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c3">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
       </div>
-      <h3>Cross-Platform</h3>
-      <p>Available on macOS, Windows, and Linux with native look and feel.</p>
+      <h3>跨平台</h3>
+      <p>支持 macOS、Windows 和 Linux，原生外观和体验。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c4">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
       </div>
-      <h3>10+ Themes</h3>
-      <p>Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.</p>
+      <h3>10+ 主题</h3>
+      <p>Dracula、Nord、One Dark、Solarized 等，一键切换明暗主题。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c5">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       </div>
-      <h3>Image Export</h3>
-      <p>Export JSON as a beautiful image with watermark, powered by Rust-native rendering.</p>
+      <h3>图片导出</h3>
+      <p>导出 JSON 为带语法高亮的美观图片，便于向他人分享，基于 Rust 原生渲染引擎。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
       </div>
-      <h3>JSON Statistics</h3>
-      <p>Real-time display of key count, nesting depth, byte size, and line count.</p>
+      <h3>JSON 统计</h3>
+      <p>实时显示键数量、嵌套深度、字节大小和行数。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c2">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       </div>
-      <h3>i18n Support</h3>
-      <p>Full Chinese and English interface with one-click language switching.</p>
+      <h3>国际化</h3>
+      <p>完整的中英文界面，一键切换语言。</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c3">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       </div>
-      <h3>100% Offline</h3>
-      <p>All data stays on your machine. No server, no upload, complete privacy.</p>
+      <h3>完全离线</h3>
+      <p>所有数据留在本地，无服务器、无上传，完全保护隐私。</p>
     </div>
   </div>
 </section>
@@ -506,32 +506,32 @@ a:hover{opacity:.85}
 <!-- Comparison -->
 <section class="section" id="compare">
   <div class="section-header">
-    <h2 class="section-title">Why <span class="gold">JsonStudio</span>?</h2>
-    <p class="section-desc">See how JsonStudio compares to online JSON tools and other editors.</p>
+    <h2 class="section-title">为什么选择 <span class="gold">JsonStudio</span>？</h2>
+    <p class="section-desc">看看 JsonStudio 与在线 JSON 工具和其他编辑器的对比。</p>
   </div>
   <div class="comparison">
     <table>
       <thead>
         <tr>
-          <th>Feature</th>
-          <th>Online Tools</th>
+          <th>功能</th>
+          <th>在线工具</th>
           <th>JsonStudio</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Offline / No Internet Required</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Data Privacy (100% Local)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Large JSON Data Performance</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Multi-tab Editing</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Tree View & JMESPath Query</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Ad-Free Experience</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Global Shortcuts & Custom Keybindings</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Image Export</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Local File Operations</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Custom Settings (Theme, Font, Spacing, Shortcuts...)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>JSON Schema Generation & Validation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
-        <tr><td>Code Generation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
-        <tr><td>JSON Converter (YAML/XML/...)</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+        <tr><td>离线使用 / 无需联网</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>数据隐私（100% 本地处理）</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>大 JSON 数据性能</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>多标签页编辑</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>树视图与 JMESPath 查询</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>无广告体验</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>全局快捷键与自定义键绑定</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>图片导出</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>本地文件操作</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>自定义设置（主题、字号、间距等）</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>JSON Schema 生成与验证</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+        <tr><td>代码生成</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
+        <tr><td>JSON Converter（YAML/XML/...）</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
         <tr><td>JSON Diff</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
       </tbody>
     </table>
@@ -541,8 +541,8 @@ a:hover{opacity:.85}
 <!-- Workflow -->
 <section class="section">
   <div class="section-header">
-    <h2 class="section-title">Get Started in <span class="gold">Seconds</span></h2>
-    <p class="section-desc">No sign-up, no configuration. Download and start working with JSON immediately.</p>
+    <h2 class="section-title"><span class="gold">秒级</span>上手</h2>
+    <p class="section-desc">无需注册，无需配置。下载即用，立即开始处理 JSON。</p>
   </div>
   <div class="workflow">
     <div class="workflow-steps">
@@ -550,29 +550,29 @@ a:hover{opacity:.85}
         <div class="step-num">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </div>
-        <h4>Download</h4>
-        <p>Grab the installer for your platform from GitHub Releases.</p>
+        <h4>下载</h4>
+        <p>从 GitHub Releases 获取你平台的安装包。</p>
       </div>
       <div class="workflow-step">
         <div class="step-num">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
         </div>
-        <h4>Launch</h4>
-        <p>Open the app — it launches in under a second.</p>
+        <h4>启动</h4>
+        <p>打开应用——不到一秒即可启动。</p>
       </div>
       <div class="workflow-step">
         <div class="step-num">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </div>
-        <h4>Paste</h4>
-        <p>Paste your JSON and it's auto-prettified instantly.</p>
+        <h4>粘贴</h4>
+        <p>粘贴你的 JSON，自动美化。</p>
       </div>
       <div class="workflow-step">
         <div class="step-num">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
-        <h4>Done</h4>
-        <p>Prettify, view, minify, diff, convert, and generate code — all at your fingertips.</p>
+        <h4>完成</h4>
+        <p>美化、查看、压缩、对比、转换、生成代码——尽在指尖。</p>
       </div>
     </div>
   </div>
@@ -581,8 +581,8 @@ a:hover{opacity:.85}
 <!-- Tech Stack -->
 <section class="section">
   <div class="section-header">
-    <h2 class="section-title">Built with <span class="gold">Modern</span> Tech</h2>
-    <p class="section-desc">Leveraging the best tools for performance, security, and developer experience.</p>
+    <h2 class="section-title">基于<span class="gold">现代</span>技术构建</h2>
+    <p class="section-desc">利用最佳工具实现高性能、安全性和开发者体验。</p>
   </div>
   <div class="tech-grid">
     <div class="tech-pill">Rust</div>
@@ -595,16 +595,16 @@ a:hover{opacity:.85}
 
 <!-- CTA -->
 <section class="cta">
-  <h2>Ready to Supercharge Your JSON Workflow?</h2>
-  <p>Free, open source, and available on all major platforms.</p>
+  <h2>准备好提升你的 JSON 工作流了吗？</h2>
+  <p>免费、开源，支持所有主流平台。</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Download Now</span>
+      <span>立即下载</span>
     </a>
     <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      <span>View on GitHub</span>
+      <span>查看 GitHub</span>
     </a>
   </div>
 </section>
@@ -612,11 +612,11 @@ a:hover{opacity:.85}
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT License</span></div>
+    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT 许可证</span></div>
     <div class="footer-links">
       <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
-      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">Releases</a>
-      <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">Issues</a>
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">版本发布</a>
+      <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">问题反馈</a>
     </div>
   </div>
 </footer>

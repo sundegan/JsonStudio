@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sundegan.github.io/JsonStudio/sitemap.xml
