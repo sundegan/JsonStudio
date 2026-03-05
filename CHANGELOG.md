@@ -2,6 +2,78 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.0] - 2025-03-05
+
+🎉 **First Stable Release!**
+
+### Added
+- **File watching system**: Automatically detect and reload files when modified externally by other programs.
+  - Auto-reload if no unsaved changes exist.
+  - Show notification if file has unsaved changes to prevent data loss.
+  - 500ms debounce mechanism to avoid frequent triggers.
+- **Multi-file drag & drop**: Support opening multiple files at once by dragging them into the application.
+- **Intelligent tab reuse**: When opening a file, reuse empty untitled tabs instead of always creating new ones.
+- **Horizontal scrollbar for toolbar**: Toolbar now supports horizontal scrolling when window is too narrow.
+- **Reusable ConfirmDialog component**: Modern, customizable confirmation dialog replacing native browser confirm.
+- **Reset all shortcuts**: New button in settings to reset all keyboard shortcuts to defaults.
+- **GitHub Pages landing page**: Comprehensive project website with bilingual support (English/Chinese).
+  - SEO optimization with Open Graph, Twitter Card, and JSON-LD structured data.
+  - Feature showcase with comparison table.
+  - Interactive screenshot lightbox.
+
+### Improved
+- **Increased localStorage limit**: Raised content size limit from 100KB to 1MB per tab for better support of large JSON files.
+- **Improved window size constraints**:
+  - Minimum width increased from 800px to 1000px.
+  - Minimum height increased from 600px to 650px.
+  - Ensures all toolbar buttons remain visible.
+- **Enhanced tab management**:
+  - Fixed tab name inconsistency (now always shows "Untitled" for new tabs).
+  - Improved tab switching logic with better content synchronization.
+  - Fixed activeTabId initialization issue.
+  - Optimized tab closing logic to correctly calculate next active tab.
+  - Tab limit (10 tabs) now shows user-friendly toast notification instead of console warning.
+- **Redesigned color system**: 
+  - Improved dark/light theme variables with better contrast.
+  - Unified UI elements with glassmorphism effects.
+  - Standardized hover states and semantic border colors across all components.
+- **Modernized UI components**:
+  - Settings Panel: Enhanced aesthetics with deep glassmorphism and improved layout responsiveness.
+  - Convert View: Standardized pane headers, back buttons, and format selectors.
+  - CodeGen View: Unified styling with premium look consistent with main editor.
+  - Schema View: Aligned with overall design language.
+  - Status Bar: Improved visual consistency.
+  - Toast notifications: Better icon rendering and feedback messages.
+  - Tab Bar: Refined styling and interaction states.
+- **Enhanced toolbar functionality**:
+  - Added content validation checks before performing actions (export, format, minify, etc.).
+  - Improved toast messages for better user feedback when no content is available.
+  - Refined toolbar aesthetics with unique color palette for icons.
+  - Resolved empty state handling issues.
+- **Performance optimizations**:
+  - Removed redundant `isModified` update calls.
+  - Reduced unnecessary state saves.
+  - Improved content sync efficiency when switching tabs.
+- **Documentation improvements**:
+  - Updated README files with new screenshots for both themes.
+  - Added lightbox modal for image viewing.
+  - Improved feature descriptions and localization.
+  - Enhanced SEO with better metadata.
+
+### Fixed
+- **Tab management bugs**:
+  - Fixed issue where tab names sometimes showed "Default" instead of "Untitled".
+  - Fixed bug where opening a file into an empty tab didn't display content.
+  - Fixed activeTabId pointing to wrong tab after closing tabs.
+  - Fixed initial state having null activeTabId.
+- **File operations**:
+  - Fixed stats not updating after opening files.
+  - Fixed file content not syncing when reusing empty tabs.
+- **UI issues**:
+  - Fixed toolbar buttons being hidden when window is resized to minimum width.
+  - Fixed typing and reactivity warnings on `activeTab` bindings.
+  - Fixed info toast SVG icon rendering issues.
+
 ## [0.5.0] - 2026-03-04
 
 ### Added
