@@ -24,11 +24,11 @@
 
 ## 应用截图
 
-| 深色主题 | 浅色主题 |
-|---|---|
-| _应用截图即将上线_ | _应用截图即将上线_ |
+### 深色主题 
+![深色主题](docs/images_zh/app_home_page_dark_mode.png)
 
-<!-- TODO: 添加深色/浅色应用截图 -->
+### 浅色主题 
+![浅色主题](docs/images_zh/app_home_page_light_mode.png)
 
 ## 核心功能
 
@@ -36,6 +36,8 @@
 
 ### 1) 专业级 JSON 美化与查看器
 基于 Monaco Editor（VS Code 编辑器内核）打造，提供顶级的 JSON 美化与查看体验。
+
+![编辑器](docs/images_zh/editor.png)
 
 - 语法高亮与括号对着色
 - 多标签页编辑，支持拖拽排序
@@ -46,6 +48,8 @@
 ### 2) 树视图与 JMESPath 查询
 将复杂的 JSON 结构可视化为交互式树形图，轻松导航、搜索和查询。
 
+![树视图](docs/images_zh/tree_view.png)
+
 - 可折叠树结构，节点按类型着色
 - 点击节点跳转到编辑器对应位置
 - 一键复制路径和值
@@ -55,6 +59,9 @@
 ### 3) JSON Converter 与 Code Gen
 将 JSON 转换到 YAML、XML、TOML、CSV，或生成你偏好的类型安全代码。
 
+![转换](docs/images_zh/convert.png)
+![代码生成](docs/images_zh/code_gen.png)
+
 - 双向转换：JSON <-> YAML、XML、TOML、CSV
 - CSV 彩虹列高亮，提升可读性
 - 生成 TypeScript、Go、Python、Java、Rust 等语言代码
@@ -63,12 +70,16 @@
 ### 4) JSON Schema 生成与验证
 从任意 JSON 数据一键生成 Schema，或用现有 Schema 验证数据，并在专属视图中完成操作。
 
+![JSON Schema](docs/images_zh/json_schema.png)
+
 - 一键从 JSON 数据生成 Schema
 - 根据 JSON Schema 验证数据，提供详细错误报告
 - 专属 Schema 页面，支持并排编辑
 
 ### 5) JSON Diff
 为 JSON 变更提供清晰直观的可视化对比，提升审查效率与可读性。
+
+![JSON Diff](docs/images_zh/json_diff.png)
 
 - 并排 Diff 对比，内联变更高亮
 - 状态栏显示差异行数统计
