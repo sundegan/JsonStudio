@@ -154,9 +154,6 @@
     if (tab.fileName) {
       return tab.fileName;
     }
-    if (tab.isDefault) {
-      return 'Default';
-    }
     return 'Untitled';
   }
 

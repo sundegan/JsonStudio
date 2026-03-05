@@ -321,8 +321,13 @@
         const [path, fileContent] = result;
         const name = await getFileName(path);
 
-        // Always create a new tab for the file
-        tabsStore.addTab(fileContent, path, name);
+        // Smart open: reuse empty tab or create new one
+        const maxTabsReached = tabsStore.openFile(fileContent, path, name);
+        
+        if (maxTabsReached) {
+          onToast('Maximum 10 tabs reached', 'info');
+          return;
+        }
 
         await onStatsUpdate();
         onToast(`Opened: ${name || 'file'}`);

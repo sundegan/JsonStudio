@@ -4,6 +4,7 @@ use commands::json::{json_format, json_minify, json_stats, json_validate, json_e
 use commands::window::{set_window_theme, open_devtools};
 use commands::shortcuts::{show_main_window, format_clipboard_and_show, update_shortcut};
 use commands::file::{open_file_dialog, save_file, save_file_dialog, read_file, is_json_file, get_file_name};
+use commands::file_watcher::{watch_file, unwatch_file, unwatch_all_files, FileWatcherState};
 use commands::convert::{json_to_yaml, json_to_toml, json_to_xml, json_to_csv, yaml_to_json, toml_to_json, xml_to_json, csv_to_json};
 use commands::codegen::{json_to_code, code_to_json};
 use commands::clipboard::copy_image_to_clipboard;
@@ -23,12 +24,13 @@ fn get_pending_files() -> Vec<String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app = tauri::Builder::default()
+    let app =     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(FileWatcherState::new())
         .setup(|app| {
             let app_handle = app.handle().clone();
             
@@ -89,6 +91,9 @@ pub fn run() {
             read_file,
             is_json_file,
             get_file_name,
+            watch_file,
+            unwatch_file,
+            unwatch_all_files,
             json_to_yaml,
             json_to_toml,
             json_to_xml,

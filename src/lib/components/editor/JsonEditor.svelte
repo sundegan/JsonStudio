@@ -3,6 +3,7 @@
   import { getJsonStats, type JsonStats } from '$lib/services/json';
   import { readFile, getFileName } from '$lib/services/file';
   import { tabsStore, activeTab } from '$lib/stores/tabs';
+  import { fileWatcherService } from '$lib/services/fileWatcher';
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import ConvertView from './ConvertView.svelte';
@@ -90,7 +91,14 @@
       try {
         const fileContent = await readFile(filePath);
         const name = await getFileName(filePath);
-        tabsStore.addTab(fileContent, filePath, name);
+        const maxTabsReached = tabsStore.openFile(fileContent, filePath, name);
+        
+        if (maxTabsReached) {
+          showToast('Maximum 10 tabs reached', 'info');
+          break;
+        }
+        
+        await updateStats();
         showToast(`Opened: ${name || 'file'}`);
       } catch (e) {
         showToast('Failed to open file', 'error');
@@ -117,6 +125,9 @@
 
   onMount(() => {
     settingsStore.init();
+    
+    // Initialize file watcher service
+    fileWatcherService.init();
     
     // Listen to clipboard formatting events
     let unlistenFormatted: (() => void) | null = null;
@@ -155,7 +166,7 @@
       unlistenFileDrop = await listen<{ paths: string[], position: { x: number, y: number } }>('tauri://drag-drop', async (event) => {
         const paths = event.payload?.paths;
         if (paths && paths.length > 0) {
-          await openFilePaths([paths[0]]);
+          await openFilePaths(paths);
         }
       });
 
@@ -261,6 +272,8 @@
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
       window.removeEventListener('keydown', handleKeydown);
+      fileWatcherService.destroy();
+      fileWatcherService.unwatchAll();
     };
   });
   
@@ -273,6 +286,7 @@
   
   // Track previous active tab ID to detect tab switches
   let prevActiveTabId = $state<string | null>(null);
+  let prevActiveTabContent = $state<string>('');
   let isFirstSync = $state(true);
   let suppressNextEditorChange = $state(false);
 
@@ -298,10 +312,40 @@
     checkJsonError(currentTab.content);
   }
   
+  // Handle file watching for active tab
+  async function setupFileWatching(tab: import('$lib/stores/tabs').Tab | null) {
+    if (!tab || !tab.filePath) return;
+    
+    try {
+      await fileWatcherService.watchFile(tab.filePath, async (changedPath) => {
+        // File was modified externally
+        if (tab.isModified) {
+          // Show confirmation dialog
+          showToast(`File "${tab.fileName}" was modified externally`, 'info');
+        } else {
+          // Auto reload if not modified
+          try {
+            const newContent = await readFile(changedPath);
+            tabsStore.updateTabContent(tab.id, newContent);
+            await updateStats();
+            showToast(`File "${tab.fileName}" reloaded`, 'success');
+          } catch (e) {
+            showToast(`Failed to reload file "${tab.fileName}"`, 'error');
+            console.error('Failed to reload file:', e);
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Failed to setup file watching:', e);
+    }
+  }
+  
   $effect(() => {
     const unsubscribe = tabsStore.subscribe(newTabsState => {
       const oldActiveTabId = prevActiveTabId;
       const newActiveTabId = newTabsState.activeTabId;
+      const currentTab = getActiveTabFromState(newTabsState);
+      const newActiveTabContent = currentTab?.content || '';
       
       tabsState = newTabsState;
       
@@ -309,14 +353,28 @@
       if (isFirstSync) {
         isFirstSync = false;
         prevActiveTabId = newActiveTabId;
+        prevActiveTabContent = newActiveTabContent;
         syncActiveTab(newTabsState);
+        setupFileWatching(currentTab);
         return;
       }
       
-      // Only sync content when switching tabs, not when updating current tab's content
-      if (oldActiveTabId !== newActiveTabId) {
+      // Sync content when:
+      // 1. Switching tabs (activeTabId changed)
+      // 2. Current tab's content changed externally (e.g., file opened into empty tab)
+      const tabSwitched = oldActiveTabId !== newActiveTabId;
+      const contentChangedExternally = prevActiveTabContent !== newActiveTabContent && 
+                                       newActiveTabContent !== content;
+      
+      if (tabSwitched || contentChangedExternally) {
         prevActiveTabId = newActiveTabId;
+        prevActiveTabContent = newActiveTabContent;
         syncActiveTab(newTabsState);
+        
+        // Setup file watching for new active tab
+        if (tabSwitched) {
+          setupFileWatching(currentTab);
+        }
       }
     });
     return () => unsubscribe();
@@ -609,11 +667,6 @@
     
     content = newValue;
     tabsStore.updateTabContent(currentTab.id, newValue);
-    
-    // Mark as modified if we have a current file
-    if (currentTab.filePath && !currentTab.isModified) {
-      tabsStore.updateTabModified(currentTab.id, true);
-    }
 
     if (statsTimer) clearTimeout(statsTimer);
     if (!content.trim()) { 
@@ -637,9 +690,6 @@
     content = newValue;
     if (!currentTab) return;
     tabsStore.updateTabContent(currentTab.id, newValue);
-    if (currentTab.filePath && !currentTab.isModified) {
-      tabsStore.updateTabModified(currentTab.id, true);
-    }
   }
 
   function handleEditorPaste() {
