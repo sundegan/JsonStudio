@@ -537,6 +537,25 @@
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .je-toolbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .je-toolbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .je-toolbar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+  }
+  
+  .je-toolbar::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
   }
 
   .toolbar-group {
