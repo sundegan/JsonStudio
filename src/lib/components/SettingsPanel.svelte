@@ -288,7 +288,20 @@
         <!-- Shortcuts -->
         {#if shortcuts}
         <section class="settings-section">
-          <h3 class="settings-section-title">{$t('settings.shortcuts')}</h3>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="settings-section-title !mb-0">{$t('settings.shortcuts')}</h3>
+            <button 
+              class="settings-action-link"
+              onclick={() => shortcutsStore.reset()}
+              type="button"
+            >
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+              </svg>
+              {$t('settings.resetAllShortcuts')}
+            </button>
+          </div>
 
           {#snippet shortcutRow(nameKey: string, descKey: string, shortcut: import('$lib/stores/shortcuts').ShortcutConfig)}
             {@const isModified = shortcut.currentKey !== shortcut.defaultKey}
@@ -667,6 +680,28 @@
     transform: translateX(18px);
     background: var(--accent);
     box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  .settings-action-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .settings-action-link:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
   }
 
   /* Shortcut group label */

@@ -34,8 +34,8 @@ export default {
   'settings.light': 'Light',
   'settings.dark': 'Dark',
   'settings.colorScheme': 'Color Scheme',
-  'settings.darkColorSchemeHint': 'Choose a dark color scheme for the editor',
-  'settings.lightColorSchemeHint': 'Choose a light color scheme for the editor',
+  'settings.darkColorSchemeHint': 'Choose a dark mode color scheme for the editor',
+  'settings.lightColorSchemeHint': 'Choose a light mode color scheme for the editor',
   'settings.language': 'Language',
   'settings.languageHint': 'Choose interface display language',
 
@@ -79,6 +79,7 @@ export default {
   'settings.diff': 'Diff',
   'settings.diffDesc': 'Toggle diff mode',
   'settings.resetShortcut': 'Reset to default',
+  'settings.resetAllShortcuts': 'Reset All Shortcuts',
 
   // Toolbar - Codegen
   'toolbar.codegen': 'Codegen',

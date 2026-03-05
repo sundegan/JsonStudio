@@ -34,8 +34,8 @@ export default {
   'settings.light': '亮色',
   'settings.dark': '暗色',
   'settings.colorScheme': '配色方案',
-  'settings.darkColorSchemeHint': '选择编辑器暗色配色方案',
-  'settings.lightColorSchemeHint': '选择编辑器亮色配色方案',
+  'settings.darkColorSchemeHint': '选择编辑器暗色模式配色方案',
+  'settings.lightColorSchemeHint': '选择编辑器亮色模式配色方案',
   'settings.language': '语言',
   'settings.languageHint': '选择界面显示语言',
 
@@ -79,6 +79,7 @@ export default {
   'settings.diff': '对比',
   'settings.diffDesc': '切换对比模式',
   'settings.resetShortcut': '重置为默认',
+  'settings.resetAllShortcuts': '重置所有快捷键',
 
   // Toolbar - Codegen
   'toolbar.codegen': '生成代码',
