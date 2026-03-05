@@ -2,19 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://sundegan.github.io/JsonStudio/</loc>
+    <loc>https://jsonstudio-app.pages.dev/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://sundegan.github.io/JsonStudio/"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://sundegan.github.io/JsonStudio/zh/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://sundegan.github.io/JsonStudio/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio-app.pages.dev/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio-app.pages.dev/zh/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio-app.pages.dev/"/>
   </url>
   <url>
-    <loc>https://sundegan.github.io/JsonStudio/zh/</loc>
+    <loc>https://jsonstudio-app.pages.dev/zh/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://sundegan.github.io/JsonStudio/"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://sundegan.github.io/JsonStudio/zh/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://sundegan.github.io/JsonStudio/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio-app.pages.dev/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio-app.pages.dev/zh/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio-app.pages.dev/"/>
   </url>
 </urlset>
