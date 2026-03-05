@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { JsonStats } from '$lib/services/json';
+import { fileWatcherService } from '$lib/services/fileWatcher';
 
 export interface Tab {
   id: string;                    // Unique identifier
@@ -8,7 +9,6 @@ export interface Tab {
   content: string;               // Editor content
   isModified: boolean;           // Modified flag
   stats: JsonStats;              // JSON statistics
-  isDefault: boolean;            // Default tab flag
   isPinned: boolean;             // Pinned tab flag
 }
 
@@ -41,7 +41,6 @@ export function createNewTab(
   content: string = '',
   filePath: string | null = null,
   fileName: string | null = null,
-  isDefault: boolean = false,
   isPinned: boolean = false
 ): Tab {
   return {
@@ -51,19 +50,20 @@ export function createNewTab(
     content,
     isModified: false,
     stats: createEmptyStats(),
-    isDefault,
     isPinned,
   };
 }
 
-function createDefaultTab(): Tab {
-  return createNewTab('', null, null, true);
+// Create default state with proper activeTabId
+function createDefaultState(): TabsState {
+  const firstTab = createNewTab();
+  return {
+    tabs: [firstTab],
+    activeTabId: firstTab.id,
+  };
 }
 
-const defaultState: TabsState = {
-  tabs: [createDefaultTab()],
-  activeTabId: null,
-};
+const defaultState: TabsState = createDefaultState();
 
 // Load state from localStorage
 function loadState(): TabsState {
@@ -71,19 +71,17 @@ function loadState(): TabsState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed: TabsState = JSON.parse(stored);
-      // Don't restore file paths for security
       const sanitizedTabs: Tab[] = parsed.tabs.map(tab => ({
         ...tab,
-        filePath: null,
-        fileName: null,
+        filePath: tab.filePath ?? null,
+        fileName: tab.fileName ?? null,
         isModified: false,
-        isDefault: tab.isDefault ?? false,
         isPinned: tab.isPinned ?? false,
       }));
       
       // Ensure at least one tab
       if (sanitizedTabs.length === 0) {
-        sanitizedTabs.push(createDefaultTab());
+        sanitizedTabs.push(createNewTab());
       }
       
       // Set first tab as active if no active tab
@@ -111,14 +109,14 @@ function loadState(): TabsState {
 function saveState(state: TabsState) {
   try {
     // Limit what we save to avoid localStorage quota issues
+    // localStorage typically has 5-10MB limit, we use 1MB per tab as safe limit
+    const MAX_CONTENT_SIZE = 1024 * 1024; // 1MB
+    
     const toSave: TabsState = {
       tabs: state.tabs.map(tab => ({
         ...tab,
-        // Don't persist file paths for security
-        filePath: null,
-        fileName: null,
         // Limit content size for storage
-        content: tab.content.length > 100000 ? '' : tab.content,
+        content: tab.content.length > MAX_CONTENT_SIZE ? '' : tab.content,
       })),
       activeTabId: state.activeTabId,
     };
@@ -161,6 +159,44 @@ function createTabsStore() {
       });
     },
     
+    // Open file: reuse empty tab if possible, otherwise create new tab
+    openFile: (content: string, filePath: string, fileName: string) => {
+      let maxTabsReached = false;
+      update(state => {
+        const currentTab = state.tabs.find(t => t.id === state.activeTabId);
+        
+        // If current tab is empty and unmodified, reuse it
+        if (currentTab && !currentTab.content && !currentTab.filePath && !currentTab.isModified) {
+          const newState = {
+            ...state,
+            tabs: state.tabs.map(tab =>
+              tab.id === currentTab.id
+                ? { ...tab, content, filePath, fileName, isModified: false }
+                : tab
+            ),
+          };
+          saveState(newState);
+          return newState;
+        }
+        
+        // Check max tabs limit
+        if (state.tabs.length >= MAX_TABS) {
+          maxTabsReached = true;
+          return state;
+        }
+        
+        // Create new tab
+        const newTab = createNewTab(content, filePath, fileName);
+        const newState = {
+          tabs: [...state.tabs, newTab],
+          activeTabId: newTab.id,
+        };
+        saveState(newState);
+        return newState;
+      });
+      return maxTabsReached;
+    },
+    
     // Remove tab by ID
     removeTab: (tabId: string) => {
       update(state => {
@@ -169,17 +205,21 @@ function createTabsStore() {
         
         const newTabs = state.tabs.filter(t => t.id !== tabId);
         
-        // Ensure at least one tab
-        if (newTabs.length === 0) {
-          newTabs.push(createNewTab());
-        }
-        
         // Update active tab if removed tab was active
         let newActiveId = state.activeTabId;
         if (state.activeTabId === tabId) {
-          // Switch to previous tab or next tab
-          const newIndex = Math.max(0, tabIndex - 1);
-          newActiveId = newTabs[newIndex].id;
+          if (newTabs.length > 0) {
+            // Switch to previous tab or next tab
+            const newIndex = Math.min(tabIndex, newTabs.length - 1);
+            newActiveId = newTabs[newIndex].id;
+          }
+        }
+        
+        // Ensure at least one tab
+        if (newTabs.length === 0) {
+          const newTab = createNewTab();
+          newTabs.push(newTab);
+          newActiveId = newTab.id;
         }
         
         const newState = {
@@ -229,7 +269,7 @@ function createTabsStore() {
           ...state,
           tabs: state.tabs.map(tab =>
             tab.id === tabId
-              ? { ...tab, filePath, fileName, isModified: false, isDefault: false }
+              ? { ...tab, filePath, fileName, isModified: false }
               : tab
           ),
         };
@@ -339,7 +379,7 @@ function createTabsStore() {
     
     // Close all tabs
     closeAllTabs: () => {
-      const newTab = createDefaultTab();
+      const newTab = createNewTab();
       const newState: TabsState = {
         tabs: [newTab],
         activeTabId: newTab.id,
@@ -350,7 +390,7 @@ function createTabsStore() {
     
     // Reset store
     reset: () => {
-      const newTab = createDefaultTab();
+      const newTab = createNewTab();
       const newState: TabsState = {
         tabs: [newTab],
         activeTabId: newTab.id,

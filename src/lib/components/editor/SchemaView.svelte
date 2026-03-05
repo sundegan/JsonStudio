@@ -359,25 +359,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 6px 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    min-height: 34px;
+    min-height: 40px;
   }
 
   .sv-pane-header-left {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .sv-back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-primary);
@@ -387,32 +387,34 @@
   }
 
   .sv-back-btn:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .sv-back-icon {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
   }
 
   .sv-pane-badge {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
   }
 
   .sv-badge-json {
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
     color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   }
 
   .sv-badge-schema {
-    background: color-mix(in srgb, #8b5cf6 12%, transparent);
+    background: color-mix(in srgb, #8b5cf6 15%, transparent);
     color: #8b5cf6;
+    border: 1px solid color-mix(in srgb, #8b5cf6 25%, transparent);
   }
 
   .sv-header-controls {
@@ -426,22 +428,22 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    background: var(--bg-primary);
+    background: color-mix(in srgb, var(--bg-primary) 60%, transparent);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 2px;
+    border-radius: 8px;
+    padding: 3px;
   }
 
   .sv-tab {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border: none;
-    border-radius: 4px;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -450,44 +452,49 @@
 
   .sv-tab:hover:not(.is-active) {
     color: var(--text-primary);
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
   }
 
   .sv-tab.is-active {
-    background: var(--accent);
-    color: white;
+    background: color-mix(in srgb, #f59e0b 15%, transparent);
+    color: #f59e0b;
+    border-color: color-mix(in srgb, #f59e0b 30%, transparent);
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
   }
 
   .sv-tab-icon {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 
   /* Validation result badge */
   .sv-result-badge {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 11px;
+    gap: 6px;
+    font-size: 12px;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
     animation: sv-badge-in 0.2s ease-out;
+    border: 1px solid transparent;
   }
 
   .sv-result-badge.is-valid {
-    background: color-mix(in srgb, var(--success) 12%, transparent);
+    background: color-mix(in srgb, var(--success) 15%, transparent);
     color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 25%, transparent);
   }
 
   .sv-result-badge.is-invalid {
-    background: color-mix(in srgb, var(--error, #ef4444) 12%, transparent);
+    background: color-mix(in srgb, var(--error, #ef4444) 15%, transparent);
     color: var(--error, #ef4444);
+    border-color: color-mix(in srgb, var(--error, #ef4444) 25%, transparent);
   }
 
   .sv-result-icon {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 
   @keyframes sv-badge-in {
@@ -510,6 +517,7 @@
     flex-shrink: 0;
     background: var(--border);
     position: relative;
+    z-index: 10;
   }
 
   .sv-divider-line {
@@ -517,38 +525,40 @@
   }
 
   .sv-divider-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: var(--bg-secondary);
-    border: 1.5px solid var(--border);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #f59e0b 10%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    color: #f59e0b;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1;
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: sv-pulse 2s ease-in-out infinite;
   }
 
   .sv-divider-icon.is-static {
     cursor: default;
+    opacity: 0.7;
+    background: var(--bg-secondary);
     animation: none;
-    opacity: 0.6;
+    color: var(--text-tertiary);
+    border-color: var(--border);
   }
 
   .sv-divider-icon:not(.is-static):not(.is-valid):not(.is-invalid):hover {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #f59e0b;
+    border-color: #f59e0b;
     color: white;
-    transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
   }
 
   .sv-divider-icon:not(.is-static):active {
@@ -556,7 +566,7 @@
   }
 
   .sv-divider-icon.is-valid {
-    background: color-mix(in srgb, var(--success) 15%, var(--bg-secondary));
+    background: color-mix(in srgb, var(--success) 15%, var(--bg-primary));
     border-color: var(--success);
     color: var(--success);
     animation: none;
@@ -564,14 +574,12 @@
 
   .sv-divider-icon.is-valid:hover {
     background: var(--success);
-    border-color: var(--success);
     color: white;
-    transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--success) 40%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--success) 40%, transparent);
   }
 
   .sv-divider-icon.is-invalid {
-    background: color-mix(in srgb, var(--error, #ef4444) 15%, var(--bg-secondary));
+    background: color-mix(in srgb, var(--error, #ef4444) 15%, var(--bg-primary));
     border-color: var(--error, #ef4444);
     color: var(--error, #ef4444);
     animation: none;
@@ -579,20 +587,18 @@
 
   .sv-divider-icon.is-invalid:hover {
     background: var(--error, #ef4444);
-    border-color: var(--error, #ef4444);
     color: white;
-    transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--error, #ef4444) 40%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--error, #ef4444) 40%, transparent);
   }
 
   .sv-divider-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 
   @keyframes sv-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--text-secondary) 20%, transparent); }
-    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--text-secondary) 0%, transparent); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
   }
 
   /* Action button */
@@ -600,10 +606,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    border-radius: 5px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -611,7 +617,8 @@
   }
 
   .sv-action-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary);
+    background: var(--bg-primary);
+    border-color: var(--border);
     color: var(--text-primary);
   }
 
@@ -622,11 +629,13 @@
 
   .sv-action-btn.is-copied {
     color: var(--success);
+    background: color-mix(in srgb, var(--success) 15%, transparent);
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
   }
 
   .sv-action-icon {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
   }
 
   /* Error */

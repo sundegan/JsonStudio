@@ -34,8 +34,8 @@ export default {
   'settings.light': '亮色',
   'settings.dark': '暗色',
   'settings.colorScheme': '配色方案',
-  'settings.darkColorSchemeHint': '选择编辑器暗色配色方案',
-  'settings.lightColorSchemeHint': '选择编辑器亮色配色方案',
+  'settings.darkColorSchemeHint': '选择编辑器暗色模式配色方案',
+  'settings.lightColorSchemeHint': '选择编辑器亮色模式配色方案',
   'settings.language': '语言',
   'settings.languageHint': '选择界面显示语言',
 
@@ -79,6 +79,7 @@ export default {
   'settings.diff': '对比',
   'settings.diffDesc': '切换对比模式',
   'settings.resetShortcut': '重置为默认',
+  'settings.resetAllShortcuts': '重置所有快捷键',
 
   // Toolbar - Codegen
   'toolbar.codegen': '生成代码',
@@ -169,8 +170,16 @@ export default {
   'toolbar.exportImageCopied': '图片已复制到剪贴板',
   'toolbar.exportImageSaved': '图片已保存',
   'toolbar.exportImageFailed': '导出图片失败',
+  'toolbar.noContentExport': '没有可导出的内容',
+  'toolbar.noContentFormat': '没有可格式化的内容',
+  'toolbar.noContentMinify': '没有可压缩的内容',
+  'toolbar.noContentEscape': '没有可转义的内容',
+  'toolbar.noContentUnescape': '没有可反转义的内容',
+  'toolbar.noContentProcess': '没有可处理的内容',
+  'toolbar.noContentFold': '没有可折叠的内容',
+  'toolbar.noContentUnfold': '没有可展开的内容',
 
-  // Fix JSON
+  // TabBar
   'fixJson.fix': '修复 JSON',
   'fixJson.dismiss': '忽略',
   'fixJson.success': 'JSON 已修复',

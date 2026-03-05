@@ -4,6 +4,7 @@ import { locale, type Locale } from '$lib/i18n';
 
 // Dark theme options (consistent with monacoThemes.ts config)
 export const darkThemes = [
+  { id: 'json-studio-dark', name: 'JsonStudio Dark', description: 'Modern, perfectly integrated dark' },
   { id: 'one-dark', name: 'One Dark Pro', description: 'Atom style, soft colors' },
   { id: 'github-dark', name: 'GitHub Dark', description: 'GitHub official dark' },
   { id: 'tokyo-night', name: 'Tokyo Night', description: 'Modern Japanese aesthetics' },
@@ -13,6 +14,7 @@ export const darkThemes = [
 
 // Light theme options (consistent with monacoThemes.ts config)
 export const lightThemes = [
+  { id: 'json-studio-light', name: 'JsonStudio Light', description: 'Modern, perfectly integrated light' },
   { id: 'vs', name: 'Visual Studio', description: 'Classic light theme' },
   { id: 'github-light', name: 'GitHub Light', description: 'GitHub official light' },
   { id: 'solarized-light', name: 'Solarized Light', description: 'Warm, eye-friendly tones' },
@@ -24,8 +26,8 @@ export const lightThemes = [
 export interface AppSettings {
   // Theme settings
   isDarkMode: boolean;
-  darkTheme: 'one-dark' | 'github-dark' | 'tokyo-night' | 'dracula' | 'nord';
-  lightTheme: 'vs' | 'github-light' | 'solarized-light' | 'catppuccin-latte' | 'rose-ivy';
+  darkTheme: 'json-studio-dark' | 'one-dark' | 'github-dark' | 'tokyo-night' | 'dracula' | 'nord';
+  lightTheme: 'json-studio-light' | 'vs' | 'github-light' | 'solarized-light' | 'catppuccin-latte' | 'rose-ivy';
   
   // Language
   language: Locale;
@@ -40,8 +42,8 @@ export interface AppSettings {
 // Default settings
 const defaultSettings: AppSettings = {
   isDarkMode: false,
-  darkTheme: 'one-dark',
-  lightTheme: 'vs',
+  darkTheme: 'json-studio-dark',
+  lightTheme: 'json-studio-light',
   language: 'zh',
   fontSize: 13,
   lineHeight: 20,

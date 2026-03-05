@@ -506,25 +506,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 6px 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    min-height: 34px;
+    min-height: 40px;
   }
 
   .cv-pane-header-left {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .cv-back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-primary);
@@ -534,27 +534,28 @@
   }
 
   .cv-back-btn:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .cv-back-icon {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
   }
 
   .cv-pane-badge {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
   }
 
   .cv-badge-json {
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
     color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   }
 
   .cv-pane-actions {
@@ -572,6 +573,7 @@
     flex-shrink: 0;
     background: var(--border);
     position: relative;
+    z-index: 10;
   }
 
   .cv-divider-line {
@@ -579,32 +581,31 @@
   }
 
   .cv-divider-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
-    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #3b82f6 10%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, #3b82f6 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent);
+    color: #3b82f6;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1;
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: cv-pulse 2s ease-in-out 3;
   }
 
   .cv-divider-icon:hover {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #3b82f6;
+    border-color: #3b82f6;
     color: white;
-    transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
 
   .cv-divider-icon:active {
@@ -612,13 +613,13 @@
   }
 
   .cv-divider-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
 
   @keyframes cv-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent); }
-    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
   }
 
   .cv-header-controls {
@@ -631,20 +632,20 @@
   .cv-format-selector {
     display: flex;
     align-items: center;
-    gap: 1px;
-    background: var(--bg-primary);
+    gap: 2px;
+    background: color-mix(in srgb, var(--bg-primary) 60%, transparent);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 2px;
+    border-radius: 8px;
+    padding: 3px;
   }
 
   .cv-format-btn {
-    padding: 3px 12px;
-    border: none;
-    border-radius: 4px;
+    padding: 4px 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -654,13 +655,14 @@
 
   .cv-format-btn:hover {
     color: var(--text-primary);
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
   }
 
   .cv-format-btn.is-active {
-    background: var(--accent);
-    color: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: color-mix(in srgb, #3b82f6 15%, transparent);
+    color: #3b82f6;
+    border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
   }
 
   /* Action button */
@@ -668,10 +670,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    border-radius: 5px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -679,7 +681,8 @@
   }
 
   .cv-action-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary);
+    background: var(--bg-primary);
+    border-color: var(--border);
     color: var(--text-primary);
   }
 
@@ -690,11 +693,13 @@
 
   .cv-action-btn.is-copied {
     color: var(--success);
+    background: color-mix(in srgb, var(--success) 15%, transparent);
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
   }
 
   .cv-action-icon {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
   }
 
   /* Error */

@@ -41,6 +41,30 @@
   let isSyncingLeft = false;
   let genTimer: ReturnType<typeof setTimeout> | null = null;
   let copied = $state(false);
+  let isLangDropdownOpen = $state(false);
+
+  function toggleLangDropdown(e: Event) {
+    e.stopPropagation();
+    isLangDropdownOpen = !isLangDropdownOpen;
+  }
+
+  function selectLanguage(langId: CodegenLanguage) {
+    selectedLang = langId;
+    isLangDropdownOpen = false;
+  }
+
+  function handleGlobalClick() {
+    isLangDropdownOpen = false;
+  }
+
+  $effect(() => {
+    if (isLangDropdownOpen) {
+      window.addEventListener('click', handleGlobalClick);
+    } else {
+      window.removeEventListener('click', handleGlobalClick);
+    }
+    return () => window.removeEventListener('click', handleGlobalClick);
+  });
 
   $effect(() => {
     if (direction !== 'json2code') return;
@@ -276,15 +300,32 @@
           {#if direction === 'json2code'}
             <div class="cg-pane-badge cg-badge-json">JSON</div>
           {:else}
-            <select
-              class="cg-lang-select"
-              value={selectedLang}
-              onchange={(e) => { selectedLang = (e.target as HTMLSelectElement).value as CodegenLanguage; }}
-            >
-              {#each CODEGEN_LANGUAGES as lang}
-                <option value={lang.id}>{lang.label}</option>
-              {/each}
-            </select>
+            <div class="cg-custom-select-wrap">
+              <button class="cg-custom-select" onclick={toggleLangDropdown}>
+                {CODEGEN_LANGUAGES.find(l => l.id === selectedLang)?.label || selectedLang}
+                <svg class="cg-select-arrow" class:is-open={isLangDropdownOpen} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+              {#if isLangDropdownOpen}
+                <div class="cg-dropdown-list">
+                  {#each CODEGEN_LANGUAGES as lang}
+                    <button 
+                      class="cg-dropdown-item" 
+                      class:is-active={selectedLang === lang.id}
+                      onclick={() => selectLanguage(lang.id)}
+                    >
+                      {lang.label}
+                      {#if selectedLang === lang.id}
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      {/if}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
             <div class="cg-classname-wrap">
               <input
                 class="cg-classname-input"
@@ -326,15 +367,32 @@
       <div class="cg-pane-header">
         <div class="cg-header-controls">
           {#if direction === 'json2code'}
-            <select
-              class="cg-lang-select"
-              value={selectedLang}
-              onchange={(e) => { selectedLang = (e.target as HTMLSelectElement).value as CodegenLanguage; }}
-            >
-              {#each CODEGEN_LANGUAGES as lang}
-                <option value={lang.id}>{lang.label}</option>
-              {/each}
-            </select>
+            <div class="cg-custom-select-wrap">
+              <button class="cg-custom-select" onclick={toggleLangDropdown}>
+                {CODEGEN_LANGUAGES.find(l => l.id === selectedLang)?.label || selectedLang}
+                <svg class="cg-select-arrow" class:is-open={isLangDropdownOpen} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+              {#if isLangDropdownOpen}
+                <div class="cg-dropdown-list">
+                  {#each CODEGEN_LANGUAGES as lang}
+                    <button 
+                      class="cg-dropdown-item" 
+                      class:is-active={selectedLang === lang.id}
+                      onclick={() => selectLanguage(lang.id)}
+                    >
+                      {lang.label}
+                      {#if selectedLang === lang.id}
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      {/if}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
             <div class="cg-classname-wrap">
               <input
                 class="cg-classname-input"
@@ -413,25 +471,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 6px 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    min-height: 34px;
+    min-height: 40px;
   }
 
   .cg-pane-header-left {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .cg-back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-primary);
@@ -441,27 +499,28 @@
   }
 
   .cg-back-btn:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .cg-back-icon {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
   }
 
   .cg-pane-badge {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
   }
 
   .cg-badge-json {
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
     color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   }
 
   .cg-header-controls {
@@ -470,31 +529,95 @@
     gap: 8px;
   }
 
-  .cg-lang-select {
-    height: 26px;
-    padding: 0 24px 0 8px;
+  /* Custom Select */
+  .cg-custom-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .cg-custom-select {
+    height: 28px;
+    padding: 0 10px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1.5px solid color-mix(in srgb, #8b5cf6 30%, var(--border));
+    border-radius: 8px;
+    background: color-mix(in srgb, #8b5cf6 8%, transparent);
+    color: #8b5cf6;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+    justify-content: space-between;
+  }
+
+  .cg-custom-select:hover {
+    background: color-mix(in srgb, #8b5cf6 15%, transparent);
+    border-color: color-mix(in srgb, #8b5cf6 50%, var(--border));
+  }
+
+  .cg-select-arrow {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+    opacity: 0.8;
+  }
+
+  .cg-select-arrow.is-open {
+    transform: rotate(180deg);
+  }
+
+  .cg-dropdown-list {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 160px;
+    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
-    border-radius: 5px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 5px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: dropdownIn 0.2s ease-out;
+  }
+
+  @keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .cg-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s ease;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 6px center;
+    transition: all 0.15s ease;
+    text-align: left;
   }
 
-  .cg-lang-select:focus {
-    border-color: var(--accent);
-  }
-
-  .cg-lang-select option {
-    background: var(--bg-primary);
+  .cg-dropdown-item:hover {
+    background: var(--bg-hover);
     color: var(--text-primary);
+  }
+
+  .cg-dropdown-item.is-active {
+    background: color-mix(in srgb, #8b5cf6 15%, transparent);
+    color: #8b5cf6;
   }
 
   .cg-classname-wrap {
@@ -503,26 +626,34 @@
   }
 
   .cg-classname-input {
-    width: 120px;
-    height: 26px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    width: 140px;
+    height: 28px;
+    padding: 0 12px;
+    border: 1.5px solid color-mix(in srgb, #f43f5e 30%, var(--border));
+    border-radius: 8px;
+    background: color-mix(in srgb, #f43f5e 8%, transparent);
+    color: #f43f5e;
     font-size: 12px;
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+    font-weight: 700;
     outline: none;
-    transition: border-color 0.15s ease;
+    transition: all 0.2s ease;
+  }
+
+  .cg-classname-input:hover {
+    background: color-mix(in srgb, #f43f5e 15%, transparent);
+    border-color: color-mix(in srgb, #f43f5e 50%, var(--border));
   }
 
   .cg-classname-input:focus {
-    border-color: var(--accent);
+    border-color: #f43f5e;
+    background: color-mix(in srgb, #f43f5e 12%, var(--bg-primary));
+    box-shadow: 0 0 0 2px color-mix(in srgb, #f43f5e 20%, transparent);
   }
 
   .cg-classname-input::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.5;
+    color: color-mix(in srgb, #f43f5e 50%, var(--text-tertiary));
+    font-weight: 500;
   }
 
   .cg-pane-actions {
@@ -540,6 +671,7 @@
     flex-shrink: 0;
     background: var(--border);
     position: relative;
+    z-index: 10;
   }
 
   .cg-divider-line {
@@ -547,32 +679,31 @@
   }
 
   .cg-divider-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
-    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #8b5cf6 10%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, #8b5cf6 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent);
+    color: #8b5cf6;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1;
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: cg-pulse 2s ease-in-out 3;
   }
 
   .cg-divider-icon:hover:not(:disabled) {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #8b5cf6;
+    border-color: #8b5cf6;
     color: white;
-    transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
   }
 
   .cg-divider-icon:active:not(:disabled) {
@@ -582,20 +713,20 @@
   .cg-divider-icon.is-disabled {
     opacity: 0.35;
     cursor: not-allowed;
-    animation: none;
     background: var(--bg-secondary);
+    color: var(--text-tertiary);
+    animation: none;
     border-color: var(--border);
-    color: var(--text-secondary);
   }
 
   .cg-divider-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
 
   @keyframes cg-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent); }
-    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
   }
 
   /* Action button */
@@ -603,10 +734,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    border-radius: 5px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -614,7 +745,8 @@
   }
 
   .cg-action-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary);
+    background: var(--bg-primary);
+    border-color: var(--border);
     color: var(--text-primary);
   }
 
@@ -625,11 +757,13 @@
 
   .cg-action-btn.is-copied {
     color: var(--success);
+    background: color-mix(in srgb, var(--success) 15%, transparent);
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
   }
 
   .cg-action-icon {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
   }
 
   /* Error */

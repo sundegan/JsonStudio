@@ -3,6 +3,7 @@
   import { getJsonStats, type JsonStats } from '$lib/services/json';
   import { readFile, getFileName } from '$lib/services/file';
   import { tabsStore, activeTab } from '$lib/stores/tabs';
+  import { fileWatcherService } from '$lib/services/fileWatcher';
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import ConvertView from './ConvertView.svelte';
@@ -13,6 +14,7 @@
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
@@ -32,9 +34,9 @@
   let toastType = $state<'success' | 'error' | 'info'>('success');
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
-  let monacoEditor: MonacoEditor;
-  let toolbarRef: JsonEditorToolbar | null = null;
-  let settingsPanel: SettingsPanel | null = null;
+  let monacoEditor = $state<MonacoEditor | null>(null);
+  let toolbarRef = $state<JsonEditorToolbar | null>(null);
+  let settingsPanel = $state<SettingsPanel | null>(null);
   let isAlwaysOnTop = $state(false);
   let isDiffMode = $state(false);
   let isConvertMode = $state(false);
@@ -89,7 +91,14 @@
       try {
         const fileContent = await readFile(filePath);
         const name = await getFileName(filePath);
-        tabsStore.addTab(fileContent, filePath, name);
+        const maxTabsReached = tabsStore.openFile(fileContent, filePath, name);
+        
+        if (maxTabsReached) {
+          showToast('Maximum 10 tabs reached', 'info');
+          break;
+        }
+        
+        await updateStats();
         showToast(`Opened: ${name || 'file'}`);
       } catch (e) {
         showToast('Failed to open file', 'error');
@@ -98,8 +107,27 @@
     }
   }
 
+  // Tracker for confirm dialog
+  let isConfirmOpen = $state(false);
+  let confirmMessage = $state('');
+  let tabToClose = $state<string | null>(null);
+
+  function handleConfirmClose() {
+    if (tabToClose) {
+      tabsStore.removeTab(tabToClose);
+      tabToClose = null;
+    }
+  }
+
+  function handleCancelClose() {
+    tabToClose = null;
+  }
+
   onMount(() => {
     settingsStore.init();
+    
+    // Initialize file watcher service
+    fileWatcherService.init();
     
     // Listen to clipboard formatting events
     let unlistenFormatted: (() => void) | null = null;
@@ -138,7 +166,7 @@
       unlistenFileDrop = await listen<{ paths: string[], position: { x: number, y: number } }>('tauri://drag-drop', async (event) => {
         const paths = event.payload?.paths;
         if (paths && paths.length > 0) {
-          await openFilePaths([paths[0]]);
+          await openFilePaths(paths);
         }
       });
 
@@ -178,8 +206,10 @@
         const currentTab = $activeTab;
         if (currentTab) {
           if (currentTab.isModified) {
-            const confirmClose = confirm(`"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`);
-            if (!confirmClose) return;
+            tabToClose = currentTab.id;
+            confirmMessage = `"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
+            isConfirmOpen = true;
+            return;
           }
           tabsStore.removeTab(currentTab.id);
         }
@@ -242,6 +272,8 @@
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
       window.removeEventListener('keydown', handleKeydown);
+      fileWatcherService.destroy();
+      fileWatcherService.unwatchAll();
     };
   });
   
@@ -254,6 +286,7 @@
   
   // Track previous active tab ID to detect tab switches
   let prevActiveTabId = $state<string | null>(null);
+  let prevActiveTabContent = $state<string>('');
   let isFirstSync = $state(true);
   let suppressNextEditorChange = $state(false);
 
@@ -279,10 +312,40 @@
     checkJsonError(currentTab.content);
   }
   
+  // Handle file watching for active tab
+  async function setupFileWatching(tab: import('$lib/stores/tabs').Tab | null) {
+    if (!tab || !tab.filePath) return;
+    
+    try {
+      await fileWatcherService.watchFile(tab.filePath, async (changedPath) => {
+        // File was modified externally
+        if (tab.isModified) {
+          // Show confirmation dialog
+          showToast(`File "${tab.fileName}" was modified externally`, 'info');
+        } else {
+          // Auto reload if not modified
+          try {
+            const newContent = await readFile(changedPath);
+            tabsStore.updateTabContent(tab.id, newContent);
+            await updateStats();
+            showToast(`File "${tab.fileName}" reloaded`, 'success');
+          } catch (e) {
+            showToast(`Failed to reload file "${tab.fileName}"`, 'error');
+            console.error('Failed to reload file:', e);
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Failed to setup file watching:', e);
+    }
+  }
+  
   $effect(() => {
     const unsubscribe = tabsStore.subscribe(newTabsState => {
       const oldActiveTabId = prevActiveTabId;
       const newActiveTabId = newTabsState.activeTabId;
+      const currentTab = getActiveTabFromState(newTabsState);
+      const newActiveTabContent = currentTab?.content || '';
       
       tabsState = newTabsState;
       
@@ -290,14 +353,28 @@
       if (isFirstSync) {
         isFirstSync = false;
         prevActiveTabId = newActiveTabId;
+        prevActiveTabContent = newActiveTabContent;
         syncActiveTab(newTabsState);
+        setupFileWatching(currentTab);
         return;
       }
       
-      // Only sync content when switching tabs, not when updating current tab's content
-      if (oldActiveTabId !== newActiveTabId) {
+      // Sync content when:
+      // 1. Switching tabs (activeTabId changed)
+      // 2. Current tab's content changed externally (e.g., file opened into empty tab)
+      const tabSwitched = oldActiveTabId !== newActiveTabId;
+      const contentChangedExternally = prevActiveTabContent !== newActiveTabContent && 
+                                       newActiveTabContent !== content;
+      
+      if (tabSwitched || contentChangedExternally) {
         prevActiveTabId = newActiveTabId;
+        prevActiveTabContent = newActiveTabContent;
         syncActiveTab(newTabsState);
+        
+        // Setup file watching for new active tab
+        if (tabSwitched) {
+          setupFileWatching(currentTab);
+        }
       }
     });
     return () => unsubscribe();
@@ -315,25 +392,28 @@
     }
   });
   
-  // Track previous tabSize to detect changes
-  let prevTabSize = $state(settings.tabSize);
-  
+  let prevTabSize: number | null = null;
   // Watch tabSize changes and reformat JSON content
   $effect(() => {
-    const currentTabSize = tabSize;
-    // Only reformat if tabSize actually changed and there's valid JSON content
-    if (currentTabSize !== prevTabSize && content.trim()) {
-      prevTabSize = currentTabSize;
-      // Try to reformat the JSON with new indent size
-      try {
-        const parsed = JSON.parse(content);
-        const formatted = JSON.stringify(parsed, null, currentTabSize);
-        content = formatted;
-        monacoEditor?.setValue(formatted);
-      } catch (e) {
-        // Content is not valid JSON, skip reformatting
-      }
+    // Only reformat when settings.tabSize actually changes to a different value
+    // and there's content. We use an untracked read of the content to prevent
+    // format loops on every keystroke.
+    if (!monacoEditor) return;
+    
+    // We intentionally don't track prevTabSize here as an effect dependency
+    const currentTabSize = settings.tabSize;
+    if (!currentTabSize) return;
+
+    if (prevTabSize !== null && currentTabSize !== prevTabSize) {
+      // Use setTimeout to allow settings to settle and untrack the content read
+      setTimeout(() => {
+        const currentContent = content || '';
+        if (currentContent.trim()) {
+          toolbarRef?.formatContent();
+        }
+      }, 0);
     }
+    prevTabSize = currentTabSize;
   });
 
   $effect(() => {
@@ -587,11 +667,6 @@
     
     content = newValue;
     tabsStore.updateTabContent(currentTab.id, newValue);
-    
-    // Mark as modified if we have a current file
-    if (currentTab.filePath && !currentTab.isModified) {
-      tabsStore.updateTabModified(currentTab.id, true);
-    }
 
     if (statsTimer) clearTimeout(statsTimer);
     if (!content.trim()) { 
@@ -615,9 +690,6 @@
     content = newValue;
     if (!currentTab) return;
     tabsStore.updateTabContent(currentTab.id, newValue);
-    if (currentTab.filePath && !currentTab.isModified) {
-      tabsStore.updateTabModified(currentTab.id, true);
-    }
   }
 
   function handleEditorPaste() {
@@ -724,7 +796,6 @@
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
-          isDarkMode={isDarkMode}
         />
       {/if}
 
@@ -831,6 +902,7 @@
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
     {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode}
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="json-tree-resizer"
         role="separator"
@@ -865,6 +937,17 @@
 
   <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />
+
+  <ConfirmDialog
+    bind:isOpen={isConfirmOpen}
+    title="Unsaved Changes"
+    message={confirmMessage}
+    confirmText="Close Anyway"
+    cancelText="Cancel"
+    isDanger={true}
+    onConfirm={handleConfirmClose}
+    onCancel={handleCancelClose}
+  />
 </div>
 
 <style>
@@ -934,9 +1017,8 @@
   }
 
   .json-fix-btn:hover:not(:disabled) {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
   }
 
   .json-fix-btn:disabled {

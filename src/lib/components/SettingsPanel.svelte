@@ -288,7 +288,20 @@
         <!-- Shortcuts -->
         {#if shortcuts}
         <section class="settings-section">
-          <h3 class="settings-section-title">{$t('settings.shortcuts')}</h3>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="settings-section-title !mb-0">{$t('settings.shortcuts')}</h3>
+            <button 
+              class="settings-action-link"
+              onclick={() => shortcutsStore.reset()}
+              type="button"
+            >
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+              </svg>
+              {$t('settings.resetAllShortcuts')}
+            </button>
+          </div>
 
           {#snippet shortcutRow(nameKey: string, descKey: string, shortcut: import('$lib/stores/shortcuts').ShortcutConfig)}
             {@const isModified = shortcut.currentKey !== shortcut.defaultKey}
@@ -354,27 +367,30 @@
   .settings-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(6px);
-    z-index: 50;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.2s ease-out forwards;
   }
 
   .settings-dialog {
-    background: var(--bg-primary);
+    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
     width: 100%;
     max-width: 720px;
-    max-height: 70vh;
+    max-height: 75vh;
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.2s ease-out;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   /* Header */
@@ -382,34 +398,34 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 24px;
-    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
     flex-shrink: 0;
   }
 
   .settings-title {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.01em;
   }
 
   .settings-close-btn {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
   }
 
   .settings-close-btn:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
@@ -417,12 +433,12 @@
   .settings-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 24px 28px;
+    padding: 24px 28px 32px;
   }
 
   /* Section */
   .settings-section {
-    margin-bottom: 20px;
+    margin-bottom: 28px;
   }
 
   .settings-section:last-child {
@@ -430,12 +446,12 @@
   }
 
   .settings-section-title {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-secondary);
-    padding-bottom: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    padding-bottom: 12px;
     margin-bottom: 0;
   }
 
@@ -443,15 +459,15 @@
   .settings-list {
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
+    background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
   }
 
   .settings-item {
-    padding: 14px 16px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    padding: 16px 20px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   }
 
   .settings-item:last-child {
@@ -461,7 +477,7 @@
   .settings-item-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
   }
 
   .settings-item-label {
@@ -469,20 +485,20 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
 
   .settings-item-name {
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     color: var(--text-primary);
     letter-spacing: 0.01em;
   }
 
   .settings-hint {
-    font-size: 11px;
-    line-height: 1.4;
-    color: color-mix(in srgb, var(--text-secondary) 60%, transparent);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-tertiary);
   }
 
   /* Theme toggle buttons (Light / Dark) */
@@ -491,123 +507,124 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border-radius: 8px;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     border: 1px solid var(--border);
     background: var(--bg-primary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
   }
 
   .settings-theme-btn:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
   .settings-theme-btn.is-active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 10%, transparent);
   }
 
   /* Theme option list (radio style) */
   .settings-theme-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-top: 8px;
+    gap: 6px;
+    margin-top: 12px;
   }
 
   .settings-theme-option {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
     border: 1px solid transparent;
     background: transparent;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     text-align: left;
     width: 100%;
   }
 
   .settings-theme-option:hover {
-    background: var(--bg-primary);
+    background: color-mix(in srgb, var(--bg-hover) 50%, transparent);
   }
 
   .settings-theme-option.is-active {
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   .settings-theme-option-name {
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     color: var(--text-primary);
   }
 
   /* Radio dot */
   .settings-radio {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     border: 2px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
   }
 
   .settings-radio.is-checked {
     border-color: var(--accent);
-    background: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
   }
 
   .settings-radio-dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: white;
+    background: var(--accent);
+    box-shadow: 0 0 4px var(--accent-glow);
   }
 
   /* Number stepper */
   .settings-number-input {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-shrink: 0;
   }
 
   .settings-stepper-btn {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--bg-primary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     padding: 0;
   }
 
   .settings-stepper-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 
   .settings-stepper-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
     color: var(--text-primary);
-    border-color: color-mix(in srgb, var(--border) 100%, var(--text-secondary) 20%);
   }
 
   .settings-stepper-btn:active:not(:disabled) {
@@ -615,35 +632,36 @@
   }
 
   .settings-stepper-btn:disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   .settings-stepper-value {
-    min-width: 28px;
+    min-width: 32px;
     text-align: center;
-    font-size: 13px;
+    font-size: 14px;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
   }
 
   /* Toggle switch */
   .settings-toggle {
     position: relative;
-    width: 36px;
-    height: 20px;
-    border-radius: 10px;
-    border: none;
-    background: var(--border);
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--border) 80%, var(--bg-tertiary));
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: all 0.3s ease;
     flex-shrink: 0;
     padding: 0;
   }
 
   .settings-toggle.is-on {
-    background: var(--accent);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   }
 
   .settings-toggle-thumb {
@@ -653,21 +671,45 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: white;
-    transition: transform 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: var(--text-tertiary);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .settings-toggle.is-on .settings-toggle-thumb {
-    transform: translateX(16px);
+    transform: translateX(18px);
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  .settings-action-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .settings-action-link:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
   }
 
   /* Shortcut group label */
   .settings-shortcut-group-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    padding: 10px 0 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    padding: 16px 0 8px;
   }
 
   .settings-shortcut-group-label:first-of-type {
@@ -677,17 +719,17 @@
   /* Reset button (shortcuts) */
   .settings-reset-btn {
     opacity: 0;
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 5px;
+    border-radius: 6px;
     border: none;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
   }
 
   .group:hover .settings-reset-btn {
@@ -695,7 +737,7 @@
   }
 
   .settings-reset-btn:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
@@ -708,7 +750,7 @@
   @keyframes slideUp {
     from { 
       opacity: 0;
-      transform: translateY(16px) scale(0.97);
+      transform: translateY(16px) scale(0.96);
     }
     to { 
       opacity: 1;

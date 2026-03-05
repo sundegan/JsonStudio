@@ -2,106 +2,186 @@
 
 [English](README.md) | **中文**
 
-### 快速 · 现代 · 高效的 JSON 桌面工具
+# JsonStudio
 
-一个基于 Tauri 2.0 和 Rust 构建的现代化 JSON 桌面工具
+### JSON 美化 · JSON 查看 · JSON Diff · JSON Converter · JSON Schema · Code Gen
 
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/sundegan/JsonStudio/releases) [![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)](https://tauri.app/) [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
+免费开源的 JSON 桌面应用，基于 Tauri 2.0 与 Rust 构建。
+
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-64748B?style=flat-square&labelColor=0F172A)](https://github.com/sundegan/JsonStudio/releases)
+[![Desktop](https://img.shields.io/badge/Desktop-Tauri%202.0-0F766E?style=flat-square&labelColor=0F172A&logo=tauri&logoColor=white)](https://tauri.app/)
+[![Core](https://img.shields.io/badge/Core-Rust-9A3412?style=flat-square&labelColor=0F172A&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local-166534?style=flat-square&labelColor=0F172A)
+![Launch](https://img.shields.io/badge/Launch-%3C1s-4C1D95?style=flat-square&labelColor=0F172A)
+
+<sub>原生桌面 · 隐私优先 · 快捷键驱动工作流</sub>
 
 </div>
 
-- [核心亮点](#核心亮点)
-- [功能特性](#功能特性)
-- [技术架构](#技术架构)
-- [安装与使用](#安装与使用)
+## 产品简介
 
-<br>
+快速、现代、高效的 JSON 桌面工具。美化、查看、Diff、转换、校验、代码生成 - 一个应用全搞定，基于 Tauri 和 Rust 构建。
 
-## ✨ 核心亮点
+## 应用截图
 
-- **剪贴板快速启动**
-  复制 JSON 内容后，按下全局快捷键即可唤起应用并自动加载，告别"复制→打开应用→粘贴"的繁琐流程。配合系统剪贴板深度集成，让 JSON 处理如丝般顺滑，真正做到**即复即用，一键直达**。
+### 深色主题 
+![深色主题](docs/images_zh/app_home_page_dark_mode.png)
 
-- **快捷键驱动工作流**
-  从格式化、压缩到对比、转换，所有操作均可通过快捷键完成，无需鼠标点击。支持全局快捷键和应用内快捷键自定义，打造属于你的高效工作流，**让双手始终停留在键盘上**。
+### 浅色主题 
+![浅色主题](docs/images_zh/app_home_page_light_mode.png)
 
-- **简洁现代的交互体验**
-  纯图标工具栏，粘贴自动格式化，实时校验定位错误。支持快捷键操作、拖拽导入文件、撤销重做、状态恢复、行号显示、深色/浅色主题切换，**专注数据本身**。
+## 核心功能
 
-- **极致性能体验**
-  基于 Rust 高性能后端，轻松处理 MB 级大型 JSON 文件，即时响应无卡顿。Tauri 2.0 加持下，应用体积小巧、启动迅速、内存占用低。
+专为日常 JSON 工作打造：美化、查看、Diff、Converter、Schema、Code Gen、压缩/转义，一站式完成。
 
-- **跨平台原生应用**: 
-  采用 Tauri 2.0 构建的原生桌面应用，而非 Electron 或网页版。**完全离线可用，无需联网**，数据本地处理更安全，给你真正的桌面级体验。
+### 1) 专业级 JSON 美化与查看器
+基于 Monaco Editor（VS Code 编辑器内核）打造，提供顶级的 JSON 美化与查看体验。
 
-- **先进技术选型**
-  **Rust + Svelte + Tauri 2.0** 黄金组合，在性能、体积和开发效率之间达到完美平衡。相比传统 Electron 方案，应用体积减少 90%，内存占用降低 70%，性能提升 10 倍以上。
+![编辑器](docs/images_zh/editor.png)
 
-## 🎯 功能特性
+- 语法高亮与括号对着色
+- 多标签页编辑，支持拖拽排序
+- 代码折叠、缩略图和查找替换
+- 粘贴自动美化，瞬间得到干净 JSON
+- 明暗模式切换 + 10+ 配色主题，包括 Dracula、Nord、One Dark
 
-#### 格式化与美化
+### 2) 树视图与 JMESPath 查询
+将复杂的 JSON 结构可视化为交互式树形图，轻松导航、搜索和查询。
 
-- **JSON 格式化** - 美化显示 JSON 数据，支持语法高亮
-- **节点折叠展开** - 大型 JSON 结构可折叠，方便查看和导航
+![树视图](docs/images_zh/tree_view.png)
 
-#### 搜索与对比
+- 可折叠树结构，节点按类型着色
+- 点击节点跳转到编辑器对应位置
+- 一键复制路径和值
+- 完整的 JMESPath 查询支持，实时高亮匹配
+- 面板宽度可调节，舒适查看
 
-- **快速搜索定位** - 支持键值搜索，快速定位目标内容
-- **JSON 文件对比** - 对比两个 JSON 文件的差异
-- **差异高亮显示** - 清晰标注新增、删除、修改的内容
-- **结构化导航** - 树形结构展示，层级关系一目了然
+### 3) JSON Converter 与 Code Gen
+将 JSON 转换到 YAML、XML、TOML、CSV，或生成你偏好的类型安全代码。
 
-#### 转换与处理
+![转换](docs/images_zh/convert.png)
+![代码生成](docs/images_zh/code_gen.png)
 
-- **压缩与转义** - 一键压缩 JSON，支持字符串转义/反转义操作
-- **格式互转** - JSON 与其他格式互转，支持 XML、YAML、TOML 等格式转换
-- **代码结构生成** - 生成 Go Struct、Rust Struct、TypeScript Interface等
+- 双向转换：JSON <-> YAML、XML、TOML、CSV
+- CSV 彩虹列高亮，提升可读性
+- 生成 TypeScript、Go、Python、Java、Rust 等语言代码
+- 反向转换：粘贴代码提取 JSON
 
-#### 文件操作
+### 4) JSON Schema 生成与验证
+从任意 JSON 数据一键生成 Schema，或用现有 Schema 验证数据，并在专属视图中完成操作。
 
-- **打开/保存文件** - 支持本地 JSON 文件的读取和保存
-- **拖拽导入** - 直接拖拽文件到应用窗口即可打开
+![JSON Schema](docs/images_zh/json_schema.png)
 
-#### 效率工具
+- 一键从 JSON 数据生成 Schema
+- 根据 JSON Schema 验证数据，提供详细错误报告
+- 专属 Schema 页面，支持并排编辑
 
-- **全局快捷键** - 所有常用操作均支持快捷键，无需鼠标点击
-- **剪贴板集成** - 自动读取系统剪贴板内容，一键处理
-- **自动处理** - 粘贴后自动识别并处理 JSON 内容
-- **一键复制** - 处理结果可一键复制到剪贴板
+### 5) JSON Diff
+为 JSON 变更提供清晰直观的可视化对比，提升审查效率与可读性。
 
-#### 数据管理
+![JSON Diff](docs/images_zh/json_diff.png)
 
-- **历史记录** - 自动保存处理历史，随时回溯查看
-- **本地存储** - 所有数据本地存储，隐私安全有保障
-- **状态恢复** - 重启应用后自动恢复上次的工作内容
+- 并排 Diff 对比，内联变更高亮
+- 状态栏显示差异行数统计
+- 大体量 JSON 的变更定位更直观
 
-### 🛠️ 技术选型
+### 6) 文件操作与实用工具
+覆盖日常本地 JSON 文件处理与导出需求。
 
-- **前端框架**: Svelte + TailwindCss + Monaco Editor
-- **桌面框架**: Tauri 2.0
-- **后端语言**: Rust
+- 转义、反转义、压缩工具
+- 拖拽 JSON 文件即可打开
+- 文件关联：双击 `.json` 文件直接打开
+- 导出 JSON 为带语法高亮的美观图片，便于向他人分享
 
-| 技术 | 优势 | 性能对比 |
-|:----:|------|---------|
-| **Tauri 2.0** | 系统原生 WebView | 体积小 90% · 内存低 70% |
-| **Rust** | 系统级性能 + 内存安全 | 比 Node.js 快 10-100 倍 |
-| **Svelte** | 编译时优化 · 无虚拟 DOM | 运行时性能更优 · 体积更小 |
+### 7) 快捷键与工作流加速
+原生桌面快捷键是网页工具无法实现的 - 大幅提升你的日常 JSON 工作效率。
 
-## 📦 安装与使用
+- 全局快捷键一键启动或唤起应用到前台
+- 一键粘贴并美化：立即格式化剪贴板中的 JSON 并展示
+- 窗口置顶切换，方便多任务协作
+- 所有编辑器快捷键均可在设置中自定义
 
-#### 下载安装
+## 还有更多
 
-前往 [Releases](https://github.com/sundegan/JsonStudio/releases) 页面下载适合你系统的安装包。
+| 内置能力 | 说明 |
+|---|---|
+| JSON 修复 | 一键自动修复无效 JSON - 修复缺失引号、尾逗号等常见问题 |
+| 轻量小巧 | 安装包小、内存占用低，基于 Tauri 和 Rust 构建 |
+| 秒级启动 | 不到一秒即可启动，无加载画面，无需等待 |
+| 跨平台 | 支持 macOS、Windows 和 Linux，原生外观和体验 |
+| 10+ 主题 | Dracula、Nord、One Dark、Solarized 等，一键切换明暗主题 |
+| JSON 统计 | 实时显示键数量、嵌套深度、字节大小和行数 |
+| 国际化 | 完整的中英文界面，一键切换语言 |
+| 完全离线 | 所有数据留在本地，无服务器、无上传，完全保护隐私 |
 
-### 使用演示
+## 为什么选择 JsonStudio（对比在线工具）
 
-TODO
+| 功能 | 在线工具 | JsonStudio |
+|---|---:|---:|
+| 离线使用 / 无需联网 | ✗ | ✓ |
+| 数据隐私（100% 本地处理） | ✗ | ✓ |
+| 大 JSON 数据性能 | ✗ | ✓ |
+| 多标签页编辑 | ✗ | ✓ |
+| 树视图与 JMESPath 查询 | ✗ | ✓ |
+| 无广告体验 | ✗ | ✓ |
+| 全局快捷键与自定义键绑定 | ✗ | ✓ |
+| 图片导出 | ✗ | ✓ |
+| 本地文件操作 | ✗ | ✓ |
+| 自定义设置（主题、字号、间距、快捷键等） | ✗ | ✓ |
+| JSON Schema 生成与验证 | ✓ | ✓ |
+| 代码生成 | ✓ | ✓ |
+| JSON Converter（YAML/XML/...） | ✓ | ✓ |
+| JSON Diff | ✓ | ✓ |
+
+## 快速上手
+
+| 步骤 | 动作 | 说明 |
+|---|---|---|
+| 1 | 下载 | 从 GitHub Releases 获取你平台的安装包 |
+| 2 | 启动 | 打开应用 - 不到一秒即可启动 |
+| 3 | 粘贴 | 粘贴你的 JSON，自动美化 |
+| 4 | 完成 | 美化、查看、压缩、对比、转换、生成代码 - 尽在指尖 |
+
+## 架构图
+
+```mermaid
+flowchart LR
+    UI[Svelte 5 + Tailwind 界面] --> MONACO[Monaco Editor]
+    UI --> TAURI[Tauri 2.0 运行时]
+    TAURI --> RUST[Rust 核心引擎]
+    RUST --> TOOLING[Diff / Convert / Schema / Repair]
+    RUST --> IO[本地文件 + 剪贴板 + 图片导出]
+
+    classDef ui fill:#F8FAFC,stroke:#334155,color:#0F172A;
+    classDef editor fill:#EFF6FF,stroke:#3B82F6,color:#1E3A8A;
+    classDef runtime fill:#FFFBEB,stroke:#D97706,color:#78350F;
+    classDef core fill:#F5F3FF,stroke:#7C3AED,color:#4C1D95;
+    classDef output fill:#ECFEFF,stroke:#0E7490,color:#164E63;
+
+    class UI ui;
+    class MONACO editor;
+    class TAURI runtime;
+    class RUST core;
+    class TOOLING,IO output;
+```
+
+## 下载
+
+前往 [Releases](https://github.com/sundegan/JsonStudio/releases) 下载对应平台安装包。
+
+## 技术栈
+
+- **桌面框架**：Tauri 2.0
+- **后端语言**：Rust
+- **前端框架**：Svelte 5 + Tailwind CSS + Monaco Editor
 
 ---
 
 <div align="center">
 
-如果这个项目对你有帮助，请给一个 ⭐️ Star 支持一下！
+<br>
+
+如果这个项目对你有帮助，欢迎点个 ⭐️ Star 支持一下。
 
 </div>
 

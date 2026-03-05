@@ -34,8 +34,8 @@ export default {
   'settings.light': 'Light',
   'settings.dark': 'Dark',
   'settings.colorScheme': 'Color Scheme',
-  'settings.darkColorSchemeHint': 'Choose a dark color scheme for the editor',
-  'settings.lightColorSchemeHint': 'Choose a light color scheme for the editor',
+  'settings.darkColorSchemeHint': 'Choose a dark mode color scheme for the editor',
+  'settings.lightColorSchemeHint': 'Choose a light mode color scheme for the editor',
   'settings.language': 'Language',
   'settings.languageHint': 'Choose interface display language',
 
@@ -79,6 +79,7 @@ export default {
   'settings.diff': 'Diff',
   'settings.diffDesc': 'Toggle diff mode',
   'settings.resetShortcut': 'Reset to default',
+  'settings.resetAllShortcuts': 'Reset All Shortcuts',
 
   // Toolbar - Codegen
   'toolbar.codegen': 'Codegen',
@@ -169,8 +170,16 @@ export default {
   'toolbar.exportImageCopied': 'Image copied to clipboard',
   'toolbar.exportImageSaved': 'Image saved',
   'toolbar.exportImageFailed': 'Failed to export image',
+  'toolbar.noContentExport': 'No content to export',
+  'toolbar.noContentFormat': 'No content to format',
+  'toolbar.noContentMinify': 'No content to minify',
+  'toolbar.noContentEscape': 'No content to escape',
+  'toolbar.noContentUnescape': 'No content to unescape',
+  'toolbar.noContentProcess': 'No content to process',
+  'toolbar.noContentFold': 'No content to fold',
+  'toolbar.noContentUnfold': 'No content to unfold',
 
-  // Fix JSON
+  // TabBar
   'fixJson.fix': 'Fix JSON',
   'fixJson.dismiss': 'Dismiss',
   'fixJson.success': 'JSON repaired successfully',

@@ -13,6 +13,68 @@ export interface MonacoThemeConfig {
 
 // Theme configuration mapping
 export const monacoThemes: Record<string, MonacoThemeConfig> = {
+  // JsonStudio Dark (Modern)
+  'json-studio-dark': {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '6868a0', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '10b981' },
+      { token: 'string', foreground: '34d399' },
+      { token: 'string.key.json', foreground: '60a5fa' },
+      { token: 'string.value.json', foreground: '34d399' },
+      { token: 'number', foreground: 'fb923c' },
+      { token: 'delimiter', foreground: '9898b0' },
+      { token: 'type', foreground: 'a78bfa' },
+    ],
+    colors: {
+      'editor.background': '#111118',
+      'editor.foreground': '#e8e8f0',
+      'editor.lineHighlightBackground': '#1a1a26',
+      'editor.selectionBackground': '#2a2a3a',
+      'editorCursor.foreground': '#10b981',
+      'editorLineNumber.foreground': '#6868a0',
+      'editorLineNumber.activeForeground': '#e8e8f0',
+      'editor.inactiveSelectionBackground': '#222232',
+      'editorIndentGuide.background': '#222232',
+      'editorIndentGuide.activeBackground': '#3a3a4a',
+      'editorGutter.background': '#111118',
+      'scrollbarSlider.background': '#2a2a3a80',
+      'scrollbarSlider.hoverBackground': '#3a3a4a80',
+    }
+  },
+
+  // JsonStudio Light (Modern)
+  'json-studio-light': {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '9898b0', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '10b981' },
+      { token: 'string', foreground: '10b981' },
+      { token: 'string.key.json', foreground: '3b82f6' },
+      { token: 'string.value.json', foreground: '10b981' },
+      { token: 'number', foreground: 'f59e0b' },
+      { token: 'delimiter', foreground: '6868a0' },
+      { token: 'type', foreground: '8b5cf6' },
+    ],
+    colors: {
+      'editor.background': '#ffffff',
+      'editor.foreground': '#222232',
+      'editor.lineHighlightBackground': '#f0f0f5',
+      'editor.selectionBackground': '#e6e6ee',
+      'editorCursor.foreground': '#10b981',
+      'editorLineNumber.foreground': '#9898b0',
+      'editorLineNumber.activeForeground': '#222232',
+      'editor.inactiveSelectionBackground': '#f4f4f8',
+      'editorIndentGuide.background': '#e0e0ea',
+      'editorIndentGuide.activeBackground': '#d0d0dc',
+      'editorGutter.background': '#ffffff',
+      'scrollbarSlider.background': '#d0d0dc80',
+      'scrollbarSlider.hoverBackground': '#9898b080',
+    }
+  },
+
   // One Dark Pro theme (Atom style)
   'one-dark': {
     base: 'vs-dark',
