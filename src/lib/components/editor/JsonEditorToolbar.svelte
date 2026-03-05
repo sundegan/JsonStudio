@@ -500,8 +500,8 @@
   .je-toolbar {
     display: flex;
     align-items: center;
-    gap: 0;
-    padding: 2px 6px;
+    gap: 4px;
+    padding: 6px 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -510,24 +510,28 @@
   .toolbar-group {
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 4px;
+    background: var(--bg-primary);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
   }
 
   .toolbar-divider {
-    width: 2px;
-    height: 18px;
+    width: 1px;
+    height: 16px;
     background: var(--border);
-    margin: 0 6px;
+    margin: 0 4px;
   }
 
   .toolbar-btn {
-    height: 26px;
-    padding: 0 5px;
+    height: 28px;
+    padding: 0 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    border-radius: 4px;
+    gap: 5px;
+    border-radius: 6px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
@@ -540,16 +544,16 @@
   }
 
   .toolbar-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
   .toolbar-btn:active:not(:disabled) {
-    transform: scale(0.95);
+    transform: translateY(1px);
   }
 
   .toolbar-btn:disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
@@ -558,22 +562,22 @@
   }
 
   .toolbar-btn.is-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: var(--accent-glow);
   }
 
   .toolbar-btn.is-active {
     color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: var(--accent-glow);
   }
 
   .toolbar-icon-btn {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 5px;
+    border-radius: 6px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
@@ -583,22 +587,22 @@
   }
 
   .toolbar-icon-btn:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
   .toolbar-icon-btn:active {
-    transform: scale(0.95);
+    transform: translateY(1px);
   }
 
   .toolbar-icon-btn.is-active {
     color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: var(--accent-glow);
   }
 
   .toolbar-icon {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
     flex-shrink: 0;
   }
 
@@ -606,8 +610,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-primary);
@@ -619,11 +623,11 @@
   .toolbar-back-btn:hover {
     background: var(--accent);
     border-color: var(--accent);
-    color: white;
+    color: var(--bg-primary);
   }
 
   .toolbar-back-icon {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
   }
 </style>

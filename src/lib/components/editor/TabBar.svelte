@@ -1,11 +1,11 @@
 <script lang="ts">
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { createEventDispatcher, onMount } from 'svelte';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   
-  let { tabs, activeTabId, isDarkMode } = $props<{
+  let { tabs, activeTabId } = $props<{
     tabs: Tab[];
     activeTabId: string | null;
-    isDarkMode: boolean;
   }>();
   
   const dispatch = createEventDispatcher();
@@ -18,6 +18,11 @@
   let isContextMenuOpen = $state(false);
   let contextMenuRef: HTMLDivElement | null = null;
   
+  // Confirm dialog state
+  let isConfirmOpen = $state(false);
+  let tabToClose = $state<string | null>(null);
+  let confirmMessage = $state('');
+
   function handleTabClick(tabId: string) {
     tabsStore.setActiveTab(tabId);
   }
@@ -63,11 +68,24 @@
     
     const tab = tabs.find((t: Tab) => t.id === tabId);
     if (tab && tab.isModified) {
-      const confirmClose = confirm(`"${tab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`);
-      if (!confirmClose) return;
+      tabToClose = tabId;
+      confirmMessage = `"${tab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
+      isConfirmOpen = true;
+      return;
     }
     
     tabsStore.removeTab(tabId);
+  }
+
+  function onConfirmClose() {
+    if (tabToClose) {
+      tabsStore.removeTab(tabToClose);
+      tabToClose = null;
+    }
+  }
+
+  function onCancelClose() {
+    tabToClose = null;
   }
   
   function handleNewTab() {
@@ -170,15 +188,16 @@
   });
 </script>
 
-<div class="flex items-stretch bg-(--bg-secondary) border-b border-(--border) shrink-0" style="height: 24px;">
-  <div class="flex items-stretch flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container">
+<div class="flex items-center bg-(--bg-primary) border-b border-(--border) shrink-0 px-3 py-1" style="height: 30px;">
+  <div class="flex items-center flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container gap-1.5 h-full">
     {#each tabs as tab (tab.id)}
       <div
-        class="tab-button group grid items-center pl-2 pr-0 text-xs border-r border-(--border)
-               transition-colors duration-100 min-w-[100px] max-w-[160px] cursor-pointer
+        class="tab-button group flex items-center justify-between px-2 text-[10.5px] 
+               transition-all duration-200 min-w-[100px] max-w-[160px] cursor-pointer
+               rounded-md border h-[22px]
                {tab.id === activeTabId 
-                 ? 'bg-(--bg-primary) text-(--text-primary)' 
-                 : 'bg-transparent text-(--text-secondary) hover:bg-(--bg-primary)/30'
+                 ? 'bg-color-mix(in srgb, var(--accent) 10%, var(--bg-secondary)) text-(--accent) !border-color-mix(in srgb, var(--accent) 30%, var(--border)) shadow-sm font-semibold' 
+                 : 'text-(--text-secondary) border-transparent hover:bg-(--bg-hover)'
                }
                {dragOverTabId === tab.id ? 'drag-over' : ''}"
         draggable="true"
@@ -193,68 +212,77 @@
         aria-selected={tab.id === activeTabId}
         tabindex="0"
       >
-        <!-- Left spacer or pin icon -->
-        <span class="tab-spacer">
+        <!-- Left spacer to balance the right actions, ensuring perfect centering -->
+        <div class="w-4 flex-shrink-0"></div>
+
+        <!-- Center Group: Pin + Title -->
+        <div class="flex items-center justify-center gap-1.5 flex-1 min-w-0 px-1">
           {#if tab.isPinned}
-            <button
-              class="pin-button"
-              onclick={(e) => { e.stopPropagation(); tabsStore.togglePinTab(tab.id); }}
-              title="Unpin"
-              aria-label="Unpin tab"
-            >
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/>
-              </svg>
-            </button>
+            <div class="flex items-center justify-center w-2.5 h-2.5 flex-shrink-0">
+              <button
+                class="pin-button flex-shrink-0"
+                onclick={(e) => { e.stopPropagation(); tabsStore.togglePinTab(tab.id); }}
+                title="Unpin"
+                aria-label="Unpin tab"
+              >
+                <svg class="w-3 h-3 rotate-45 transform" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 1 1 1z"/>
+                </svg>
+              </button>
+            </div>
           {/if}
-        </span>
-        <!-- Tab name -->
-        <span class="tab-title">
-          <span class="tab-title-text truncate text-center">
+          <span class="truncate block min-w-0">
             {getTabDisplayName(tab)}
           </span>
-          {#if tab.id === activeTabId}
-            <span
-              class="tab-active-dot"
-              style={`background: ${isDarkMode ? '#7dd3fc' : '#22c55e'};`}
-              aria-hidden="true"
-            ></span>
-          {/if}
-        </span>
+        </div>
         
-        <!-- Modified indicator or close button -->
-        <span class="tab-actions">
-          {#if tab.isModified && tab.id !== activeTabId}
-            <span class="w-1.5 h-1.5 rounded-full bg-(--text-secondary)"></span>
-          {:else}
+        <!-- Right actions: Modified dot / Close button -->
+        <div class="w-4 flex-shrink-0 flex items-center justify-center relative">
+          {#if tab.isModified}
+            <span class="w-1.5 h-1.5 rounded-full {tab.id === activeTabId ? 'bg-(--accent)' : 'bg-(--text-tertiary)'} transition-colors group-hover:opacity-0 absolute"></span>
             <span
-              class="close-button w-5 h-5 flex items-center justify-center rounded-sm
+              class="w-4 h-4 flex items-center justify-center rounded-md
                      opacity-0 group-hover:opacity-100
-                     hover:bg-(--bg-hover)
-                     transition-opacity duration-100"
+                     hover:bg-(--bg-tertiary) hover:text-(--text-primary)
+                     transition-all duration-150 absolute"
               onclick={(e) => handleCloseTab(tab.id, e)}
               role="button"
               tabindex="-1"
               title="Close (Cmd+W)"
             >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg class="w-2.5 h-2.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>
+              </svg>
+            </span>
+          {:else}
+            <span
+              class="w-4 h-4 flex items-center justify-center rounded-md
+                     opacity-0 group-hover:opacity-100
+                     hover:bg-(--bg-tertiary) hover:text-(--text-primary)
+                     transition-all duration-150"
+              onclick={(e) => handleCloseTab(tab.id, e)}
+              role="button"
+              tabindex="-1"
+              title="Close (Cmd+W)"
+            >
+              <svg class="w-2.5 h-2.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>
               </svg>
             </span>
           {/if}
-        </span>
+        </div>
       </div>
     {/each}
   </div>
   
   <!-- Actions area -->
-  <div class="flex items-center px-1 shrink-0">
+  <div class="flex items-center pl-1.5 shrink-0 border-l border-(--border) ml-1.5 h-full">
     <button
-      class="w-5 h-5 flex items-center justify-center rounded-sm
+      class="w-5 h-5 flex items-center justify-center rounded-md
              text-(--text-secondary)
-             hover:bg-(--bg-hover)
+             hover:bg-(--bg-hover) hover:text-(--text-primary)
              active:bg-(--bg-tertiary)
-             transition-colors duration-100"
+             transition-all duration-150"
       onclick={handleNewTab}
       title="New Tab (Cmd+T)"
     >
@@ -285,12 +313,22 @@
   </div>
 {/if}
 
+<ConfirmDialog
+  bind:isOpen={isConfirmOpen}
+  title="Unsaved Changes"
+  message={confirmMessage}
+  confirmText="Close Anyway"
+  cancelText="Cancel"
+  isDanger={true}
+  onConfirm={onConfirmClose}
+  onCancel={onCancelClose}
+/>
+
 <style>
   .tab-button {
     user-select: none;
     cursor: pointer;
     position: relative;
-    grid-template-columns: 20px minmax(0, 1fr) 20px;
   }
   
 
@@ -298,11 +336,12 @@
   .tab-button.drag-over::before {
     content: '';
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    left: -1px;
+    top: 4px;
+    bottom: 4px;
     width: 2px;
-    background: var(--accent, #3b82f6);
+    background: var(--accent);
+    border-radius: 2px;
   }
   
   /* Custom scrollbar */
@@ -319,34 +358,27 @@
     z-index: 1000;
     min-width: 180px;
     padding: 4px;
-    background: var(--bg-secondary, #1f1f1f);
-    border: 1px solid var(--border, #333);
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .tab-context-menu-item {
     display: block;
     width: 100%;
     text-align: left;
-    padding: 6px 8px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border-radius: 6px;
     background: transparent;
-    color: var(--text-primary, #e5e7eb);
+    color: var(--text-primary);
     font-size: 12px;
     cursor: pointer;
+    transition: background 0.15s;
   }
 
   .tab-context-menu-item:hover {
-    background: var(--bg-hover, rgba(255, 255, 255, 0.08));
-  }
-
-  .tab-active-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--text-primary, #e5e7eb);
-    flex-shrink: 0;
+    background: var(--bg-hover);
   }
 
   .pin-button {
@@ -355,52 +387,18 @@
     justify-content: center;
     background: transparent;
     border: none;
-    padding: 2px;
+    padding: 0;
     cursor: pointer;
-    border-radius: 3px;
     transition: all 0.15s ease;
-    color: var(--text-secondary, #9ca3af);
+    color: var(--text-secondary);
   }
 
   .pin-button:hover {
-    background: var(--bg-hover, rgba(255, 255, 255, 0.08));
-    color: var(--text-primary, #e5e7eb);
+    color: var(--accent);
     transform: scale(1.1);
   }
 
   .pin-button:active {
-    transform: scale(0.95);
-  }
-
-  .tab-title {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-width: 0;
-    width: 100%;
-  }
-
-  .tab-title-text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .tab-actions {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    justify-self: end;
-  }
-
-  .tab-spacer {
-    width: 20px;
-    justify-self: start;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    transform: scale(0.9);
   }
 </style>

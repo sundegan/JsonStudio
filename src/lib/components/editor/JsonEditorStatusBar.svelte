@@ -31,7 +31,7 @@
   }
 </script>
 
-<div class="flex items-center gap-2 bg-(--bg-secondary) border-t border-(--border)" style="padding: 1px 10px; font-size: 13px;">
+<div class="flex items-center gap-3 bg-(--bg-secondary) border-t border-(--border)" style="padding: 4px 12px; font-size: 12px;">
   {#if isDiffMode}
     <!-- Left side stats -->
     <span class="text-(--text-secondary)">
@@ -40,7 +40,7 @@
     
     <!-- Center diff info -->
     <span class="flex-1 text-center text-(--text-secondary)">
-      {$t('status.diff')} <span class="text-green-500 font-bold">{diffLineCount}</span> {$t('status.lines')}
+      {$t('status.diff')} <span class="text-(--success) font-bold">{diffLineCount}</span> {$t('status.lines')}
     </span>
     
     <!-- Right side stats -->
@@ -54,18 +54,18 @@
       {#if activeTab.isModified}
         <span class="text-(--warning)" title={$t('status.modified')}>●</span>
       {/if}
-      <div class="w-px h-3.5 bg-(--border)"></div>
+      <div class="w-px h-3.5 bg-(--divider-strong)"></div>
     {/if}
 
     {#if stats}
       <span class="text-(--text-secondary)">{stats.key_count} {$t('status.keys')}</span>
-      <div class="w-px h-3.5 bg-(--border)"></div>
+      <div class="w-px h-3.5 bg-(--divider-strong)"></div>
       <span class="text-(--text-secondary)">{stats.depth} {$t('status.levels')}</span>
-      <div class="w-px h-3.5 bg-(--border)"></div>
+      <div class="w-px h-3.5 bg-(--divider-strong)"></div>
       <span class="text-(--text-secondary)">{formatBytes(stats.byte_size)}</span>
     {/if}
 
-    <div class="w-px h-3.5 bg-(--border)"></div>
+    <div class="w-px h-3.5 bg-(--divider-strong)"></div>
     <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} {$t('status.lines')}</span>
 
     <span class="flex-1"></span>

@@ -13,6 +13,7 @@
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
@@ -98,6 +99,22 @@
     }
   }
 
+  // Tracker for confirm dialog
+  let isConfirmOpen = $state(false);
+  let confirmMessage = $state('');
+  let tabToClose = $state<string | null>(null);
+
+  function handleConfirmClose() {
+    if (tabToClose) {
+      tabsStore.removeTab(tabToClose);
+      tabToClose = null;
+    }
+  }
+
+  function handleCancelClose() {
+    tabToClose = null;
+  }
+
   onMount(() => {
     settingsStore.init();
     
@@ -178,8 +195,10 @@
         const currentTab = $activeTab;
         if (currentTab) {
           if (currentTab.isModified) {
-            const confirmClose = confirm(`"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`);
-            if (!confirmClose) return;
+            tabToClose = currentTab.id;
+            confirmMessage = `"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
+            isConfirmOpen = true;
+            return;
           }
           tabsStore.removeTab(currentTab.id);
         }
@@ -724,7 +743,6 @@
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
-          isDarkMode={isDarkMode}
         />
       {/if}
 
@@ -865,6 +883,17 @@
 
   <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />
+
+  <ConfirmDialog
+    bind:isOpen={isConfirmOpen}
+    title="Unsaved Changes"
+    message={confirmMessage}
+    confirmText="Close Anyway"
+    cancelText="Cancel"
+    isDanger={true}
+    onConfirm={handleConfirmClose}
+    onCancel={handleCancelClose}
+  />
 </div>
 
 <style>
