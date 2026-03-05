@@ -512,10 +512,10 @@
   }
 
   .settings-theme-btn.is-active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-    box-shadow: 0 4px 12px var(--accent-glow);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 10%, transparent);
   }
 
   /* Theme option list (radio style) */
@@ -570,14 +570,15 @@
 
   .settings-radio.is-checked {
     border-color: var(--accent);
-    background: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
   }
 
   .settings-radio-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: white;
+    background: var(--accent);
+    box-shadow: 0 0 4px var(--accent-glow);
   }
 
   /* Number stepper */
@@ -637,32 +638,35 @@
     width: 40px;
     height: 22px;
     border-radius: 11px;
-    border: none;
+    border: 1px solid var(--border);
     background: color-mix(in srgb, var(--border) 80%, var(--bg-tertiary));
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
     flex-shrink: 0;
     padding: 0;
   }
 
   .settings-toggle.is-on {
-    background: var(--accent);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   }
 
   .settings-toggle-thumb {
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: white;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background: var(--text-tertiary);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .settings-toggle.is-on .settings-toggle-thumb {
     transform: translateX(18px);
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
   }
 
   /* Shortcut group label */

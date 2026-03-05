@@ -387,9 +387,9 @@
   }
 
   .sv-back-btn:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .sv-back-icon {
@@ -439,7 +439,7 @@
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
@@ -456,9 +456,10 @@
   }
 
   .sv-tab.is-active {
-    background: var(--accent);
-    color: white;
-    box-shadow: 0 2px 6px var(--accent-glow);
+    background: color-mix(in srgb, #f59e0b 15%, transparent);
+    color: #f59e0b;
+    border-color: color-mix(in srgb, #f59e0b 30%, transparent);
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
   }
 
   .sv-tab-icon {
@@ -527,12 +528,12 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
+    background: color-mix(in srgb, #f59e0b 10%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    color: #f59e0b;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -541,19 +542,23 @@
     transition: all 0.2s ease;
     padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: sv-pulse 2s ease-in-out infinite;
   }
 
   .sv-divider-icon.is-static {
     cursor: default;
     opacity: 0.7;
     background: var(--bg-secondary);
+    animation: none;
+    color: var(--text-tertiary);
+    border-color: var(--border);
   }
 
   .sv-divider-icon:not(.is-static):not(.is-valid):not(.is-invalid):hover {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #f59e0b;
+    border-color: #f59e0b;
     color: white;
-    box-shadow: 0 4px 12px var(--accent-glow);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
   }
 
   .sv-divider-icon:not(.is-static):active {
@@ -564,6 +569,7 @@
     background: color-mix(in srgb, var(--success) 15%, var(--bg-primary));
     border-color: var(--success);
     color: var(--success);
+    animation: none;
   }
 
   .sv-divider-icon.is-valid:hover {
@@ -576,6 +582,7 @@
     background: color-mix(in srgb, var(--error, #ef4444) 15%, var(--bg-primary));
     border-color: var(--error, #ef4444);
     color: var(--error, #ef4444);
+    animation: none;
   }
 
   .sv-divider-icon.is-invalid:hover {
@@ -587,6 +594,11 @@
   .sv-divider-icon svg {
     width: 20px;
     height: 20px;
+  }
+
+  @keyframes sv-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
   }
 
   /* Action button */

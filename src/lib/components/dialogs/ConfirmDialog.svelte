@@ -22,7 +22,7 @@
     onCancel: () => void;
   }>();
 
-  let dialogRef: HTMLDivElement | null = null;
+  let dialogRef = $state<HTMLDivElement | null>(null);
 
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === e.currentTarget) {
@@ -194,27 +194,28 @@
   }
 
   .dialog-confirm {
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    color: #000;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .dialog-confirm:hover {
-    background: var(--accent-secondary);
-    border-color: var(--accent-secondary);
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px var(--accent-glow);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 15%, transparent);
   }
 
   .dialog-confirm.is-danger {
-    background: var(--error);
-    border-color: var(--error);
-    color: #fff;
+    background: color-mix(in srgb, var(--error) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
+    color: var(--error);
   }
 
   .dialog-confirm.is-danger:hover {
-    background: color-mix(in srgb, var(--error) 80%, black);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--error) 25%, transparent);
+    background: color-mix(in srgb, var(--error) 25%, transparent);
+    border-color: color-mix(in srgb, var(--error) 60%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--error) 15%, transparent);
   }
 
   @keyframes fadeIn {

@@ -44,7 +44,6 @@ body {
   --text-secondary: #9898b0;
   --text-tertiary: #6868a0;
   --accent: #10b981;
-  --accent-secondary: #059669;
   --accent-glow: rgba(16, 185, 129, 0.15);
   --success: #34d399;
   --warning: #fb923c;
@@ -75,7 +74,6 @@ body {
   --text-secondary: #6868a0;
   --text-tertiary: #9898b0;
   --accent: #10b981;
-  --accent-secondary: #059669;
   --accent-glow: rgba(16, 185, 129, 0.15);
   --success: #10b981;
   --warning: #f59e0b;
@@ -287,9 +285,10 @@ body {
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 5px;
-  background: var(--accent);
-  color: white;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 /* Toolbar */
@@ -393,7 +392,7 @@ body {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--accent);
+  background: color-mix(in srgb, var(--accent) 80%, transparent);
 }
 
 .tree-node-content {

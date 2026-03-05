@@ -967,9 +967,8 @@
   }
 
   .json-fix-btn:hover:not(:disabled) {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
   }
 
   .json-fix-btn:disabled {

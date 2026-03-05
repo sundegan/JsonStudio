@@ -16,7 +16,7 @@
   let contextMenuY = $state(0);
   let contextMenuTabId = $state<string | null>(null);
   let isContextMenuOpen = $state(false);
-  let contextMenuRef: HTMLDivElement | null = null;
+  let contextMenuRef = $state<HTMLDivElement | null>(null);
   
   // Confirm dialog state
   let isConfirmOpen = $state(false);
@@ -340,8 +340,9 @@
     top: 4px;
     bottom: 4px;
     width: 2px;
-    background: var(--accent);
+    background: color-mix(in srgb, var(--accent) 80%, transparent);
     border-radius: 2px;
+    box-shadow: 0 0 4px var(--accent-glow);
   }
   
   /* Custom scrollbar */

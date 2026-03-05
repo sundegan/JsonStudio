@@ -648,9 +648,9 @@
   }
 
   .toolbar-back-btn:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg-primary);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .toolbar-back-icon {

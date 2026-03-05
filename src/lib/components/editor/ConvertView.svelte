@@ -534,9 +534,9 @@
   }
 
   .cv-back-btn:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
   }
 
   .cv-back-icon {
@@ -581,15 +581,15 @@
   }
 
   .cv-divider-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #3b82f6 10%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, #3b82f6 30%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    color: #3b82f6;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -598,13 +598,14 @@
     transition: all 0.2s ease;
     padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: cv-pulse 2s ease-in-out 3;
   }
 
   .cv-divider-icon:hover {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #3b82f6;
+    border-color: #3b82f6;
     color: white;
-    box-shadow: 0 4px 12px var(--accent-glow);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
 
   .cv-divider-icon:active {
@@ -612,8 +613,13 @@
   }
 
   .cv-divider-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+  }
+
+  @keyframes cv-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
   }
 
   .cv-header-controls {
@@ -635,7 +641,7 @@
 
   .cv-format-btn {
     padding: 4px 12px;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
@@ -653,9 +659,10 @@
   }
 
   .cv-format-btn.is-active {
-    background: var(--accent);
-    color: white;
-    box-shadow: 0 2px 6px var(--accent-glow);
+    background: color-mix(in srgb, #3b82f6 15%, transparent);
+    color: #3b82f6;
+    border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
   }
 
   /* Action button */
