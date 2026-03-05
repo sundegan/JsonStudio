@@ -33,9 +33,9 @@
   let toastType = $state<'success' | 'error' | 'info'>('success');
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
-  let monacoEditor: MonacoEditor;
-  let toolbarRef: JsonEditorToolbar | null = null;
-  let settingsPanel: SettingsPanel | null = null;
+  let monacoEditor = $state<MonacoEditor | null>(null);
+  let toolbarRef = $state<JsonEditorToolbar | null>(null);
+  let settingsPanel = $state<SettingsPanel | null>(null);
   let isAlwaysOnTop = $state(false);
   let isDiffMode = $state(false);
   let isConvertMode = $state(false);
@@ -334,25 +334,28 @@
     }
   });
   
-  // Track previous tabSize to detect changes
-  let prevTabSize = $state(settings.tabSize);
-  
+  let prevTabSize: number | null = null;
   // Watch tabSize changes and reformat JSON content
   $effect(() => {
-    const currentTabSize = tabSize;
-    // Only reformat if tabSize actually changed and there's valid JSON content
-    if (currentTabSize !== prevTabSize && content.trim()) {
-      prevTabSize = currentTabSize;
-      // Try to reformat the JSON with new indent size
-      try {
-        const parsed = JSON.parse(content);
-        const formatted = JSON.stringify(parsed, null, currentTabSize);
-        content = formatted;
-        monacoEditor?.setValue(formatted);
-      } catch (e) {
-        // Content is not valid JSON, skip reformatting
-      }
+    // Only reformat when settings.tabSize actually changes to a different value
+    // and there's content. We use an untracked read of the content to prevent
+    // format loops on every keystroke.
+    if (!monacoEditor) return;
+    
+    // We intentionally don't track prevTabSize here as an effect dependency
+    const currentTabSize = settings.tabSize;
+    if (!currentTabSize) return;
+
+    if (prevTabSize !== null && currentTabSize !== prevTabSize) {
+      // Use setTimeout to allow settings to settle and untrack the content read
+      setTimeout(() => {
+        const currentContent = content || '';
+        if (currentContent.trim()) {
+          toolbarRef?.formatContent();
+        }
+      }, 0);
     }
+    prevTabSize = currentTabSize;
   });
 
   $effect(() => {
@@ -849,6 +852,7 @@
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
     {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode}
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="json-tree-resizer"
         role="separator"
