@@ -82,7 +82,11 @@
   });
 
   async function handleExportImage() {
-    if (!hasContent || isExporting) return;
+    if (isExporting) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentExport'), 'info');
+      return;
+    }
     isExporting = true;
     try {
       const currentTheme: EditorTheme = appSettings.isDarkMode
@@ -154,8 +158,11 @@
   }
 
   async function handleFormat() {
-    if (!content.trim()) return;
     if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentFormat'), 'info');
+      return;
+    }
     isProcessing = true;
     const contentSize = content.length;
 
@@ -178,8 +185,11 @@
   }
 
   async function handleMinify() {
-    if (!content.trim()) return;
     if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentMinify'), 'info');
+      return;
+    }
     isProcessing = true;
     const contentSize = content.length;
 
@@ -203,8 +213,11 @@
   }
 
   async function handleEscape() {
-    if (!content.trim()) return;
     if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentEscape'), 'info');
+      return;
+    }
     isProcessing = true;
     const contentSize = content.length;
 
@@ -225,8 +238,11 @@
   }
 
   async function handleUnescape() {
-    if (!content.trim()) return;
     if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentUnescape'), 'info');
+      return;
+    }
     isProcessing = true;
     const contentSize = content.length;
 
@@ -254,8 +270,11 @@
   }
 
   async function handleMinifyEscape() {
-    if (!content.trim()) return;
     if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentProcess'), 'info');
+      return;
+    }
     isProcessing = true;
     const contentSize = content.length;
 
@@ -280,10 +299,18 @@
   }
 
   function handleFoldAll() {
+    if (!hasContent) {
+      onToast($t('toolbar.noContentFold'), 'info');
+      return;
+    }
     editor?.foldAll();
   }
 
   function handleUnfoldAll() {
+    if (!hasContent) {
+      onToast($t('toolbar.noContentUnfold'), 'info');
+      return;
+    }
     editor?.unfoldAll();
   }
 
@@ -385,7 +412,7 @@
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
         {$t('toolbar.open')}
       </button>
-      <button class="toolbar-btn" onclick={handleExportImage} disabled={!hasContent || isExporting} title={$t('toolbar.exportImage')}>
+      <button class="toolbar-btn" onclick={handleExportImage} disabled={isExporting} title={$t('toolbar.exportImage')}>
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
         {$t('toolbar.exportImage')}
       </button>
@@ -395,34 +422,34 @@
 
     <!-- 2. JSON transform -->
     <div class="toolbar-group">
-      <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing || !hasContent} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
+      <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
           <path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
         </svg>
         {$t('toolbar.format')}
       </button>
-      <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing || !hasContent} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
+      <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M9 4l3 2 3-2"/><path d="M4 10h16M4 14h16"/><path d="M12 22v-4M9 20l3-2 3 2"/></svg>
         {$t('toolbar.minify')}
       </button>
-      <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing || !hasContent} title="{$t('toolbar.escape')} ({shortcutLabel('escape')})">
+      <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing} title="{$t('toolbar.escape')} ({shortcutLabel('escape')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
         {$t('toolbar.escape')}
       </button>
-      <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing || !hasContent} title="{$t('toolbar.unescape')} ({shortcutLabel('unescape')})">
+      <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing} title="{$t('toolbar.unescape')} ({shortcutLabel('unescape')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6"/></svg>
         {$t('toolbar.unescape')}
       </button>
-      <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing || !hasContent} title="{$t('toolbar.minifyEscape')} ({shortcutLabel('minifyEscape')})">
+      <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing} title="{$t('toolbar.minifyEscape')} ({shortcutLabel('minifyEscape')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
         {$t('toolbar.minifyEscape')}
       </button>
-      <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing || !hasContent} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
+      <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
         {$t('toolbar.foldAll')}
       </button>
-      <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing || !hasContent} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
+      <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
         {$t('toolbar.unfoldAll')}
       </button>
@@ -436,15 +463,15 @@
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
         {$t('toolbar.diff')}
       </button>
-      <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={!hasContent || isCodegenMode || isSchemaMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
+      <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isCodegenMode || isSchemaMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 4 20 7 17 10"/><path d="M4 12v-1a3 3 0 0 1 3-3h13"/><polyline points="7 20 4 17 7 14"/><path d="M20 12v1a3 3 0 0 1-3 3H4"/></svg>
         {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
       </button>
-      <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={!hasContent || isConvertMode || isSchemaMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
+      <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isConvertMode || isSchemaMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 1 12 7 18"/><polyline points="17 6 23 12 17 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
         {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
       </button>
-      <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={!hasContent || isConvertMode || isCodegenMode} title={isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}>
+      <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isConvertMode || isCodegenMode} title={isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}>
         <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3l9 4.5v5c0 4.7-3.8 9-9 10.5C6.8 21.5 3 17.2 3 12.5v-5L12 3z"/>
           <path d="M9 12l2 2 4-4"/>
