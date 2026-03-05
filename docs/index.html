@@ -213,7 +213,42 @@ a:hover{opacity:.85}
 .workflow-step h4{font-size:15px;font-weight:700;margin-bottom:6px}
 .workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
 
-/* ── Tech ── */
+.showcase-visual img {
+  cursor: zoom-in;
+  transition: transform 0.3s ease;
+}
+.showcase-visual:hover img {
+  transform: scale(1.02);
+}
+
+/* Lightbox Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 40px;
+  cursor: zoom-out;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.3s ease;
+}
+.modal img {
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Tech Grid */
 .tech-grid{display:flex;gap:20px;justify-content:center;flex-wrap:nowrap;max-width:900px;margin:0 auto}
 .tech-pill{display:flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:600;transition:all .2s;border:none}
 .tech-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
@@ -309,14 +344,11 @@ a:hover{opacity:.85}
 <section class="screenshots" id="screenshots">
   <div class="screenshots-inner">
     <div class="screenshot-box">
-      <div class="screenshot-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        <span>Application screenshots coming soon</span>
-      </div>
+      <img id="main-screenshot" src="images_en/app_home_page_dark_mode.png" alt="JsonStudio Screenshot" style="width:100%; height:100%; object-fit:cover;">
     </div>
     <div class="screenshot-tabs">
-      <button class="screenshot-tab active">Dark Theme</button>
-      <button class="screenshot-tab">Light Theme</button>
+      <button class="screenshot-tab active" onclick="updateScreenshot('images_en/app_home_page_dark_mode.png', this)">Dark Theme</button>
+      <button class="screenshot-tab" onclick="updateScreenshot('images_en/app_home_page_light_mode.png', this)">Light Theme</button>
     </div>
   </div>
 </section>
@@ -343,7 +375,7 @@ a:hover{opacity:.85}
           <li>10+ color themes including Dracula, Nord, and One Dark</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Editor screenshot</span></div>
+      <div class="showcase-visual"><img src="images_en/editor_dark.png" alt="JSON Editor" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 2. Tree & Query -->
@@ -360,7 +392,7 @@ a:hover{opacity:.85}
           <li>Resizable panel width for comfortable viewing</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Tree View screenshot</span></div>
+      <div class="showcase-visual"><img src="images_en/tree_view_dark.png" alt="JSON Tree View" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 3. Convert & Codegen -->
@@ -376,7 +408,12 @@ a:hover{opacity:.85}
           <li>Reverse conversion: paste code to extract JSON</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Conversion screenshot</span></div>
+      <div class="showcase-visual">
+        <div style="display:flex; flex-direction:column; height:100%; width:100%;">
+          <img src="images_en/convert_dark.png" alt="JSON Converter" style="height:50%; width:100%; object-fit:cover;">
+          <img src="images_en/code_gen.png" alt="Code Generation" style="height:50%; width:100%; object-fit:cover;">
+        </div>
+      </div>
     </div>
 
     <!-- 4. JSON Schema -->
@@ -391,7 +428,7 @@ a:hover{opacity:.85}
           <li>Dedicated schema page with side-by-side editing</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Schema screenshot</span></div>
+      <div class="showcase-visual"><img src="images_en/json_schema_dark.png" alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 5. Efficiency & Shortcuts -->
@@ -408,7 +445,7 @@ a:hover{opacity:.85}
           <li>File association: double-click .json to open directly</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Settings screenshot</span></div>
+      <div class="showcase-visual"><img src="images_en/settings_dark.png" alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 6. Diff & More Tools -->
@@ -425,7 +462,7 @@ a:hover{opacity:.85}
           <li>Export JSON as beautiful images with syntax highlighting for easy sharing</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Diff screenshot</span></div>
+      <div class="showcase-visual"><img src="images_en/json_diff_dark.png" alt="JSON Diff" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
   </div>
 </section>
@@ -621,12 +658,38 @@ a:hover{opacity:.85}
   </div>
 </footer>
 
+<!-- Lightbox Modal -->
+<div id="imageModal" class="modal" onclick="closeModal()">
+  <img id="modalImg" src="">
+</div>
+
 <script>
-document.querySelectorAll('.screenshot-tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('.screenshot-tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
+function updateScreenshot(src, btn) {
+  document.getElementById('main-screenshot').src = src;
+  document.querySelectorAll('.screenshot-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Lightbox
+const modal = document.getElementById('imageModal');
+const modalImg = document.getElementById('modalImg');
+
+document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {
+  img.addEventListener('click', () => {
+    modal.style.display = 'flex';
+    modalImg.src = img.src;
+    document.body.style.overflow = 'hidden'; // Prevent scroll
   });
+});
+
+function closeModal() {
+  modal.style.display = 'none';
+  document.body.style.overflow = ''; // Restore scroll
+}
+
+// Close with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
 });
 </script>
 </body>

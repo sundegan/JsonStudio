@@ -213,7 +213,42 @@ a:hover{opacity:.85}
 .workflow-step h4{font-size:15px;font-weight:700;margin-bottom:6px}
 .workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
 
-/* ── Tech ── */
+.showcase-visual img {
+  cursor: zoom-in;
+  transition: transform 0.3s ease;
+}
+.showcase-visual:hover img {
+  transform: scale(1.02);
+}
+
+/* Lightbox Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 40px;
+  cursor: zoom-out;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.3s ease;
+}
+.modal img {
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Tech Grid */
 .tech-grid{display:flex;gap:20px;justify-content:center;flex-wrap:nowrap;max-width:900px;margin:0 auto}
 .tech-pill{display:flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:600;transition:all .2s;border:none}
 .tech-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
@@ -309,14 +344,11 @@ a:hover{opacity:.85}
 <section class="screenshots" id="screenshots">
   <div class="screenshots-inner">
     <div class="screenshot-box">
-      <div class="screenshot-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        <span>应用截图即将上线</span>
-      </div>
+      <img id="main-screenshot" src="../images_zh/app_home_page_dark_mode.png" alt="JsonStudio 截图" style="width:100%; height:100%; object-fit:cover;">
     </div>
     <div class="screenshot-tabs">
-      <button class="screenshot-tab active">深色主题</button>
-      <button class="screenshot-tab">浅色主题</button>
+      <button class="screenshot-tab active" onclick="updateScreenshot('../images_zh/app_home_page_dark_mode.png', this)">深色主题</button>
+      <button class="screenshot-tab" onclick="updateScreenshot('../images_zh/app_home_page_light_mode.png', this)">浅色主题</button>
     </div>
   </div>
 </section>
@@ -343,7 +375,7 @@ a:hover{opacity:.85}
           <li>明暗模式切换 + 10+ 配色主题，包括 Dracula、Nord、One Dark</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">编辑器截图</span></div>
+      <div class="showcase-visual"><img src="../images_zh/editor_dark.png" alt="JSON 编辑器" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 2. Tree & Query -->
@@ -360,7 +392,7 @@ a:hover{opacity:.85}
           <li>面板宽度可调节，舒适查看</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">树视图截图</span></div>
+      <div class="showcase-visual"><img src="../images_zh/tree_view_dark.png" alt="JSON 树视图" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 3. Convert & Codegen -->
@@ -376,7 +408,12 @@ a:hover{opacity:.85}
           <li>反向转换：粘贴代码提取 JSON</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">转换截图</span></div>
+      <div class="showcase-visual">
+        <div style="display:flex; flex-direction:column; height:100%; width:100%;">
+          <img src="../images_zh/convert_dark.png" alt="JSON 转换" style="height:50%; width:100%; object-fit:cover;">
+          <img src="../images_zh/code_gen.png" alt="代码生成" style="height:50%; width:100%; object-fit:cover;">
+        </div>
+      </div>
     </div>
 
     <!-- 4. JSON Schema -->
@@ -391,7 +428,7 @@ a:hover{opacity:.85}
           <li>专属 Schema 页面，支持并排编辑</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">Schema 截图</span></div>
+      <div class="showcase-visual"><img src="../images_zh/json_schema_dark.png" alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 5. Efficiency & Shortcuts -->
@@ -408,7 +445,7 @@ a:hover{opacity:.85}
           <li>文件关联：双击 .json 文件直接打开</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">设置截图</span></div>
+      <div class="showcase-visual"><img src="../images_zh/settings_dark.png" alt="设置与快捷键" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 6. Diff & More Tools -->
@@ -425,7 +462,7 @@ a:hover{opacity:.85}
           <li>导出 JSON 为带语法高亮的美观图片，便于向他人分享</li>
         </ul>
       </div>
-      <div class="showcase-visual"><span class="showcase-visual-placeholder">对比截图</span></div>
+      <div class="showcase-visual"><img src="../images_zh/json_diff_dark.png" alt="JSON 对比" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
   </div>
 </section>
@@ -621,12 +658,38 @@ a:hover{opacity:.85}
   </div>
 </footer>
 
+<!-- Lightbox Modal -->
+<div id="imageModal" class="modal" onclick="closeModal()">
+  <img id="modalImg" src="">
+</div>
+
 <script>
-document.querySelectorAll('.screenshot-tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('.screenshot-tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
+function updateScreenshot(src, btn) {
+  document.getElementById('main-screenshot').src = src;
+  document.querySelectorAll('.screenshot-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Lightbox
+const modal = document.getElementById('imageModal');
+const modalImg = document.getElementById('modalImg');
+
+document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {
+  img.addEventListener('click', () => {
+    modal.style.display = 'flex';
+    modalImg.src = img.src;
+    document.body.style.overflow = 'hidden'; // Prevent scroll
   });
+});
+
+function closeModal() {
+  modal.style.display = 'none';
+  document.body.style.overflow = ''; // Restore scroll
+}
+
+// Close with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
 });
 </script>
 </body>

@@ -24,11 +24,11 @@ A fast, modern, and efficient JSON desktop tool. Prettify, view, diff, convert, 
 
 ## Screenshot
 
-| Dark Theme | Light Theme |
-|---|---|
-| _Application screenshots coming soon_ | _Application screenshots coming soon_ |
+### Dark Theme
+![Dark Theme](docs/images_en/app_home_page_dark_mode.png)
 
-<!-- TODO: add dark/light app screenshots -->
+### Light Theme
+![Light Theme](docs/images_en/app_home_page_light_mode.png)
 
 ## Core Features
 
@@ -36,6 +36,8 @@ Built for daily JSON work: Prettify, Viewer, Diff, Converter, JSON Schema, Code 
 
 ### 1) Professional JSON Prettify & Viewer
 Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON prettify and viewing experience.
+
+![Editor](docs/images_en/editor.png)
 
 - Syntax highlighting with bracket pair colorization
 - Multi-tab editing with drag-and-drop reordering
@@ -46,6 +48,8 @@ Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON prett
 ### 2) Tree View & JMESPath Query
 Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.
 
+![Tree View](docs/images_en/tree_view.png)
+
 - Collapsible tree with type-colored icons
 - Click any node to jump to its position in the editor
 - Copy path and value with one click
@@ -55,6 +59,9 @@ Visualize complex JSON structures as an interactive tree. Navigate, search, and 
 ### 3) JSON Converter & Code Gen
 Convert JSON to YAML, XML, TOML, and CSV, or generate type-safe code in your favorite language.
 
+![Converter](docs/images_en/convert.png)
+![Code Gen](docs/images_en/code_gen.png)
+
 - Bidirectional conversion: JSON <-> YAML, XML, TOML, CSV
 - CSV rainbow column highlighting for readability
 - Generate TypeScript, Go, Python, Java, Rust, and more
@@ -63,12 +70,16 @@ Convert JSON to YAML, XML, TOML, and CSV, or generate type-safe code in your fav
 ### 4) JSON Schema Generation & Validation
 Generate JSON Schema from any JSON data, or validate your data against an existing schema - all in a dedicated view.
 
+![JSON Schema](docs/images_en/json_schema.png)
+
 - One-click schema generation from JSON data
 - Validate JSON against any JSON Schema with detailed error reports
 - Dedicated schema page with side-by-side editing
 
 ### 5) JSON Diff
 Visual comparison for JSON changes, optimized for readable and fast review.
+
+![JSON Diff](docs/images_en/json_diff.png)
 
 - Side-by-side diff with inline change highlighting
 - Diff line count statistics in status bar
