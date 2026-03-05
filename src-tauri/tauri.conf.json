@@ -15,8 +15,8 @@
         "title": "Json Studio",
         "width": 1200,
         "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
+        "minWidth": 1000,
+        "minHeight": 650,
         "center": true
       }
     ],
