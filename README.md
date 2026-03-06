@@ -8,11 +8,21 @@
 
 Free, open-source JSON desktop app built with Tauri 2.0 and Rust.
 
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-64748B?style=flat-square&labelColor=0F172A)](https://github.com/sundegan/JsonStudio/releases)
-[![Desktop](https://img.shields.io/badge/Desktop-Tauri%202.0-0F766E?style=flat-square&labelColor=0F172A&logo=tauri&logoColor=white)](https://tauri.app/)
-[![Core](https://img.shields.io/badge/Core-Rust-9A3412?style=flat-square&labelColor=0F172A&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local-166534?style=flat-square&labelColor=0F172A)
-![Launch](https://img.shields.io/badge/Launch-%3C1s-4C1D95?style=flat-square&labelColor=0F172A)
+**[jsonstudio.js.org](https://jsonstudio.js.org/)**
+
+<p align="center">
+  <a href="https://jsonstudio.js.org/">
+    <img src="https://img.shields.io/badge/Website-f5c542?style=flat-square&logo=google-chrome&logoColor=white" alt="Website">
+  </a>
+  <a href="https://github.com/sundegan/JsonStudio/releases">
+    <img src="https://img.shields.io/github/v/release/sundegan/JsonStudio?style=flat-square&color=10b981&label=Release" alt="Release">
+  </a>
+  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-334155?style=flat-square&logo=apple&logoColor=white" alt="Platform">
+  <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=flat-square&logo=tauri&logoColor=white" alt="Tauri">
+  <img src="https://img.shields.io/badge/Rust-2024-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust">
+  <img src="https://img.shields.io/badge/Launch-%3C1s-4C1D95?style=flat-square&logo=speedtest&logoColor=white" alt="Launch">
+  <img src="https://img.shields.io/badge/Privacy-100%25%20Local-166534?style=flat-square" alt="Privacy">
+</p>
 
 <sub>desktop-native · privacy-first · shortcut-driven workflow</sub>
 
