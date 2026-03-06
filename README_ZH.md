@@ -12,16 +12,16 @@
 
 <p align="center">
   <a href="https://jsonstudio.js.org/">
-    <img src="https://img.shields.io/badge/官方网站-f5c542?style=flat-square&logo=google-chrome&logoColor=white" alt="Website">
+    <img src="https://img.shields.io/badge/官方网站-f5c542?style=flat-square&logo=googlechrome&logoColor=white" alt="Website">
   </a>
   <a href="https://github.com/sundegan/JsonStudio/releases">
-    <img src="https://img.shields.io/github/v/release/sundegan/JsonStudio?style=flat-square&color=10b981&label=最新版本" alt="Release">
+    <img src="https://img.shields.io/github/v/release/sundegan/JsonStudio?style=flat-square&color=10b981&label=最新版本&logo=github&logoColor=white" alt="Release">
   </a>
   <img src="https://img.shields.io/badge/平台-macOS%20%7C%20Windows%20%7C%20Linux-334155?style=flat-square&logo=apple&logoColor=white" alt="Platform">
   <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=flat-square&logo=tauri&logoColor=white" alt="Tauri">
   <img src="https://img.shields.io/badge/Rust-2024-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/启动-%3C1s-4C1D95?style=flat-square&logo=speedtest&logoColor=white" alt="Launch">
-  <img src="https://img.shields.io/badge/隐私-100%25%20本地处理-166534?style=flat-square" alt="Privacy">
+  <img src="https://img.shields.io/badge/隐私-100%25%20本地处理-166534?style=flat-square&logo=docsdotrs&logoColor=white" alt="Privacy">
 </p>
 
 <sub>原生桌面 · 隐私优先 · 快捷键驱动工作流</sub>
