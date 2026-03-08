@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import loader from '@monaco-editor/loader';
   import type * as Monaco from 'monaco-editor';
+  import { initMonaco } from '$lib/services/monaco';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
 
   let {
@@ -107,7 +107,7 @@
   });
 
   onMount(async () => {
-    const monacoInstance = await loader.init();
+    const monacoInstance = await initMonaco();
     monaco = monacoInstance;
 
     registerMonacoThemes(monacoInstance);
