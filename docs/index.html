@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JsonStudio | JSON Prettify, Minify, Escape & Diff Tool</title>
-<meta name="description" content="JsonStudio is a free, open-source JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
-<meta name="keywords" content="JSON prettify, JSON viewer, JSON diff, JSON converter, JSON schema, code gen, JSON minify, JSON escape, JSON unescape, JSON editor, JSON to YAML, JSON to XML, JMESPath, offline JSON tool, desktop JSON app, Tauri, Rust, macOS, Windows, Linux">
+<title>JsonStudio | JSON Formatter, JSON Viewer, JSON Editor, JSON Diff, JSON Converter, JSON Tool</title>
+<meta name="description" content="JsonStudio is a free JSON desktop app for JSON Formatter, JSON Viewer, JSON Editor, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
+<meta name="keywords" content="JSON formatter, JSON prettify, JSON viewer, JSON editor, JSON diff, JSON converter, JSON schema, JSON minify, JSON escape, JSON unescape, JSON tool, JSON validator, JSON parser, JSON to YAML, JSON to XML, JMESPath, desktop JSON app, Tauri, Rust">
 <meta name="author" content="sundegan">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="theme-color" content="#0a0a0f">
@@ -23,8 +23,8 @@
 <link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/">
 
 <!-- Open Graph -->
-<meta property="og:title" content="JsonStudio | JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, Code Gen">
-<meta property="og:description" content="JsonStudio is a free, open-source JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
+<meta property="og:title" content="JsonStudio | JSON Prettify, JSON Editor, JSON Viewer, JSON Diff, JSON Converter, JSON Schema">
+<meta property="og:description" content="JsonStudio is a free JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jsonstudio.js.org/">
 <meta property="og:image" content="https://jsonstudio.js.org/icon.png">
@@ -42,8 +42,14 @@
 <meta name="twitter:image:alt" content="JsonStudio app icon">
 
 <!-- Favicon -->
-<link rel="icon" href="icon.png" type="image/png">
-<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="msapplication-TileImage" content="/icon.png">
+<meta name="msapplication-TileColor" content="#0a0a0f">
 
 <!-- Structured Data -->
 <script type="application/ld+json">
@@ -53,7 +59,7 @@
   "@id": "https://jsonstudio.js.org/#softwareapplication",
   "name": "JsonStudio",
   "alternateName": "Json Studio",
-  "description": "JsonStudio is a free, open-source JSON desktop app for JSON prettify, JSON viewer, JSON diff, JSON converter, JSON Schema, and code generation, plus minify/escape tools.",
+  "description": "JsonStudio is a free, open-source JSON desktop app for JSON formatting, prettify, minify, escape, diff, converter, JSON Schema validation, and code generation.",
   "url": "https://jsonstudio.js.org/",
   "image": "https://jsonstudio.js.org/icon.png",
   "screenshot": "https://jsonstudio.js.org/icon.png",
@@ -77,12 +83,15 @@
     "https://github.com/sundegan/JsonStudio/releases"
   ],
   "featureList": [
-    "JSON prettify and viewer",
+    "JSON formatter and prettify",
+    "JSON minify and compress",
+    "JSON escape and unescape",
     "JSON diff comparison",
     "JSON converter with YAML, XML, TOML, and CSV",
     "JSON Schema generation and validation",
     "Code generation for TypeScript, Go, Python, Java, and Rust",
-    "JSON minify, escape, and unescape"
+    "JSON viewer with tree structure",
+    "JMESPath query support"
   ]
 }
 </script>
@@ -323,7 +332,7 @@ a:hover{opacity:.85}
 <section class="hero">
   <img src="icon.png" alt="JsonStudio" class="hero-icon">
   <h1><span class="gold">Json</span>Studio</h1>
-  <p class="hero-sub">A fast, modern, and efficient JSON desktop tool. Prettify, view, diff, convert, validate, and generate code — all in one app, powered by Tauri & Rust.</p>
+  <p class="hero-sub">A fast, modern, and efficient JSON desktop tool. Format, prettify, minify, escape, diff, convert, validate, and generate code — all in one app, powered by Tauri & Rust.</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -372,13 +381,13 @@ a:hover{opacity:.85}
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge green">EDITOR</span>
-        <h3>Professional JSON Prettify & Viewer</h3>
-        <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON prettify and viewing experience.</p>
+        <h3>Professional JSON Formatter & Viewer</h3>
+        <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON formatting and prettify experience.</p>
         <ul>
           <li>Syntax highlighting with bracket pair colorization</li>
           <li>Multi-tab editing with drag-and-drop reordering</li>
           <li>Code folding, minimap, and find & replace</li>
-          <li>Auto-prettify on paste for instantly clean JSON</li>
+          <li>Auto-format on paste for instantly clean JSON</li>
           <li>10+ color themes including Dracula, Nord, and One Dark</li>
         </ul>
       </div>
@@ -446,7 +455,7 @@ a:hover{opacity:.85}
         <p>Native desktop shortcuts that web tools simply can't offer — dramatically speed up your daily JSON workflow.</p>
         <ul>
           <li>Global shortcut to launch or bring the app to front instantly</li>
-          <li>One-key paste & prettify: clean up clipboard JSON instantly</li>
+          <li>One-key paste & prettify: format clipboard JSON instantly</li>
           <li>Window always-on-top toggle for multitasking</li>
           <li>All editor shortcuts fully customizable in settings</li>
           <li>File association: double-click .json to open directly</li>

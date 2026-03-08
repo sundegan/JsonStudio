@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JsonStudio | JSON 美化、压缩、转义与 Diff 工具</title>
+<title>JsonStudio | JSON 格式化、查看、编辑、对比、转换</title>
 <meta name="description" content="JsonStudio 是免费开源 JSON 桌面应用，聚焦 JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema 与 Code Gen，并提供压缩/转义工具。">
-<meta name="keywords" content="JSON 美化, JSON 查看, JSON Diff, JSON Converter, JSON Schema, Code Gen, JSON 压缩, JSON 转义, JSON 反转义, JSON 编辑器, JSON 转 YAML, JSON 转 XML, JMESPath, 离线 JSON 工具, 桌面 JSON 工具">
+<meta name="keywords" content="JSON 格式化, JSON 查看, JSON 编辑, JSON 对比, JSON 转换, JSON Schema, JSON 工具, JSON 压缩, JSON 转义, JSON 反转义, JSON 编辑器, JSON 解析器, JSON 转 YAML, JSON 转 XML, JMESPath, 桌面 JSON 工具, JSON 格式化软件">
 <meta name="author" content="sundegan">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="theme-color" content="#0a0a0f">
@@ -42,8 +42,14 @@
 <meta name="twitter:image:alt" content="JsonStudio 应用图标">
 
 <!-- Favicon -->
-<link rel="icon" href="../icon.png" type="image/png">
-<link rel="apple-touch-icon" href="../icon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="msapplication-TileImage" content="/icon.png">
+<meta name="msapplication-TileColor" content="#0a0a0f">
 
 <!-- Structured Data -->
 <script type="application/ld+json">
@@ -53,7 +59,7 @@
   "@id": "https://jsonstudio.js.org/zh/#softwareapplication",
   "name": "JsonStudio",
   "alternateName": "Json Studio",
-  "description": "JsonStudio 是免费开源 JSON 桌面应用，支持 JSON 美化、JSON 查看、JSON Diff、JSON Converter、JSON Schema 与代码生成，并提供压缩/转义工具。",
+  "description": "JsonStudio 是免费开源 JSON 桌面应用，支持 JSON 格式化、美化、压缩、转义、Diff 对比、格式转换、Schema 验证与代码生成。",
   "url": "https://jsonstudio.js.org/zh/",
   "image": "https://jsonstudio.js.org/icon.png",
   "screenshot": "https://jsonstudio.js.org/icon.png",
@@ -77,12 +83,15 @@
     "https://github.com/sundegan/JsonStudio/releases"
   ],
   "featureList": [
-    "JSON 美化与查看",
+    "JSON 格式化和查看",
+    "JSON 压缩与精简",
+    "JSON 转义与反转义",
     "JSON Diff 对比",
-    "JSON Converter（YAML、XML、TOML、CSV）",
+    "JSON 格式转换（YAML、XML、TOML、CSV）",
     "JSON Schema 生成与验证",
-    "TypeScript、Go、Python、Java、Rust 代码生成",
-    "JSON 压缩、转义与反转义"
+    "代码生成（TypeScript、Go、Python、Java、Rust）",
+    "JSON 树形查看器",
+    "JMESPath 查询支持"
   ]
 }
 </script>
@@ -323,7 +332,7 @@ a:hover{opacity:.85}
 <section class="hero">
   <img src="../icon.png" alt="JsonStudio" class="hero-icon">
   <h1><span class="gold">Json</span>Studio</h1>
-  <p class="hero-sub">快速、现代、高效的 JSON 桌面工具。美化、查看、Diff、转换、校验、代码生成——一个应用全搞定，基于 Tauri 和 Rust 构建。</p>
+  <p class="hero-sub">快速、现代、高效的 JSON 桌面工具。格式化、美化、压缩、转义、Diff 对比、格式转换、Schema 验证、代码生成——一个应用全搞定，基于 Tauri 和 Rust 构建。</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -364,7 +373,7 @@ a:hover{opacity:.85}
 <section class="section" id="features">
   <div class="section-header">
     <h2 class="section-title"><span class="gold">核心</span>功能</h2>
-    <p class="section-desc">专为日常 JSON 工作打造：美化、查看、Diff、Converter、Schema、Code Gen、压缩/转义，一站式完成。</p>
+    <p class="section-desc">专为日常 JSON 工作打造：格式化、美化、查看、Diff、转换、Schema、代码生成、压缩/转义，一站式完成。</p>
   </div>
 
   <div class="showcase">
@@ -372,13 +381,13 @@ a:hover{opacity:.85}
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge green">编辑器</span>
-        <h3>专业级 JSON 美化与查看器</h3>
-        <p>基于 Monaco Editor（VS Code 编辑器内核）打造，提供顶级的 JSON 美化与查看体验。</p>
+        <h3>专业级 JSON 格式化与美化工具</h3>
+        <p>基于 Monaco Editor（VS Code 编辑器内核）打造，提供顶级的 JSON 格式化、美化与查看体验。</p>
         <ul>
           <li>语法高亮与括号对着色</li>
           <li>多标签页编辑，支持拖拽排序</li>
           <li>代码折叠、缩略图和查找替换</li>
-          <li>粘贴自动美化，瞬间得到干净 JSON</li>
+          <li>粘贴自动格式化美化，瞬间得到干净 JSON</li>
           <li>明暗模式切换 + 10+ 配色主题，包括 Dracula、Nord、One Dark</li>
         </ul>
       </div>
@@ -446,7 +455,7 @@ a:hover{opacity:.85}
         <p>原生桌面快捷键是网页工具无法实现的——大幅提升你的日常 JSON 工作效率。</p>
         <ul>
           <li>全局快捷键一键启动或唤起应用到前台</li>
-          <li>一键粘贴并美化：立即清理剪贴板中的 JSON</li>
+          <li>一键粘贴并美化：立即格式化剪贴板中的 JSON数据并展示</li>
           <li>窗口置顶切换，方便多任务协作</li>
           <li>所有编辑器快捷键均可在设置中自定义</li>
           <li>文件关联：双击 .json 文件直接打开</li>

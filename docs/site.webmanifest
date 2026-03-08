@@ -1,0 +1,21 @@
+{
+  "name": "JsonStudio",
+  "short_name": "JsonStudio",
+  "description": "Fast JSON desktop tool for prettify, minify, escape, diff, and conversion",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0a0a0f",
+  "background_color": "#0a0a0f",
+  "display": "standalone",
+  "start_url": "/"
+}
