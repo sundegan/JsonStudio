@@ -547,11 +547,7 @@
 
   .sv-divider-icon.is-static {
     cursor: default;
-    opacity: 0.7;
-    background: var(--bg-secondary);
     animation: none;
-    color: var(--text-tertiary);
-    border-color: var(--border);
   }
 
   .sv-divider-icon:not(.is-static):not(.is-valid):not(.is-invalid):hover {
