@@ -44,6 +44,10 @@
   let isCodegenMode = $state(false);
   let isSchemaMode = $state(false);
   let jsonError = $state<{ message: string } | null>(null);
+  // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
+  // is saved here so it can be restored on exit. For standard JSON this stays empty,
+  // meaning sub-page edits persist back to the main editor.
+  let originalJson5Content = $state('');
   let isFixing = $state(false);
   let jsonErrorTimer: ReturnType<typeof setTimeout> | null = null;
   let diffOriginal = $state('');
@@ -101,7 +105,8 @@
           break;
         }
         
-        await updateStats();
+        quickDetectFormatAndSwitchLanguage(fileContent);  // Immediate language switch
+        await updateStats(true);  // Show JSON5 toast if detected
         showToast(`Opened: ${name || 'file'}`);
       } catch (e) {
         showToast('Failed to open file', 'error');
@@ -149,7 +154,8 @@
         content = event.payload;
         monacoEditor?.setValue(event.payload);
         tabsStore.updateTabContent(currentTab.id, event.payload);
-        updateStats();
+        quickDetectFormatAndSwitchLanguage(event.payload);  // Immediate language switch
+        updateStats(true);  // Show JSON5 toast if detected
         showToast('Clipboard content formatted');
       });
       
@@ -161,7 +167,8 @@
         content = event.payload;
         monacoEditor?.setValue(event.payload);
         tabsStore.updateTabContent(currentTab.id, event.payload);
-        updateStats();
+        quickDetectFormatAndSwitchLanguage(event.payload);  // Immediate language switch
+        updateStats(true);  // Show JSON5 toast if detected
         showToast('Clipboard content pasted (invalid JSON)');
       });
 
@@ -490,15 +497,34 @@
     diffRightStats = emptyStats;
   }
 
-  function toggleConvertMode() {
+  // Sub-page toggle functions (Convert / CodeGen / Schema) share the same
+  // JSON5 content protection pattern:
+  //   Enter: convertJson5ToJsonIfNeeded() stashes original JSON5 → converts to JSON
+  //   Exit:  if originalJson5Content is set → restore it (auto-conversion was done)
+  //          if originalJson5Content is empty → keep current content (standard JSON,
+  //          user edits in the sub-page persist back to the main editor)
+  async function toggleConvertMode() {
     if (isConvertMode) {
       isConvertMode = false;
-      const currentTab = $activeTab;
-      if (currentTab) {
-        content = currentTab.content;
-        stats = currentTab.stats;
-        monacoEditor?.setValue(currentTab.content);
+      
+      if (originalJson5Content) {
+        content = originalJson5Content;
+        monacoEditor?.setValue(originalJson5Content);
+        const currentTab = $activeTab;
+        if (currentTab) {
+          tabsStore.updateTabContent(currentTab.id, originalJson5Content);
+        }
+        originalJson5Content = '';
+        await updateStats();
+      } else {
+        const currentTab = $activeTab;
+        if (currentTab) {
+          content = currentTab.content;
+          stats = currentTab.stats;
+          monacoEditor?.setValue(currentTab.content);
+        }
       }
+      
       return;
     }
 
@@ -511,18 +537,35 @@
     if (isSchemaMode) {
       isSchemaMode = false;
     }
+    
+    // Convert JSON5 to standard JSON if needed
+    await convertJson5ToJsonIfNeeded();
+    
     isConvertMode = true;
   }
 
-  function toggleCodegenMode() {
+  async function toggleCodegenMode() {
     if (isCodegenMode) {
       isCodegenMode = false;
-      const currentTab = $activeTab;
-      if (currentTab) {
-        content = currentTab.content;
-        stats = currentTab.stats;
-        monacoEditor?.setValue(currentTab.content);
+      
+      if (originalJson5Content) {
+        content = originalJson5Content;
+        monacoEditor?.setValue(originalJson5Content);
+        const currentTab = $activeTab;
+        if (currentTab) {
+          tabsStore.updateTabContent(currentTab.id, originalJson5Content);
+        }
+        originalJson5Content = '';
+        await updateStats();
+      } else {
+        const currentTab = $activeTab;
+        if (currentTab) {
+          content = currentTab.content;
+          stats = currentTab.stats;
+          monacoEditor?.setValue(currentTab.content);
+        }
       }
+      
       return;
     }
 
@@ -535,18 +578,35 @@
     if (isSchemaMode) {
       isSchemaMode = false;
     }
+    
+    // Convert JSON5 to standard JSON if needed
+    await convertJson5ToJsonIfNeeded();
+    
     isCodegenMode = true;
   }
 
-  function toggleSchemaMode() {
+  async function toggleSchemaMode() {
     if (isSchemaMode) {
       isSchemaMode = false;
-      const currentTab = $activeTab;
-      if (currentTab) {
-        content = currentTab.content;
-        stats = currentTab.stats;
-        monacoEditor?.setValue(currentTab.content);
+      
+      if (originalJson5Content) {
+        content = originalJson5Content;
+        monacoEditor?.setValue(originalJson5Content);
+        const currentTab = $activeTab;
+        if (currentTab) {
+          tabsStore.updateTabContent(currentTab.id, originalJson5Content);
+        }
+        originalJson5Content = '';
+        await updateStats();
+      } else {
+        const currentTab = $activeTab;
+        if (currentTab) {
+          content = currentTab.content;
+          stats = currentTab.stats;
+          monacoEditor?.setValue(currentTab.content);
+        }
       }
+      
       return;
     }
 
@@ -559,6 +619,10 @@
     if (isCodegenMode) {
       isCodegenMode = false;
     }
+    
+    // Convert JSON5 to standard JSON if needed
+    await convertJson5ToJsonIfNeeded();
+    
     isSchemaMode = true;
   }
 
@@ -685,8 +749,12 @@
       };
       tabsStore.updateTabStats(currentTab.id, stats);
       jsonError = null;
+      monacoEditor?.setLanguage('json');
       return;
     }
+    
+    quickDetectFormatAndSwitchLanguage(newValue);
+    
     statsTimer = setTimeout(updateStats, 300);
     checkJsonError(newValue);
   }
@@ -698,17 +766,61 @@
     tabsStore.updateTabContent(currentTab.id, newValue);
   }
 
+  // Paste auto-format: only format standard JSON. JSON5 content must not be
+  // auto-formatted because the backend converts it to standard JSON (losing
+  // comments, Infinity, unquoted keys, single-quote strings, etc.).
   function handleEditorPaste() {
     if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
     pasteFormatTimer = setTimeout(async () => {
       if (!content.trim()) {
         return;
       }
-      await toolbarRef?.formatContent();
+      try {
+        JSON.parse(content);
+        await toolbarRef?.formatContent();
+      } catch {
+        // Not standard JSON — likely JSON5; just detect the format
+        await updateStats(true);
+      }
     }, 100);
   }
 
-  async function updateStats() {
+  // Detect whether the editor content is JSON or JSON5 and switch Monaco's
+  // language mode accordingly. This is called on every content change so
+  // Monaco's built-in JSON validator does not flag valid JSON5 as errors.
+  //
+  // - JSON  → 'json' mode   (Monaco validation active — shows real errors)
+  // - JSON5 → 'json5' mode  (custom tokenizer, no validation — we rely on backend)
+  // - Invalid → 'json' mode (Monaco shows errors + our repair banner)
+  // Quickly detect format and switch language mode to prevent validation errors
+  async function quickDetectFormatAndSwitchLanguage(text: string) {
+    if (!text.trim()) {
+      monacoEditor?.setLanguage('json');  // Reset to JSON for empty content
+      return;
+    }
+    
+    try {
+      JSON.parse(text);
+      monacoEditor?.setLanguage('json');
+      return;
+    } catch {
+      // If standard JSON fails, check if it's valid JSON5
+      try {
+        const { getJsonStats } = await import('$lib/services/json');
+        const result = await getJsonStats(text);
+        
+        if (result.valid && result.format_type === 'JSON5') {
+          monacoEditor?.setLanguage('json5');
+        } else {
+          monacoEditor?.setLanguage('json');
+        }
+      } catch {
+        monacoEditor?.setLanguage('json');
+      }
+    }
+  }
+
+  async function updateStats(showJson5Toast: boolean = false) {
     if (!content.trim()) return;
     const currentTab = $activeTab;
     if (!currentTab) return;
@@ -717,16 +829,46 @@
       stats = await getJsonStats(content);
       tabsStore.updateTabStats(currentTab.id, stats);
       
-      // Show toast when JSON5 format is detected
-      if (stats.format_type === 'JSON5') {
+      // Show toast when JSON5 format is detected (only if requested)
+      if (showJson5Toast && stats.format_type === 'JSON5') {
         showToast($t('toast.json5Detected'), 'info');
-        // Switch to javascript language mode for better JSON5 syntax highlighting
-        monacoEditor?.setLanguage('javascript');
+      }
+      
+      // Switch language mode based on format (confirmed by backend)
+      if (stats.format_type === 'JSON5') {
+        monacoEditor?.setLanguage('json5');
       } else if (stats.format_type === 'JSON') {
-        // Switch back to json language mode
         monacoEditor?.setLanguage('json');
       }
     } catch (e) {}
+  }
+
+  // Called before entering Convert / CodeGen / Schema sub-pages.
+  // These pages require standard JSON input, so JSON5 content is converted
+  // automatically. The original JSON5 is stashed in `originalJson5Content`
+  // and will be restored when the user exits the sub-page.
+  // For standard JSON content this is a no-op (originalJson5Content stays empty).
+  async function convertJson5ToJsonIfNeeded() {
+    if (stats.format_type === 'JSON5') {
+      try {
+        originalJson5Content = content;
+        
+        const { formatJson } = await import('$lib/services/json');
+        const converted = await formatJson(content, tabSize);
+        content = converted;
+        monacoEditor?.setValue(converted);
+        
+        const currentTab = $activeTab;
+        if (currentTab) {
+          tabsStore.updateTabContent(currentTab.id, converted);
+        }
+        
+        await updateStats();
+        showToast($t('toast.json5Converted'), 'info');
+      } catch (e) {
+        showToast($t('toast.json5ConvertFailed'), 'error');
+      }
+    }
   }
 
   function checkJsonError(text: string) {
@@ -744,8 +886,7 @@
         try {
           const result = await getJsonStats(text);
           if (result.valid) {
-            // Valid JSON5, no error
-            jsonError = null;
+            jsonError = null;  // Valid JSON5, no error
           } else {
             jsonError = { message: e?.message || 'Invalid JSON' };
           }

@@ -148,6 +148,8 @@ export default {
   'toast.pinnedToTop': 'Pinned to top',
   'toast.unpinnedFromTop': 'Unpinned from top',
   'toast.json5Detected': 'JSON5 format detected, auto-parsed',
+  'toast.json5Converted': 'JSON5 converted to standard JSON',
+  'toast.json5ConvertFailed': 'Failed to convert JSON5',
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',

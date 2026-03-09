@@ -27,6 +27,7 @@ function createEmptyStats(): JsonStats {
     key_count: 0,
     depth: 0,
     byte_size: 0,
+    format_type: '',
     error_info: null,
   };
 }

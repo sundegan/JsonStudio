@@ -38,6 +38,88 @@
     onPaste?: (event?: unknown) => void;
   } = $props();
 
+  function registerJson5Language(monacoInstance: typeof Monaco) {
+    // Avoid duplicate registration — Monaco language registry is global.
+    // Check if 'json5' is already registered by looking at known language IDs.
+    const langs = monacoInstance.languages.getLanguages();
+    if (langs.some(l => l.id === 'json5')) return;
+    
+    monacoInstance.languages.register({ id: 'json5' });
+    
+    monacoInstance.languages.setLanguageConfiguration('json5', {
+      brackets: [['{', '}'], ['[', ']']],
+      autoClosingPairs: [
+        { open: '{', close: '}' },
+        { open: '[', close: ']' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+      ],
+      surroundingPairs: [
+        { open: '{', close: '}' },
+        { open: '[', close: ']' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+      ],
+      comments: { lineComment: '//', blockComment: ['/*', '*/'] },
+      folding: {
+        markers: { start: /^\s*[{[]/, end: /^\s*[}\]]/ },
+      },
+    });
+    
+    monacoInstance.languages.setMonarchTokensProvider('json5', {
+      tokenizer: {
+        root: [
+          // Comments
+          [/\/\/.*$/, 'comment'],
+          [/\/\*/, 'comment', '@comment'],
+          
+          // Strings (double-quoted)
+          [/"/, 'string', '@string_double'],
+          // Strings (single-quoted, JSON5)
+          [/'/, 'string', '@string_single'],
+          
+          // Unquoted keys: identifier followed by optional whitespace and colon
+          [/[a-zA-Z_$][\w$]*(?=\s*:)/, 'type.identifier'],
+          
+          // Special numeric literals
+          [/[+-]?Infinity\b/, 'number'],
+          [/NaN\b/, 'number'],
+          // Hex numbers
+          [/[+-]?0[xX][0-9a-fA-F]+\b/, 'number'],
+          // Decimal numbers (with optional leading/trailing dot, exponent)
+          [/[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/, 'number'],
+          
+          // Keywords
+          [/\btrue\b/, 'keyword'],
+          [/\bfalse\b/, 'keyword'],
+          [/\bnull\b/, 'keyword'],
+          
+          // Brackets and delimiters
+          [/[{}[\]]/, '@brackets'],
+          [/[,:]/, 'delimiter'],
+        ],
+        
+        comment: [
+          [/[^/*]+/, 'comment'],
+          [/\*\//, 'comment', '@pop'],
+          [/[/*]/, 'comment'],
+        ],
+        
+        string_double: [
+          [/[^\\"]+/, 'string'],
+          [/\\./, 'string.escape'],
+          [/"/, 'string', '@pop'],
+        ],
+        
+        string_single: [
+          [/[^\\']+/, 'string'],
+          [/\\./, 'string.escape'],
+          [/'/, 'string', '@pop'],
+        ],
+      },
+    });
+  }
+
   let container: HTMLDivElement;
   let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
@@ -142,14 +224,18 @@
     // Register custom themes (loaded from config file)
     registerMonacoThemes(monacoInstance);
     
-    // Configure JSON language features (support JSON5)
-    monacoInstance.languages.json.jsonDefaults.setDiagnosticsOptions({
+    // Configure JSON language features
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (monacoInstance.languages.json as any).jsonDefaults?.setDiagnosticsOptions({
       validate: true,
-      allowComments: true,        // Allow comments for JSON5
-      trailingCommas: 'ignore',   // Ignore trailing commas for JSON5
       schemaValidation: 'error',
       enableSchemaRequest: false,
     });
+    
+    // Register custom JSON5 language for proper syntax highlighting.
+    // We can't use 'json' mode (flags JSON5 syntax as errors) or 'javascript'
+    // mode (top-level `{}` is parsed as a block, not an object — keys lose highlighting).
+    registerJson5Language(monacoInstance);
     
     // Create editor
     editor = monacoInstance.editor.create(container, {

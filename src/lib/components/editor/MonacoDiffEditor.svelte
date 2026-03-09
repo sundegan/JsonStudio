@@ -111,7 +111,8 @@
     monaco = monacoInstance;
 
     registerMonacoThemes(monacoInstance);
-    monacoInstance.languages.json.jsonDefaults.setDiagnosticsOptions({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (monacoInstance.languages.json as any).jsonDefaults?.setDiagnosticsOptions({
       validate: true,
       allowComments: false,
       schemaValidation: 'error',

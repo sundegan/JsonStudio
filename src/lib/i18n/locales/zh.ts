@@ -148,6 +148,8 @@ export default {
   'toast.pinnedToTop': '已置顶',
   'toast.unpinnedFromTop': '已取消置顶',
   'toast.json5Detected': '检测到 JSON5 格式，已自动解析',
+  'toast.json5Converted': 'JSON5 已转换为标准 JSON',
+  'toast.json5ConvertFailed': 'JSON5 转换失败',
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',
