@@ -37,8 +37,8 @@
 >
   {#if type === 'error'}
     <div class="flex items-center justify-center w-6 h-6 rounded-lg" style="background-color: color-mix(in srgb, var(--error) 15%, transparent); color: var(--error);">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="12" cy="12" r="10"/>
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
         <line x1="12" y1="8" x2="12" y2="12"/>
         <line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
@@ -46,7 +46,7 @@
   {:else if type === 'info'}
     <div class="flex items-center justify-center w-6 h-6 rounded-lg" style="background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent);">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="9"/>
         <line x1="12" y1="16" x2="12" y2="12"/>
         <line x1="12" y1="8" x2="12.01" y2="8"/>
       </svg>
