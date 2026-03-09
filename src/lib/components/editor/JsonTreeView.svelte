@@ -63,11 +63,22 @@
     treeError = '';
 
     try {
-      const [jsonSourceMap] = await Promise.all([
-        import('json-source-map')
-      ]);
+      const { parse } = await import('@mischnic/json-sourcemap');
 
-      const parsed = jsonSourceMap.parse(content);
+      // Try to parse as standard JSON first
+      let parsed;
+      try {
+        parsed = parse(content, undefined, { dialect: 'JSON' });
+      } catch (jsonError) {
+        // If standard JSON fails, try JSON5
+        try {
+          parsed = parse(content, undefined, { dialect: 'JSON5' });
+        } catch (json5Error) {
+          // If both fail, throw the original error
+          throw jsonError;
+        }
+      }
+
       rootData = parsed.data;
       const nodes = parseToTree(parsed.data, parsed.pointers, '');
       treeNodes = nodes;
@@ -98,15 +109,14 @@
       data.forEach((item, index) => {
         const path = parentPath ? `${parentPath}/${index}` : `/${index}`;
         const pointerInfo = pointers[path];
-        const valueInfo = pointerInfo?.value || pointerInfo?.key || pointerInfo;
         
         const node: TreeNode = {
           key: `[${index}]`,
           value: item,
           type: getValueType(item),
           path,
-          startOffset: valueInfo?.pos ?? 0,
-          endOffset: valueInfo?.valueEnd?.pos ?? valueInfo?.keyEnd?.pos ?? valueInfo?.pos ?? 0,
+          startOffset: pointerInfo?.value?.pos ?? 0,
+          endOffset: pointerInfo?.valueEnd?.pos ?? 0,
         };
 
         if (node.type === 'object' || node.type === 'array') {
@@ -119,15 +129,14 @@
       Object.entries(data).forEach(([key, value]) => {
         const path = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
         const pointerInfo = pointers[path];
-        const valueInfo = pointerInfo?.value || pointerInfo?.key || pointerInfo;
 
         const node: TreeNode = {
           key,
           value,
           type: getValueType(value),
           path,
-          startOffset: valueInfo?.pos ?? 0,
-          endOffset: valueInfo?.valueEnd?.pos ?? valueInfo?.keyEnd?.pos ?? valueInfo?.pos ?? 0,
+          startOffset: pointerInfo?.value?.pos ?? 0,
+          endOffset: pointerInfo?.valueEnd?.pos ?? 0,
         };
 
         if (node.type === 'object' || node.type === 'array') {

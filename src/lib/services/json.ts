@@ -15,6 +15,7 @@ export interface JsonStats {
   key_count: number;
   depth: number;
   byte_size: number;
+  format_type: string;  // "JSON" or "JSON5"
   error_info: ValidationResult | null;
 }
 

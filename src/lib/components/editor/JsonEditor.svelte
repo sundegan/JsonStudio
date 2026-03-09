@@ -28,6 +28,7 @@
     key_count: 0,
     depth: 0,
     byte_size: 0,
+    format_type: '',
     error_info: null,
   });
   let toastMsg = $state('');
@@ -53,6 +54,7 @@
     key_count: 0,
     depth: 0,
     byte_size: 0,
+    format_type: '',
     error_info: null,
   });
   let diffRightStats = $state<JsonStats>({
@@ -60,6 +62,7 @@
     key_count: 0,
     depth: 0,
     byte_size: 0,
+    format_type: '',
     error_info: null,
   });
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
@@ -475,6 +478,7 @@
       key_count: 0,
       depth: 0,
       byte_size: 0,
+      format_type: '',
       error_info: null,
     };
 
@@ -637,6 +641,7 @@
         key_count: 0,
         depth: 0,
         byte_size: 0,
+        format_type: '',
         error_info: null,
       };
       if (side === 'left') {
@@ -675,6 +680,7 @@
         key_count: 0,
         depth: 0,
         byte_size: 0,
+        format_type: '',
         error_info: null,
       };
       tabsStore.updateTabStats(currentTab.id, stats);
@@ -710,12 +716,22 @@
     try {
       stats = await getJsonStats(content);
       tabsStore.updateTabStats(currentTab.id, stats);
+      
+      // Show toast when JSON5 format is detected
+      if (stats.format_type === 'JSON5') {
+        showToast($t('toast.json5Detected'), 'info');
+        // Switch to javascript language mode for better JSON5 syntax highlighting
+        monacoEditor?.setLanguage('javascript');
+      } else if (stats.format_type === 'JSON') {
+        // Switch back to json language mode
+        monacoEditor?.setLanguage('json');
+      }
     } catch (e) {}
   }
 
   function checkJsonError(text: string) {
     if (jsonErrorTimer) clearTimeout(jsonErrorTimer);
-    jsonErrorTimer = setTimeout(() => {
+    jsonErrorTimer = setTimeout(async () => {
       if (!text.trim()) {
         jsonError = null;
         return;
@@ -724,7 +740,18 @@
         JSON.parse(text);
         jsonError = null;
       } catch (e: any) {
-        jsonError = { message: e?.message || 'Invalid JSON' };
+        // If standard JSON fails, check if it's valid JSON5
+        try {
+          const result = await getJsonStats(text);
+          if (result.valid) {
+            // Valid JSON5, no error
+            jsonError = null;
+          } else {
+            jsonError = { message: e?.message || 'Invalid JSON' };
+          }
+        } catch {
+          jsonError = { message: e?.message || 'Invalid JSON' };
+        }
       }
     }, 500);
   }

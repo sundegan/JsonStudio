@@ -142,10 +142,11 @@
     // Register custom themes (loaded from config file)
     registerMonacoThemes(monacoInstance);
     
-    // Configure JSON language features
+    // Configure JSON language features (support JSON5)
     monacoInstance.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
-      allowComments: false,
+      allowComments: true,        // Allow comments for JSON5
+      trailingCommas: 'ignore',   // Ignore trailing commas for JSON5
       schemaValidation: 'error',
       enableSchemaRequest: false,
     });
@@ -252,6 +253,14 @@
 
   export function getValue(): string {
     return editor?.getValue() || '';
+  }
+
+  export function setLanguage(lang: string) {
+    if (!editor || !monaco) return;
+    const model = editor.getModel();
+    if (model) {
+      monaco.editor.setModelLanguage(model, lang);
+    }
   }
 
   // Monaco Editor native format function

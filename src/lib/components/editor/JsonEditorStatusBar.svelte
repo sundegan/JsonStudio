@@ -68,6 +68,13 @@
     <div class="w-px h-3.5 bg-(--divider-strong)"></div>
     <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} {$t('status.lines')}</span>
 
+    {#if stats?.format_type}
+      <div class="w-px h-3.5 bg-(--divider-strong)"></div>
+      <span style="color: {stats.format_type === 'JSON5' ? '#8b5cf6' : '#10b981'}; font-weight: 600;">
+        {stats.format_type}
+      </span>
+    {/if}
+
     <span class="flex-1"></span>
   {/if}
 </div>

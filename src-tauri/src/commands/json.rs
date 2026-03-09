@@ -18,17 +18,24 @@ pub struct JsonStats {
     pub key_count: usize,      // Number of keys
     pub depth: usize,          // Maximum nesting depth
     pub byte_size: usize,      // Byte size
+    pub format_type: String,   // Format type: "JSON" or "JSON5"
     pub error_info: Option<ValidationResult>,  // Error info (if invalid)
 }
 
-/// Format JSON string
+/// Format JSON string (supports JSON5)
 #[tauri::command]
 pub fn json_format(content: &str, indent: Option<usize>) -> Result<String, String> {
     let indent_size = indent.unwrap_or(2);
 
-    // Parse JSON
-    let value: Value = serde_json::from_str(content)
-        .map_err(|e| format_error_message(&e))?;
+    // Try to parse as standard JSON first
+    let value: Value = match serde_json::from_str(content) {
+        Ok(v) => v,
+        Err(_) => {
+            // If standard JSON fails, try JSON5
+            json5::from_str(content)
+                .map_err(|e| format!("JSON/JSON5 parsing error: {}", e))?
+        }
+    };
 
     // Format output
     let formatted = if indent_size == 0 {
@@ -40,19 +47,27 @@ pub fn json_format(content: &str, indent: Option<usize>) -> Result<String, Strin
     formatted.map_err(|e| format!("JSON formatting error: {}", e))
 }
 
-/// Minify JSON string
+/// Minify JSON string (supports JSON5)
 #[tauri::command]
 pub fn json_minify(content: &str) -> Result<String, String> {
-    let value: Value = serde_json::from_str(content)
-        .map_err(|e| format_error_message(&e))?;
+    // Try to parse as standard JSON first
+    let value: Value = match serde_json::from_str(content) {
+        Ok(v) => v,
+        Err(_) => {
+            // If standard JSON fails, try JSON5
+            json5::from_str(content)
+                .map_err(|e| format!("JSON/JSON5 parsing error: {}", e))?
+        }
+    };
 
     serde_json::to_string(&value)
         .map_err(|e| format!("JSON minification error: {}", e))
 }
 
-/// Validate JSON and return detailed error location
+/// Validate JSON and return detailed error location (supports JSON5)
 #[tauri::command]
 pub fn json_validate(content: &str) -> ValidationResult {
+    // Try standard JSON first
     match serde_json::from_str::<Value>(content) {
         Ok(_) => ValidationResult {
             valid: true,
@@ -60,20 +75,32 @@ pub fn json_validate(content: &str) -> ValidationResult {
             error_line: None,
             error_column: None,
         },
-        Err(e) => ValidationResult {
-            valid: false,
-            error_message: Some(format_error_description(&e)),
-            error_line: Some(e.line()),
-            error_column: Some(e.column()),
-        },
+        Err(json_err) => {
+            // Try JSON5
+            match json5::from_str::<Value>(content) {
+                Ok(_) => ValidationResult {
+                    valid: true,
+                    error_message: None,
+                    error_line: None,
+                    error_column: None,
+                },
+                Err(_) => ValidationResult {
+                    valid: false,
+                    error_message: Some(format_error_description(&json_err)),
+                    error_line: Some(json_err.line()),
+                    error_column: Some(json_err.column()),
+                },
+            }
+        }
     }
 }
 
-/// Get JSON statistics
+/// Get JSON statistics (supports JSON5)
 #[tauri::command]
 pub fn json_stats(content: &str) -> JsonStats {
     let byte_size = content.len();
 
+    // Try standard JSON first
     match serde_json::from_str::<Value>(content) {
         Ok(value) => {
             let key_count = count_keys(&value);
@@ -83,21 +110,43 @@ pub fn json_stats(content: &str) -> JsonStats {
                 key_count,
                 depth,
                 byte_size,
+                format_type: "JSON".to_string(),
                 error_info: None,
             }
         }
-        Err(e) => JsonStats {
-            valid: false,
-            key_count: 0,
-            depth: 0,
-            byte_size,
-            error_info: Some(ValidationResult {
-                valid: false,
-                error_message: Some(format_error_description(&e)),
-                error_line: Some(e.line()),
-                error_column: Some(e.column()),
-            }),
-        },
+        Err(json_err) => {
+            // Try JSON5
+            match json5::from_str::<Value>(content) {
+                Ok(value) => {
+                    let key_count = count_keys(&value);
+                    let depth = calculate_depth(&value);
+                    JsonStats {
+                        valid: true,
+                        key_count,
+                        depth,
+                        byte_size,
+                        format_type: "JSON5".to_string(),
+                        error_info: None,
+                    }
+                }
+                Err(_) => {
+                    // Both failed, return JSON error
+                    JsonStats {
+                        valid: false,
+                        key_count: 0,
+                        depth: 0,
+                        byte_size,
+                        format_type: "".to_string(),
+                        error_info: Some(ValidationResult {
+                            valid: false,
+                            error_message: Some(format_error_description(&json_err)),
+                            error_line: Some(json_err.line()),
+                            error_column: Some(json_err.column()),
+                        }),
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -117,11 +166,6 @@ pub fn json_unescape(content: &str) -> Result<String, String> {
         Ok(unescaped) => Ok(unescaped),
         Err(e) => Err(format!("Unescape failed: {}", format_error_description(&e))),
     }
-}
-
-/// Format error message (for frontend)
-fn format_error_message(e: &serde_json::Error) -> String {
-    format!("Line {}, Column {}: {}", e.line(), e.column(), format_error_description(e))
 }
 
 /// Format error description

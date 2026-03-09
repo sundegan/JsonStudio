@@ -147,6 +147,7 @@ export default {
   'toast.clipboardPastedRaw': '剪贴板内容已粘贴（无效 JSON）',
   'toast.pinnedToTop': '已置顶',
   'toast.unpinnedFromTop': '已取消置顶',
+  'toast.json5Detected': '检测到 JSON5 格式，已自动解析',
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',

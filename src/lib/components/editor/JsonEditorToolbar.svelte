@@ -164,19 +164,12 @@
       return;
     }
     isProcessing = true;
-    const contentSize = content.length;
 
     try {
-      if (contentSize > LARGE_FILE_THRESHOLD) {
-        const { formatJson } = await import('$lib/services/json');
-        const formatted = await formatJson(content, tabSize);
-        setContentValue(formatted);
-      } else {
-        // Use custom formatting with current tabSize setting.
-        const parsed = JSON.parse(content);
-        const formatted = JSON.stringify(parsed, null, tabSize);
-        setContentValue(formatted);
-      }
+      // Always use backend formatJson to support JSON5
+      const { formatJson } = await import('$lib/services/json');
+      const formatted = await formatJson(content, tabSize);
+      setContentValue(formatted);
       await onStatsUpdate();
     } catch (e) {
     } finally {

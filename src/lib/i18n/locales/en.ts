@@ -147,6 +147,7 @@ export default {
   'toast.clipboardPastedRaw': 'Clipboard content pasted (invalid JSON)',
   'toast.pinnedToTop': 'Pinned to top',
   'toast.unpinnedFromTop': 'Unpinned from top',
+  'toast.json5Detected': 'JSON5 format detected, auto-parsed',
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',
