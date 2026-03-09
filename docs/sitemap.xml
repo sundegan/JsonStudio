@@ -17,4 +17,94 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/"/>
   </url>
+  
+  <!-- JSON Formatter -->
+  <url>
+    <loc>https://jsonstudio.js.org/json-formatter</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-formatter"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-formatter"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-formatter"/>
+  </url>
+  <url>
+    <loc>https://jsonstudio.js.org/zh/json-formatter</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-formatter"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-formatter"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-formatter"/>
+  </url>
+  
+  <!-- JSON Diff -->
+  <url>
+    <loc>https://jsonstudio.js.org/json-diff</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-diff"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-diff"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-diff"/>
+  </url>
+  <url>
+    <loc>https://jsonstudio.js.org/zh/json-diff</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-diff"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-diff"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-diff"/>
+  </url>
+  
+  <!-- JSON Converter -->
+  <url>
+    <loc>https://jsonstudio.js.org/json-converter</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-converter"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-converter"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-converter"/>
+  </url>
+  <url>
+    <loc>https://jsonstudio.js.org/zh/json-converter</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-converter"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-converter"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-converter"/>
+  </url>
+  
+  <!-- JSON Schema -->
+  <url>
+    <loc>https://jsonstudio.js.org/json-schema</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-schema"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-schema"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-schema"/>
+  </url>
+  <url>
+    <loc>https://jsonstudio.js.org/zh/json-schema</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-schema"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-schema"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-schema"/>
+  </url>
+  
+  <!-- Code Generator -->
+  <url>
+    <loc>https://jsonstudio.js.org/code-generator</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/code-generator"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/code-generator"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/code-generator"/>
+  </url>
+  <url>
+    <loc>https://jsonstudio.js.org/zh/code-generator</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/code-generator"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/code-generator"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/code-generator"/>
+  </url>
 </urlset>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON 格式化工具 - 免费桌面 JSON 美化器 | JsonStudio</title>
+<meta name="description" content="JsonStudio 的 JSON 格式化工具是快速、离线的桌面应用，用于格式化和美化 JSON 数据。相比在线 JSON 格式化工具，性能更好且更注重隐私保护。">
+<meta name="keywords" content="JSON 格式化, JSON 格式化工具, JSON 美化, JSON 格式化软件, JSON 格式化器, 格式化 JSON, 美化 JSON, JSON 格式化在线, JSON 格式化桌面工具, 离线 JSON 格式化, 免费 JSON 格式化">
+<meta name="author" content="sundegan">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="canonical" href="https://jsonstudio.js.org/zh/json-formatter">
+<link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-formatter">
+<link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-formatter">
+<link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-formatter">
+
+<!-- Open Graph -->
+<meta property="og:title" content="JSON 格式化工具 - 免费桌面 JSON 美化器 | JsonStudio">
+<meta property="og:description" content="快速、离线的 JSON 格式化和美化工具。专业的桌面应用，即时格式化 JSON。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jsonstudio.js.org/zh/json-formatter">
+<meta property="og:image" content="https://jsonstudio.js.org/icon.png">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a26;--bg4:#222232;
+  --text:#e8e8f0;--text2:#9898b0;--text3:#6868a0;
+  --accent:#f5c542;--accent2:#e8a820;--accent-glow:rgba(245,197,66,.12);--accent-glow2:rgba(245,197,66,.06);
+  --green:#34d399;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--orange:#fb923c;
+  --border:#2a2a3a;--card:#13131c;
+  --radius:16px;--radius-sm:10px;
+  --max-w:1140px;
+}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:all .2s}
+a:hover{opacity:.85}
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+
+/* ── Nav ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);background:rgba(10,10,15,.75);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--text)}
+.nav-brand img{width:38px;height:38px;border-radius:8px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-link{color:var(--text2);font-size:14px;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s}
+.nav-link:hover{color:var(--text);background:var(--bg3);opacity:1}
+.lang-btn{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;cursor:pointer;transition:all .2s;font-family:inherit}
+.lang-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-github{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
+.nav-github:hover{border-color:var(--accent);background:var(--accent-glow);opacity:1}
+.nav-github svg{width:17px;height:17px}
+
+/* ── Hero ── */
+.hero{padding:130px 24px 60px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1000px;height:1000px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:6px 14px;border-radius:20px;margin-bottom:20px;background:rgba(52,211,153,.1);color:var(--green)}
+.hero h1{font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;position:relative;line-height:1.1}
+.hero h1 .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,19px);color:var(--text2);max-width:680px;margin:0 auto 36px;position:relative;line-height:1.6}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,197,66,.35);opacity:1}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--border);color:var(--text);font-weight:600;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s}
+.btn-outline:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);opacity:1}
+.btn-primary svg,.btn-outline svg{width:18px;height:18px}
+
+/* ── Section ── */
+.section{padding:80px 24px}
+.section-header{text-align:center;margin-bottom:56px}
+.section-title{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;line-height:1.2}
+.section-title .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-desc{color:var(--text2);font-size:17px;max-width:640px;margin:0 auto;line-height:1.7}
+
+/* ── Content ── */
+.content{max-width:800px;margin:0 auto}
+.content h2{font-size:28px;font-weight:700;margin:48px 0 20px;line-height:1.3}
+.content h3{font-size:22px;font-weight:700;margin:36px 0 16px;line-height:1.3}
+.content p{color:var(--text2);font-size:16px;line-height:1.8;margin-bottom:16px}
+.content ul,.content ol{color:var(--text2);font-size:16px;line-height:1.8;margin:16px 0;padding-left:24px}
+.content li{margin-bottom:10px}
+.content strong{color:var(--text);font-weight:600}
+.content code{background:var(--bg3);color:var(--accent);padding:2px 8px;border-radius:4px;font-size:14px;font-family:Monaco,Consolas,monospace}
+
+/* ── Feature Grid ── */
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:var(--max-w);margin:40px auto}
+.feature-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;transition:all .3s}
+.feature-card:hover{border-color:rgba(245,197,66,.3);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.feature-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:24px}
+.feature-icon svg{width:24px;height:24px}
+.feature-icon.c1{background:rgba(52,211,153,.1);color:var(--green)}
+.feature-icon.c2{background:rgba(96,165,250,.1);color:var(--blue)}
+.feature-icon.c3{background:rgba(167,139,250,.1);color:var(--purple)}
+.feature-icon.c4{background:rgba(244,114,182,.1);color:var(--pink)}
+.feature-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.feature-card p{color:var(--text2);font-size:15px;line-height:1.6}
+
+/* ── Screenshot ── */
+.screenshot-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:40px auto;max-width:var(--max-w)}
+.screenshot-box img{width:100%;height:auto;display:block}
+
+/* ── CTA ── */
+.cta{padding:80px 24px;text-align:center;position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;bottom:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
+.cta h2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;position:relative}
+.cta p{color:var(--text2);font-size:17px;margin-bottom:32px;position:relative}
+
+/* ── Footer ── */
+.footer{border-top:1px solid var(--border);padding:28px 24px}
+.footer-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-left{color:var(--text3);font-size:13px}
+.footer-links{display:flex;gap:20px}
+.footer-links a{color:var(--text3);font-size:13px;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+
+/* ── Breadcrumb ── */
+.breadcrumb{padding:80px 24px 0;max-width:var(--max-w);margin:0 auto}
+.breadcrumb-list{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text3)}
+.breadcrumb-list a{color:var(--text3)}
+.breadcrumb-list a:hover{color:var(--accent)}
+.breadcrumb-separator{color:var(--text3);opacity:.5}
+
+@media(max-width:768px){
+  .features-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/zh/" class="nav-brand"><img src="../icon.png" alt="JsonStudio">JsonStudio</a>
+    <div class="nav-right">
+      <a href="/zh/#features" class="nav-link">功能</a>
+      <a href="/zh/json-diff" class="nav-link">对比</a>
+      <a href="/zh/json-converter" class="nav-link">转换</a>
+      <a href="/json-formatter" class="lang-btn" hreflang="en" lang="en">English</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <div class="breadcrumb-list">
+    <a href="/zh/">首页</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>JSON 格式化</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    JSON 格式化
+  </span>
+  <h1>专业的 <span class="gold">JSON 格式化</span>工具</h1>
+  <p class="hero-sub">使用快速、离线的桌面工具即时格式化和美化 JSON。基于 Monaco Editor（VS Code 的编辑器引擎），JsonStudio 的 JSON 格式化工具提供专业级的格式化体验，完全保护隐私。</p>
+  <div class="hero-actions">
+    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>立即下载</span>
+    </a>
+    <a href="/zh/" class="btn-outline">
+      <span>查看所有功能</span>
+    </a>
+  </div>
+</section>
+
+<!-- Screenshot -->
+<div class="screenshot-box">
+  <img src="../images_zh/editor_dark.png" alt="JsonStudio 中的 JSON 格式化工具">
+</div>
+
+<!-- Content -->
+<section class="section">
+  <div class="content">
+    <h2>为什么使用 JsonStudio JSON 格式化工具？</h2>
+    <p>JsonStudio 的 JSON 格式化工具是一款<strong>原生桌面应用</strong>，专为需要快速、安全地格式化、美化 JSON 数据的开发者设计。与需要联网且可能存在隐私问题的在线 JSON 格式化工具不同，JsonStudio <strong>100% 离线</strong>运行在您的电脑上。</p>
+
+    <h2>JSON 格式化功能特性</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h3>语法高亮</h3>
+        <p>彩色编码的 JSON，带括号配对着色，易于阅读和导航。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <h3>粘贴自动格式化</h3>
+        <p>粘贴未格式化的 JSON，立即自动美化并正确缩进。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <h3>自定义缩进</h3>
+        <p>选择 2 空格、4 空格或制表符。调整以匹配您项目的编码风格。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3>JSON 验证</h3>
+        <p>实时错误检测，提供详细的错误消息和行号。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </div>
+        <h3>多标签编辑</h3>
+        <p>同时处理多个 JSON 文件。拖拽标签即可重新排序。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </div>
+        <h3>查找与替换</h3>
+        <p>强大的搜索功能，支持正则表达式。在 JSON 数据中查找和替换。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <h3>代码折叠</h3>
+        <p>折叠和展开 JSON 对象和数组，更好地浏览大文件。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <h3>缩略图概览</h3>
+        <p>鸟瞰整个 JSON 文件，快速导航大型文档。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+        </div>
+        <h3>多光标编辑</h3>
+        <p>支持多光标同时编辑多个位置，就像 VS Code 一样。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/></svg>
+        </div>
+        <h3>10+ 配色主题</h3>
+        <p>可选择 Dracula、Nord、One Dark、Monokai 等主题。支持明暗模式。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h3>拖拽支持</h3>
+        <p>直接将 JSON 文件拖入应用即可打开并立即格式化。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h3>JSON 修复</h3>
+        <p>自动修复常见的 JSON 语法错误，如尾随逗号和未引用的键。</p>
+      </div>
+    </div>
+
+    <h2>如何在 JsonStudio 中使用 JSON 格式化工具</h2>
+    <ol>
+      <li><strong>下载并安装</strong> JsonStudio，访问 <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">GitHub Releases</a>（支持 macOS、Windows 和 Linux）</li>
+      <li><strong>启动应用</strong> – 不到 1 秒即可打开</li>
+      <li><strong>粘贴您的 JSON 数据</strong> – 粘贴时自动格式化</li>
+      <li><strong>或按 <code>Ctrl+Shift+F</code></strong>（Windows/Linux）或 <code>Cmd+Shift+F</code>（macOS）手动格式化</li>
+      <li><strong>复制格式化后的结果</strong> – 或使用 <code>Ctrl+S</code> 保存到文件</li>
+    </ol>
+
+    <h2>JSON 格式化工具 vs 在线工具</h2>
+    <p>以下是 JsonStudio 的 JSON 格式化工具优于基于浏览器的替代方案的原因：</p>
+    <ul>
+      <li><strong>性能：</strong>在线 JSON 格式化工具在处理大于 1MB 的文件时会卡顿。JsonStudio 凭借原生 Rust 性能，可以流畅处理数 MB 的 JSON 文件。</li>
+      <li><strong>离线：</strong>在线格式化工具需要互联网。JsonStudio 随时随地都能工作。</li>
+      <li><strong>无广告：</strong>在线工具充斥着广告。JsonStudio 干净且专注。</li>
+      <li><strong>专业编辑器：</strong>在线工具使用基本的文本框。JsonStudio 使用 Monaco Editor（与 VS Code 相同），具有语法高亮、代码折叠、多光标编辑等功能。</li>
+    </ul>
+
+    <h2>常见问题</h2>
+
+    <h3>JsonStudio JSON 格式化工具免费吗？</h3>
+    <p>是的，JsonStudio 完全免费且开源（MIT 许可证）。没有高级版本，没有付费墙。</p>
+
+    <h3>它能离线工作吗？</h3>
+    <p>是的，JsonStudio 100% 离线工作。所有 JSON 格式化都在您的电脑本地进行。</p>
+
+    <h3>它能处理大型 JSON 文件吗？</h3>
+    <p>是的，JsonStudio 可以流畅格式化数 MB 的 JSON 文件。它使用 Rust 构建，具有高性能。</p>
+
+    <h3>支持哪些平台？</h3>
+    <p>JsonStudio 支持 macOS、Windows 和 Linux。从 <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">GitHub Releases</a> 下载。</p>
+
+    <h3>与在线 JSON 格式化工具有何不同？</h3>
+    <p>JsonStudio 是原生桌面应用，比在线工具更快、更私密、更强大。它离线工作，无广告，并包含专业功能，如 Monaco Editor、多标签编辑和可自定义快捷键。</p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2>准备好像专业人士一样格式化 JSON 了吗？</h2>
+  <p>免费下载 JsonStudio，体验最好的 JSON 格式化工具。</p>
+  <div class="hero-actions">
+    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>立即下载</span>
+    </a>
+    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      <span>访问 GitHub</span>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT 许可证</span></div>
+    <div class="footer-links">
+      <a href="/zh/">首页</a>
+      <a href="/zh/json-diff">JSON 对比</a>
+      <a href="/zh/json-converter">格式转换</a>
+      <a href="/zh/json-validator">Schema 验证</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

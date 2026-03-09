@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Converter - Convert JSON to YAML, XML, TOML, CSV | JsonStudio</title>
+<meta name="description" content="Convert JSON to YAML, XML, TOML, CSV and vice versa. JsonStudio's JSON converter is a fast, offline desktop tool with bidirectional conversion support. Free for macOS, Windows, Linux.">
+<meta name="keywords" content="JSON converter, JSON to YAML, JSON to XML, JSON to TOML, JSON to CSV, YAML to JSON, XML to JSON, convert JSON, JSON conversion, JSON format converter, JSON file converter">
+<meta name="author" content="sundegan">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="canonical" href="https://jsonstudio.js.org/json-converter">
+<link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-converter">
+<link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-converter">
+<link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-converter">
+
+<!-- Open Graph -->
+<meta property="og:title" content="JSON Converter - Convert JSON to YAML, XML, TOML, CSV | JsonStudio">
+<meta property="og:description" content="Fast, offline JSON converter. Convert between JSON, YAML, XML, TOML, and CSV formats instantly.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jsonstudio.js.org/json-converter">
+<meta property="og:image" content="https://jsonstudio.js.org/icon.png">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a26;--bg4:#222232;
+  --text:#e8e8f0;--text2:#9898b0;--text3:#6868a0;
+  --accent:#f5c542;--accent2:#e8a820;--accent-glow:rgba(245,197,66,.12);--accent-glow2:rgba(245,197,66,.06);
+  --green:#34d399;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--orange:#fb923c;
+  --border:#2a2a3a;--card:#13131c;
+  --radius:16px;--radius-sm:10px;
+  --max-w:1140px;
+}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:all .2s}
+a:hover{opacity:.85}
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+
+/* ── Nav ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);background:rgba(10,10,15,.75);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--text)}
+.nav-brand img{width:38px;height:38px;border-radius:8px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-link{color:var(--text2);font-size:14px;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s}
+.nav-link:hover{color:var(--text);background:var(--bg3);opacity:1}
+.lang-btn{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;cursor:pointer;transition:all .2s;font-family:inherit}
+.lang-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-github{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
+.nav-github:hover{border-color:var(--accent);background:var(--accent-glow);opacity:1}
+.nav-github svg{width:17px;height:17px}
+
+/* ── Hero ── */
+.hero{padding:130px 24px 60px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1000px;height:1000px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:6px 14px;border-radius:20px;margin-bottom:20px;background:rgba(167,139,250,.1);color:var(--purple)}
+.hero h1{font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;position:relative;line-height:1.1}
+.hero h1 .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,19px);color:var(--text2);max-width:680px;margin:0 auto 36px;position:relative;line-height:1.6}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,197,66,.35);opacity:1}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--border);color:var(--text);font-weight:600;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s}
+.btn-outline:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);opacity:1}
+.btn-primary svg,.btn-outline svg{width:18px;height:18px}
+
+/* ── Section ── */
+.section{padding:80px 24px}
+.section-header{text-align:center;margin-bottom:56px}
+.section-title{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;line-height:1.2}
+.section-title .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-desc{color:var(--text2);font-size:17px;max-width:640px;margin:0 auto;line-height:1.7}
+
+/* ── Content ── */
+.content{max-width:800px;margin:0 auto}
+.content h2{font-size:28px;font-weight:700;margin:48px 0 20px;line-height:1.3}
+.content h3{font-size:22px;font-weight:700;margin:36px 0 16px;line-height:1.3}
+.content p{color:var(--text2);font-size:16px;line-height:1.8;margin-bottom:16px}
+.content ul,.content ol{color:var(--text2);font-size:16px;line-height:1.8;margin:16px 0;padding-left:24px}
+.content li{margin-bottom:10px}
+.content strong{color:var(--text);font-weight:600}
+.content code{background:var(--bg3);color:var(--accent);padding:2px 8px;border-radius:4px;font-size:14px;font-family:Monaco,Consolas,monospace}
+
+/* ── Feature Grid ── */
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:var(--max-w);margin:40px auto}
+.feature-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;transition:all .3s}
+.feature-card:hover{border-color:rgba(245,197,66,.3);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.feature-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:24px}
+.feature-icon svg{width:24px;height:24px}
+.feature-icon.c1{background:rgba(52,211,153,.1);color:var(--green)}
+.feature-icon.c2{background:rgba(96,165,250,.1);color:var(--blue)}
+.feature-icon.c3{background:rgba(167,139,250,.1);color:var(--purple)}
+.feature-icon.c4{background:rgba(244,114,182,.1);color:var(--pink)}
+.feature-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.feature-card p{color:var(--text2);font-size:15px;line-height:1.6}
+
+/* ── Screenshot ── */
+.screenshot-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:40px auto;max-width:var(--max-w)}
+.screenshot-box img{width:100%;height:auto;display:block}
+
+/* ── CTA ── */
+.cta{padding:80px 24px;text-align:center;position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;bottom:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
+.cta h2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;position:relative}
+.cta p{color:var(--text2);font-size:17px;margin-bottom:32px;position:relative}
+
+/* ── Footer ── */
+.footer{border-top:1px solid var(--border);padding:28px 24px}
+.footer-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-left{color:var(--text3);font-size:13px}
+.footer-links{display:flex;gap:20px}
+.footer-links a{color:var(--text3);font-size:13px;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+
+/* ── Breadcrumb ── */
+.breadcrumb{padding:80px 24px 0;max-width:var(--max-w);margin:0 auto}
+.breadcrumb-list{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text3)}
+.breadcrumb-list a{color:var(--text3)}
+.breadcrumb-list a:hover{color:var(--accent)}
+.breadcrumb-separator{color:var(--text3);opacity:.5}
+
+@media(max-width:768px){
+  .features-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
+    <div class="nav-right">
+      <a href="/json-formatter" class="nav-link">Formatter</a>
+      <a href="/json-diff" class="nav-link">Diff</a>
+      <a href="/json-validator" class="nav-link">Validator</a>
+      <a href="/zh/json-converter" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <div class="breadcrumb-list">
+    <a href="/">Home</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>JSON Converter</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+    JSON CONVERTER
+  </span>
+  <h1><span class="gold">JSON Converter</span> - Multi-Format Support</h1>
+  <p class="hero-sub">Convert JSON to YAML, XML, TOML, CSV and vice versa with one click. JsonStudio's JSON converter supports bidirectional conversion with syntax highlighting and validation. Fast, offline, and completely free.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Download JsonStudio</span>
+    </a>
+    <a href="/" class="btn-outline">
+      <span>View All Features</span>
+    </a>
+  </div>
+</section>
+
+<!-- Screenshot -->
+<div class="screenshot-box">
+  <img src="images_en/convert_dark.png" alt="JSON Converter in JsonStudio">
+</div>
+
+<!-- Content -->
+<section class="section">
+  <div class="content">
+    <h2>What is JSON Converter?</h2>
+    <p>JsonStudio's JSON converter is a <strong>native desktop tool</strong> that converts JSON to and from multiple formats including YAML, XML, TOML, and CSV. Unlike online JSON converters, it runs <strong>100% offline</strong> with better performance and complete privacy.</p>
+
+    <h2>Supported Conversion Formats</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h3>JSON ↔ YAML</h3>
+        <p>Convert between JSON and YAML formats. Perfect for Kubernetes configs, Docker Compose files, and CI/CD pipelines.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h3>JSON ↔ XML</h3>
+        <p>Convert between JSON and XML formats. Useful for legacy system integration and SOAP APIs.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <h3>JSON ↔ TOML</h3>
+        <p>Convert between JSON and TOML formats. Ideal for Rust Cargo.toml configs and other configuration files.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <h3>JSON ↔ CSV</h3>
+        <p>Convert between JSON and CSV formats with rainbow column highlighting. Perfect for spreadsheet data and data analysis.</p>
+      </div>
+    </div>
+
+    <h2>Why Use JsonStudio JSON Converter?</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h3>Instant Conversion</h3>
+        <p>Convert large files in milliseconds with native Rust performance.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+        </div>
+        <h3>Bidirectional</h3>
+        <p>Convert JSON to other formats AND convert back to JSON.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        </div>
+        <h3>Syntax Highlighting</h3>
+        <p>All formats have proper syntax highlighting for easy reading.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3>Validation</h3>
+        <p>Automatic validation during conversion with detailed error messages.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <h3>Complete Privacy</h3>
+        <p>All conversion happens locally, your data never leaves your machine.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <h3>Large File Support</h3>
+        <p>Handle multi-MB files smoothly without browser limits.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </div>
+        <h3>No Ads</h3>
+        <p>Clean, focused interface.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        </div>
+        <h3>Offline</h3>
+        <p>Works without internet connection.</p>
+      </div>
+    </div>
+
+    <h2>How to Convert JSON in JsonStudio</h2>
+    <ol>
+      <li><strong>Download and install</strong> JsonStudio from <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">GitHub Releases</a></li>
+      <li><strong>Open the Converter tool</strong> from the left sidebar</li>
+      <li><strong>Paste your JSON data</strong> (or load from file)</li>
+      <li><strong>Select target format</strong> – YAML, XML, TOML, or CSV</li>
+      <li><strong>Click Convert</strong> – result appears instantly with syntax highlighting</li>
+      <li><strong>Copy or save</strong> the converted result</li>
+    </ol>
+
+    <h2>JSON Converter vs Online Tools</h2>
+    <p>Here's why JsonStudio's JSON converter is better than online alternatives:</p>
+    <ul>
+      <li><strong>Performance:</strong> Online converters struggle with large files. JsonStudio handles multi-MB files instantly.</li>
+      <li><strong>Privacy:</strong> Online tools upload your data to their servers. JsonStudio processes everything locally.</li>
+      <li><strong>Bidirectional:</strong> Many online tools only support one-way conversion. JsonStudio supports conversion in both directions.</li>
+      <li><strong>Validation:</strong> JsonStudio validates both input and output formats with detailed error messages.</li>
+      <li><strong>Professional editor:</strong> Monaco Editor with syntax highlighting for all formats (JSON, YAML, XML, TOML, CSV).</li>
+    </ul>
+
+    <h2>Frequently Asked Questions</h2>
+
+    <h3>Is JsonStudio JSON converter free?</h3>
+    <p>Yes, JsonStudio is completely free and open source (MIT License). All conversion features are included with no limitations.</p>
+
+    <h3>Can I convert YAML back to JSON?</h3>
+    <p>Yes, JsonStudio supports bidirectional conversion. You can convert JSON to YAML and YAML back to JSON.</p>
+
+    <h3>Does it handle large files?</h3>
+    <p>Yes, JsonStudio can convert multi-MB files smoothly. It's built with Rust for high performance.</p>
+
+    <h3>What platforms are supported?</h3>
+    <p>JsonStudio is available for macOS, Windows, and Linux. Download from <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">GitHub Releases</a>.</p>
+
+    <h3>Does it work offline?</h3>
+    <p>Yes, JsonStudio works 100% offline. All conversion happens locally on your computer.</p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2>Ready to Convert JSON?</h2>
+  <p>Download JsonStudio and convert between JSON, YAML, XML, TOML, and CSV instantly.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Download Now</span>
+    </a>
+    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      <span>View on GitHub</span>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT License</span></div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/json-formatter">JSON Formatter</a>
+      <a href="/json-diff">JSON Diff</a>
+      <a href="/json-validator">Validator</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
