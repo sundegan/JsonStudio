@@ -3,6 +3,7 @@
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { settingsStore } from '$lib/stores/settings';
   import { t } from '$lib/i18n';
+  import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   type TreeNode = {
@@ -15,10 +16,43 @@
     endOffset: number;
   };
 
+  type QueryExample = {
+    query: string;
+    result: string;
+  };
+
   let { content, editor } = $props<{
     content: string;
     editor: MonacoEditor | null;
   }>();
+
+  const QUERY_DOCS_URL: Record<QueryMode, string> = {
+    jmespath: 'https://jmespath.org',
+    jsonpath: 'https://datatracker.ietf.org/doc/html/rfc9535',
+  };
+  const EXAMPLE_DATA = `{
+  "people": [
+    {"name": "Alice", "age": 20},
+    {"name": "Bob",   "age": 30}
+  ],
+  "meta": {"count": 2}
+}`;
+  const QUERY_EXAMPLES: Record<QueryMode, QueryExample[]> = {
+    jmespath: [
+      { query: 'people[0].name', result: '"Alice"' },
+      { query: 'people[*].name', result: '["Alice", "Bob"]' },
+      { query: 'people[?age > `25`].name', result: '["Bob"]' },
+      { query: 'meta.count', result: '2' },
+      { query: 'length(people)', result: '2' },
+    ],
+    jsonpath: [
+      { query: '$.people[0].name', result: '"Alice"' },
+      { query: '$.people[*].name', result: '["Alice", "Bob"]' },
+      { query: '$.people[?(@.age > 25)].name', result: '["Bob"]' },
+      { query: '$.meta.count', result: '2' },
+      { query: '$..name', result: '["Alice", "Bob"]' },
+    ],
+  };
 
   const dispatch = createEventDispatcher<{ toast: { message: string } }>();
   let treeNodes = $state<TreeNode[]>([]);
@@ -28,6 +62,9 @@
   let rootData = $state<unknown>(null);
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
+  let queryMode = $state<QueryMode>('jmespath');
+  let queryError = $state('');
+  let queryMatchedRoot = $state(false);
   let queryMatches = $state<Set<string>>(new Set());
   let queryExpandedNodes = $state<Set<string>>(new Set());
   let queryRunId = 0;
@@ -47,7 +84,7 @@
     const query = searchQuery.trim();
     const data = rootData;
     const nodes = treeNodes;
-    void updateQueryMatches(query, data, nodes);
+    void updateQueryMatches(queryMode, query, data, nodes);
   });
 
   async function buildTree() {
@@ -55,6 +92,8 @@
       treeNodes = [];
       treeError = '';
       rootData = null;
+      queryError = '';
+      queryMatchedRoot = false;
       isAllExpanded = false;
       return;
     }
@@ -182,6 +221,34 @@
     return result;
   }
 
+  function pointerToJsonPath(path: string, data: unknown): string {
+    if (!path || path === '/') return '$';
+
+    const segments = path.split('/').slice(1).map(decodePointerSegment);
+    let result = '$';
+    let current = data;
+
+    for (const segment of segments) {
+      const isArrayIndex = Array.isArray(current) && /^[0-9]+$/.test(segment);
+      if (isArrayIndex) {
+        result += `[${segment}]`;
+        current = (current as any)[Number(segment)];
+        continue;
+      }
+
+      const isIdentifier = /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(segment);
+      result += isIdentifier ? `.${segment}` : `[${JSON.stringify(segment)}]`;
+
+      if (current && typeof current === 'object' && !Array.isArray(current)) {
+        current = (current as Record<string, unknown>)[segment];
+      } else {
+        current = undefined;
+      }
+    }
+
+    return result;
+  }
+
   function getValueType(value: unknown): TreeNode['type'] {
     if (value === null) return 'null';
     if (Array.isArray(value)) return 'array';
@@ -252,6 +319,12 @@
     editorInstance.focus();
   }
 
+  function handleNodeKeydown(event: KeyboardEvent, node: TreeNode) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    selectNode(node);
+  }
+
   function expandAll() {
     const allPaths = new Set<string>();
     const collectPaths = (nodes: TreeNode[]) => {
@@ -273,7 +346,10 @@
   }
 
   async function copyEntry(node: TreeNode) {
-    const dotPath = pointerToJmesPath(node.path, rootData) || node.key;
+    const queryPath = queryMode === 'jsonpath'
+      ? pointerToJsonPath(node.path, rootData)
+      : pointerToJmesPath(node.path, rootData);
+    const dotPath = queryPath || node.key;
     const valueText = JSON.stringify(node.value) ?? 'null';
     const entryText = `${dotPath}: ${valueText}`;
 
@@ -299,84 +375,46 @@
     return index === nodes.length - 1;
   }
 
-  function collectNodes(nodes: TreeNode[], list: TreeNode[]) {
-    nodes.forEach(node => {
-      list.push(node);
-      if (node.children) {
-        collectNodes(node.children, list);
-      }
-    });
-  }
-
-  function addAncestorPaths(path: string, expanded: Set<string>) {
-    if (!path || path === '/') return;
-    const segments = path.split('/').slice(1);
-    let current = '';
-    for (const segment of segments) {
-      current += `/${segment}`;
-      expanded.add(current);
-    }
-  }
-
   async function updateQueryMatches(
+    mode: QueryMode,
     query: string,
     data: unknown,
     nodes: TreeNode[]
   ) {
     const runId = ++queryRunId;
-    if (!query || !data || nodes.length === 0) {
+    if (!query || data == null || nodes.length === 0) {
       queryMatches = new Set();
       queryExpandedNodes = new Set();
+      queryError = '';
+      queryMatchedRoot = false;
       return;
     }
 
-    let result: unknown;
-    try {
-      const jmespath = await import('jmespath');
-      const search = jmespath.search ?? jmespath.default?.search ?? jmespath.default;
-      if (typeof search !== 'function') {
-        throw new Error('JMESPath search not available');
-      }
-      result = search(data, query);
-    } catch (e) {
-      if (runId !== queryRunId) return;
-      queryMatches = new Set();
-      queryExpandedNodes = new Set();
-      return;
-    }
-
-    if (runId !== queryRunId) return;
-    const resultItems = Array.isArray(result) ? result : [result];
-    const needsDeepEqual = resultItems.some(item => item && typeof item === 'object');
-    let deepEqual: ((a: unknown, b: unknown) => boolean) | null = null;
-    if (needsDeepEqual) {
-      const deepEqualModule = await import('fast-deep-equal');
-      deepEqual = deepEqualModule.default ?? deepEqualModule;
-    }
-
-    const allNodes: TreeNode[] = [];
-    collectNodes(nodes, allNodes);
-
-    const matched = new Set<string>();
-    const expanded = new Set<string>();
-    allNodes.forEach(node => {
-      for (const item of resultItems) {
-        if (item && typeof item === 'object') {
-          if (deepEqual && deepEqual(node.value, item)) {
-            matched.add(node.path);
-            addAncestorPaths(node.path, expanded);
-            break;
-          }
-        } else if (Object.is(node.value, item)) {
-          matched.add(node.path);
-          addAncestorPaths(node.path, expanded);
-          break;
-        }
-      }
+    const { matches, expanded, error, matchedRoot } = await runTreeQuery({
+      mode,
+      query,
+      data,
+      nodes,
     });
+    if (runId !== queryRunId) return;
+    queryMatches = matches;
+    queryExpandedNodes = matchedRoot
+      ? new Set([...expanded, ...nodes.map((node) => node.path)])
+      : expanded;
+    queryError = error;
+    queryMatchedRoot = matchedRoot;
+  }
 
-    queryMatches = matched;
-    queryExpandedNodes = expanded;
+  function getQueryModeLabel(mode: QueryMode): string {
+    return mode === 'jsonpath' ? 'JSONPath' : 'JMESPath';
+  }
+
+  function getQueryDocsUrl(mode: QueryMode): string {
+    return QUERY_DOCS_URL[mode];
+  }
+
+  function getQueryExamples(mode: QueryMode): QueryExample[] {
+    return QUERY_EXAMPLES[mode];
   }
 
   function hideHelp() {
@@ -425,7 +463,7 @@
       </svg>
       <input
         class="json-tree-search-input"
-        placeholder={$t('treeView.searchPlaceholder')}
+        placeholder={queryMode === 'jsonpath' ? $t('treeView.searchPlaceholderJsonpath') : $t('treeView.searchPlaceholder')}
         value={searchQuery}
         oninput={(e) => { searchQuery = e.currentTarget.value; }}
         spellcheck="false"
@@ -445,19 +483,29 @@
     </div>
 
     <div class="json-tree-toolbar-actions">
+      <select
+        class="json-tree-mode-select"
+        bind:value={queryMode}
+        aria-label={$t('treeView.queryMode')}
+        title={$t('treeView.queryMode')}
+      >
+        <option value="jmespath">{$t('treeView.modeJmespath')}</option>
+        <option value="jsonpath">{$t('treeView.modeJsonpath')}</option>
+      </select>
+
       <div
         class="json-tree-help"
         role="group"
-        aria-label="JMESPath Help"
+        aria-label={`${getQueryModeLabel(queryMode)} Help`}
       >
         <button
           class="json-tree-help-btn"
           class:is-active={helpOpen}
           onclick={(e) => { e.stopPropagation(); helpOpen = !helpOpen; }}
           type="button"
-          title={$t('treeView.syntaxGuide')}
+          title={`${getQueryModeLabel(queryMode)} ${$t('treeView.syntaxGuide')}`}
           aria-expanded={helpOpen}
-          aria-controls="jmespath-help"
+          aria-controls={`${queryMode}-help`}
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
             <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.75 3.75a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0ZM7.25 7.5a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .74.75v3.25h.25a.5.5 0 0 1 0 1h-1.5a.5.5 0 0 1 0-1h.25V8.25h-.01a.75.75 0 0 1-.49-.75Z"/>
@@ -467,28 +515,29 @@
         {#if helpOpen}
           <div
             class="json-tree-help-popover"
-            id="jmespath-help"
+            id={`${queryMode}-help`}
             role="dialog"
-            aria-label="JMESPath Help"
+            aria-label={`${getQueryModeLabel(queryMode)} Help`}
             tabindex="-1"
             onclick={(e) => e.stopPropagation()}
             onkeydown={(e) => e.key === 'Escape' && hideHelp()}
           >
             <div class="json-tree-help-header">
-              <span class="json-tree-help-title">{$t('treeView.cheatSheet')}</span>
+              <span class="json-tree-help-title">{getQueryModeLabel(queryMode)} {$t('treeView.cheatSheet')}</span>
               <a 
-                href="https://jmespath.org" 
+                href={getQueryDocsUrl(queryMode)}
                 target="_blank" 
                 rel="noopener noreferrer" 
                 class="json-tree-help-link"
                 onclick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  const url = getQueryDocsUrl(queryMode);
                   try {
-                    await openUrl('https://jmespath.org');
+                    await openUrl(url);
                   } catch (err) {
                     console.error('Failed to open link:', err);
-                    window.open('https://jmespath.org', '_blank');
+                    window.open(url, '_blank');
                   }
                 }}
               >
@@ -509,13 +558,7 @@
                     class="json-tree-copy-code-btn"
                     onclick={(e) => {
                       e.stopPropagation();
-                      navigator.clipboard.writeText(`{
-  "people": [
-    {"name": "Alice", "age": 20},
-    {"name": "Bob",   "age": 30}
-  ],
-  "meta": {"count": 2}
-}`);
+                      navigator.clipboard.writeText(EXAMPLE_DATA);
                       dispatch('toast', { message: $t('treeView.exampleCopied') });
                     }}
                     title={$t('treeView.copyExample')}
@@ -526,39 +569,19 @@
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                   </button>
-                  <pre class="json-tree-help-code-block">{`{
-  "people": [
-    {"name": "Alice", "age": 20},
-    {"name": "Bob",   "age": 30}
-  ],
-  "meta": {"count": 2}
-}`}</pre>
+                  <pre class="json-tree-help-code-block">{EXAMPLE_DATA}</pre>
                 </div>
               </div>
 
               <div class="json-tree-help-section">
                 <div class="json-tree-help-label">{$t('treeView.exampleQueries')}</div>
                 <div class="json-tree-help-grid">
-                  <div class="help-item">
-                    <div class="help-query">people[0].name</div>
-                    <div class="help-desc">"Alice"</div>
-                  </div>
-                  <div class="help-item">
-                    <div class="help-query">people[*].name</div>
-                    <div class="help-desc">["Alice", "Bob"]</div>
-                  </div>
-                  <div class="help-item">
-                    <div class="help-query">people[?age > `25`].name</div>
-                    <div class="help-desc">["Bob"]</div>
-                  </div>
-                  <div class="help-item">
-                    <div class="help-query">meta.count</div>
-                    <div class="help-desc">2</div>
-                  </div>
-                  <div class="help-item">
-                    <div class="help-query">length(people)</div>
-                    <div class="help-desc">2</div>
-                  </div>
+                  {#each getQueryExamples(queryMode) as example}
+                    <div class="help-item">
+                      <div class="help-query">{example.query}</div>
+                      <div class="help-desc">{example.result}</div>
+                    </div>
+                  {/each}
                 </div>
               </div>
             </div>
@@ -584,6 +607,16 @@
       </button>
     </div>
   </div>
+
+  {#if queryError}
+    <div class="json-tree-query-error" role="alert">
+      {queryError}
+    </div>
+  {:else if queryMatchedRoot}
+    <div class="json-tree-query-info" role="status">
+      {$t('treeView.rootMatched')}
+    </div>
+  {/if}
 
   <!-- Tree Content -->
   <div class="json-tree-content">
@@ -631,6 +664,7 @@
           <div 
             class="tree-node-content"
             onclick={() => selectNode(node)}
+            onkeydown={(e) => handleNodeKeydown(e, node)}
             role="button"
             tabindex="0"
           >
@@ -662,6 +696,8 @@
                 <button
                   class="tree-toggle-btn"
                   onclick={(e) => { e.stopPropagation(); toggleNode(node); }}
+                  aria-label={isExpanded ? `Collapse ${node.key}` : `Expand ${node.key}`}
+                  title={isExpanded ? `Collapse ${node.key}` : `Expand ${node.key}`}
                   type="button"
                 >
                   <svg 
@@ -726,12 +762,40 @@
 </div>
 
 <style>
-  /* New Styles for JMESPath Toolbar */
+  /* Query Toolbar */
   .json-tree-toolbar-actions {
     display: flex;
     align-items: center;
     gap: 2px;
     flex-shrink: 0;
+  }
+
+  .json-tree-mode-select {
+    height: 22px;
+    min-width: 90px;
+    padding: 0 22px 0 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+      linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+    background-position:
+      calc(100% - 13px) 9px,
+      calc(100% - 8px) 9px;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  .json-tree-mode-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
   }
 
   .json-tree-search-box {
@@ -796,6 +860,26 @@
   .json-tree-clear-btn:hover {
     background: var(--text-secondary);
     color: var(--bg-primary);
+  }
+
+  .json-tree-query-error {
+    margin: 0 10px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+    color: var(--text-primary);
+    font-size: 11px;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  }
+
+  .json-tree-query-info {
+    margin: 0 10px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--bg-tertiary) 75%, var(--bg-secondary));
+    color: var(--text-secondary);
+    font-size: 11px;
+    border: 1px solid var(--border);
   }
 
   /* Help Button & Popover */
