@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented here.
 
+## [1.1.0] - 2025-03-10
+
+### Added
+- **JSONPath query mode in Tree View**: add a query mode switcher so users can choose between `JMESPath` and `JSONPath` directly in the Tree View toolbar.
+- **JSON5 syntax**: The editor and Tree View support parsing and matching of JSON5 data.
+- **JSON tool landing pages**: add dedicated website pages for JSON Formatter, Converter, Schema, and Diff.
+- **Search engine site verification**: add site verification metadata for Google, Baidu, 360 Search, and Sogou.
+
+### Improved
+- **Editor highlighting**: optimize JSON/JSON5 highlight feedback to improve readability during querying and navigation.
+- **Project website SEO**:
+  - optimize page titles, descriptions, feature wording, and favicon display
+  - improve canonical/alternate links and domain switching
+  - refine sitemap and search indexing metadata
+- **Documentation updates**:
+  - update website links and badge formatting in README
+  - add dark-mode screenshots for code generation docs
+- **Schema view details**: simplify the static divider icon styling for a cleaner and more consistent appearance.
+
+### Fixed
+- **Desktop Monaco initialization**: initialize Monaco using the bundled instance to improve desktop build reliability.
+- **Error icon styling**: adjust the circular details of the error icon.
+
 ## [1.0.0] - 2025-03-05
 
 🎉 **First Stable Release!**
