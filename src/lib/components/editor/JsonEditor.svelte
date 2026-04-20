@@ -342,7 +342,7 @@
           try {
             const newContent = await readFile(changedPath);
             if (newContent !== currentTab.content) {
-              tabsStore.updateTabContent(currentTab.id, newContent);
+              tabsStore.updateTabContent(currentTab.id, newContent, false);
               await updateStats();
               showToast(`File "${currentTab.fileName}" reloaded`, 'success');
             }

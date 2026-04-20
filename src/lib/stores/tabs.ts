@@ -248,13 +248,13 @@ function createTabsStore() {
     },
     
     // Update tab content
-    updateTabContent: (tabId: string, content: string) => {
+    updateTabContent: (tabId: string, content: string, markModified: boolean = true) => {
       update(state => {
         const newState = {
           ...state,
           tabs: state.tabs.map(tab => 
             tab.id === tabId 
-              ? { ...tab, content, isModified: tab.filePath ? true : tab.isModified }
+              ? { ...tab, content, isModified: (tab.filePath && markModified) ? true : tab.isModified }
               : tab
           ),
         };
