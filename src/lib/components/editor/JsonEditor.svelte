@@ -35,6 +35,7 @@
   let toastType = $state<'success' | 'error' | 'info'>('success');
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
+  let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor = $state<MonacoEditor | null>(null);
   let toolbarRef = $state<JsonEditorToolbar | null>(null);
   let settingsPanel = $state<SettingsPanel | null>(null);
@@ -91,6 +92,7 @@
     lineHeight: 20,
     tabSize: 2,
     showTreeView: true,
+    autoSave: false,
   });
   
   async function openFilePaths(paths: string[]) {
@@ -328,19 +330,24 @@
     
     try {
       await fileWatcherService.watchFile(tab.filePath, async (changedPath) => {
+        const currentTab = tabsState.tabs.find(t => t.id === tab.id);
+        if (!currentTab) return;
+
         // File was modified externally
-        if (tab.isModified) {
+        if (currentTab.isModified) {
           // Show confirmation dialog
-          showToast(`File "${tab.fileName}" was modified externally`, 'info');
+          showToast(`File "${currentTab.fileName}" was modified externally`, 'info');
         } else {
           // Auto reload if not modified
           try {
             const newContent = await readFile(changedPath);
-            tabsStore.updateTabContent(tab.id, newContent);
-            await updateStats();
-            showToast(`File "${tab.fileName}" reloaded`, 'success');
+            if (newContent !== currentTab.content) {
+              tabsStore.updateTabContent(currentTab.id, newContent);
+              await updateStats();
+              showToast(`File "${currentTab.fileName}" reloaded`, 'success');
+            }
           } catch (e) {
-            showToast(`Failed to reload file "${tab.fileName}"`, 'error');
+            showToast(`Failed to reload file "${currentTab.fileName}"`, 'error');
             console.error('Failed to reload file:', e);
           }
         }
@@ -757,6 +764,16 @@
     
     statsTimer = setTimeout(updateStats, 300);
     checkJsonError(newValue);
+
+    if (settings.autoSave) {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        const currentTab = $activeTab;
+        if (currentTab && currentTab.isModified && currentTab.filePath) {
+          toolbarRef?.saveFile(true);
+        }
+      }, 1000);
+    }
   }
 
   function handleToolbarContentChange(newValue: string) {
@@ -764,6 +781,16 @@
     content = newValue;
     if (!currentTab) return;
     tabsStore.updateTabContent(currentTab.id, newValue);
+
+    if (settings.autoSave) {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        const currentTab = $activeTab;
+        if (currentTab && currentTab.isModified && currentTab.filePath) {
+          toolbarRef?.saveFile(true);
+        }
+      }, 1000);
+    }
   }
 
   // Paste auto-format: only format standard JSON. JSON5 content must not be

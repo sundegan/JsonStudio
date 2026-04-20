@@ -48,6 +48,8 @@ export default {
   'settings.indentSizeHint': '每级缩进空格数（1–8）',
   'settings.treeView': 'JSON 树形视图',
   'settings.treeViewHint': '在编辑器旁显示 JSON 树形视图',
+  'settings.autoSave': '自动保存',
+  'settings.autoSaveHint': '自动将更改保存到本地文件',
 
   'settings.shortcuts': '快捷键',
   'settings.shortcutsGlobal': '全局快捷键',

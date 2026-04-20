@@ -37,6 +37,7 @@ export interface AppSettings {
   lineHeight: number;
   tabSize: number;
   showTreeView: boolean;
+  autoSave: boolean;
 }
 
 // Default settings
@@ -49,6 +50,7 @@ const defaultSettings: AppSettings = {
   lineHeight: 20,
   tabSize: 2,
   showTreeView: true,
+  autoSave: false,
 };
 
 // Load settings from localStorage

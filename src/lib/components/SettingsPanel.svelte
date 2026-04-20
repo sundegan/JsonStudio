@@ -16,6 +16,7 @@
     lineHeight: 20,
     tabSize: 2,
     showTreeView: true,
+    autoSave: false,
   });
   
   $effect(() => {
@@ -66,6 +67,10 @@
 
   function handleTreeViewToggle(value: boolean) {
     settingsStore.updateSetting('showTreeView', value);
+  }
+
+  function handleAutoSaveToggle(value: boolean) {
+    settingsStore.updateSetting('autoSave', value);
   }
 
   function handleBackdropClick(e: MouseEvent) {
@@ -277,6 +282,23 @@
                   onclick={() => handleTreeViewToggle(!settings.showTreeView)}
                   type="button"
                   aria-pressed={settings.showTreeView}
+                >
+                  <span class="settings-toggle-thumb"></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">{$t('settings.autoSave')}</span>
+                  <span class="settings-hint">{$t('settings.autoSaveHint')}</span>
+                </div>
+                <button
+                  class="settings-toggle {settings.autoSave ? 'is-on' : ''}"
+                  onclick={() => handleAutoSaveToggle(!settings.autoSave)}
+                  type="button"
+                  aria-pressed={settings.autoSave}
                 >
                   <span class="settings-toggle-thumb"></span>
                 </button>

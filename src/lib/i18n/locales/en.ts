@@ -48,6 +48,8 @@ export default {
   'settings.indentSizeHint': 'Spaces per indentation level (1–8)',
   'settings.treeView': 'Tree View Sidebar',
   'settings.treeViewHint': 'Show JSON structure panel beside editor',
+  'settings.autoSave': 'Auto Save',
+  'settings.autoSaveHint': 'Automatically save changes to the local file',
 
   'settings.shortcuts': 'Shortcuts',
   'settings.shortcutsGlobal': 'Global Shortcuts',
