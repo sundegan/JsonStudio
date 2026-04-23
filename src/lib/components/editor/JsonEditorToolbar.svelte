@@ -121,8 +121,8 @@
     await handleOpenFile();
   }
 
-  export async function saveFile() {
-    await handleSaveFile();
+  export async function saveFile(isAutoSave = false) {
+    await handleSaveFile(isAutoSave);
   }
 
   export async function saveAsFile() {
@@ -331,29 +331,37 @@
     }
   }
 
-  async function handleSaveFile() {
-    if (!content.trim()) {
+  async function handleSaveFile(isAutoSave = false) {
+    const currentContent = content;
+    if (!currentContent.trim() && !isAutoSave) {
       onToast('Nothing to save', 'info');
       return;
     }
+    if (!currentContent.trim() && isAutoSave) return;
 
     if (!activeTab) {
-      onToast('No active tab', 'info');
+      if (!isAutoSave) onToast('No active tab', 'info');
       return;
     }
 
     try {
       if (activeTab.filePath) {
         // Save to existing file.
-        await writeFile(activeTab.filePath, content);
-        tabsStore.updateTabModified(activeTab.id, false);
-        onToast(`Saved: ${activeTab.fileName || 'file'}`);
+        await writeFile(activeTab.filePath, currentContent);
+        if (activeTab.content === currentContent) {
+          tabsStore.updateTabModified(activeTab.id, false);
+        }
+        if (!isAutoSave) {
+          onToast(`Saved: ${activeTab.fileName || 'file'}`);
+        }
       } else {
         // No current file, use save as.
-        await handleSaveAsFile();
+        if (!isAutoSave) {
+          await handleSaveAsFile();
+        }
       }
     } catch (e) {
-      onToast('Failed to save file', 'error');
+      if (!isAutoSave) onToast('Failed to save file', 'error');
       console.error('Save file error:', e);
     }
   }
