@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import type { JsonStats } from '$lib/services/json';
 import { fileWatcherService } from '$lib/services/fileWatcher';
+import { FIRST_UNTITLED_NAME, getNextUntitledName } from './untitledTabs.js';
 
 export interface Tab {
   id: string;                    // Unique identifier
@@ -41,7 +42,7 @@ function generateId(): string {
 export function createNewTab(
   content: string = '',
   filePath: string | null = null,
-  fileName: string | null = null,
+  fileName: string | null = FIRST_UNTITLED_NAME,
   isPinned: boolean = false
 ): Tab {
   return {
@@ -72,13 +73,18 @@ function loadState(): TabsState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed: TabsState = JSON.parse(stored);
-      const sanitizedTabs: Tab[] = parsed.tabs.map(tab => ({
-        ...tab,
-        filePath: tab.filePath ?? null,
-        fileName: tab.fileName ?? null,
-        isModified: false,
-        isPinned: tab.isPinned ?? false,
-      }));
+      const sanitizedTabs: Tab[] = parsed.tabs.reduce<Tab[]>((result, tab) => {
+        const filePath = tab.filePath ?? null;
+        const fileName = tab.fileName ?? (filePath ? null : getNextUntitledName(result));
+        result.push({
+          ...tab,
+          filePath,
+          fileName,
+          isModified: false,
+          isPinned: tab.isPinned ?? false,
+        });
+        return result;
+      }, []);
       
       // Ensure at least one tab
       if (sanitizedTabs.length === 0) {
@@ -150,7 +156,11 @@ function createTabsStore() {
           return state;
         }
         
-        const newTab = createNewTab(content, filePath, fileName);
+        const newTab = createNewTab(
+          content,
+          filePath,
+          fileName ?? (filePath ? null : getNextUntitledName(state.tabs))
+        );
         const newState = {
           tabs: [...state.tabs, newTab],
           activeTabId: newTab.id,
@@ -161,7 +171,7 @@ function createTabsStore() {
     },
     
     // Open file: reuse empty tab if possible, otherwise create new tab
-    openFile: (content: string, filePath: string, fileName: string) => {
+    openFile: (content: string, filePath: string, fileName: string | null) => {
       let maxTabsReached = false;
       update(state => {
         const currentTab = state.tabs.find(t => t.id === state.activeTabId);
