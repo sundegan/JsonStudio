@@ -2,6 +2,8 @@
   import { onMount, onDestroy } from 'svelte';
   import type * as Monaco from 'monaco-editor';
   import { initMonaco } from '$lib/services/monaco';
+  import { formatJson, unescapeString } from '$lib/services/json';
+  import { normalizePastedJson } from '$lib/services/diffPasteNormalize.js';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
 
   let {
@@ -37,6 +39,8 @@
   let modifiedModel: Monaco.editor.ITextModel | null = null;
   let isSyncingOriginal = false;
   let isSyncingModified = false;
+  let originalPasteTimer: ReturnType<typeof setTimeout> | null = null;
+  let modifiedPasteTimer: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
     // Always read originalValue first to establish dependency tracking
@@ -157,6 +161,12 @@
     };
     createdDiffEditor.getOriginalEditor().updateOptions(editorOptions);
     createdDiffEditor.getModifiedEditor().updateOptions(editorOptions);
+    createdDiffEditor.getOriginalEditor().onDidPaste(() => {
+      schedulePasteNormalize(createdOriginalModel, 'original');
+    });
+    createdDiffEditor.getModifiedEditor().onDidPaste(() => {
+      schedulePasteNormalize(createdModifiedModel, 'modified');
+    });
 
     createdOriginalModel.onDidChangeContent(() => {
       if (isSyncingOriginal) return;
@@ -175,10 +185,40 @@
   });
 
   onDestroy(() => {
+    if (originalPasteTimer) clearTimeout(originalPasteTimer);
+    if (modifiedPasteTimer) clearTimeout(modifiedPasteTimer);
     diffEditor?.dispose();
     originalModel?.dispose();
     modifiedModel?.dispose();
   });
+
+  function schedulePasteNormalize(model: Monaco.editor.ITextModel, side: 'original' | 'modified') {
+    if (side === 'original' && originalPasteTimer) clearTimeout(originalPasteTimer);
+    if (side === 'modified' && modifiedPasteTimer) clearTimeout(modifiedPasteTimer);
+
+    const timer = setTimeout(async () => {
+      const sourceValue = model.getValue();
+      const normalized = await normalizePastedJson(sourceValue, {
+        format: value => formatJson(value, tabSize),
+        unescape: unescapeString,
+      });
+      if (!normalized || normalized === sourceValue || model.getValue() !== sourceValue) {
+        return;
+      }
+
+      model.pushEditOperations(
+        [],
+        [{ range: model.getFullModelRange(), text: normalized }],
+        () => null
+      );
+    }, 100);
+
+    if (side === 'original') {
+      originalPasteTimer = timer;
+    } else {
+      modifiedPasteTimer = timer;
+    }
+  }
 </script>
 
 <div bind:this={container} class="diff-editor-container"></div>
