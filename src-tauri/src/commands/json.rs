@@ -321,3 +321,28 @@ fn calculate_depth(value: &Value) -> usize {
         _ => 0,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::json_format;
+
+    #[test]
+    fn json_format_preserves_object_key_order() {
+        let input = r#"{"z":1,"a":2,"m":{"y":3,"b":4}}"#;
+
+        let formatted = json_format(input, Some(2)).unwrap();
+
+        assert!(formatted.find(r#""z""#).unwrap() < formatted.find(r#""a""#).unwrap());
+        assert!(formatted.find(r#""y""#).unwrap() < formatted.find(r#""b""#).unwrap());
+    }
+
+    #[test]
+    fn json5_format_preserves_object_key_order() {
+        let input = "{z:1,a:2,m:{y:3,b:4}}";
+
+        let formatted = json_format(input, Some(2)).unwrap();
+
+        assert!(formatted.find(r#""z""#).unwrap() < formatted.find(r#""a""#).unwrap());
+        assert!(formatted.find(r#""y""#).unwrap() < formatted.find(r#""b""#).unwrap());
+    }
+}
