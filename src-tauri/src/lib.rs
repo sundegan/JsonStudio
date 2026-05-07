@@ -36,21 +36,25 @@ pub fn run() {
             
             // Register global shortcut: show app
             let show_app_handle = app_handle.clone();
-            app.global_shortcut().on_shortcut("CommandOrControl+Shift+J", move |_app, _shortcut, _event| {
+            if let Err(error) = app.global_shortcut().on_shortcut("CommandOrControl+Shift+J", move |_app, _shortcut, _event| {
                 let handle = show_app_handle.clone();
                 tauri::async_runtime::spawn(async move {
                     let _ = show_main_window(handle).await;
                 });
-            }).map_err(|e| format!("Failed to register show app shortcut: {}", e))?;
+            }) {
+                eprintln!("Failed to register show app shortcut: {}", error);
+            }
             
             // Register global shortcut: format clipboard
             let format_handle = app_handle.clone();
-            app.global_shortcut().on_shortcut("CommandOrControl+Shift+V", move |_app, _shortcut, _event| {
+            if let Err(error) = app.global_shortcut().on_shortcut("CommandOrControl+Shift+V", move |_app, _shortcut, _event| {
                 let handle = format_handle.clone();
                 tauri::async_runtime::spawn(async move {
                     let _ = format_clipboard_and_show(handle).await;
                 });
-            }).map_err(|e| format!("Failed to register format clipboard shortcut: {}", e))?;
+            }) {
+                eprintln!("Failed to register format clipboard shortcut: {}", error);
+            }
 
             #[cfg(not(target_os = "macos"))]
             {
