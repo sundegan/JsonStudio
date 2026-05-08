@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [1.2.0] - 2026-05-08
 
 ### Added
 - **Mixed log-like text and JSON formatting**: detect JSON, JSON5-like, escaped JSON, and repairable JSON fragments inside log-like text, keep the original editor content unchanged, and display the extracted JSON data as formatted structured results.

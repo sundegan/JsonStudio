@@ -73,7 +73,7 @@
 
   let appSettings = $state<import('$lib/stores/settings').AppSettings>({
     isDarkMode: false, darkTheme: 'one-dark', lightTheme: 'vs',
-    language: 'zh', fontSize: 13, lineHeight: 20, tabSize: 2, showTreeView: true,
+    language: 'zh', fontSize: 13, lineHeight: 20, tabSize: 2, showTreeView: true, autoSave: false,
   });
 
   $effect(() => {
