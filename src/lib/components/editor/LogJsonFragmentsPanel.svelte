@@ -28,19 +28,30 @@
 
   let selectedFragment = $derived(fragments[selectedIndex] || fragments[0] || null);
   let listWidth = $state(240);
+  let panelHeight = $state(220);
   let isResizing = $state(false);
+  let isHeightResizing = $state(false);
 
   const MIN_LIST_WIDTH = 180;
   const MAX_LIST_WIDTH = 420;
+  const MIN_PANEL_HEIGHT = 160;
+  const MAX_PANEL_HEIGHT = 520;
   let stopResizeListeners: (() => void) | null = null;
 
   function clampListWidth(width: number) {
     return Math.min(MAX_LIST_WIDTH, Math.max(MIN_LIST_WIDTH, width));
   }
 
+  function clampPanelHeight(height: number) {
+    const maxViewportHeight = Math.max(MIN_PANEL_HEIGHT, Math.floor(window.innerHeight * 0.62));
+    const maxPanelHeight = Math.min(MAX_PANEL_HEIGHT, maxViewportHeight);
+    return Math.min(maxPanelHeight, Math.max(MIN_PANEL_HEIGHT, height));
+  }
+
   function startResize(event: PointerEvent) {
     event.preventDefault();
     stopResizeListeners?.();
+    isHeightResizing = false;
     const startX = event.clientX;
     const startWidth = listWidth;
     isResizing = true;
@@ -58,9 +69,40 @@
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
     stopResizeListeners = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }
+
+  function startHeightResize(event: PointerEvent) {
+    event.preventDefault();
+    stopResizeListeners?.();
+    isResizing = false;
+    const startY = event.clientY;
+    const startHeight = panelHeight;
+    isHeightResizing = true;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!isHeightResizing) return;
+      panelHeight = clampPanelHeight(startHeight + startY - moveEvent.clientY);
+    };
+
+    const handlePointerUp = () => {
+      isHeightResizing = false;
+      stopResizeListeners?.();
+      stopResizeListeners = null;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+    stopResizeListeners = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
     };
   }
 
@@ -70,7 +112,20 @@
 </script>
 
 {#if selectedFragment}
-  <section class="log-json-panel" aria-label={$t('logJson.title')}>
+  <section
+    class="log-json-panel"
+    class:is-height-resizing={isHeightResizing}
+    aria-label={$t('logJson.title')}
+    style={`height: ${panelHeight}px;`}
+  >
+    <div
+      class="log-json-height-resizer"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label={$t('logJson.resizeHeight')}
+      title={$t('logJson.resizeHeight')}
+      onpointerdown={startHeightResize}
+    ></div>
     <div class="log-json-header">
       <div class="log-json-title-group">
         <div class="log-json-title">{$t('logJson.title')}</div>
@@ -146,14 +201,44 @@
 
 <style>
   .log-json-panel {
-    height: 220px;
     min-height: 160px;
-    max-height: 34%;
     display: flex;
     flex-direction: column;
     border-top: 1px solid var(--border);
     background: var(--bg-secondary);
     flex-shrink: 0;
+    position: relative;
+  }
+
+  .log-json-panel.is-height-resizing {
+    cursor: row-resize;
+    user-select: none;
+  }
+
+  .log-json-height-resizer {
+    position: absolute;
+    top: -3px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: row-resize;
+    z-index: 3;
+  }
+
+  .log-json-height-resizer::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 2px;
+    height: 1px;
+    background: transparent;
+    transition: background 0.15s ease;
+  }
+
+  .log-json-height-resizer:hover::before,
+  .log-json-panel.is-height-resizing .log-json-height-resizer::before {
+    background: color-mix(in srgb, var(--accent) 45%, var(--border));
   }
 
   .log-json-header {
@@ -309,12 +394,12 @@
   }
 
   .log-json-copy {
-    position: sticky;
+    position: absolute;
     top: 8px;
+    right: 10px;
     z-index: 2;
     width: 26px;
     height: 26px;
-    margin: 8px 10px -34px auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -335,7 +420,7 @@
   .log-json-result pre {
     margin: 0;
     min-height: 100%;
-    padding: 10px 12px;
+    padding: 10px 48px 10px 12px;
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
     font-size: 12px;
     line-height: 18px;

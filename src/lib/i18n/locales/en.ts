@@ -206,4 +206,5 @@ export default {
   'logJson.copy': 'Copy result',
   'logJson.close': 'Close panel',
   'logJson.resize': 'Resize fragment list',
+  'logJson.resizeHeight': 'Resize result panel',
 } as const;
