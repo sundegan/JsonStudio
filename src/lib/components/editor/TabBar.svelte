@@ -1,5 +1,10 @@
 <script lang="ts">
   import { tabsStore, type Tab } from '$lib/stores/tabs';
+  import {
+    shouldConfirmCloseAllTabs,
+    shouldConfirmCloseOtherTabs,
+    shouldConfirmCloseTab,
+  } from '$lib/stores/tabClose.js';
   import { createEventDispatcher, onMount } from 'svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   
@@ -21,6 +26,7 @@
   // Confirm dialog state
   let isConfirmOpen = $state(false);
   let tabToClose = $state<string | null>(null);
+  let confirmAction = $state<'tab' | 'others' | 'all' | null>(null);
   let confirmMessage = $state('');
 
   function handleTabClick(tabId: string) {
@@ -46,6 +52,14 @@
 
   function handleCloseOtherTabs() {
     if (contextMenuTabId) {
+      if (shouldConfirmCloseOtherTabs(tabs, contextMenuTabId)) {
+        tabToClose = contextMenuTabId;
+        confirmAction = 'others';
+        confirmMessage = 'Other tabs have unsaved changes. Close them anyway?';
+        isConfirmOpen = true;
+        closeContextMenu();
+        return;
+      }
       tabsStore.closeOtherTabs(contextMenuTabId);
     }
     closeContextMenu();
@@ -59,6 +73,13 @@
   }
 
   function handleCloseAllTabs() {
+    if (shouldConfirmCloseAllTabs(tabs)) {
+      confirmAction = 'all';
+      confirmMessage = 'Some tabs have unsaved changes. Close all tabs anyway?';
+      isConfirmOpen = true;
+      closeContextMenu();
+      return;
+    }
     tabsStore.closeAllTabs();
     closeContextMenu();
   }
@@ -67,8 +88,9 @@
     event.stopPropagation();
     
     const tab = tabs.find((t: Tab) => t.id === tabId);
-    if (tab && tab.isModified) {
+    if (shouldConfirmCloseTab(tabs, tabId)) {
       tabToClose = tabId;
+      confirmAction = 'tab';
       confirmMessage = `"${tab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
       isConfirmOpen = true;
       return;
@@ -78,14 +100,20 @@
   }
 
   function onConfirmClose() {
-    if (tabToClose) {
+    if (confirmAction === 'all') {
+      tabsStore.closeAllTabs();
+    } else if (confirmAction === 'others' && tabToClose) {
+      tabsStore.closeOtherTabs(tabToClose);
+    } else if (confirmAction === 'tab' && tabToClose) {
       tabsStore.removeTab(tabToClose);
-      tabToClose = null;
     }
+    tabToClose = null;
+    confirmAction = null;
   }
 
   function onCancelClose() {
     tabToClose = null;
+    confirmAction = null;
   }
   
   function handleNewTab() {

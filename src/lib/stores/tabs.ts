@@ -2,6 +2,7 @@ import { writable, derived } from 'svelte/store';
 import type { JsonStats } from '$lib/services/json';
 import { fileWatcherService } from '$lib/services/fileWatcher';
 import { FIRST_UNTITLED_NAME, getNextUntitledName } from './untitledTabs.js';
+import { MAX_TABS, openFileInTabs } from './tabOpen.js';
 
 export interface Tab {
   id: string;                    // Unique identifier
@@ -19,8 +20,6 @@ export interface TabsState {
 }
 
 const STORAGE_KEY = 'jsonstudio_tabs_state';
-const MAX_TABS = 10;
-
 // Create empty stats object
 function createEmptyStats(): JsonStats {
   return {
@@ -174,6 +173,12 @@ function createTabsStore() {
     openFile: (content: string, filePath: string, fileName: string | null) => {
       let maxTabsReached = false;
       update(state => {
+        const existingResult = openFileInTabs(state, content, filePath, fileName);
+        if (existingResult.state !== state) {
+          saveState(existingResult.state);
+          return existingResult.state;
+        }
+
         const currentTab = state.tabs.find(t => t.id === state.activeTabId);
         
         // If current tab is empty and unmodified, reuse it
@@ -191,8 +196,8 @@ function createTabsStore() {
         }
         
         // Check max tabs limit
-        if (state.tabs.length >= MAX_TABS) {
-          maxTabsReached = true;
+        if (existingResult.maxTabsReached) {
+          maxTabsReached = existingResult.maxTabsReached;
           return state;
         }
         
