@@ -392,7 +392,7 @@ jobs:
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2.6.2
         with:
           files: ${{ env.UPLOAD_FILE }}
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
@@ -401,13 +401,13 @@ jobs:
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
-          overwrite: true
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2.6.2
         with:
           files: ${{ env.UPLOAD_FILE }}
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
@@ -416,13 +416,13 @@ jobs:
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
-          overwrite: true
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux artifacts
         if: matrix.platform == 'ubuntu-22.04'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2.6.2
         with:
           files: ${{ env.UPLOAD_FILE }}
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
@@ -431,6 +431,6 @@ jobs:
           draft: true
           prerelease: false
           fail_on_unmatched_files: false
-          overwrite: true
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
