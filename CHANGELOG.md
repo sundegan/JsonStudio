@@ -5,6 +5,7 @@ All notable changes to this project are documented here.
 ## [1.2.0] - 2026-05-08
 
 ### Added
+- **Auto-save**: add an optional auto-save setting to save modified file-backed tabs automatically.
 - **Mixed log-like text and JSON formatting**: detect JSON, JSON5-like, escaped JSON, and repairable JSON fragments inside log-like text, keep the original editor content unchanged, and display the extracted JSON data as formatted structured results.
 - **Auto-numbered untitled tabs**: new documents are named `Untitled-1`, `Untitled-2`, and so on for easier tab identification.
 - **Unit tests for log JSON extraction**: cover mixed logs, multiple fragments, JSON5-like input, escaped JSON, invalid content, and braces inside strings.
@@ -19,7 +20,7 @@ All notable changes to this project are documented here.
 - **JSON formatting order**: preserve object key order instead of sorting keys alphabetically by default.
 - **Async paste race**: avoid overwriting newer user edits when asynchronous paste formatting finishes after additional input.
 
-## [1.1.0] - 2025-03-10
+## [1.1.0] - 2026-03-10
 
 ### Added
 - **JSONPath query mode in Tree View**: add a query mode switcher so users can choose between `JMESPath` and `JSONPath` directly in the Tree View toolbar.
@@ -42,7 +43,7 @@ All notable changes to this project are documented here.
 - **Desktop Monaco initialization**: initialize Monaco using the bundled instance to improve desktop build reliability.
 - **Error icon styling**: adjust the circular details of the error icon.
 
-## [1.0.0] - 2025-03-05
+## [1.0.0] - 2026-03-05
 
 🎉 **First Stable Release!**
 
