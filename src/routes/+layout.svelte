@@ -11,6 +11,7 @@
     } else {
       html.classList.add('light');
     }
+    html.style.colorScheme = isDarkMode ? 'dark' : 'light';
     
     try {
       const { invoke } = await import('@tauri-apps/api/core');
@@ -33,4 +34,3 @@
 <div class="h-full w-full bg-(--bg-base)">
   <slot />
 </div>
-
