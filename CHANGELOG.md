@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Added
+- **Mixed log-like text and JSON formatting**: detect JSON, JSON5-like, escaped JSON, and repairable JSON fragments inside log-like text, keep the original editor content unchanged, and display the extracted JSON data as formatted structured results.
+- **Auto-numbered untitled tabs**: new documents are named `Untitled-1`, `Untitled-2`, and so on for easier tab identification.
+- **Unit tests for log JSON extraction**: cover mixed logs, multiple fragments, JSON5-like input, escaped JSON, invalid content, and braces inside strings.
+
+### Improved
+- **Paste normalization**: auto-format pasted JSON in diff mode and standalone JSON/JSON5/escaped JSON in normal editor mode where appropriate.
+- **File tab workflow**: prompt before closing unsaved changes, reuse an already opened file tab instead of opening duplicates, and keep destructive editor operations undoable.
+- **Desktop titlebar theming**: align the macOS window titlebar background with the active light/dark theme.
+- **Shortcut registration robustness**: prevent application startup failure when shortcut registration fails.
+
+### Fixed
+- **JSON formatting order**: preserve object key order instead of sorting keys alphabetically by default.
+- **Async paste race**: avoid overwriting newer user edits when asynchronous paste formatting finishes after additional input.
+
 ## [1.1.0] - 2025-03-10
 
 ### Added

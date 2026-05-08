@@ -157,6 +157,8 @@ export default {
   'toast.json5Detected': 'JSON5 format detected, auto-parsed',
   'toast.json5Converted': 'JSON5 converted to standard JSON',
   'toast.json5ConvertFailed': 'Failed to convert JSON5',
+  'toast.logJsonCopied': 'JSON fragment copied',
+  'toast.logJsonCopyFailed': 'Failed to copy JSON fragment',
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',
@@ -195,4 +197,13 @@ export default {
   'fixJson.success': 'JSON repaired successfully',
   'fixJson.failed': 'Failed to repair JSON',
   'fixJson.unrepairable': 'Cannot auto-fix, please check manually',
+
+  // Log JSON fragments
+  'logJson.title': 'JSON Fragments',
+  'logJson.detected': '{count} fragments detected',
+  'logJson.fragments': 'JSON fragments',
+  'logJson.position': 'line {line}, column {column}',
+  'logJson.copy': 'Copy result',
+  'logJson.close': 'Close panel',
+  'logJson.resize': 'Resize fragment list',
 } as const;

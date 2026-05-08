@@ -14,13 +14,28 @@
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import JsonTreeView from './JsonTreeView.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
+  import LogJsonFragmentsPanel from './LogJsonFragmentsPanel.svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import { jsonrepair } from 'jsonrepair';
+  import {
+    extractLogJsonFragments,
+    getStandaloneEscapedJsonContent,
+    MAX_LOG_JSON_INPUT_LENGTH,
+  } from '$lib/services/logJsonFragments.js';
   import { t } from '$lib/i18n';
+
+  type LogJsonFragment = {
+    label: string;
+    line: number;
+    column: number;
+    raw: string;
+    formatted: string;
+    kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Repaired JSON';
+  };
 
   let content = $state('');
   let stats = $state<JsonStats>({
@@ -36,6 +51,7 @@
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
   let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  let logJsonTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor = $state<MonacoEditor | null>(null);
   let toolbarRef = $state<JsonEditorToolbar | null>(null);
   let settingsPanel = $state<SettingsPanel | null>(null);
@@ -45,6 +61,9 @@
   let isCodegenMode = $state(false);
   let isSchemaMode = $state(false);
   let jsonError = $state<{ message: string } | null>(null);
+  let logJsonFragments = $state<LogJsonFragment[]>([]);
+  let selectedLogJsonFragmentIndex = $state(0);
+  let isLogJsonPanelOpen = $state(false);
   // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
   // is saved here so it can be restored on exit. For standard JSON this stays empty,
   // meaning sub-page edits persist back to the main editor.
@@ -149,27 +168,33 @@
       const { listen } = await import('@tauri-apps/api/event');
       
       // Listen for successfully formatted JSON
-      unlistenFormatted = await listen<string>('clipboard-formatted', (event) => {
+      unlistenFormatted = await listen<string>('clipboard-formatted', async (event) => {
         const currentTab = $activeTab;
         if (!currentTab) return;
+
+        const nextContent = await normalizePastedStandaloneJson(event.payload).catch(() => null) || event.payload;
         
-        content = event.payload;
-        monacoEditor?.setValue(event.payload);
-        tabsStore.updateTabContent(currentTab.id, event.payload);
-        quickDetectFormatAndSwitchLanguage(event.payload);  // Immediate language switch
+        content = nextContent;
+        monacoEditor?.setValue(nextContent);
+        tabsStore.updateTabContent(currentTab.id, nextContent);
+        quickDetectFormatAndSwitchLanguage(nextContent);  // Immediate language switch
+        scheduleLogJsonDetection(nextContent);
         updateStats(true);  // Show JSON5 toast if detected
         showToast('Clipboard content formatted');
       });
       
       // Listen for raw paste (when JSON is invalid)
-      unlistenRaw = await listen<string>('clipboard-pasted-raw', (event) => {
+      unlistenRaw = await listen<string>('clipboard-pasted-raw', async (event) => {
         const currentTab = $activeTab;
         if (!currentTab) return;
+
+        const nextContent = await normalizePastedStandaloneJson(event.payload).catch(() => null) || event.payload;
         
-        content = event.payload;
-        monacoEditor?.setValue(event.payload);
-        tabsStore.updateTabContent(currentTab.id, event.payload);
-        quickDetectFormatAndSwitchLanguage(event.payload);  // Immediate language switch
+        content = nextContent;
+        monacoEditor?.setValue(nextContent);
+        tabsStore.updateTabContent(currentTab.id, nextContent);
+        quickDetectFormatAndSwitchLanguage(nextContent);  // Immediate language switch
+        scheduleLogJsonDetection(nextContent);
         updateStats(true);  // Show JSON5 toast if detected
         showToast('Clipboard content pasted (invalid JSON)');
       });
@@ -284,6 +309,8 @@
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
       window.removeEventListener('keydown', handleKeydown);
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      if (logJsonTimer) clearTimeout(logJsonTimer);
       fileWatcherService.destroy();
       fileWatcherService.unwatchAll();
     };
@@ -322,6 +349,7 @@
       });
     }
     checkJsonError(currentTab.content);
+    scheduleLogJsonDetection(currentTab.content);
   }
   
   // Handle file watching for active tab
@@ -653,6 +681,92 @@
     toastType = type;
   }
 
+  function resetLogJsonFragments() {
+    if (logJsonTimer) {
+      clearTimeout(logJsonTimer);
+      logJsonTimer = null;
+    }
+    logJsonFragments = [];
+    selectedLogJsonFragmentIndex = 0;
+    isLogJsonPanelOpen = false;
+  }
+
+  function scheduleLogJsonDetection(value: string) {
+    if (logJsonTimer) clearTimeout(logJsonTimer);
+
+    if (
+      !value.trim() ||
+      value.length > MAX_LOG_JSON_INPUT_LENGTH ||
+      getStandaloneEscapedJsonContent(value)
+    ) {
+      resetLogJsonFragments();
+      return;
+    }
+
+    logJsonTimer = setTimeout(() => {
+      const fragments = extractLogJsonFragments(value, { indent: tabSize }) as LogJsonFragment[];
+      const isWholeDocumentJson =
+        fragments.length === 1 && fragments[0].raw.trim() === value.trim();
+
+      if (fragments.length === 0 || isWholeDocumentJson) {
+        logJsonFragments = [];
+        selectedLogJsonFragmentIndex = 0;
+        isLogJsonPanelOpen = false;
+        return;
+      }
+
+      logJsonFragments = fragments;
+      selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
+      isLogJsonPanelOpen = true;
+    }, 400);
+  }
+
+  async function copyLogJsonFragment(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast($t('toast.logJsonCopied'));
+    } catch (error) {
+      console.error('Failed to copy log JSON fragment:', error);
+      showToast($t('toast.logJsonCopyFailed'), 'error');
+    }
+  }
+
+  function replaceActiveEditorContent(value: string) {
+    const currentTab = $activeTab;
+    content = value;
+    monacoEditor?.setValue(value);
+    if (currentTab) {
+      tabsStore.updateTabContent(currentTab.id, value);
+    }
+    scheduleLogJsonDetection(value);
+  }
+
+  async function normalizePastedStandaloneJson(sourceValue: string) {
+    const trimmed = sourceValue.trim();
+    if (!trimmed) return null;
+
+    const { formatJson } = await import('$lib/services/json');
+    const escapedJson = getStandaloneEscapedJsonContent(trimmed);
+    if (escapedJson) {
+      return await formatJson(escapedJson, tabSize);
+    }
+
+    try {
+      JSON.parse(trimmed);
+      return await formatJson(sourceValue, tabSize);
+    } catch {
+      try {
+        const result = await getJsonStats(trimmed);
+        if (result.valid && result.format_type === 'JSON5') {
+          return await formatJson(sourceValue, tabSize);
+        }
+      } catch {
+      }
+    }
+
+    return null;
+  }
+
   function clampTreeWidth(width: number) {
     return Math.min(TREE_MAX_WIDTH, Math.max(TREE_MIN_WIDTH, width));
   }
@@ -756,6 +870,7 @@
       };
       tabsStore.updateTabStats(currentTab.id, stats);
       jsonError = null;
+      resetLogJsonFragments();
       monacoEditor?.setLanguage('json');
       return;
     }
@@ -764,6 +879,7 @@
     
     statsTimer = setTimeout(updateStats, 300);
     checkJsonError(newValue);
+    scheduleLogJsonDetection(newValue);
 
     if (settings.autoSave) {
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -781,6 +897,7 @@
     content = newValue;
     if (!currentTab) return;
     tabsStore.updateTabContent(currentTab.id, newValue);
+    scheduleLogJsonDetection(newValue);
 
     if (settings.autoSave) {
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -802,11 +919,18 @@
       if (!content.trim()) {
         return;
       }
+      const sourceValue = content;
       try {
-        JSON.parse(content);
-        await toolbarRef?.formatContent();
+        const normalized = await normalizePastedStandaloneJson(sourceValue);
+        if (normalized && monacoEditor?.getValue() === sourceValue) {
+          replaceActiveEditorContent(normalized);
+          await updateStats();
+          return;
+        }
       } catch {
-        // Not standard JSON — likely JSON5; just detect the format
+      }
+
+      if (monacoEditor?.getValue() === sourceValue) {
         await updateStats(true);
       }
     }, 100);
@@ -1086,6 +1210,15 @@
                 onPaste={handleEditorPaste}
               />
             </div>
+            {#if isLogJsonPanelOpen && logJsonFragments.length > 0}
+              <LogJsonFragmentsPanel
+                fragments={logJsonFragments}
+                selectedIndex={selectedLogJsonFragmentIndex}
+                on:select={(event) => { selectedLogJsonFragmentIndex = event.detail.index; }}
+                on:copy={(event) => copyLogJsonFragment(event.detail.value)}
+                on:close={() => { isLogJsonPanelOpen = false; }}
+              />
+            {/if}
           </div>
         {/if}
 

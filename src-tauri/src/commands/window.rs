@@ -26,7 +26,7 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
     #[cfg(target_os = "macos")]
     {
         use cocoa::appkit::{NSColor, NSWindow};
-        use cocoa::base::{id, nil, YES};
+        use cocoa::base::{id, nil, NO};
         use cocoa::foundation::NSString;
         use objc::{msg_send, sel, sel_impl};
 
@@ -53,7 +53,7 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
             };
             let background =
                 NSColor::colorWithSRGBRed_green_blue_alpha_(nil, red, green, blue, 1.0);
-            ns_window.setTitlebarAppearsTransparent_(YES);
+            ns_window.setTitlebarAppearsTransparent_(NO);
             ns_window.setBackgroundColor_(background);
         }
     }

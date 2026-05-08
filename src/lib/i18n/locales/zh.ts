@@ -157,6 +157,8 @@ export default {
   'toast.json5Detected': '检测到 JSON5 格式，已自动解析',
   'toast.json5Converted': 'JSON5 已转换为标准 JSON',
   'toast.json5ConvertFailed': 'JSON5 转换失败',
+  'toast.logJsonCopied': 'JSON 片段已复制',
+  'toast.logJsonCopyFailed': 'JSON 片段复制失败',
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',
@@ -195,4 +197,13 @@ export default {
   'fixJson.success': 'JSON 已修复',
   'fixJson.failed': 'JSON 修复失败',
   'fixJson.unrepairable': '无法自动修复，请手动检查',
+
+  // Log JSON fragments
+  'logJson.title': 'JSON 片段',
+  'logJson.detected': '检测到 {count} 个片段',
+  'logJson.fragments': 'JSON 片段列表',
+  'logJson.position': '第 {line} 行，第 {column} 列',
+  'logJson.copy': '复制结果',
+  'logJson.close': '关闭面板',
+  'logJson.resize': '调整片段列表宽度',
 } as const;
