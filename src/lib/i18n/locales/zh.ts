@@ -206,4 +206,5 @@ export default {
   'logJson.copy': '复制结果',
   'logJson.close': '关闭面板',
   'logJson.resize': '调整片段列表宽度',
+  'logJson.resizeHeight': '调整结果面板高度',
 } as const;
