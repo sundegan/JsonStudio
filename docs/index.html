@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JsonStudio | JSON Formatter, JSON Viewer, JSON Editor, JSON Diff, JSON Converter, JSON Tool</title>
-<meta name="description" content="JsonStudio is a free JSON desktop app for JSON Formatter, JSON Viewer, JSON Editor, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
-<meta name="keywords" content="JSON formatter, JSON prettify, JSON viewer, JSON editor, JSON diff, JSON converter, JSON schema, JSON minify, JSON escape, JSON unescape, JSON tool, JSON validator, JSON parser, JSON to YAML, JSON to XML, JMESPath, desktop JSON app, Tauri, Rust">
+<title>JsonStudio | Fast, Private JSON Workspace for Developers</title>
+<meta name="description" content="JsonStudio is a fast, private JSON workspace for everyday development. Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally.">
+<meta name="keywords" content="JSON formatter, JSON prettify, JSON viewer, JSON editor, JSON diff, JSON converter, JSON schema, JSON5, log JSON extraction, JSONPath, JSON minify, JSON escape, JSON unescape, JSON tool, JSON validator, JSON parser, JSON to YAML, JSON to XML, JMESPath, desktop JSON app, Tauri, Rust">
 <meta name="author" content="sundegan">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="theme-color" content="#0a0a0f">
@@ -23,8 +23,8 @@
 <link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/">
 
 <!-- Open Graph -->
-<meta property="og:title" content="JsonStudio | JSON Prettify, JSON Editor, JSON Viewer, JSON Diff, JSON Converter, JSON Schema">
-<meta property="og:description" content="JsonStudio is a free JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
+<meta property="og:title" content="JsonStudio | Fast, Private JSON Workspace for Developers">
+<meta property="og:description" content="Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally in a native desktop app.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jsonstudio.js.org/">
 <meta property="og:image" content="https://jsonstudio.js.org/icon.png">
@@ -36,8 +36,8 @@
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JsonStudio | JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, Code Gen">
-<meta name="twitter:description" content="JsonStudio is a free, open-source JSON desktop app for JSON Prettify, JSON Viewer, JSON Diff, JSON Converter, JSON Schema, and Code Gen, plus Minify/Escape tools.">
+<meta name="twitter:title" content="JsonStudio | Fast, Private JSON Workspace for Developers">
+<meta name="twitter:description" content="Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally in a native desktop app.">
 <meta name="twitter:image" content="https://jsonstudio.js.org/icon.png">
 <meta name="twitter:image:alt" content="JsonStudio app icon">
 
@@ -59,7 +59,7 @@
   "@id": "https://jsonstudio.js.org/#softwareapplication",
   "name": "JsonStudio",
   "alternateName": "Json Studio",
-  "description": "JsonStudio is a free, open-source JSON desktop app for JSON formatting, prettify, minify, escape, diff, converter, JSON Schema validation, and code generation.",
+  "description": "JsonStudio is a fast, private JSON workspace for everyday development. It prettifies, inspects, compares, converts, validates, and extracts JSON from real-world logs locally in a native desktop app.",
   "url": "https://jsonstudio.js.org/",
   "image": "https://jsonstudio.js.org/icon.png",
   "screenshot": "https://jsonstudio.js.org/icon.png",
@@ -91,7 +91,10 @@
     "JSON Schema generation and validation",
     "Code generation for TypeScript, Go, Python, Java, and Rust",
     "JSON viewer with tree structure",
-    "JMESPath query support"
+    "JMESPath and JSONPath query support",
+    "JSON5 parsing and formatting",
+    "Log-like text JSON fragment extraction",
+    "Auto-save and reusable file tabs"
   ]
 }
 </script>
@@ -133,6 +136,7 @@ a:hover{opacity:.85}
 .hero h1{font-size:clamp(42px,7vw,72px);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;position:relative;line-height:1.1}
 .hero h1 .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-sub{font-size:clamp(17px,2.5vw,21px);color:var(--text2);max-width:620px;margin:0 auto 36px;position:relative;line-height:1.6}
+.hero-kicker{position:relative;display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:6px 12px;border:1px solid rgba(245,197,66,.22);border-radius:999px;background:var(--accent-glow2);color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
 .btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,197,66,.35);opacity:1}
@@ -156,6 +160,15 @@ a:hover{opacity:.85}
 .screenshot-tabs{display:flex;gap:8px;justify-content:center;margin-top:16px}
 .screenshot-tab{padding:7px 18px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text3);background:transparent;border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:inherit}
 .screenshot-tab.active{color:var(--accent);border-color:var(--accent);background:var(--accent-glow)}
+
+/* ── Positioning ── */
+.positioning{padding:26px 24px 70px}
+.positioning-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:var(--max-w);margin:0 auto}
+.positioning-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;min-height:148px}
+.positioning-card h3{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--text)}
+.positioning-card p{font-size:13.5px;color:var(--text2);line-height:1.65}
+.positioning-card.is-wide{grid-column:span 2;background:linear-gradient(135deg,rgba(245,197,66,.08),rgba(52,211,153,.05));border-color:rgba(245,197,66,.2)}
+.positioning-card.is-wide h3{font-size:20px}
 
 /* ── Section common ── */
 .section{padding:80px 24px}
@@ -236,6 +249,18 @@ a:hover{opacity:.85}
 .showcase-visual:hover img {
   transform: scale(1.02);
 }
+.log-demo{width:100%;height:100%;padding:24px;background:linear-gradient(180deg,#111118,#0f0f16);display:flex;flex-direction:column;gap:16px;font-family:'SFMono-Regular','Cascadia Code','JetBrains Mono',monospace}
+.log-line{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:rgba(255,255,255,.03);color:var(--text2);font-size:12px;line-height:1.6}
+.log-line strong{color:var(--accent);font-weight:700}
+.log-result{flex:1;border:1px solid rgba(52,211,153,.22);border-radius:12px;background:rgba(52,211,153,.06);padding:16px;color:#dffdf1;font-size:12px;line-height:1.65;overflow:hidden}
+.log-result .key{color:#93c5fd}.log-result .str{color:#f9d56e}.log-result .num{color:#fca5a5}
+.resources{padding:64px 24px;background:var(--bg2);border-top:1px solid var(--border)}
+.resource-title{font-size:28px;font-weight:800;margin-bottom:32px;text-align:center}
+.resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:900px;margin:0 auto}
+.resource-card{display:block;padding:18px 20px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);transition:all .2s}
+.resource-card:hover{transform:translateY(-3px);border-color:rgba(245,197,66,.35);background:var(--bg3);opacity:1}
+.resource-card strong{display:block;font-size:15px;margin-bottom:5px;color:var(--text)}
+.resource-card span{display:block;font-size:13px;color:var(--text2);line-height:1.5}
 
 /* Lightbox Modal */
 .modal {
@@ -280,6 +305,9 @@ a:hover{opacity:.85}
 .cta h2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;position:relative}
 .cta p{color:var(--text2);font-size:17px;margin-bottom:32px;position:relative}
 .cta .hero-actions{position:relative}
+.download-note{max-width:780px;margin:0 auto 70px;padding:0 24px;color:var(--text2);font-size:13.5px;line-height:1.7;text-align:center}
+.download-note strong{color:var(--text)}
+.download-note code{padding:2px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--accent);font-family:'SFMono-Regular','Cascadia Code','JetBrains Mono',monospace;font-size:12px}
 
 /* ── Footer ── */
 .footer{border-top:1px solid var(--border);padding:28px 24px}
@@ -294,12 +322,16 @@ a:hover{opacity:.85}
   .showcase-row{grid-template-columns:1fr;gap:32px}
   .showcase-row:nth-child(even){direction:ltr}
   .features-grid{grid-template-columns:1fr 1fr}
+  .positioning-grid{grid-template-columns:1fr 1fr}
+  .positioning-card.is-wide{grid-column:span 2}
   .stats-grid{gap:32px}
   .workflow-steps{grid-template-columns:1fr 1fr}
   .workflow-steps::before{display:none}
 }
 @media(max-width:640px){
   .features-grid{grid-template-columns:1fr}
+  .positioning-grid{grid-template-columns:1fr}
+  .positioning-card.is-wide{grid-column:auto}
   .hero-actions{flex-direction:column;align-items:center}
   .footer-inner{flex-direction:column;text-align:center}
   .nav-link{display:none}
@@ -316,6 +348,7 @@ a:hover{opacity:.85}
   <div class="nav-inner">
     <a href="#" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
     <div class="nav-right">
+      <a href="#why" class="nav-link">Why</a>
       <a href="#features" class="nav-link">Features</a>
       <a href="#compare" class="nav-link">Compare</a>
       <a href="#screenshots" class="nav-link">Screenshots</a>
@@ -331,8 +364,9 @@ a:hover{opacity:.85}
 <!-- Hero -->
 <section class="hero">
   <img src="icon.png" alt="JsonStudio" class="hero-icon">
+  <div class="hero-kicker">Local-first JSON workspace</div>
   <h1><span class="gold">Json</span>Studio</h1>
-  <p class="hero-sub">A fast, modern, and efficient JSON desktop tool. Format, prettify, minify, escape, diff, convert, validate, and generate code — all in one app, powered by Tauri & Rust.</p>
+  <p class="hero-sub">A fast, private JSON workspace for everyday development. Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs, all locally in a native desktop app.</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -356,6 +390,36 @@ a:hover{opacity:.85}
   </div>
 </section>
 
+<!-- Why Different -->
+<section class="positioning" id="why">
+  <div class="section-header">
+    <h2 class="section-title">Built for <span class="gold">Real</span> JSON Work</h2>
+    <p class="section-desc">JsonStudio is shaped around the payloads developers actually handle: API responses, escaped strings, JSON5-like fragments, nested objects, and logs where text and JSON are mixed together.</p>
+  </div>
+  <div class="positioning-grid">
+    <div class="positioning-card is-wide">
+      <h3>Private by default, polished like a desktop app</h3>
+      <p>No network required, no browser tab juggling, no ads, and no upload risk. Your sensitive JSON stays on your machine while native shortcuts, always-on-top, and local file handling keep the workflow quick.</p>
+    </div>
+    <div class="positioning-card">
+      <h3>Smarter formatting</h3>
+      <p>Handles strict JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, repairable fragments, and paste auto-formatting.</p>
+    </div>
+    <div class="positioning-card">
+      <h3>Review complex data</h3>
+      <p>Tree view, JMESPath/JSONPath query, real-time statistics, and side-by-side diff make large payloads easier to read and verify.</p>
+    </div>
+    <div class="positioning-card">
+      <h3>Daily file workflow</h3>
+      <p>Multi-tabs, numbered Untitled documents, reused tabs for reopened files, unsaved prompts, optional auto-save, drag-and-drop, and file association.</p>
+    </div>
+    <div class="positioning-card">
+      <h3>Developer toolbox</h3>
+      <p>Prettify, minify, escape, unescape, minify + escape, fold/unfold, Schema generation/validation, format conversion, and typed code generation.</p>
+    </div>
+  </div>
+</section>
+
 <!-- Screenshots -->
 <section class="screenshots" id="screenshots">
   <div class="screenshots-inner">
@@ -373,7 +437,7 @@ a:hover{opacity:.85}
 <section class="section" id="features">
   <div class="section-header">
     <h2 class="section-title"><span class="gold">Core</span> Features</h2>
-    <p class="section-desc">Built for daily JSON work: Prettify, Viewer, Diff, Converter, JSON Schema, Code Gen, and Minify/Escape.</p>
+    <p class="section-desc">Built for daily JSON work: prettify, view, query, log extraction, Diff, Converter, JSON Schema, Code Gen, and Minify/Escape.</p>
   </div>
 
   <div class="showcase">
@@ -382,12 +446,13 @@ a:hover{opacity:.85}
       <div class="showcase-text">
         <span class="showcase-badge green">EDITOR</span>
         <h3>Professional JSON Formatter & Viewer</h3>
-        <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON formatting and prettify experience.</p>
+        <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON/JSON5 formatting and prettify experience.</p>
         <ul>
           <li>Syntax highlighting with bracket pair colorization</li>
           <li>Multi-tab editing with drag-and-drop reordering</li>
           <li>Code folding, minimap, and find & replace</li>
-          <li>Auto-format on paste for instantly clean JSON</li>
+          <li>Auto-detect and format pasted JSON, JSON5, and escaped JSON</li>
+          <li>Preserve original object key order by default during formatting</li>
           <li>10+ color themes including Dracula, Nord, and One Dark</li>
         </ul>
         <p style="margin-top:16px"><a href="/json-formatter" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
@@ -399,20 +464,47 @@ a:hover{opacity:.85}
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge blue">NAVIGATE</span>
-        <h3>Tree View & JMESPath Query</h3>
-        <p>Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.</p>
+        <h3>Tree View, JMESPath & JSONPath Query</h3>
+        <p>Visualize complex JSON/JSON5 structures as an interactive tree. Navigate, search, and query with ease.</p>
         <ul>
           <li>Collapsible tree with type-colored icons</li>
           <li>Click any node to jump to its position in the editor</li>
           <li>Copy path and value with one click</li>
-          <li>Full JMESPath query support with real-time highlighting</li>
+          <li>Switch between JMESPath and JSONPath query modes</li>
+          <li>Real-time match highlighting with automatic ancestor expansion</li>
           <li>Resizable panel width for comfortable viewing</li>
         </ul>
       </div>
       <div class="showcase-visual"><img src="images_en/tree_view_dark.png" alt="JSON Tree View" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 3. Convert & Codegen -->
+    <!-- 3. Log JSON extraction -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge orange">LOGS</span>
+        <h3>Extract JSON from Logs and Mixed Text</h3>
+        <p>When logs, error stacks, or API debug text contain structured payloads, JsonStudio finds the useful fragments without replacing your original editor content.</p>
+        <ul>
+          <li>Detect JSON, JSON5-like, escaped JSON, and repairable fragments</li>
+          <li>Group multiple fragments so each result is easy to inspect and copy</li>
+          <li>Keep the source text unchanged while showing formatted output in a panel</li>
+          <li>Resizable panel width and height for long debugging sessions</li>
+        </ul>
+      </div>
+      <div class="showcase-visual">
+        <div class="log-demo">
+          <div class="log-line">2026-05-08 10:24:31 INFO response=<strong>{ userId: 42, ok: true, roles: ["admin"] }</strong></div>
+          <div class="log-line">trace payload="{\"latency\":18,\"region\":\"ap-east\"}"</div>
+          <pre class="log-result">{
+  <span class="key">"userId"</span>: <span class="num">42</span>,
+  <span class="key">"ok"</span>: true,
+  <span class="key">"roles"</span>: [<span class="str">"admin"</span>]
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Convert & Codegen -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge purple">CONVERT</span>
@@ -434,7 +526,7 @@ a:hover{opacity:.85}
       </div>
     </div>
 
-    <!-- 4. JSON Schema -->
+    <!-- 5. JSON Schema -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge pink">SCHEMA</span>
@@ -450,24 +542,26 @@ a:hover{opacity:.85}
       <div class="showcase-visual"><img src="images_en/json_schema_dark.png" alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 5. Efficiency & Shortcuts -->
+    <!-- 6. Efficiency & Shortcuts -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge orange">EFFICIENCY</span>
-        <h3>Shortcuts & Workflow Boost</h3>
-        <p>Native desktop shortcuts that web tools simply can't offer — dramatically speed up your daily JSON workflow.</p>
+        <h3>Shortcuts, Auto-save & File Workflow</h3>
+        <p>Native desktop capabilities keep JSON work close to everyday development: open, save, watch, and reuse tabs with less friction.</p>
         <ul>
           <li>Global shortcut to launch or bring the app to front instantly</li>
           <li>One-key paste & prettify: format clipboard JSON instantly</li>
+          <li>Optional auto-save for modified file-backed tabs</li>
+          <li>Reopen the same file into the existing tab instead of duplicating it</li>
+          <li>Prompt before closing unsaved work; auto-number new documents as Untitled-1, Untitled-2</li>
           <li>Window always-on-top toggle for multitasking</li>
-          <li>All editor shortcuts fully customizable in settings</li>
-          <li>File association: double-click .json to open directly</li>
+          <li>File association: double-click .json to open directly, with external change detection</li>
         </ul>
       </div>
       <div class="showcase-visual"><img src="images_en/settings_dark.png" alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 6. Diff & More Tools -->
+    <!-- 7. Diff & More Tools -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge green">TOOLS</span>
@@ -475,6 +569,7 @@ a:hover{opacity:.85}
         <p>A practical toolbox focused on JSON Diff, minify/escape, repair, and export.</p>
         <ul>
           <li>Side-by-side diff with inline change highlighting</li>
+          <li>Diff mode also supports auto-formatting after paste</li>
           <li>Diff line count statistics in status bar</li>
           <li>Escape / unescape / minify utilities</li>
           <li>Drag & drop JSON files to open instantly</li>
@@ -500,6 +595,27 @@ a:hover{opacity:.85}
       </div>
       <h3>JSON Repair</h3>
       <p>One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h16"/><path d="m17 9 3 3-3 3"/></svg>
+      </div>
+      <h3>Log JSON Extraction</h3>
+      <p>Find JSON, JSON5-like, escaped JSON, and repairable fragments in logs and mixed text.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+      </div>
+      <h3>Auto-save</h3>
+      <p>Automatically save modified file-backed tabs, with a prompt before closing unsaved work.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon c4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg>
+      </div>
+      <h3>JSON5 Support</h3>
+      <p>The editor, formatter, tree view, and paste normalization understand flexible JSON5 syntax.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon c1">
@@ -580,7 +696,10 @@ a:hover{opacity:.85}
         <tr><td>Data Privacy (100% Local)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td>Large JSON Data Performance</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td>Multi-tab Editing</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Tree View & JMESPath Query</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>Tree View & JMESPath / JSONPath Query</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>Log-like Text JSON Extraction</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>JSON5 Parsing and Formatting</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
+        <tr><td>Auto-save and Reusable File Tabs</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td>Ad-Free Experience</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td>Global Shortcuts & Custom Keybindings</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
         <tr><td>Image Export</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
@@ -666,39 +785,26 @@ a:hover{opacity:.85}
   </div>
 </section>
 
+<div class="download-note">
+  <strong>macOS note:</strong> choose <code>aarch64</code> for Apple Silicon and <code>x64</code> for Intel. Current macOS builds are not Apple Developer ID notarized, so first launch may require right-clicking <strong>Json Studio.app</strong> and choosing <strong>Open</strong>.
+</div>
+
 <!-- More Resources -->
-<section style="padding:60px 20px;background:var(--bg-secondary)">
-  <div style="max-width:1200px;margin:0 auto;text-align:center">
-    <h2 style="font-size:28px;margin-bottom:40px;color:var(--text-primary)">More Resources</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:900px;margin:0 auto">
-      <a href="/json-formatter" style="padding:20px;background:var(--bg-primary);border-radius:8px;text-decoration:none;color:var(--text-primary);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="font-weight:600;margin-bottom:8px">JSON Formatter</div>
-        <div style="font-size:14px;color:var(--text-secondary)">Format & beautify JSON</div>
-      </a>
-      <a href="/json-diff" style="padding:20px;background:var(--bg-primary);border-radius:8px;text-decoration:none;color:var(--text-primary);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="font-weight:600;margin-bottom:8px">JSON Diff Tool</div>
-        <div style="font-size:14px;color:var(--text-secondary)">Compare JSON files</div>
-      </a>
-      <a href="/json-converter" style="padding:20px;background:var(--bg-primary);border-radius:8px;text-decoration:none;color:var(--text-primary);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="font-weight:600;margin-bottom:8px">JSON Converter</div>
-        <div style="font-size:14px;color:var(--text-secondary)">Convert to YAML/XML/TOML</div>
-      </a>
-      <a href="/json-schema" style="padding:20px;background:var(--bg-primary);border-radius:8px;text-decoration:none;color:var(--text-primary);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="font-weight:600;margin-bottom:8px">JSON Schema</div>
-        <div style="font-size:14px;color:var(--text-secondary)">Generate & validate schemas</div>
-      </a>
-      <a href="/code-generator" style="padding:20px;background:var(--bg-primary);border-radius:8px;text-decoration:none;color:var(--text-primary);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="font-weight:600;margin-bottom:8px">Code Generator</div>
-        <div style="font-size:14px;color:var(--text-secondary)">Generate code from JSON</div>
-      </a>
-    </div>
+<section class="resources">
+  <h2 class="resource-title">More Resources</h2>
+  <div class="resource-grid">
+    <a href="/json-formatter" class="resource-card"><strong>JSON Formatter</strong><span>Format, validate, and repair JSON/JSON5</span></a>
+    <a href="/json-diff" class="resource-card"><strong>JSON Diff Tool</strong><span>Compare JSON files and API responses side by side</span></a>
+    <a href="/json-converter" class="resource-card"><strong>JSON Converter</strong><span>Convert between YAML, XML, TOML, and CSV</span></a>
+    <a href="/json-schema" class="resource-card"><strong>JSON Schema</strong><span>Generate and validate schemas</span></a>
+    <a href="/code-generator" class="resource-card"><strong>Code Generator</strong><span>Generate typed code from JSON</span></a>
   </div>
 </section>
 
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT License</span></div>
+    <div class="footer-left">&copy; 2026 JsonStudio · <span>MIT License</span></div>
     <div class="footer-links">
       <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
       <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">Releases</a>
