@@ -4,11 +4,11 @@
 
 # JsonStudio
 
-### JSON Prettify · Viewer · Diff · Converter · Schema · Code Gen
+### A fast, private JSON workspace for everyday development
 
-Free, open-source JSON desktop app built with Tauri 2.0 and Rust.
+Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs - all locally in a native desktop app.
 
-**[jsonstudio.js.org](https://jsonstudio.js.org/)**
+**[jsonstudio.js.org](https://jsonstudio.js.org/)** · **[Download](https://github.com/sundegan/JsonStudio/releases)**
 
 <p align="center">
   <a href="https://jsonstudio.js.org/">
@@ -20,177 +20,95 @@ Free, open-source JSON desktop app built with Tauri 2.0 and Rust.
   <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-334155?style=flat-square&logo=apple&logoColor=white" alt="Platform">
   <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=flat-square&logo=tauri&logoColor=white" alt="Tauri">
   <img src="https://img.shields.io/badge/Rust-2024-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust">
-  <img src="https://img.shields.io/badge/Launch-%3C1s-4C1D95?style=flat-square&logo=speedtest&logoColor=white" alt="Launch">
   <img src="https://img.shields.io/badge/Privacy-100%25%20Local-166534?style=flat-square&logo=docsdotrs&logoColor=white" alt="Privacy">
 </p>
 
-<sub>desktop-native · privacy-first · shortcut-driven workflow</sub>
+<sub>all-in-one JSON workspace · professional developer experience · native-speed performance</sub>
 
 </div>
 
-## Overview
+## Preview
 
-A fast, modern, and efficient JSON desktop tool. Prettify, view, diff, convert, validate, and generate code - all in one app, powered by Tauri and Rust.
-
-## Screenshot
-
-### Dark Theme
 ![Dark Theme](docs/images_en/app_home_page_dark_mode.png)
 
-### Light Theme
 ![Light Theme](docs/images_en/app_home_page_light_mode.png)
 
-## Core Features
+## What Makes It Different
 
-Built for daily JSON work: Prettify, Viewer, Diff, Converter, JSON Schema, Code Gen, and Minify/Escape.
+JsonStudio is built for JSON in real development work: API requests and responses, deeply nested data, escaped strings, JSON5-like snippets, and log lines where plain text and JSON are mixed together.
 
-### 1) Professional JSON Prettify & Viewer
-Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON prettify and viewing experience.
+- **Local-first desktop app**: no network required, no browser required, no ads, a polished UI, shortcut support, and no more jumping between a pile of web tabs.
+- **Smarter formatting**: supports standard JSON, JSON-like/JSON5 input, escaped JSON strings, JSON with trailing commas, JSON with unquoted keys, automatic repair attempts for problematic JSON data, and paste auto-formatting.
+- **Log-like text and JSON mixed content formatting**: keeps the original log unchanged, extracts JSON fragments automatically, and displays structured results separately for easier log data inspection.
+- **Better reading and review**: tree view, JMESPath/JSONPath query, real-time statistics, and JSON diff make complex JSON data easier to understand.
+- **Details that fit daily use**: preserves original object key order by default, keeps JSON editing operations undoable, and reuses existing tabs when reopening files.
+- **Developer tools**: prettify, minify, escape, unescape, minify + escape, fold, unfold, JSON Schema generation/validation, JSON <-> YAML/XML/TOML/CSV conversion, and typed code generation.
+- **Smooth file workflow**: multi-tabs, auto-numbered Untitled tabs, reused tabs for reopened files, unsaved-change prompts, optional auto-save, drag-and-drop JSON opening, and direct opening by double-clicking JSON files.
+
+## Features
+
+### Edit & Inspect
 
 ![Editor](docs/images_en/editor.png)
 
-- Syntax highlighting with bracket pair colorization
-- Multi-tab editing with drag-and-drop reordering
-- Code folding, minimap, and find and replace
-- Auto-prettify on paste for instantly clean JSON
-- 10+ color themes including Dracula, Nord, and One Dark
+Built on Monaco Editor, JsonStudio provides a top-tier JSON prettify and viewing experience with syntax highlighting, code folding, find/replace, bracket coloring, light/dark mode, and 10+ themes.
 
-### 2) Tree View & JMESPath Query
-Visualize complex JSON structures as an interactive tree. Navigate, search, and query with ease.
+### Tree View & Search
 
 ![Tree View](docs/images_en/tree_view.png)
 
-- Collapsible tree with type-colored icons
-- Click any node to jump to its position in the editor
-- Copy path and value with one click
-- Full JMESPath query support with real-time highlighting
-- Resizable panel width for comfortable viewing
+Use the tree view to navigate nested data, copy paths or values, and query with JMESPath or JSONPath when a payload is too large to scan manually.
 
-### 3) JSON Converter & Code Gen
-Convert JSON to YAML, XML, TOML, and CSV, or generate type-safe code in your favorite language.
-
-![Converter](docs/images_en/convert.png)
-![Code Gen](docs/images_en/code_gen.png)
-
-- Bidirectional conversion: JSON <-> YAML, XML, TOML, CSV
-- CSV rainbow column highlighting for readability
-- Generate TypeScript, Go, Python, Java, Rust, and more
-- Reverse conversion: paste code to extract JSON
-
-### 4) JSON Schema Generation & Validation
-Generate JSON Schema from any JSON data, or validate your data against an existing schema - all in a dedicated view.
-
-![JSON Schema](docs/images_en/json_schema.png)
-
-- One-click schema generation from JSON data
-- Validate JSON against any JSON Schema with detailed error reports
-- Dedicated schema page with side-by-side editing
-
-### 5) JSON Diff
-Visual comparison for JSON changes, optimized for readable and fast review.
+### Compare, Convert, Generate
 
 ![JSON Diff](docs/images_en/json_diff.png)
 
-- Side-by-side diff with inline change highlighting
-- Diff line count statistics in status bar
-- Fast change spotting in large JSON documents
+![Converter](docs/images_en/convert.png)
 
-### 6) File Operations & Utilities
-Practical daily tools for handling local JSON files and export workflows.
+![Code Gen](docs/images_en/code_gen.png)
 
-- Escape, unescape, and minify utilities
-- Drag and drop JSON files to open instantly
-- File association: double-click `.json` to open directly
-- Export JSON as beautiful images with syntax highlighting for easy sharing
+Compare JSON side by side, convert between common data formats, generate typed models, or extract JSON back from supported code snippets.
 
-### 7) Shortcuts & Workflow Boost
-Native desktop shortcuts that web tools simply cannot offer - dramatically speed up your daily JSON workflow.
+### Validate With Schema
 
-- Global shortcut to launch or bring the app to front instantly
-- One-key paste and prettify: clean up clipboard JSON instantly
-- Window always-on-top toggle for multitasking
-- All editor shortcuts fully customizable in settings
+![JSON Schema](docs/images_en/json_schema.png)
 
-## And Much More
-
-| Built-in Capability | Description |
-|---|---|
-| JSON Repair | One-click auto-repair of invalid JSON - fix missing quotes, trailing commas, and more |
-| Lightweight | Small install size and low memory footprint, powered by Tauri and Rust |
-| Instant Launch | Launches in under a second. No loading screens, no waiting |
-| Cross-Platform | Available on macOS, Windows, and Linux with native look and feel |
-| 10+ Themes | Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click |
-| JSON Statistics | Real-time display of key count, nesting depth, byte size, and line count |
-| i18n Support | Full Chinese and English interface with one-click language switching |
-| 100% Offline | All data stays on your machine. No server, no upload, complete privacy |
+Generate JSON Schema from data, validate JSON against a schema, and inspect detailed validation errors in a dedicated workspace.
 
 ## Why JsonStudio? (vs Online Tools)
 
-| Feature | Online Tools | JsonStudio |
+| Capability | Online Tools | JsonStudio |
 |---|---:|---:|
-| Offline / No Internet Required | ✗ | ✓ |
-| Data Privacy (100% Local) | ✗ | ✓ |
-| Large JSON Data Performance | ✗ | ✓ |
-| Multi-tab Editing | ✗ | ✓ |
-| Tree View & JMESPath Query | ✗ | ✓ |
-| Ad-Free Experience | ✗ | ✓ |
-| Global Shortcuts & Custom Keybindings | ✗ | ✓ |
-| Image Export | ✗ | ✓ |
-| Local File Operations | ✗ | ✓ |
-| Custom Settings (Theme, Font, Spacing, Shortcuts...) | ✗ | ✓ |
-| JSON Schema Generation & Validation | ✓ | ✓ |
-| Code Generation | ✓ | ✓ |
-| JSON Converter (YAML/XML/...) | ✓ | ✓ |
-| JSON Diff | ✓ | ✓ |
-
-## Get Started in Seconds
-
-| Step | Action | Description |
-|---|---|---|
-| 1 | Download | Grab the installer for your platform from GitHub Releases |
-| 2 | Launch | Open the app - it launches in under a second |
-| 3 | Paste | Paste your JSON and it is auto-prettified instantly |
-| 4 | Done | Prettify, view, minify, diff, convert, and generate code - all at your fingertips |
-
-## Architecture
-
-```mermaid
-flowchart LR
-    UI[Svelte 5 + Tailwind UI] --> MONACO[Monaco Editor]
-    UI --> TAURI[Tauri 2.0 Runtime]
-    TAURI --> RUST[Rust Core Engine]
-    RUST --> TOOLING[Diff / Convert / Schema / Repair]
-    RUST --> IO[Local File + Clipboard + Export]
-
-    classDef ui fill:#F8FAFC,stroke:#334155,color:#0F172A;
-    classDef editor fill:#EFF6FF,stroke:#3B82F6,color:#1E3A8A;
-    classDef runtime fill:#FFFBEB,stroke:#D97706,color:#78350F;
-    classDef core fill:#F5F3FF,stroke:#7C3AED,color:#4C1D95;
-    classDef output fill:#ECFEFF,stroke:#0E7490,color:#164E63;
-
-    class UI ui;
-    class MONACO editor;
-    class TAURI runtime;
-    class RUST core;
-    class TOOLING,IO output;
-```
+| Works fully offline with local files | Limited | Yes |
+| Keeps sensitive JSON on your machine | Risky | 100% local |
+| Handles JSON, JSON5-like input, escaped JSON, and repairable fragments | Partial | Built in |
+| Extracts JSON from log-like mixed text | Rare | Yes |
+| Tree view with JMESPath/JSONPath query | Partial | Yes |
+| Multi-tab workflow with unsaved prompts and optional auto-save | No | Yes |
+| Native shortcuts, format clipboard, always-on-top window | No | Yes |
+| Diff, convert, schema validation, and code generation in one app | Fragmented | Unified |
 
 ## Download
 
-Get the installer from [Releases](https://github.com/sundegan/JsonStudio/releases).
+Download the latest installer from [GitHub Releases](https://github.com/sundegan/JsonStudio/releases).
+
+### macOS
+
+1. Download the DMG for your Mac architecture (`aarch64` for Apple Silicon, `x64` for Intel).
+2. Open the DMG and drag `Json Studio.app` into Applications.
+3. On first launch, if macOS blocks the app because it is from an unidentified developer, right-click `Json Studio.app` and choose **Open**, or allow it in **System Settings > Privacy & Security**.
+
+Current macOS builds are not Apple Developer ID notarized, so the first launch may require manual confirmation.
 
 ## Tech Stack
 
-- **Desktop**: Tauri 2.0
-- **Backend**: Rust
-- **Frontend**: Svelte 5 + Tailwind CSS + Monaco Editor
+- **Desktop**: Tauri 2.0 + Svelte 5 + Monaco Editor
+- **Core**: Rust + Javascript
 
 ---
 
 <div align="center">
 
-<br>
-
-If this project helps you, please give it a ⭐️ Star.
+If JsonStudio helps your daily JSON work, a star would mean a lot.
 
 </div>
