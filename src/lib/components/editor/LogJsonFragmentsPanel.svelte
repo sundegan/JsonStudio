@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+  import type * as Monaco from 'monaco-editor';
   import { Copy } from '@lucide/svelte';
   import { t } from '$lib/i18n';
+  import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
+  import { initMonaco } from '$lib/services/monaco';
 
   export interface LogJsonFragment {
     label: string;
@@ -15,9 +18,13 @@
   let {
     fragments = [],
     selectedIndex = 0,
+    theme = 'vs',
+    tabSize = 2,
   }: {
     fragments: LogJsonFragment[];
     selectedIndex: number;
+    theme?: EditorTheme;
+    tabSize?: number;
   } = $props();
 
   const dispatch = createEventDispatcher<{
@@ -31,6 +38,9 @@
   let panelHeight = $state(220);
   let isResizing = $state(false);
   let isHeightResizing = $state(false);
+  let resultEditorContainer = $state<HTMLDivElement | null>(null);
+  let resultEditor: Monaco.editor.IStandaloneCodeEditor | null = null;
+  let monaco: typeof Monaco | null = null;
 
   const MIN_LIST_WIDTH = 180;
   const MAX_LIST_WIDTH = 420;
@@ -106,8 +116,80 @@
     };
   }
 
+  $effect(() => {
+    if (!resultEditor || !selectedFragment) return;
+    if (resultEditor.getValue() !== selectedFragment.formatted) {
+      resultEditor.setValue(selectedFragment.formatted);
+      resultEditor.setScrollTop(0);
+      resultEditor.setScrollLeft(0);
+    }
+  });
+
+  $effect(() => {
+    if (monaco && theme) {
+      monaco.editor.setTheme(theme);
+    }
+  });
+
+  $effect(() => {
+    if (!resultEditor) return;
+    resultEditor.updateOptions({ tabSize });
+    const model = resultEditor.getModel();
+    model?.updateOptions({
+      tabSize,
+      indentSize: tabSize,
+      insertSpaces: true,
+    });
+  });
+
+  onMount(async () => {
+    const monacoInstance = await initMonaco();
+    if (!resultEditorContainer) return;
+
+    monaco = monacoInstance;
+    registerMonacoThemes(monacoInstance);
+
+    resultEditor = monacoInstance.editor.create(resultEditorContainer, {
+      value: selectedFragment?.formatted || '',
+      language: 'json',
+      theme,
+      readOnly: true,
+      domReadOnly: true,
+      minimap: { enabled: false },
+      folding: true,
+      lineNumbers: 'on',
+      wordWrap: 'off',
+      automaticLayout: true,
+      fontSize: 12,
+      lineHeight: 18,
+      fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
+      tabSize,
+      scrollBeyondLastLine: false,
+      lineNumbersMinChars: 3,
+      renderLineHighlight: 'none',
+      cursorStyle: 'line-thin',
+      cursorBlinking: 'solid',
+      overviewRulerBorder: false,
+      hideCursorInOverviewRuler: true,
+      padding: { top: 10, bottom: 10 },
+      scrollbar: {
+        vertical: 'auto',
+        horizontal: 'auto',
+        useShadows: false,
+        verticalScrollbarSize: 10,
+        horizontalScrollbarSize: 10,
+      },
+      contextmenu: false,
+    });
+
+    if (theme) {
+      monacoInstance.editor.setTheme(theme);
+    }
+  });
+
   onDestroy(() => {
     stopResizeListeners?.();
+    resultEditor?.dispose();
   });
 </script>
 
@@ -193,7 +275,7 @@
         >
           <Copy size={14} strokeWidth={2} />
         </button>
-        <pre><code>{selectedFragment.formatted}</code></pre>
+        <div class="log-json-result-editor" bind:this={resultEditorContainer}></div>
       </div>
     </div>
   </section>
@@ -389,7 +471,7 @@
     position: relative;
     min-width: 0;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     background: var(--bg-primary);
   }
 
@@ -417,14 +499,20 @@
     background: var(--bg-secondary);
   }
 
-  .log-json-result pre {
-    margin: 0;
-    min-height: 100%;
-    padding: 10px 48px 10px 12px;
-    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-    font-size: 12px;
-    line-height: 18px;
-    color: var(--text-primary);
-    white-space: pre;
+  .log-json-result-editor {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .log-json-result :global(.monaco-editor),
+  .log-json-result :global(.monaco-editor-background),
+  .log-json-result :global(.monaco-editor .margin) {
+    background: var(--bg-primary);
+  }
+
+  .log-json-result :global(.monaco-scrollable-element) {
+    padding-right: 40px;
   }
 </style>

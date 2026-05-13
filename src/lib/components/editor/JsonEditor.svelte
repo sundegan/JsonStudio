@@ -1214,6 +1214,8 @@
               <LogJsonFragmentsPanel
                 fragments={logJsonFragments}
                 selectedIndex={selectedLogJsonFragmentIndex}
+                theme={monacoTheme}
+                tabSize={tabSize}
                 on:select={(event) => { selectedLogJsonFragmentIndex = event.detail.index; }}
                 on:copy={(event) => copyLogJsonFragment(event.detail.value)}
                 on:close={() => { isLogJsonPanelOpen = false; }}
