@@ -26,6 +26,7 @@
     getStandaloneEscapedJsonContent,
     MAX_LOG_JSON_INPUT_LENGTH,
   } from '$lib/services/logJsonFragments.js';
+  import { normalizePastedStandaloneJson } from '$lib/services/standaloneJsonPasteNormalize.js';
   import { t } from '$lib/i18n';
 
   type LogJsonFragment = {
@@ -173,7 +174,7 @@
         const currentTab = $activeTab;
         if (!currentTab) return;
 
-        const nextContent = await normalizePastedStandaloneJson(event.payload).catch(() => null) || event.payload;
+        const nextContent = await normalizeEditorPastedStandaloneJson(event.payload).catch(() => null) || event.payload;
         
         content = nextContent;
         monacoEditor?.setValue(nextContent);
@@ -189,7 +190,7 @@
         const currentTab = $activeTab;
         if (!currentTab) return;
 
-        const nextContent = await normalizePastedStandaloneJson(event.payload).catch(() => null) || event.payload;
+        const nextContent = await normalizeEditorPastedStandaloneJson(event.payload).catch(() => null) || event.payload;
         
         content = nextContent;
         monacoEditor?.setValue(nextContent);
@@ -750,30 +751,16 @@
     scheduleLogJsonDetection(value);
   }
 
-  async function normalizePastedStandaloneJson(sourceValue: string) {
+  async function normalizeEditorPastedStandaloneJson(sourceValue: string) {
     const trimmed = sourceValue.trim();
     if (!trimmed) return null;
 
     const { formatJson } = await import('$lib/services/json');
-    const escapedJson = getStandaloneEscapedJsonContent(trimmed);
-    if (escapedJson) {
-      return await formatJson(escapedJson, tabSize);
-    }
-
-    try {
-      JSON.parse(trimmed);
-      return await formatJson(sourceValue, tabSize);
-    } catch {
-      try {
-        const result = await getJsonStats(trimmed);
-        if (result.valid && result.format_type === 'JSON5') {
-          return await formatJson(sourceValue, tabSize);
-        }
-      } catch {
-      }
-    }
-
-    return null;
+    return await normalizePastedStandaloneJson(sourceValue, {
+      indent: tabSize,
+      formatJson,
+      getStandaloneEscapedJsonContent,
+    });
   }
 
   function clampTreeWidth(width: number) {
@@ -930,7 +917,7 @@
       }
       const sourceValue = content;
       try {
-        const normalized = await normalizePastedStandaloneJson(sourceValue);
+        const normalized = await normalizeEditorPastedStandaloneJson(sourceValue);
         if (normalized && monacoEditor?.getValue() === sourceValue) {
           replaceActiveEditorContent(normalized);
           await updateStats();

@@ -166,9 +166,11 @@
     isProcessing = true;
 
     try {
-      // Always use backend formatJson to support JSON5
-      const { formatJson } = await import('$lib/services/json');
-      const formatted = await formatJson(content, tabSize);
+      const { formatJson, getJsonStats } = await import('$lib/services/json');
+      const stats = await getJsonStats(content);
+      const formatted = stats.valid && stats.format_type === 'JSON5'
+        ? await (await import('$lib/services/json5Format.js')).formatJson5(content, tabSize)
+        : await formatJson(content, tabSize);
       setContentValue(formatted);
       await onStatsUpdate();
     } catch (e) {
