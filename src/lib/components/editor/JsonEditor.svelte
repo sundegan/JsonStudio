@@ -64,6 +64,7 @@
   let logJsonFragments = $state<LogJsonFragment[]>([]);
   let selectedLogJsonFragmentIndex = $state(0);
   let isLogJsonPanelOpen = $state(false);
+  let logJsonSource = $state('');
   // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
   // is saved here so it can be restored on exit. For standard JSON this stays empty,
   // meaning sub-page edits persist back to the main editor.
@@ -687,6 +688,7 @@
       logJsonTimer = null;
     }
     logJsonFragments = [];
+    logJsonSource = '';
     selectedLogJsonFragmentIndex = 0;
     isLogJsonPanelOpen = false;
   }
@@ -710,15 +712,22 @@
 
       if (fragments.length === 0 || isWholeDocumentJson) {
         logJsonFragments = [];
+        logJsonSource = '';
         selectedLogJsonFragmentIndex = 0;
         isLogJsonPanelOpen = false;
         return;
       }
 
       logJsonFragments = fragments;
+      logJsonSource = value;
       selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
       isLogJsonPanelOpen = true;
+      jsonError = null;
     }, 400);
+  }
+
+  function isCurrentLogJsonContent(text: string) {
+    return logJsonSource === text && logJsonFragments.length > 0;
   }
 
   async function copyLogJsonFragment(value: string) {
@@ -1025,7 +1034,14 @@
   function checkJsonError(text: string) {
     if (jsonErrorTimer) clearTimeout(jsonErrorTimer);
     jsonErrorTimer = setTimeout(async () => {
+      if (content !== text) {
+        return;
+      }
       if (!text.trim()) {
+        jsonError = null;
+        return;
+      }
+      if (isCurrentLogJsonContent(text)) {
         jsonError = null;
         return;
       }
@@ -1033,15 +1049,30 @@
         JSON.parse(text);
         jsonError = null;
       } catch (e: any) {
+        if (isCurrentLogJsonContent(text)) {
+          jsonError = null;
+          return;
+        }
         // If standard JSON fails, check if it's valid JSON5
         try {
           const result = await getJsonStats(text);
+          if (content !== text) {
+            return;
+          }
           if (result.valid) {
             jsonError = null;  // Valid JSON5, no error
           } else {
+            if (isCurrentLogJsonContent(text)) {
+              jsonError = null;
+              return;
+            }
             jsonError = { message: e?.message || 'Invalid JSON' };
           }
         } catch {
+          if (isCurrentLogJsonContent(text)) {
+            jsonError = null;
+            return;
+          }
           jsonError = { message: e?.message || 'Invalid JSON' };
         }
       }
