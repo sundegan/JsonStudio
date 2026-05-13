@@ -167,8 +167,12 @@
       scrollBeyondLastLine: false,
       lineNumbersMinChars: 3,
       renderLineHighlight: 'none',
+      matchBrackets: 'never',
+      selectionHighlight: false,
+      occurrencesHighlight: 'off',
       cursorStyle: 'line-thin',
       cursorBlinking: 'solid',
+      cursorWidth: 0,
       overviewRulerBorder: false,
       hideCursorInOverviewRuler: true,
       padding: { top: 10, bottom: 10 },
@@ -514,5 +518,14 @@
 
   .log-json-result :global(.monaco-scrollable-element) {
     padding-right: 40px;
+  }
+
+  .log-json-result :global(.monaco-editor .cursor) {
+    display: none !important;
+  }
+
+  .log-json-result :global(.monaco-editor .bracket-match) {
+    background: transparent !important;
+    border-color: transparent !important;
   }
 </style>
