@@ -64,8 +64,8 @@ jobs:
       - name: Build Tauri app (build only, no upload)
         run: |
           if [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            # macOS: build the standard Tauri DMG for drag-and-drop installation.
-            pnpm tauri build ${{ matrix.args }} --bundles dmg
+            # macOS: build the .app, then package our own drag-and-drop DMG with install guides.
+            pnpm tauri build ${{ matrix.args }} --bundles app
           else
             # Other platforms: normal build
             pnpm tauri build ${{ matrix.args }}
