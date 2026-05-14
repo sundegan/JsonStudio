@@ -65,6 +65,7 @@
   let logJsonFragments = $state<LogJsonFragment[]>([]);
   let selectedLogJsonFragmentIndex = $state(0);
   let isLogJsonPanelOpen = $state(false);
+  let isLogJsonTreeSuppressedPendingDetection = $state(false);
   let logJsonSource = $state('');
   // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
   // is saved here so it can be restored on exit. For standard JSON this stays empty,
@@ -352,7 +353,7 @@
     }
     restoreEditorLanguage(currentTab.content, currentTab.stats);
     checkJsonError(currentTab.content);
-    scheduleLogJsonDetection(currentTab.content);
+    scheduleLogJsonDetection(currentTab.content, { eager: true });
   }
   
   // Handle file watching for active tab
@@ -433,6 +434,7 @@
   let lineHeight = $derived(settings.lineHeight);
   let tabSize = $derived(settings.tabSize);
   let showTreeView = $derived(settings.showTreeView);
+  let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && logJsonFragments.length > 0);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
   $effect(() => {
     if (!showTreeView) {
@@ -689,13 +691,46 @@
       clearTimeout(logJsonTimer);
       logJsonTimer = null;
     }
+    isLogJsonTreeSuppressedPendingDetection = false;
     logJsonFragments = [];
     logJsonSource = '';
     selectedLogJsonFragmentIndex = 0;
     isLogJsonPanelOpen = false;
   }
 
-  function scheduleLogJsonDetection(value: string) {
+  function hasMixedLogJsonContent(value: string) {
+    if (!value.trim() || value.length > MAX_LOG_JSON_INPUT_LENGTH || getStandaloneEscapedJsonContent(value)) {
+      return false;
+    }
+    // Fast-path probe used by tab switches: sample at most one candidate to decide
+    // whether we should immediately switch the UI into "log fragments" mode.
+    const fragments = extractLogJsonFragments(value, { indent: tabSize, maxFragments: 1 }) as LogJsonFragment[];
+    const isWholeDocumentJson =
+      fragments.length === 1 && fragments[0].raw.trim() === value.trim();
+    return fragments.length > 0 && !isWholeDocumentJson;
+  }
+
+  function applyLogJsonDetectionResult(value: string, fragments: LogJsonFragment[]) {
+    const isWholeDocumentJson =
+      fragments.length === 1 && fragments[0].raw.trim() === value.trim();
+
+    if (fragments.length === 0 || isWholeDocumentJson) {
+      logJsonFragments = [];
+      logJsonSource = '';
+      selectedLogJsonFragmentIndex = 0;
+      isLogJsonPanelOpen = false;
+      return;
+    }
+
+    logJsonFragments = fragments;
+    logJsonSource = value;
+    selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
+    isLogJsonPanelOpen = true;
+    jsonError = null;
+    monacoEditor?.setLanguage('json5');
+  }
+
+  function scheduleLogJsonDetection(value: string, options?: { eager?: boolean }) {
     if (logJsonTimer) clearTimeout(logJsonTimer);
 
     if (
@@ -707,28 +742,24 @@
       return;
     }
 
+    // Suppress tree view immediately so tab switches don't flash the tree pane
+    // before the debounced full extraction finishes.
+    isLogJsonTreeSuppressedPendingDetection = hasMixedLogJsonContent(value);
+    if (options?.eager) {
+      // Eager mode is used on tab switch to show/hide the bottom fragments panel
+      // instantly. Debounced detection still runs afterwards as the source of truth.
+      const eagerFragments = extractLogJsonFragments(value, { indent: tabSize }) as LogJsonFragment[];
+      applyLogJsonDetectionResult(value, eagerFragments);
+    }
+
     logJsonTimer = setTimeout(() => {
       if (content !== value) {
+        isLogJsonTreeSuppressedPendingDetection = false;
         return;
       }
       const fragments = extractLogJsonFragments(value, { indent: tabSize }) as LogJsonFragment[];
-      const isWholeDocumentJson =
-        fragments.length === 1 && fragments[0].raw.trim() === value.trim();
-
-      if (fragments.length === 0 || isWholeDocumentJson) {
-        logJsonFragments = [];
-        logJsonSource = '';
-        selectedLogJsonFragmentIndex = 0;
-        isLogJsonPanelOpen = false;
-        return;
-      }
-
-      logJsonFragments = fragments;
-      logJsonSource = value;
-      selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
-      isLogJsonPanelOpen = true;
-      jsonError = null;
-      monacoEditor?.setLanguage('json5');
+      isLogJsonTreeSuppressedPendingDetection = false;
+      applyLogJsonDetectionResult(value, fragments);
     }, 400);
   }
 
@@ -1266,7 +1297,7 @@
                 onPaste={handleEditorPaste}
               />
             </div>
-            {#if isLogJsonPanelOpen && logJsonFragments.length > 0}
+            {#if hasLogJsonFragmentsPanel}
               <LogJsonFragmentsPanel
                 fragments={logJsonFragments}
                 selectedIndex={selectedLogJsonFragmentIndex}
@@ -1287,7 +1318,7 @@
     </div>
 
     <!-- Right section: Tree View (spans full height below toolbar) -->
-    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode}
+    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel && !isLogJsonTreeSuppressedPendingDetection}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="json-tree-resizer"
