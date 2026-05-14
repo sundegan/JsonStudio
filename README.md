@@ -4,7 +4,7 @@
 
 # JsonStudio
 
-### A fast, private JSON workspace for everyday development
+### A fast, local-first JSON workspace for everyday development
 
 Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs - all locally in a native desktop app.
 
@@ -47,7 +47,7 @@ JsonStudio is built for JSON in real development work: API requests and response
 
 ## Features
 
-### Edit & Viewer
+### Edit & View
 
 ![Editor](docs/images_en/editor.png)
 
