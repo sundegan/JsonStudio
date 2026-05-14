@@ -350,6 +350,7 @@
         suppressNextEditorChange = false;
       });
     }
+    restoreEditorLanguage(currentTab.content, currentTab.stats);
     checkJsonError(currentTab.content);
     scheduleLogJsonDetection(currentTab.content);
   }
@@ -707,6 +708,9 @@
     }
 
     logJsonTimer = setTimeout(() => {
+      if (content !== value) {
+        return;
+      }
       const fragments = extractLogJsonFragments(value, { indent: tabSize }) as LogJsonFragment[];
       const isWholeDocumentJson =
         fragments.length === 1 && fragments[0].raw.trim() === value.trim();
@@ -724,6 +728,7 @@
       selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
       isLogJsonPanelOpen = true;
       jsonError = null;
+      monacoEditor?.setLanguage('plaintext');
     }, 400);
   }
 
@@ -939,6 +944,33 @@
   // - JSON  → 'json' mode   (Monaco validation active — shows real errors)
   // - JSON5 → 'json5' mode  (custom tokenizer, no validation — we rely on backend)
   // - Invalid → 'json' mode (Monaco shows errors + our repair banner)
+  function restoreEditorLanguage(text: string, knownStats?: JsonStats | null) {
+    if (!text.trim()) {
+      monacoEditor?.setLanguage('json');
+      return;
+    }
+
+    if (knownStats?.format_type === 'JSON5') {
+      monacoEditor?.setLanguage('json5');
+      return;
+    }
+
+    if (knownStats?.format_type === 'JSON') {
+      monacoEditor?.setLanguage('json');
+      return;
+    }
+
+    const fragments = extractLogJsonFragments(text, { indent: tabSize, maxFragments: 1 }) as LogJsonFragment[];
+    const isWholeDocumentJson =
+      fragments.length === 1 && fragments[0].raw.trim() === text.trim();
+    if (fragments.length > 0 && !isWholeDocumentJson) {
+      monacoEditor?.setLanguage('plaintext');
+      return;
+    }
+
+    quickDetectFormatAndSwitchLanguage(text);
+  }
+
   // Quickly detect format and switch language mode to prevent validation errors
   async function quickDetectFormatAndSwitchLanguage(text: string) {
     if (!text.trim()) {
@@ -955,6 +987,9 @@
       try {
         const { getJsonStats } = await import('$lib/services/json');
         const result = await getJsonStats(text);
+        if (content !== text) {
+          return;
+        }
         
         if (result.valid && result.format_type === 'JSON5') {
           monacoEditor?.setLanguage('json5');
@@ -962,6 +997,9 @@
           monacoEditor?.setLanguage('json');
         }
       } catch {
+        if (content !== text) {
+          return;
+        }
         monacoEditor?.setLanguage('json');
       }
     }
