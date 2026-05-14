@@ -728,7 +728,7 @@
       selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
       isLogJsonPanelOpen = true;
       jsonError = null;
-      monacoEditor?.setLanguage('plaintext');
+      monacoEditor?.setLanguage('json5');
     }, 400);
   }
 
@@ -964,7 +964,7 @@
     const isWholeDocumentJson =
       fragments.length === 1 && fragments[0].raw.trim() === text.trim();
     if (fragments.length > 0 && !isWholeDocumentJson) {
-      monacoEditor?.setLanguage('plaintext');
+      monacoEditor?.setLanguage('json5');
       return;
     }
 
