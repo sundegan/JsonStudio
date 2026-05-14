@@ -55,8 +55,6 @@ Built on Monaco Editor, JsonStudio provides a top-tier JSON prettify and viewing
 
 ### Multi-format Input Support
 
-![Log Fragment (Dark)](docs/images_en/log_fragment_dark.png)
-
 ![Log Fragment (Light)](docs/images_en/log_fragment.png)
 
 JsonStudio handles standard JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, and mixed log text with embedded JSON fragments. It keeps original text intact while extracting structured JSON results for review.
