@@ -247,25 +247,6 @@ a:hover{opacity:.85}
 .comparison .highlight{background:var(--accent-glow2)}
 .comparison thead th:last-child{color:var(--accent)}
 
-/* ── Workflow ── */
-.workflow{max-width:var(--max-w);margin:0 auto}
-.workflow-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;position:relative}
-.workflow-steps::before{content:'';position:absolute;top:32px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--border),var(--border),transparent)}
-.workflow-step{text-align:center;position:relative}
-.step-num{width:64px;height:64px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;position:relative;z-index:1;transition:all .3s}
-.step-num svg{width:32px;height:32px}
-.workflow-step:nth-child(1) .step-num{background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.3)}
-.workflow-step:nth-child(1) .step-num svg{color:var(--blue)}
-.workflow-step:nth-child(2) .step-num{background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.3)}
-.workflow-step:nth-child(2) .step-num svg{color:var(--orange)}
-.workflow-step:nth-child(3) .step-num{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3)}
-.workflow-step:nth-child(3) .step-num svg{color:var(--purple)}
-.workflow-step:nth-child(4) .step-num{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)}
-.workflow-step:nth-child(4) .step-num svg{color:var(--green)}
-.workflow-step:hover .step-num{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 24px var(--accent-glow)}
-.workflow-step h4{font-size:15px;font-weight:700;margin-bottom:6px}
-.workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
-
 .showcase-visual img {
   cursor: zoom-in;
   transition: transform 0.3s ease;
@@ -732,46 +713,6 @@ a:hover{opacity:.85}
   </div>
 </section>
 
-<!-- Workflow -->
-<section class="section">
-  <div class="section-header">
-    <h2 class="section-title"><span class="gold">秒级</span>上手</h2>
-    <p class="section-desc">无需注册，无需配置。下载即用，立即开始处理 JSON。</p>
-  </div>
-  <div class="workflow">
-    <div class="workflow-steps">
-      <div class="workflow-step">
-        <div class="step-num">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </div>
-        <h4>下载</h4>
-        <p>从 GitHub Releases 获取你平台的安装包。</p>
-      </div>
-      <div class="workflow-step">
-        <div class="step-num">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-        </div>
-        <h4>启动</h4>
-        <p>打开应用——不到一秒即可启动。</p>
-      </div>
-      <div class="workflow-step">
-        <div class="step-num">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </div>
-        <h4>粘贴</h4>
-        <p>粘贴你的 JSON，自动美化。</p>
-      </div>
-      <div class="workflow-step">
-        <div class="step-num">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <h4>完成</h4>
-        <p>美化、查看、压缩、对比、转换、生成代码——尽在指尖。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- Tech Stack -->
 <section class="section">
   <div class="section-header">
@@ -780,10 +721,10 @@ a:hover{opacity:.85}
   </div>
   <div class="tech-grid">
     <div class="tech-pill">Rust</div>
+    <div class="tech-pill">JavaScript</div>
     <div class="tech-pill">Tauri 2.0</div>
     <div class="tech-pill">Svelte 5</div>
     <div class="tech-pill">Monaco Editor</div>
-    <div class="tech-pill">Tailwind CSS</div>
   </div>
 </section>
 

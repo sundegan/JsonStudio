@@ -2,11 +2,19 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [1.2.1] - 2026-05-14
+
+### Added
+- **Log JSON fragment visibility**: enhanced log-fragment readability with clearer extraction highlighting and improved result presentation.
 
 ### Improved
-- **Website demo and theme polish**: refined the docs website showcase with real log-fragment screenshots, split Converter and Code Gen demo sections, and added a global light/dark theme toggle that synchronizes showcase images.
-- **README feature updates**: renamed `Edit & Inspect` to `Edit & Viewer` and added a dedicated multi-format input support feature section with real log-fragment screenshots.
+- **Editor and tab experience**: smoother language-mode consistency, better JSON/JSON5 editing continuity, and faster panel response during tab switching.
+- **Documentation and website polish**: refreshed README and website messaging, improved feature showcases, and refined light/dark demo presentation.
+- **Release workflow resilience**: improved release asset/build handling for more predictable packaging output.
+
+### Fixed
+- **Formatting and highlighting consistency**: resolved several edge cases affecting JSON5 formatting and mixed-content syntax highlighting behavior.
+- **Interaction noise in log review**: reduced distracting cursor/highlight artifacts and unnecessary prompts during log-fragment workflows.
 
 ## [1.2.0] - 2026-05-08
 
