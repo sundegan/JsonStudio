@@ -47,11 +47,19 @@ JsonStudio is built for JSON in real development work: API requests and response
 
 ## Features
 
-### Edit & Inspect
+### Edit & Viewer
 
 ![Editor](docs/images_en/editor.png)
 
 Built on Monaco Editor, JsonStudio provides a top-tier JSON prettify and viewing experience with syntax highlighting, code folding, find/replace, bracket coloring, light/dark mode, and 10+ themes.
+
+### Multi-format Input Support
+
+![Log Fragment (Dark)](docs/images_en/log_fragment_dark.png)
+
+![Log Fragment (Light)](docs/images_en/log_fragment.png)
+
+JsonStudio handles standard JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, and mixed log text with embedded JSON fragments. It keeps original text intact while extracting structured JSON results for review.
 
 ### Tree View & Search
 

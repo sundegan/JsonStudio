@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Improved
+- **Website demo and theme polish**: refined the docs website showcase with real log-fragment screenshots, split Converter and Code Gen demo sections, and added a global light/dark theme toggle that synchronizes showcase images.
+- **README feature updates**: renamed `Edit & Inspect` to `Edit & Viewer` and added a dedicated multi-format input support feature section with real log-fragment screenshots.
+
 ## [1.2.0] - 2026-05-08
 
 ### Added
