@@ -51,6 +51,17 @@
 <meta name="msapplication-TileImage" content="/icon.png">
 <meta name="msapplication-TileColor" content="#0a0a0f">
 
+<script>
+(() => {
+  let savedTheme = null;
+  try {
+    savedTheme = localStorage.getItem('jsonstudio-site-theme');
+  } catch {}
+  const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+})();
+</script>
+
 <!-- Structured Data -->
 <script type="application/ld+json">
 {
@@ -106,8 +117,17 @@
   --accent:#f5c542;--accent2:#e8a820;--accent-glow:rgba(245,197,66,.12);--accent-glow2:rgba(245,197,66,.06);
   --green:#34d399;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--orange:#fb923c;
   --border:#2a2a3a;--card:#13131c;
+  --nav-bg:rgba(10,10,15,.75);--button-text:#000;
   --radius:16px;--radius-sm:10px;
   --max-w:1140px;
+}
+:root[data-theme="light"]{
+  --bg:#f8fafc;--bg2:#ffffff;--bg3:#eef2f7;--bg4:#e2e8f0;
+  --text:#111827;--text2:#4b5563;--text3:#6b7280;
+  --accent:#d99600;--accent2:#f5c542;--accent-glow:rgba(217,150,0,.14);--accent-glow2:rgba(217,150,0,.08);
+  --green:#059669;--blue:#2563eb;--purple:#7c3aed;--pink:#db2777;--orange:#ea580c;
+  --border:#d8dee8;--card:#ffffff;
+  --nav-bg:rgba(248,250,252,.78);--button-text:#111827;
 }
 html{scroll-behavior:smooth}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
@@ -116,29 +136,33 @@ a:hover{opacity:.85}
 .container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
 
 /* ── Nav ── */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);background:rgba(10,10,15,.75);border-bottom:1px solid var(--border)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);background:var(--nav-bg);border-bottom:1px solid var(--border)}
 .nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
 .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--text)}
 .nav-brand img{width:38px;height:38px;border-radius:8px}
 .nav-right{display:flex;align-items:center;gap:8px}
-.nav-link{color:var(--text2);font-size:14px;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s}
-.nav-link:hover{color:var(--text);background:var(--bg3);opacity:1}
+.nav-link{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
+.nav-link:hover{color:var(--text);border-color:var(--accent);background:var(--accent-glow);opacity:1}
 .lang-btn{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;cursor:pointer;transition:all .2s;font-family:inherit}
 .lang-btn:hover{border-color:var(--accent);color:var(--accent)}
 .nav-github{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
 .nav-github:hover{border-color:var(--accent);background:var(--accent-glow);opacity:1}
 .nav-github svg{width:17px;height:17px}
+.theme-btn{display:flex;align-items:center;justify-content:center;width:34px;height:31px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;cursor:pointer;transition:all .2s}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.theme-btn svg{width:17px;height:17px}
+:root[data-theme="dark"] .theme-moon,:root[data-theme="light"] .theme-sun{display:none}
 
 /* ── Hero ── */
-.hero{padding:130px 24px 60px;text-align:center;position:relative;overflow:hidden}
+.hero{padding:130px 24px 60px;text-align:center;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center}
 .hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1000px;height:1000px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
-.hero-icon{width:96px;height:96px;border-radius:24px;margin:0 auto 28px;position:relative;box-shadow:0 0 80px rgba(245,197,66,.18),0 0 0 1px rgba(245,197,66,.1)}
+.hero-icon{display:block;width:96px;height:96px;border-radius:24px;margin:0 0 28px;position:relative;box-shadow:0 0 80px rgba(245,197,66,.18),0 0 0 1px rgba(245,197,66,.1)}
 .hero h1{font-size:clamp(42px,7vw,72px);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;position:relative;line-height:1.1}
 .hero h1 .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-sub{font-size:clamp(17px,2.5vw,21px);color:var(--text2);max-width:620px;margin:0 auto 36px;position:relative;line-height:1.6}
 .hero-kicker{position:relative;display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:6px 12px;border:1px solid rgba(245,197,66,.22);border-radius:999px;background:var(--accent-glow2);color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
-.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--button-text);font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,197,66,.35);opacity:1}
 .btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--border);color:var(--text);font-weight:600;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s}
 .btn-outline:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);opacity:1}
@@ -155,20 +179,21 @@ a:hover{opacity:.85}
 .screenshots{padding:20px 24px 80px}
 .screenshots-inner{max-width:var(--max-w);margin:0 auto}
 .screenshot-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center}
-.screenshot-placeholder{color:var(--text3);font-size:15px;display:flex;flex-direction:column;align-items:center;gap:12px}
-.screenshot-placeholder svg{width:48px;height:48px;opacity:.3}
-.screenshot-tabs{display:flex;gap:8px;justify-content:center;margin-top:16px}
-.screenshot-tab{padding:7px 18px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text3);background:transparent;border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:inherit}
-.screenshot-tab.active{color:var(--accent);border-color:var(--accent);background:var(--accent-glow)}
 
 /* ── Positioning ── */
 .positioning{padding:26px 24px 70px}
 .positioning-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:var(--max-w);margin:0 auto}
-.positioning-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;min-height:148px}
-.positioning-card h3{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--text)}
-.positioning-card p{font-size:13.5px;color:var(--text2);line-height:1.65}
-.positioning-card.is-wide{grid-column:span 2;background:linear-gradient(135deg,rgba(245,197,66,.08),rgba(52,211,153,.05));border-color:rgba(245,197,66,.2)}
+.positioning-card{--tone:var(--accent);--tone-soft:rgba(245,197,66,.1);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012)),var(--card);border:1px solid color-mix(in srgb,var(--tone) 26%,var(--border));border-radius:12px;padding:20px 22px;min-height:168px;position:relative;overflow:hidden;transition:transform .22s,border-color .22s,background .22s}
+.positioning-card::after{content:'';position:absolute;right:-42px;top:-42px;width:130px;height:130px;border-radius:50%;background:var(--tone-soft);opacity:.55;pointer-events:none}
+.positioning-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--tone) 46%,var(--border));background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.016)),var(--card)}
+.positioning-card h3{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--text);position:relative}
+.positioning-card p{font-size:13.5px;color:var(--text2);line-height:1.65;position:relative}
+.positioning-card.is-wide{grid-column:span 2;background:linear-gradient(135deg,rgba(245,197,66,.1),rgba(52,211,153,.06)),var(--card);border-color:rgba(245,197,66,.26)}
 .positioning-card.is-wide h3{font-size:20px}
+.positioning-card.c-green{--tone:var(--green);--tone-soft:rgba(52,211,153,.1)}
+.positioning-card.c-blue{--tone:var(--blue);--tone-soft:rgba(96,165,250,.1)}
+.positioning-card.c-purple{--tone:var(--purple);--tone-soft:rgba(167,139,250,.1)}
+.positioning-card.c-pink{--tone:var(--pink);--tone-soft:rgba(244,114,182,.1)}
 
 /* ── Section common ── */
 .section{padding:80px 24px}
@@ -195,7 +220,6 @@ a:hover{opacity:.85}
 .showcase-text li{display:flex;align-items:flex-start;gap:10px;color:var(--text2);font-size:14px}
 .showcase-text li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:1px}
 .showcase-visual{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
-.showcase-visual-placeholder{color:var(--text3);font-size:14px;opacity:.5}
 
 /* ── Feature Grid (smaller features) ── */
 .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:var(--max-w);margin:0 auto}
@@ -249,11 +273,6 @@ a:hover{opacity:.85}
 .showcase-visual:hover img {
   transform: scale(1.02);
 }
-.log-demo{width:100%;height:100%;padding:24px;background:linear-gradient(180deg,#111118,#0f0f16);display:flex;flex-direction:column;gap:16px;font-family:'SFMono-Regular','Cascadia Code','JetBrains Mono',monospace}
-.log-line{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:rgba(255,255,255,.03);color:var(--text2);font-size:12px;line-height:1.6}
-.log-line strong{color:var(--accent);font-weight:700}
-.log-result{flex:1;border:1px solid rgba(52,211,153,.22);border-radius:12px;background:rgba(52,211,153,.06);padding:16px;color:#dffdf1;font-size:12px;line-height:1.65;overflow:hidden}
-.log-result .key{color:#93c5fd}.log-result .str{color:#f9d56e}.log-result .num{color:#fca5a5}
 .resources{padding:64px 24px;background:var(--bg2);border-top:1px solid var(--border)}
 .resource-title{font-size:28px;font-weight:800;margin-bottom:32px;text-align:center}
 .resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:900px;margin:0 auto}
@@ -348,15 +367,16 @@ a:hover{opacity:.85}
   <div class="nav-inner">
     <a href="#" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
     <div class="nav-right">
-      <a href="#why" class="nav-link">Why</a>
-      <a href="#features" class="nav-link">Features</a>
-      <a href="#compare" class="nav-link">Compare</a>
-      <a href="#screenshots" class="nav-link">Screenshots</a>
-      <a href="zh/" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="nav-link">Download</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        Star
+        GitHub
       </a>
+      <button class="theme-btn" type="button" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
+        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z"/></svg>
+      </button>
+      <a href="zh/" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
     </div>
   </div>
 </nav>
@@ -401,19 +421,19 @@ a:hover{opacity:.85}
       <h3>Private by default, polished like a desktop app</h3>
       <p>No network required, no browser tab juggling, no ads, and no upload risk. Your sensitive JSON stays on your machine while native shortcuts, always-on-top, and local file handling keep the workflow quick.</p>
     </div>
-    <div class="positioning-card">
+    <div class="positioning-card c-green">
       <h3>Smarter formatting</h3>
       <p>Handles strict JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, repairable fragments, and paste auto-formatting.</p>
     </div>
-    <div class="positioning-card">
+    <div class="positioning-card c-blue">
       <h3>Review complex data</h3>
       <p>Tree view, JMESPath/JSONPath query, real-time statistics, and side-by-side diff make large payloads easier to read and verify.</p>
     </div>
-    <div class="positioning-card">
+    <div class="positioning-card c-purple">
       <h3>Daily file workflow</h3>
       <p>Multi-tabs, numbered Untitled documents, reused tabs for reopened files, unsaved prompts, optional auto-save, drag-and-drop, and file association.</p>
     </div>
-    <div class="positioning-card">
+    <div class="positioning-card c-pink">
       <h3>Developer toolbox</h3>
       <p>Prettify, minify, escape, unescape, minify + escape, fold/unfold, Schema generation/validation, format conversion, and typed code generation.</p>
     </div>
@@ -424,11 +444,7 @@ a:hover{opacity:.85}
 <section class="screenshots" id="screenshots">
   <div class="screenshots-inner">
     <div class="screenshot-box">
-      <img id="main-screenshot" src="images_en/app_home_page_dark_mode.png" alt="JsonStudio Screenshot" style="width:100%; height:100%; object-fit:cover;">
-    </div>
-    <div class="screenshot-tabs">
-      <button class="screenshot-tab active" onclick="updateScreenshot('images_en/app_home_page_dark_mode.png', this)">Dark Theme</button>
-      <button class="screenshot-tab" onclick="updateScreenshot('images_en/app_home_page_light_mode.png', this)">Light Theme</button>
+      <img id="main-screenshot" class="theme-image" src="images_en/app_home_page_dark_mode.png" data-dark-src="images_en/app_home_page_dark_mode.png" data-light-src="images_en/app_home_page_light_mode.png" alt="JsonStudio Screenshot" style="width:100%; height:100%; object-fit:cover;">
     </div>
   </div>
 </section>
@@ -457,7 +473,7 @@ a:hover{opacity:.85}
         </ul>
         <p style="margin-top:16px"><a href="/json-formatter" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
       </div>
-      <div class="showcase-visual"><img src="images_en/editor_dark.png" alt="JSON Editor" style="width:100%; height:100%; object-fit:cover;"></div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/editor_dark.png" data-dark-src="images_en/editor_dark.png" data-light-src="images_en/editor.png" alt="JSON Editor" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 2. Tree & Query -->
@@ -475,7 +491,7 @@ a:hover{opacity:.85}
           <li>Resizable panel width for comfortable viewing</li>
         </ul>
       </div>
-      <div class="showcase-visual"><img src="images_en/tree_view_dark.png" alt="JSON Tree View" style="width:100%; height:100%; object-fit:cover;"></div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/tree_view_dark.png" data-dark-src="images_en/tree_view_dark.png" data-light-src="images_en/tree_view.png" alt="JSON Tree View" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
     <!-- 3. Log JSON extraction -->
@@ -491,42 +507,44 @@ a:hover{opacity:.85}
           <li>Resizable panel width and height for long debugging sessions</li>
         </ul>
       </div>
-      <div class="showcase-visual">
-        <div class="log-demo">
-          <div class="log-line">2026-05-08 10:24:31 INFO response=<strong>{ userId: 42, ok: true, roles: ["admin"] }</strong></div>
-          <div class="log-line">trace payload="{\"latency\":18,\"region\":\"ap-east\"}"</div>
-          <pre class="log-result">{
-  <span class="key">"userId"</span>: <span class="num">42</span>,
-  <span class="key">"ok"</span>: true,
-  <span class="key">"roles"</span>: [<span class="str">"admin"</span>]
-}</pre>
-        </div>
-      </div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/log_fragment_dark.png" data-dark-src="images_en/log_fragment_dark.png" data-light-src="images_en/log_fragment.png" alt="Log JSON extraction" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 4. Convert & Codegen -->
+    <!-- 4. Convert -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge purple">CONVERT</span>
-        <h3>JSON Converter & Code Gen</h3>
-        <p>Convert JSON to YAML, XML, TOML, and CSV, or generate type-safe code in your favorite language.</p>
+        <h3>JSON Converter</h3>
+        <p>Convert JSON to YAML, XML, TOML, and CSV without leaving the desktop workflow.</p>
         <ul>
           <li>Bidirectional conversion: JSON ↔ YAML, XML, TOML, CSV</li>
           <li>CSV rainbow column highlighting for readability</li>
-          <li>Generate TypeScript, Go, Python, Java, Rust, and more</li>
-          <li>Reverse conversion: paste code to extract JSON</li>
+          <li>Clean dedicated conversion view with format selectors</li>
+          <li>Useful when moving payloads between APIs, config files, and data tools</li>
         </ul>
-        <p style="margin-top:16px"><a href="/json-converter" style="color:var(--accent);text-decoration:none">Converter →</a> | <a href="/code-generator" style="color:var(--accent);text-decoration:none">Code Gen →</a></p>
+        <p style="margin-top:16px"><a href="/json-converter" style="color:var(--accent);text-decoration:none">Converter →</a></p>
       </div>
-      <div class="showcase-visual">
-        <div style="display:flex; flex-direction:column; height:100%; width:100%;">
-          <img src="images_en/convert_dark.png" alt="JSON Converter" style="height:50%; width:100%; object-fit:cover;">
-          <img src="images_en/code_gen.png" alt="Code Generation" style="height:50%; width:100%; object-fit:cover;">
-        </div>
-      </div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/convert_dark.png" data-dark-src="images_en/convert_dark.png" data-light-src="images_en/convert.png" alt="JSON Converter" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 5. JSON Schema -->
+    <!-- 5. Code Gen -->
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <span class="showcase-badge blue">CODE GEN</span>
+        <h3>Typed Code Generation</h3>
+        <p>Generate type-safe models from JSON, or extract JSON back from supported code snippets.</p>
+        <ul>
+          <li>Generate TypeScript, Go, Python, Java, Rust, and more</li>
+          <li>Reverse conversion: paste code to extract JSON</li>
+          <li>Quickly bootstrap DTOs, API models, and config types</li>
+          <li>Keep generated structures close to the source payload</li>
+        </ul>
+        <p style="margin-top:16px"><a href="/code-generator" style="color:var(--accent);text-decoration:none">Code Gen →</a></p>
+      </div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/code_gen_dark.png" data-dark-src="images_en/code_gen_dark.png" data-light-src="images_en/code_gen.png" alt="Code Generation" style="width:100%; height:100%; object-fit:cover;"></div>
+    </div>
+
+    <!-- 6. JSON Schema -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge pink">SCHEMA</span>
@@ -539,10 +557,10 @@ a:hover{opacity:.85}
         </ul>
         <p style="margin-top:16px"><a href="/json-schema" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
       </div>
-      <div class="showcase-visual"><img src="images_en/json_schema_dark.png" alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/json_schema_dark.png" data-dark-src="images_en/json_schema_dark.png" data-light-src="images_en/json_schema.png" alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 6. Efficiency & Shortcuts -->
+    <!-- 7. Efficiency & Shortcuts -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge orange">EFFICIENCY</span>
@@ -558,10 +576,10 @@ a:hover{opacity:.85}
           <li>File association: double-click .json to open directly, with external change detection</li>
         </ul>
       </div>
-      <div class="showcase-visual"><img src="images_en/settings_dark.png" alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/settings_dark.png" data-dark-src="images_en/settings_dark.png" data-light-src="images_en/settings.png" alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
 
-    <!-- 7. Diff & More Tools -->
+    <!-- 8. Diff & More Tools -->
     <div class="showcase-row">
       <div class="showcase-text">
         <span class="showcase-badge green">TOOLS</span>
@@ -577,7 +595,7 @@ a:hover{opacity:.85}
         </ul>
         <p style="margin-top:16px"><a href="/json-diff" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
       </div>
-      <div class="showcase-visual"><img src="images_en/json_diff_dark.png" alt="JSON Diff" style="width:100%; height:100%; object-fit:cover;"></div>
+      <div class="showcase-visual"><img class="theme-image" src="images_en/json_diff_dark.png" data-dark-src="images_en/json_diff_dark.png" data-light-src="images_en/json_diff.png" alt="JSON Diff" style="width:100%; height:100%; object-fit:cover;"></div>
     </div>
   </div>
 </section>
@@ -819,20 +837,47 @@ a:hover{opacity:.85}
 </div>
 
 <script>
-function updateScreenshot(src, btn) {
-  document.getElementById('main-screenshot').src = src;
-  document.querySelectorAll('.screenshot-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-// Lightbox
 const modal = document.getElementById('imageModal');
 const modalImg = document.getElementById('modalImg');
+const themeToggle = document.getElementById('theme-toggle');
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const storageKey = 'jsonstudio-site-theme';
+
+function applyTheme(theme) {
+  const nextTheme = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = nextTheme;
+  try {
+    localStorage.setItem(storageKey, nextTheme);
+  } catch {}
+  if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
+
+  document.querySelectorAll('img[data-dark-src][data-light-src]').forEach(img => {
+    img.src = nextTheme === 'light' ? img.dataset.lightSrc : img.dataset.darkSrc;
+  });
+
+  if (themeToggle) {
+    const label = nextTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+    themeToggle.setAttribute('aria-label', label);
+    themeToggle.setAttribute('title', label);
+  }
+
+  if (modal.style.display === 'flex' && modalImg.dataset.darkSrc && modalImg.dataset.lightSrc) {
+    modalImg.src = nextTheme === 'light' ? modalImg.dataset.lightSrc : modalImg.dataset.darkSrc;
+  }
+}
+
+applyTheme(document.documentElement.dataset.theme);
+
+themeToggle?.addEventListener('click', () => {
+  applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+});
 
 document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {
   img.addEventListener('click', () => {
     modal.style.display = 'flex';
     modalImg.src = img.src;
+    modalImg.dataset.darkSrc = img.dataset.darkSrc || '';
+    modalImg.dataset.lightSrc = img.dataset.lightSrc || '';
     document.body.style.overflow = 'hidden'; // Prevent scroll
   });
 });
