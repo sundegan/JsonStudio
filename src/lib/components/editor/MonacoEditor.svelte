@@ -73,13 +73,17 @@
           [/\/\/.*$/, 'comment'],
           [/\/\*/, 'comment', '@comment'],
           
+          // Quoted keys: string followed by optional whitespace and colon
+          [/"(?:[^"\\]|\\.)*"(?=\s*:)/, 'string.key.json'],
+          [/'(?:[^'\\]|\\.)*'(?=\s*:)/, 'string.key.json'],
+
           // Strings (double-quoted)
           [/"/, 'string', '@string_double'],
           // Strings (single-quoted, JSON5)
           [/'/, 'string', '@string_single'],
           
-          // Unquoted keys: identifier followed by optional whitespace and colon
-          [/[a-zA-Z_$][\w$]*(?=\s*:)/, 'type.identifier'],
+          // Unquoted keys: ASCII + Unicode identifier names (JSON5)
+          [/[$_\p{L}][$\p{L}\p{N}\p{M}_]*(?=\s*:)/u, 'string.key.json'],
           
           // Special numeric literals
           [/[+-]?Infinity\b/, 'number'],
