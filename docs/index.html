@@ -1,69 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JsonStudio | Fast, Private JSON Workspace for Developers</title>
-<meta name="description" content="JsonStudio is a fast, private JSON workspace for everyday development. Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally.">
-<meta name="keywords" content="JSON formatter, JSON prettify, JSON viewer, JSON editor, JSON diff, JSON converter, JSON schema, JSON5, log JSON extraction, JSONPath, JSON minify, JSON escape, JSON unescape, JSON tool, JSON validator, JSON parser, JSON to YAML, JSON to XML, JMESPath, desktop JSON app, Tauri, Rust">
-<meta name="author" content="sundegan">
-<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-<meta name="theme-color" content="#0a0a0f">
-<meta name="application-name" content="JsonStudio">
-<meta name="google-site-verification" content="HXww-JjnRUDJRKjvYn9mWPv2UIL790w1MSt4iVQGbHw" />
-<meta name="google-site-verification" content="Tyjow686DDPQwFSE2vPYQtA3o0rrfm9dbVX9epA6nNQ" />
-<meta name="google-site-verification" content="qB6rzZ_BqSDXD1KYG98uSHnZrScqrS8QS0chKBFGtqA" />
-<meta name="msvalidate.01" content="12ADE709C95DA263866A617078E0F904" />
-<meta name="baidu-site-verification" content="codeva-jaHgULRN5q" />
-<meta name="360-site-verification" content="92df86d675fcece2900ffa9a09c5eb51" />
-<meta name="sogou_site_verification" content="7PXeIVoumD" />
-<link rel="canonical" href="https://jsonstudio.js.org/">
-<link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/">
-<link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/">
-<link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JsonStudio | Fast, Private JSON Workspace for Developers</title>
+  <meta name="description"
+    content="JsonStudio is a fast, private JSON workspace for everyday development. Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally.">
+  <meta name="keywords"
+    content="JSON formatter, JSON prettify, JSON viewer, JSON editor, JSON diff, JSON converter, JSON schema, JSON5, log JSON extraction, JSONPath, JSON minify, JSON escape, JSON unescape, JSON tool, JSON validator, JSON parser, JSON to YAML, JSON to XML, JMESPath, desktop JSON app, Tauri, Rust">
+  <meta name="author" content="sundegan">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="application-name" content="JsonStudio">
+  <meta name="google-site-verification" content="HXww-JjnRUDJRKjvYn9mWPv2UIL790w1MSt4iVQGbHw" />
+  <meta name="google-site-verification" content="Tyjow686DDPQwFSE2vPYQtA3o0rrfm9dbVX9epA6nNQ" />
+  <meta name="google-site-verification" content="qB6rzZ_BqSDXD1KYG98uSHnZrScqrS8QS0chKBFGtqA" />
+  <meta name="msvalidate.01" content="12ADE709C95DA263866A617078E0F904" />
+  <meta name="baidu-site-verification" content="codeva-jaHgULRN5q" />
+  <meta name="360-site-verification" content="92df86d675fcece2900ffa9a09c5eb51" />
+  <meta name="sogou_site_verification" content="7PXeIVoumD" />
+  <link rel="canonical" href="https://jsonstudio.js.org/">
+  <link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/">
+  <link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/">
+  <link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/">
 
-<!-- Open Graph -->
-<meta property="og:title" content="JsonStudio | Fast, Private JSON Workspace for Developers">
-<meta property="og:description" content="Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally in a native desktop app.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://jsonstudio.js.org/">
-<meta property="og:image" content="https://jsonstudio.js.org/icon.png">
-<meta property="og:image:alt" content="JsonStudio app icon">
-<meta property="og:image:type" content="image/png">
-<meta property="og:site_name" content="JsonStudio">
-<meta property="og:locale" content="en_US">
-<meta property="og:locale:alternate" content="zh_CN">
+  <!-- Open Graph -->
+  <meta property="og:title" content="JsonStudio | Fast, Private JSON Workspace for Developers">
+  <meta property="og:description"
+    content="Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally in a native desktop app.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jsonstudio.js.org/">
+  <meta property="og:image" content="https://jsonstudio.js.org/icon.png">
+  <meta property="og:image:alt" content="JsonStudio app icon">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:site_name" content="JsonStudio">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="zh_CN">
 
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JsonStudio | Fast, Private JSON Workspace for Developers">
-<meta name="twitter:description" content="Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally in a native desktop app.">
-<meta name="twitter:image" content="https://jsonstudio.js.org/icon.png">
-<meta name="twitter:image:alt" content="JsonStudio app icon">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="JsonStudio | Fast, Private JSON Workspace for Developers">
+  <meta name="twitter:description"
+    content="Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs locally in a native desktop app.">
+  <meta name="twitter:image" content="https://jsonstudio.js.org/icon.png">
+  <meta name="twitter:image:alt" content="JsonStudio app icon">
 
-<!-- Favicon -->
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
-<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
-<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="msapplication-TileImage" content="/icon.png">
-<meta name="msapplication-TileColor" content="#0a0a0f">
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileImage" content="/icon.png">
+  <meta name="msapplication-TileColor" content="#0a0a0f">
 
-<script>
-(() => {
-  let savedTheme = null;
-  try {
-    savedTheme = localStorage.getItem('jsonstudio-site-theme');
-  } catch {}
-  const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
-})();
-</script>
+  <script>
+    (() => {
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('jsonstudio-site-theme');
+      } catch { }
+      const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+    })();
+  </script>
 
-<!-- Structured Data -->
-<script type="application/ld+json">
+  <!-- Structured Data -->
+  <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -105,752 +110,698 @@
     "JMESPath and JSONPath query support",
     "JSON5 parsing and formatting",
     "Log-like text JSON fragment extraction",
-    "Auto-save and reusable file tabs"
+    "Auto-Save and reusable file tabs"
   ]
 }
 </script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a26;--bg4:#222232;
-  --text:#e8e8f0;--text2:#9898b0;--text3:#6868a0;
-  --accent:#f5c542;--accent2:#e8a820;--accent-glow:rgba(245,197,66,.12);--accent-glow2:rgba(245,197,66,.06);
-  --green:#34d399;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--orange:#fb923c;
-  --border:#2a2a3a;--card:#13131c;
-  --nav-bg:rgba(10,10,15,.75);--button-text:#000;
-  --radius:16px;--radius-sm:10px;
-  --max-w:1140px;
-}
-:root[data-theme="light"]{
-  --bg:#f8fafc;--bg2:#ffffff;--bg3:#eef2f7;--bg4:#e2e8f0;
-  --text:#111827;--text2:#4b5563;--text3:#6b7280;
-  --accent:#d99600;--accent2:#f5c542;--accent-glow:rgba(217,150,0,.14);--accent-glow2:rgba(217,150,0,.08);
-  --green:#059669;--blue:#2563eb;--purple:#7c3aed;--pink:#db2777;--orange:#ea580c;
-  --border:#d8dee8;--card:#ffffff;
-  --nav-bg:rgba(248,250,252,.78);--button-text:#111827;
-}
-html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
-a{color:var(--accent);text-decoration:none;transition:all .2s}
-a:hover{opacity:.85}
-.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
-
-/* ── Nav ── */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);background:var(--nav-bg);border-bottom:1px solid var(--border)}
-.nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
-.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--text)}
-.nav-brand img{width:38px;height:38px;border-radius:8px}
-.nav-right{display:flex;align-items:center;gap:8px}
-.nav-link{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
-.nav-link:hover{color:var(--text);border-color:var(--accent);background:var(--accent-glow);opacity:1}
-.lang-btn{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;cursor:pointer;transition:all .2s;font-family:inherit}
-.lang-btn:hover{border-color:var(--accent);color:var(--accent)}
-.nav-github{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:17px;transition:all .2s}
-.nav-github:hover{border-color:var(--accent);background:var(--accent-glow);opacity:1}
-.nav-github svg{width:17px;height:17px}
-.theme-btn{display:flex;align-items:center;justify-content:center;width:34px;height:31px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;cursor:pointer;transition:all .2s}
-.theme-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
-.theme-btn svg{width:17px;height:17px}
-:root[data-theme="dark"] .theme-moon,:root[data-theme="light"] .theme-sun{display:none}
-
-/* ── Hero ── */
-.hero{padding:130px 24px 60px;text-align:center;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center}
-.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1000px;height:1000px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
-.hero-icon{display:block;width:96px;height:96px;border-radius:24px;margin:0 0 28px;position:relative;box-shadow:0 0 80px rgba(245,197,66,.18),0 0 0 1px rgba(245,197,66,.1)}
-.hero h1{font-size:clamp(42px,7vw,72px);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;position:relative;line-height:1.1}
-.hero h1 .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:clamp(17px,2.5vw,21px);color:var(--text2);max-width:620px;margin:0 auto 36px;position:relative;line-height:1.6}
-.hero-kicker{position:relative;display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:6px 12px;border:1px solid rgba(245,197,66,.22);border-radius:999px;background:var(--accent-glow2);color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
-.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--button-text);font-weight:700;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s;box-shadow:0 4px 20px rgba(245,197,66,.25)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,197,66,.35);opacity:1}
-.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--border);color:var(--text);font-weight:600;font-size:15px;padding:13px 30px;border-radius:12px;transition:all .25s}
-.btn-outline:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);opacity:1}
-.btn-primary svg,.btn-outline svg{width:18px;height:18px}
-
-/* ── Stats ── */
-.stats{padding:20px 24px 60px;position:relative}
-.stats-grid{display:flex;justify-content:center;gap:48px;flex-wrap:wrap}
-.stat-item{text-align:center}
-.stat-value{font-size:32px;font-weight:800;background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.stat-label{font-size:13px;color:var(--text3);margin-top:4px;font-weight:500}
-
-/* ── Screenshots ── */
-.screenshots{padding:20px 24px 80px}
-.screenshots-inner{max-width:var(--max-w);margin:0 auto}
-.screenshot-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center}
-
-/* ── Positioning ── */
-.positioning{padding:26px 24px 70px}
-.positioning-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:var(--max-w);margin:0 auto}
-.positioning-card{--tone:var(--accent);--tone-soft:rgba(245,197,66,.1);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012)),var(--card);border:1px solid color-mix(in srgb,var(--tone) 26%,var(--border));border-radius:12px;padding:20px 22px;min-height:168px;position:relative;overflow:hidden;transition:transform .22s,border-color .22s,background .22s}
-.positioning-card::after{content:'';position:absolute;right:-42px;top:-42px;width:130px;height:130px;border-radius:50%;background:var(--tone-soft);opacity:.55;pointer-events:none}
-.positioning-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--tone) 46%,var(--border));background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.016)),var(--card)}
-.positioning-card h3{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--text);position:relative}
-.positioning-card p{font-size:13.5px;color:var(--text2);line-height:1.65;position:relative}
-.positioning-card.is-wide{grid-column:span 2;background:linear-gradient(135deg,rgba(245,197,66,.1),rgba(52,211,153,.06)),var(--card);border-color:rgba(245,197,66,.26)}
-.positioning-card.is-wide h3{font-size:20px}
-.positioning-card.c-green{--tone:var(--green);--tone-soft:rgba(52,211,153,.1)}
-.positioning-card.c-blue{--tone:var(--blue);--tone-soft:rgba(96,165,250,.1)}
-.positioning-card.c-purple{--tone:var(--purple);--tone-soft:rgba(167,139,250,.1)}
-.positioning-card.c-pink{--tone:var(--pink);--tone-soft:rgba(244,114,182,.1)}
-
-/* ── Section common ── */
-.section{padding:80px 24px}
-.section-header{text-align:center;margin-bottom:56px}
-.section-title{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;line-height:1.2}
-.section-title .gold{background:linear-gradient(135deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.section-desc{color:var(--text2);font-size:17px;max-width:540px;margin:0 auto}
-
-/* ── Feature Showcase (alternating rows) ── */
-.showcase{max-width:var(--max-w);margin:0 auto}
-.showcase-row{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-bottom:80px}
-.showcase-row:nth-child(even){direction:rtl}
-.showcase-row:nth-child(even)>*{direction:ltr}
-.showcase-text{display:flex;flex-direction:column;gap:16px}
-.showcase-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;border-radius:20px;width:fit-content}
-.showcase-badge.green{color:var(--green);background:rgba(52,211,153,.1)}
-.showcase-badge.blue{color:var(--blue);background:rgba(96,165,250,.1)}
-.showcase-badge.purple{color:var(--purple);background:rgba(167,139,250,.1)}
-.showcase-badge.pink{color:var(--pink);background:rgba(244,114,182,.1)}
-.showcase-badge.orange{color:var(--orange);background:rgba(251,146,60,.1)}
-.showcase-text h3{font-size:28px;font-weight:700;line-height:1.3}
-.showcase-text p{color:var(--text2);font-size:15px;line-height:1.7}
-.showcase-text ul{list-style:none;display:flex;flex-direction:column;gap:8px}
-.showcase-text li{display:flex;align-items:flex-start;gap:10px;color:var(--text2);font-size:14px}
-.showcase-text li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:1px}
-.showcase-visual{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
-
-/* ── Feature Grid (smaller features) ── */
-.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:var(--max-w);margin:0 auto}
-.feature-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;transition:all .3s;position:relative;overflow:hidden}
-.feature-card:hover{border-color:rgba(245,197,66,.3);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
-.feature-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:17px}
-.feature-icon svg{width:20px;height:20px}
-.feature-icon.c1{background:rgba(52,211,153,.1);color:var(--green)}
-.feature-icon.c2{background:rgba(96,165,250,.1);color:var(--blue)}
-.feature-icon.c3{background:rgba(167,139,250,.1);color:var(--purple)}
-.feature-icon.c4{background:rgba(244,114,182,.1);color:var(--pink)}
-.feature-icon.c5{background:rgba(251,146,60,.1);color:var(--orange)}
-.feature-icon.c6{background:var(--accent-glow);color:var(--accent)}
-.feature-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
-.feature-card p{color:var(--text2);font-size:12.5px;line-height:1.5}
-
-/* ── Comparison ── */
-.comparison{max-width:800px;margin:0 auto}
-.comparison table{width:100%;border-collapse:collapse}
-.comparison th,.comparison td{padding:14px 20px;text-align:left;border-bottom:1px solid var(--border);font-size:14px}
-.comparison th{color:var(--text2);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
-.comparison td:first-child{color:var(--text);font-weight:500}
-.comparison .check{color:var(--green);font-weight:700;font-size:16px}
-.comparison .cross{color:var(--text3);font-size:16px}
-.comparison .highlight{background:var(--accent-glow2)}
-.comparison thead th:last-child{color:var(--accent)}
-
-/* ── Workflow ── */
-.workflow{max-width:var(--max-w);margin:0 auto}
-.workflow-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;position:relative}
-.workflow-steps::before{content:'';position:absolute;top:32px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--border),var(--border),transparent)}
-.workflow-step{text-align:center;position:relative}
-.step-num{width:64px;height:64px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;position:relative;z-index:1;transition:all .3s}
-.step-num svg{width:32px;height:32px}
-.workflow-step:nth-child(1) .step-num{background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.3)}
-.workflow-step:nth-child(1) .step-num svg{color:var(--blue)}
-.workflow-step:nth-child(2) .step-num{background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.3)}
-.workflow-step:nth-child(2) .step-num svg{color:var(--orange)}
-.workflow-step:nth-child(3) .step-num{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3)}
-.workflow-step:nth-child(3) .step-num svg{color:var(--purple)}
-.workflow-step:nth-child(4) .step-num{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)}
-.workflow-step:nth-child(4) .step-num svg{color:var(--green)}
-.workflow-step:hover .step-num{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 24px var(--accent-glow)}
-.workflow-step h4{font-size:15px;font-weight:700;margin-bottom:6px}
-.workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
-
-.showcase-visual img {
-  cursor: zoom-in;
-  transition: transform 0.3s ease;
-}
-.showcase-visual:hover img {
-  transform: scale(1.02);
-}
-.resources{padding:64px 24px;background:var(--bg2);border-top:1px solid var(--border)}
-.resource-title{font-size:28px;font-weight:800;margin-bottom:32px;text-align:center}
-.resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:900px;margin:0 auto}
-.resource-card{display:block;padding:18px 20px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);transition:all .2s}
-.resource-card:hover{transform:translateY(-3px);border-color:rgba(245,197,66,.35);background:var(--bg3);opacity:1}
-.resource-card strong{display:block;font-size:15px;margin-bottom:5px;color:var(--text)}
-.resource-card span{display:block;font-size:13px;color:var(--text2);line-height:1.5}
-
-/* Lightbox Modal */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 2000;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.9);
-  padding: 40px;
-  cursor: zoom-out;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(12px);
-  animation: fadeIn 0.3s ease;
-}
-.modal img {
-  max-width: 95%;
-  max-height: 95%;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  border: 1px solid var(--border);
-  animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes zoomIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Tech Grid */
-.tech-grid{display:flex;gap:20px;justify-content:center;flex-wrap:nowrap;max-width:900px;margin:0 auto}
-.tech-pill{display:flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:600;transition:all .2s;border:none}
-.tech-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
-.tech-pill:nth-child(1){background:rgba(251,146,60,.15);color:var(--orange)}
-.tech-pill:nth-child(2){background:rgba(96,165,250,.15);color:var(--blue)}
-.tech-pill:nth-child(3){background:rgba(52,211,153,.15);color:var(--green)}
-.tech-pill:nth-child(4){background:rgba(167,139,250,.15);color:var(--purple)}
-.tech-pill:nth-child(5){background:rgba(244,114,182,.15);color:var(--pink)}
-
-/* ── CTA ── */
-.cta{padding:80px 24px;text-align:center;position:relative;overflow:hidden}
-.cta::before{content:'';position:absolute;bottom:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 65%);pointer-events:none}
-.cta h2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:12px;position:relative}
-.cta p{color:var(--text2);font-size:17px;margin-bottom:32px;position:relative}
-.cta .hero-actions{position:relative}
-.download-note{max-width:780px;margin:0 auto 70px;padding:0 24px;color:var(--text2);font-size:13.5px;line-height:1.7;text-align:center}
-.download-note strong{color:var(--text)}
-.download-note code{padding:2px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--accent);font-family:'SFMono-Regular','Cascadia Code','JetBrains Mono',monospace;font-size:12px}
-
-/* ── Footer ── */
-.footer{border-top:1px solid var(--border);padding:28px 24px}
-.footer-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.footer-left{color:var(--text3);font-size:13px}
-.footer-links{display:flex;gap:20px}
-.footer-links a{color:var(--text3);font-size:13px;transition:color .2s}
-.footer-links a:hover{color:var(--text)}
-
-/* ── Responsive ── */
-@media(max-width:900px){
-  .showcase-row{grid-template-columns:1fr;gap:32px}
-  .showcase-row:nth-child(even){direction:ltr}
-  .features-grid{grid-template-columns:1fr 1fr}
-  .positioning-grid{grid-template-columns:1fr 1fr}
-  .positioning-card.is-wide{grid-column:span 2}
-  .stats-grid{gap:32px}
-  .workflow-steps{grid-template-columns:1fr 1fr}
-  .workflow-steps::before{display:none}
-}
-@media(max-width:640px){
-  .features-grid{grid-template-columns:1fr}
-  .positioning-grid{grid-template-columns:1fr}
-  .positioning-card.is-wide{grid-column:auto}
-  .hero-actions{flex-direction:column;align-items:center}
-  .footer-inner{flex-direction:column;text-align:center}
-  .nav-link{display:none}
-  .comparison th,.comparison td{padding:10px 12px;font-size:13px}
-  .workflow-steps{grid-template-columns:1fr}
-  .tech-grid{flex-wrap:wrap}
-}
-</style>
+  <link rel="stylesheet" href="global.css">
 </head>
+
 <body>
 
-<!-- Nav -->
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
-    <div class="nav-right">
-      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="nav-link">Download</a>
-      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
+      <div class="nav-right">
+        <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="nav-link">Download</a>
+        <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          GitHub
+        </a>
+        <button class="theme-btn" type="button" id="theme-toggle" aria-label="Switch to light theme"
+          title="Switch to light theme">
+          <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2" />
+            <path d="M12 20v2" />
+            <path d="m4.93 4.93 1.41 1.41" />
+            <path d="m17.66 17.66 1.41 1.41" />
+            <path d="M2 12h2" />
+            <path d="M20 12h2" />
+            <path d="m6.34 17.66-1.41 1.41" />
+            <path d="m19.07 4.93-1.41 1.41" />
+          </svg>
+          <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z" />
+          </svg>
+        </button>
+        <a href="zh/" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="icon.png" alt="JsonStudio" class="hero-icon">
+    <div class="hero-kicker">The Pro JSON Desktop App</div>
+    <h1><span class="gold">Json</span>Studio</h1>
+    <p class="hero-sub">A desktop JSON app built for daily development. The all-in-one workspace for every JSON task, designed to redefine your workflow efficiency.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        <span>Download Now</span>
       </a>
-      <button class="theme-btn" type="button" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
-        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z"/></svg>
-      </button>
-      <a href="zh/" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path
+            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+        </svg>
+        <span>View on GitHub</span>
+      </a>
     </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value">$0</div>
+        <div class="stat-label">Free & Open Source</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">&lt;1s</div>
+        <div class="stat-label">Launch Time</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Platforms</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">10+</div>
+        <div class="stat-label">Themes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Local & Private</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Different -->
+  <section class="positioning" id="why">
+    <div class="section-header">
+      <h2 class="section-title">Built for <span class="gold">Real-World</span> JSON Work</h2>
+      <p class="section-desc">JsonStudio is shaped around the payloads developers actually handle: API responses,
+        escaped strings, JSON5-like fragments, nested objects, and logs where text and JSON are mixed.</p>
+    </div>
+    <div class="positioning-grid">
+      <div class="positioning-card is-wide">
+        <h3>Local-first</h3>
+        <p>No network required, no browser tab juggling, no ads, and no upload risk. Your sensitive JSON stays on your
+          machine while native shortcuts, always-on-top, and local file handling keep the workflow quick.</p>
+      </div>
+      <div class="positioning-card c-green">
+        <h3>Smarter formatting</h3>
+        <p>Handles strict JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, repairable
+          fragments, and paste auto-formatting.</p>
+      </div>
+      <div class="positioning-card c-blue">
+        <h3>Review complex data</h3>
+        <p>Tree view, JMESPath/JSONPath query, real-time statistics, and side-by-side diff make large payloads easier to
+          read and verify.</p>
+      </div>
+      <div class="positioning-card c-purple">
+        <h3>Daily file workflow</h3>
+        <p>Multi-tabs, numbered Untitled documents, reused tabs for reopened files, unsaved prompts, optional auto-save,
+          drag-and-drop, and file association.</p>
+      </div>
+      <div class="positioning-card c-pink">
+        <h3>Developer toolbox</h3>
+        <p>Prettify, minify, escape, unescape, minify + escape, fold/unfold, Schema generation/validation, format
+          conversion, and typed code generation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots -->
+  <section class="screenshots" id="screenshots">
+    <div class="screenshots-inner">
+      <div class="screenshot-box">
+        <img id="main-screenshot" class="theme-image" src="images_en/app_home_page_dark_mode.png"
+          data-dark-src="images_en/app_home_page_dark_mode.png" data-light-src="images_en/app_home_page_light_mode.png"
+          alt="JsonStudio Screenshot" style="width:100%; height:100%; object-fit:cover;">
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Showcase -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <h2 class="section-title"><span class="gold">Core</span> Features</h2>
+      <p class="section-desc">Built for daily JSON work: prettify, view, query, log extraction, Diff, Converter, JSON
+        Schema, Code Gen, and Minify/Escape.</p>
+    </div>
+
+    <div class="showcase">
+      <!-- 1. Editor -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge green">EDITOR</span>
+          <h3>Professional JSON Formatter & Viewer</h3>
+          <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON/JSON5 formatting and prettify
+            experience.</p>
+          <ul>
+            <li>Syntax highlighting with bracket pair colorization</li>
+            <li>Multi-tab editing with drag-and-drop reordering</li>
+            <li>Code folding, minimap, and find & replace</li>
+            <li>Auto-detect and format pasted JSON, JSON5, and escaped JSON</li>
+            <li>Preserve original object key order by default during formatting</li>
+            <li>10+ color themes including Dracula, Nord, and One Dark</li>
+          </ul>
+          <p style="margin-top:16px"><a href="/json-formatter" style="color:var(--accent);text-decoration:none">Learn
+              more →</a></p>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/editor_dark.png"
+            data-dark-src="images_en/editor_dark.png" data-light-src="images_en/editor.png" alt="JSON Editor"
+            style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 2. Tree & Query -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge blue">NAVIGATE</span>
+          <h3>Tree View, JMESPath & JSONPath Query</h3>
+          <p>Visualize complex JSON/JSON5 structures as an interactive tree. Navigate, search, and query with ease.</p>
+          <ul>
+            <li>Collapsible tree with type-colored icons</li>
+            <li>Click any node to jump to its position in the editor</li>
+            <li>Copy path and value with one click</li>
+            <li>Switch between JMESPath and JSONPath query modes</li>
+            <li>Real-time match highlighting with automatic ancestor expansion</li>
+            <li>Resizable panel width for comfortable viewing</li>
+          </ul>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/tree_view_dark.png"
+            data-dark-src="images_en/tree_view_dark.png" data-light-src="images_en/tree_view.png" alt="JSON Tree View"
+            style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 3. Log JSON extraction -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge orange">LOGS</span>
+          <h3>Extract JSON from Logs and Mixed Text</h3>
+          <p>When logs, error stacks, or API debug text contain structured payloads, JsonStudio finds the useful
+            fragments without replacing your original editor content.</p>
+          <ul>
+            <li>Detect JSON, JSON5-like, escaped JSON, and repairable fragments</li>
+            <li>Group multiple fragments so each result is easy to inspect and copy</li>
+            <li>Keep the source text unchanged while showing formatted output in a panel</li>
+            <li>Resizable panel width and height for long debugging sessions</li>
+          </ul>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/log_fragment_dark.png"
+            data-dark-src="images_en/log_fragment_dark.png" data-light-src="images_en/log_fragment.png"
+            alt="Log JSON extraction" style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 4. Convert -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge purple">CONVERT</span>
+          <h3>JSON Converter</h3>
+          <p>Convert JSON to YAML, XML, TOML, and CSV without leaving the desktop workflow.</p>
+          <ul>
+            <li>Bidirectional conversion: JSON ↔ YAML, XML, TOML, CSV</li>
+            <li>CSV rainbow column highlighting for readability</li>
+            <li>Clean dedicated conversion view with format selectors</li>
+            <li>Useful when moving payloads between APIs, config files, and data tools</li>
+          </ul>
+          <p style="margin-top:16px"><a href="/json-converter"
+              style="color:var(--accent);text-decoration:none">Converter →</a></p>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/convert_dark.png"
+            data-dark-src="images_en/convert_dark.png" data-light-src="images_en/convert.png" alt="JSON Converter"
+            style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 5. Code Gen -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge blue">CODE GEN</span>
+          <h3>Typed Code Generation</h3>
+          <p>Generate type-safe models from JSON, or extract JSON back from supported code snippets.</p>
+          <ul>
+            <li>Generate TypeScript, Go, Python, Java, Rust, and more</li>
+            <li>Reverse conversion: paste code to extract JSON</li>
+            <li>Quickly bootstrap DTOs, API models, and config types</li>
+            <li>Keep generated structures close to the source payload</li>
+          </ul>
+          <p style="margin-top:16px"><a href="/code-generator" style="color:var(--accent);text-decoration:none">Code Gen
+              →</a></p>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/code_gen_dark.png"
+            data-dark-src="images_en/code_gen_dark.png" data-light-src="images_en/code_gen.png" alt="Code Generation"
+            style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 6. JSON Schema -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge pink">SCHEMA</span>
+          <h3>JSON Schema Generation & Validation</h3>
+          <p>Generate JSON Schema from any JSON data, or validate your data against an existing schema — all in a
+            dedicated view.</p>
+          <ul>
+            <li>One-click schema generation from JSON data</li>
+            <li>Validate JSON against any JSON Schema with detailed error reports</li>
+            <li>Dedicated schema page with side-by-side editing</li>
+          </ul>
+          <p style="margin-top:16px"><a href="/json-schema" style="color:var(--accent);text-decoration:none">Learn more
+              →</a></p>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/json_schema_dark.png"
+            data-dark-src="images_en/json_schema_dark.png" data-light-src="images_en/json_schema.png" alt="JSON Schema"
+            style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 7. Efficiency & Shortcuts -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge orange">EFFICIENCY</span>
+          <h3>Shortcuts, Auto-Save & File Workflow</h3>
+          <p>Native desktop capabilities keep JSON work close to everyday development: open, save, watch, and reuse tabs
+            with less friction.</p>
+          <ul>
+            <li>Global shortcut to launch or bring the app to front instantly</li>
+            <li>One-key paste & prettify: format clipboard JSON instantly</li>
+            <li>Optional auto-save for modified file-backed tabs</li>
+            <li>Reopen the same file into the existing tab instead of duplicating it</li>
+            <li>Prompt before closing unsaved work; auto-number new documents as Untitled-1, Untitled-2</li>
+            <li>Window always-on-top toggle for multitasking</li>
+            <li>File association: double-click .json to open directly, with external change detection</li>
+          </ul>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/settings_dark.png"
+            data-dark-src="images_en/settings_dark.png" data-light-src="images_en/settings.png"
+            alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+
+      <!-- 8. Diff & More Tools -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <span class="showcase-badge green">TOOLS</span>
+          <h3>JSON Diff, Minify/Escape & More Tools</h3>
+          <p>A practical toolbox focused on JSON Diff, minify/escape, repair, and export.</p>
+          <ul>
+            <li>Side-by-side diff with inline change highlighting</li>
+            <li>Diff mode also supports auto-formatting after paste</li>
+            <li>Diff line count statistics in status bar</li>
+            <li>Escape / unescape / minify utilities</li>
+            <li>Drag & drop JSON files to open instantly</li>
+            <li>Export JSON as beautiful images with syntax highlighting for easy sharing</li>
+          </ul>
+          <p style="margin-top:16px"><a href="/json-diff" style="color:var(--accent);text-decoration:none">Learn more
+              →</a></p>
+        </div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/json_diff_dark.png"
+            data-dark-src="images_en/json_diff_dark.png" data-light-src="images_en/json_diff.png" alt="JSON Diff"
+            style="width:100%; height:100%; object-fit:cover;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- More Features Grid -->
+  <section class="section">
+    <div class="section-header">
+      <h2 class="section-title">And <span class="gold">Much</span> More</h2>
+      <p class="section-desc">Every detail is crafted for developer productivity.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon c6">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          </svg>
+        </div>
+        <h3>JSON Repair</h3>
+        <p>One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M4 5h16" />
+            <path d="M4 12h10" />
+            <path d="M4 19h16" />
+            <path d="m17 9 3 3-3 3" />
+          </svg>
+        </div>
+        <h3>Log JSON Extraction</h3>
+        <p>Find JSON, JSON5-like, escaped JSON, and repairable fragments in logs and mixed text.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <path d="M17 21v-8H7v8" />
+            <path d="M7 3v5h8" />
+          </svg>
+        </div>
+        <h3>Auto-Save</h3>
+        <p>Automatically save modified file-backed tabs, with a prompt before closing unsaved work.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+            <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+            <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+            <path d="M9 12h6" />
+          </svg>
+        </div>
+        <h3>JSON5 Support</h3>
+        <p>The editor, formatter, tree view, and paste normalization understand flexible JSON5 syntax.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+          </svg>
+        </div>
+        <h3>Lightweight</h3>
+        <p>Small install size and low memory footprint, powered by Tauri and Rust.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+          </svg>
+        </div>
+        <h3>Instant Launch</h3>
+        <p>Launches in under a second. No loading screens, no waiting.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <path d="M8 21h8" />
+            <path d="M12 17v4" />
+          </svg>
+        </div>
+        <h3>Cross-Platform</h3>
+        <p>Available on macOS, Windows, and Linux with native look and feel.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5" />
+            <circle cx="17.5" cy="10.5" r=".5" />
+            <circle cx="8.5" cy="7.5" r=".5" />
+            <circle cx="6.5" cy="12.5" r=".5" />
+            <path
+              d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+          </svg>
+        </div>
+        <h3>10+ Themes</h3>
+        <p>Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        </div>
+        <h3>Image Export</h3>
+        <p>Export JSON as beautiful images with syntax highlighting for easy sharing, powered by Rust-native rendering.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 3v18h18" />
+            <path d="M18 17V9" />
+            <path d="M13 17V5" />
+            <path d="M8 17v-3" />
+          </svg>
+        </div>
+        <h3>JSON Statistics</h3>
+        <p>Real-time display of key count, nesting depth, byte size, and line count.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+        </div>
+        <h3>i18n Support</h3>
+        <p>Full Chinese and English interface with one-click language switching.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon c3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
+        <h3>100% Offline</h3>
+        <p>All data stays on your machine. No server, no upload, complete privacy.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section class="section" id="compare">
+    <div class="section-header">
+      <h2 class="section-title">Why <span class="gold">JsonStudio</span>?</h2>
+      <p class="section-desc">See how JsonStudio compares to online JSON tools and other editors.</p>
+    </div>
+    <div class="comparison">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Online Tools</th>
+            <th>JsonStudio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Offline / No Internet Required</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Data Privacy (100% Local)</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Large JSON Data Performance</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Multi-tab Editing</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Tree View & JMESPath / JSONPath Query</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Log-like Text JSON Extraction</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>JSON5 Parsing and Formatting</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Auto-Save and Reusable File Tabs</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Ad-Free Experience</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Global Shortcuts & Custom Keybindings</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Image Export</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Local File Operations</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Custom Settings (Theme, Font, Spacing, Shortcuts...)</td>
+            <td class="cross">✗</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>JSON Schema Generation & Validation</td>
+            <td class="check">✓</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>Code Generation</td>
+            <td class="check">✓</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>JSON Converter (YAML/XML/...)</td>
+            <td class="check">✓</td>
+            <td class="check highlight">✓</td>
+          </tr>
+          <tr>
+            <td>JSON Diff</td>
+            <td class="check">✓</td>
+            <td class="check highlight">✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="section">
+    <div class="section-header">
+      <h2 class="section-title">Built with <span class="gold">Modern</span> Tech</h2>
+      <p class="section-desc">Leveraging the best tools for performance, security, and developer experience.</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-pill">Rust</div>
+      <div class="tech-pill">JavaScript</div>
+      <div class="tech-pill">Tauri 2.0</div>
+      <div class="tech-pill">Svelte 5</div>
+      <div class="tech-pill">Monaco Editor</div>
+    </div>
+  </section>
+
+
+  <!-- More Resources -->
+  <section class="resources">
+    <h2 class="resource-title">More Resources</h2>
+    <div class="resource-grid">
+      <a href="/json-formatter" class="resource-card"><strong>JSON Formatter</strong><span>Format, validate, and repair
+          JSON/JSON5</span></a>
+      <a href="/json-diff" class="resource-card"><strong>JSON Diff Tool</strong><span>Compare JSON files and API
+          responses side by side</span></a>
+      <a href="/json-converter" class="resource-card"><strong>JSON Converter</strong><span>Convert between YAML, XML,
+          TOML, and CSV</span></a>
+      <a href="/json-schema" class="resource-card"><strong>JSON Schema</strong><span>Generate and validate
+          schemas</span></a>
+      <a href="/code-generator" class="resource-card"><strong>Code Generator</strong><span>Generate typed code from
+          JSON</span></a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 JsonStudio · <span>MIT License</span></div>
+      <div class="footer-links">
+        <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+        <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">Releases</a>
+        <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">Issues</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lightbox Modal -->
+  <div id="imageModal" class="modal" onclick="closeModal()">
+    <img id="modalImg" src="">
   </div>
-</nav>
 
-<!-- Hero -->
-<section class="hero">
-  <img src="icon.png" alt="JsonStudio" class="hero-icon">
-  <div class="hero-kicker">Local-first JSON workspace</div>
-  <h1><span class="gold">Json</span>Studio</h1>
-  <p class="hero-sub">A fast, private JSON workspace for everyday development. Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs, all locally in a native desktop app.</p>
-  <div class="hero-actions">
-    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Download Now</span>
-    </a>
-    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      <span>View on GitHub</span>
-    </a>
-  </div>
-</section>
+  <script>
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImg');
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    const storageKey = 'jsonstudio-site-theme';
 
-<!-- Stats -->
-<section class="stats">
-  <div class="stats-grid">
-    <div class="stat-item"><div class="stat-value">$0</div><div class="stat-label">Free & Open Source</div></div>
-    <div class="stat-item"><div class="stat-value">&lt;1s</div><div class="stat-label">Launch Time</div></div>
-    <div class="stat-item"><div class="stat-value">3</div><div class="stat-label">Platforms</div></div>
-    <div class="stat-item"><div class="stat-value">10+</div><div class="stat-label">Themes</div></div>
-    <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label">Local & Private</div></div>
-  </div>
-</section>
+    function applyTheme(theme) {
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      try {
+        localStorage.setItem(storageKey, nextTheme);
+      } catch { }
+      if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
 
-<!-- Why Different -->
-<section class="positioning" id="why">
-  <div class="section-header">
-    <h2 class="section-title">Built for <span class="gold">Real</span> JSON Work</h2>
-    <p class="section-desc">JsonStudio is shaped around the payloads developers actually handle: API responses, escaped strings, JSON5-like fragments, nested objects, and logs where text and JSON are mixed together.</p>
-  </div>
-  <div class="positioning-grid">
-    <div class="positioning-card is-wide">
-      <h3>Private by default, polished like a desktop app</h3>
-      <p>No network required, no browser tab juggling, no ads, and no upload risk. Your sensitive JSON stays on your machine while native shortcuts, always-on-top, and local file handling keep the workflow quick.</p>
-    </div>
-    <div class="positioning-card c-green">
-      <h3>Smarter formatting</h3>
-      <p>Handles strict JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, repairable fragments, and paste auto-formatting.</p>
-    </div>
-    <div class="positioning-card c-blue">
-      <h3>Review complex data</h3>
-      <p>Tree view, JMESPath/JSONPath query, real-time statistics, and side-by-side diff make large payloads easier to read and verify.</p>
-    </div>
-    <div class="positioning-card c-purple">
-      <h3>Daily file workflow</h3>
-      <p>Multi-tabs, numbered Untitled documents, reused tabs for reopened files, unsaved prompts, optional auto-save, drag-and-drop, and file association.</p>
-    </div>
-    <div class="positioning-card c-pink">
-      <h3>Developer toolbox</h3>
-      <p>Prettify, minify, escape, unescape, minify + escape, fold/unfold, Schema generation/validation, format conversion, and typed code generation.</p>
-    </div>
-  </div>
-</section>
+      document.querySelectorAll('img[data-dark-src][data-light-src]').forEach(img => {
+        img.src = nextTheme === 'light' ? img.dataset.lightSrc : img.dataset.darkSrc;
+      });
 
-<!-- Screenshots -->
-<section class="screenshots" id="screenshots">
-  <div class="screenshots-inner">
-    <div class="screenshot-box">
-      <img id="main-screenshot" class="theme-image" src="images_en/app_home_page_dark_mode.png" data-dark-src="images_en/app_home_page_dark_mode.png" data-light-src="images_en/app_home_page_light_mode.png" alt="JsonStudio Screenshot" style="width:100%; height:100%; object-fit:cover;">
-    </div>
-  </div>
-</section>
+      if (themeToggle) {
+        const label = nextTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+        themeToggle.setAttribute('aria-label', label);
+        themeToggle.setAttribute('title', label);
+      }
 
-<!-- Feature Showcase -->
-<section class="section" id="features">
-  <div class="section-header">
-    <h2 class="section-title"><span class="gold">Core</span> Features</h2>
-    <p class="section-desc">Built for daily JSON work: prettify, view, query, log extraction, Diff, Converter, JSON Schema, Code Gen, and Minify/Escape.</p>
-  </div>
+      if (modal.style.display === 'flex' && modalImg.dataset.darkSrc && modalImg.dataset.lightSrc) {
+        modalImg.src = nextTheme === 'light' ? modalImg.dataset.lightSrc : modalImg.dataset.darkSrc;
+      }
+    }
 
-  <div class="showcase">
-    <!-- 1. Editor -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge green">EDITOR</span>
-        <h3>Professional JSON Formatter & Viewer</h3>
-        <p>Built on Monaco Editor (the engine of VS Code), delivering a top-tier JSON/JSON5 formatting and prettify experience.</p>
-        <ul>
-          <li>Syntax highlighting with bracket pair colorization</li>
-          <li>Multi-tab editing with drag-and-drop reordering</li>
-          <li>Code folding, minimap, and find & replace</li>
-          <li>Auto-detect and format pasted JSON, JSON5, and escaped JSON</li>
-          <li>Preserve original object key order by default during formatting</li>
-          <li>10+ color themes including Dracula, Nord, and One Dark</li>
-        </ul>
-        <p style="margin-top:16px"><a href="/json-formatter" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/editor_dark.png" data-dark-src="images_en/editor_dark.png" data-light-src="images_en/editor.png" alt="JSON Editor" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
+    applyTheme(document.documentElement.dataset.theme);
 
-    <!-- 2. Tree & Query -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge blue">NAVIGATE</span>
-        <h3>Tree View, JMESPath & JSONPath Query</h3>
-        <p>Visualize complex JSON/JSON5 structures as an interactive tree. Navigate, search, and query with ease.</p>
-        <ul>
-          <li>Collapsible tree with type-colored icons</li>
-          <li>Click any node to jump to its position in the editor</li>
-          <li>Copy path and value with one click</li>
-          <li>Switch between JMESPath and JSONPath query modes</li>
-          <li>Real-time match highlighting with automatic ancestor expansion</li>
-          <li>Resizable panel width for comfortable viewing</li>
-        </ul>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/tree_view_dark.png" data-dark-src="images_en/tree_view_dark.png" data-light-src="images_en/tree_view.png" alt="JSON Tree View" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
+    themeToggle?.addEventListener('click', () => {
+      applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+    });
 
-    <!-- 3. Log JSON extraction -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge orange">LOGS</span>
-        <h3>Extract JSON from Logs and Mixed Text</h3>
-        <p>When logs, error stacks, or API debug text contain structured payloads, JsonStudio finds the useful fragments without replacing your original editor content.</p>
-        <ul>
-          <li>Detect JSON, JSON5-like, escaped JSON, and repairable fragments</li>
-          <li>Group multiple fragments so each result is easy to inspect and copy</li>
-          <li>Keep the source text unchanged while showing formatted output in a panel</li>
-          <li>Resizable panel width and height for long debugging sessions</li>
-        </ul>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/log_fragment_dark.png" data-dark-src="images_en/log_fragment_dark.png" data-light-src="images_en/log_fragment.png" alt="Log JSON extraction" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
+    document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {
+      img.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        modalImg.src = img.src;
+        modalImg.dataset.darkSrc = img.dataset.darkSrc || '';
+        modalImg.dataset.lightSrc = img.dataset.lightSrc || '';
+        document.body.style.overflow = 'hidden'; // Prevent scroll
+      });
+    });
 
-    <!-- 4. Convert -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge purple">CONVERT</span>
-        <h3>JSON Converter</h3>
-        <p>Convert JSON to YAML, XML, TOML, and CSV without leaving the desktop workflow.</p>
-        <ul>
-          <li>Bidirectional conversion: JSON ↔ YAML, XML, TOML, CSV</li>
-          <li>CSV rainbow column highlighting for readability</li>
-          <li>Clean dedicated conversion view with format selectors</li>
-          <li>Useful when moving payloads between APIs, config files, and data tools</li>
-        </ul>
-        <p style="margin-top:16px"><a href="/json-converter" style="color:var(--accent);text-decoration:none">Converter →</a></p>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/convert_dark.png" data-dark-src="images_en/convert_dark.png" data-light-src="images_en/convert.png" alt="JSON Converter" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
+    function closeModal() {
+      modal.style.display = 'none';
+      document.body.style.overflow = ''; // Restore scroll
+    }
 
-    <!-- 5. Code Gen -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge blue">CODE GEN</span>
-        <h3>Typed Code Generation</h3>
-        <p>Generate type-safe models from JSON, or extract JSON back from supported code snippets.</p>
-        <ul>
-          <li>Generate TypeScript, Go, Python, Java, Rust, and more</li>
-          <li>Reverse conversion: paste code to extract JSON</li>
-          <li>Quickly bootstrap DTOs, API models, and config types</li>
-          <li>Keep generated structures close to the source payload</li>
-        </ul>
-        <p style="margin-top:16px"><a href="/code-generator" style="color:var(--accent);text-decoration:none">Code Gen →</a></p>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/code_gen_dark.png" data-dark-src="images_en/code_gen_dark.png" data-light-src="images_en/code_gen.png" alt="Code Generation" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
-
-    <!-- 6. JSON Schema -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge pink">SCHEMA</span>
-        <h3>JSON Schema Generation & Validation</h3>
-        <p>Generate JSON Schema from any JSON data, or validate your data against an existing schema — all in a dedicated view.</p>
-        <ul>
-          <li>One-click schema generation from JSON data</li>
-          <li>Validate JSON against any JSON Schema with detailed error reports</li>
-          <li>Dedicated schema page with side-by-side editing</li>
-        </ul>
-        <p style="margin-top:16px"><a href="/json-schema" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/json_schema_dark.png" data-dark-src="images_en/json_schema_dark.png" data-light-src="images_en/json_schema.png" alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
-
-    <!-- 7. Efficiency & Shortcuts -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge orange">EFFICIENCY</span>
-        <h3>Shortcuts, Auto-save & File Workflow</h3>
-        <p>Native desktop capabilities keep JSON work close to everyday development: open, save, watch, and reuse tabs with less friction.</p>
-        <ul>
-          <li>Global shortcut to launch or bring the app to front instantly</li>
-          <li>One-key paste & prettify: format clipboard JSON instantly</li>
-          <li>Optional auto-save for modified file-backed tabs</li>
-          <li>Reopen the same file into the existing tab instead of duplicating it</li>
-          <li>Prompt before closing unsaved work; auto-number new documents as Untitled-1, Untitled-2</li>
-          <li>Window always-on-top toggle for multitasking</li>
-          <li>File association: double-click .json to open directly, with external change detection</li>
-        </ul>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/settings_dark.png" data-dark-src="images_en/settings_dark.png" data-light-src="images_en/settings.png" alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
-
-    <!-- 8. Diff & More Tools -->
-    <div class="showcase-row">
-      <div class="showcase-text">
-        <span class="showcase-badge green">TOOLS</span>
-        <h3>JSON Diff, Minify/Escape & More Tools</h3>
-        <p>A practical toolbox focused on JSON Diff, minify/escape, repair, and export.</p>
-        <ul>
-          <li>Side-by-side diff with inline change highlighting</li>
-          <li>Diff mode also supports auto-formatting after paste</li>
-          <li>Diff line count statistics in status bar</li>
-          <li>Escape / unescape / minify utilities</li>
-          <li>Drag & drop JSON files to open instantly</li>
-          <li>Export JSON as beautiful images with syntax highlighting for easy sharing</li>
-        </ul>
-        <p style="margin-top:16px"><a href="/json-diff" style="color:var(--accent);text-decoration:none">Learn more →</a></p>
-      </div>
-      <div class="showcase-visual"><img class="theme-image" src="images_en/json_diff_dark.png" data-dark-src="images_en/json_diff_dark.png" data-light-src="images_en/json_diff.png" alt="JSON Diff" style="width:100%; height:100%; object-fit:cover;"></div>
-    </div>
-  </div>
-</section>
-
-<!-- More Features Grid -->
-<section class="section">
-  <div class="section-header">
-    <h2 class="section-title">And <span class="gold">Much</span> More</h2>
-    <p class="section-desc">Every detail is crafted for developer productivity.</p>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon c6">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-      </div>
-      <h3>JSON Repair</h3>
-      <p>One-click auto-repair of invalid JSON — fix missing quotes, trailing commas, and more.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c5">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h16"/><path d="m17 9 3 3-3 3"/></svg>
-      </div>
-      <h3>Log JSON Extraction</h3>
-      <p>Find JSON, JSON5-like, escaped JSON, and repairable fragments in logs and mixed text.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c2">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
-      </div>
-      <h3>Auto-save</h3>
-      <p>Automatically save modified file-backed tabs, with a prompt before closing unsaved work.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c4">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg>
-      </div>
-      <h3>JSON5 Support</h3>
-      <p>The editor, formatter, tree view, and paste normalization understand flexible JSON5 syntax.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c1">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></svg>
-      </div>
-      <h3>Lightweight</h3>
-      <p>Small install size and low memory footprint, powered by Tauri and Rust.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c2">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-      </div>
-      <h3>Instant Launch</h3>
-      <p>Launches in under a second. No loading screens, no waiting.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c3">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-      </div>
-      <h3>Cross-Platform</h3>
-      <p>Available on macOS, Windows, and Linux with native look and feel.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c4">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-      </div>
-      <h3>10+ Themes</h3>
-      <p>Dracula, Nord, One Dark, Solarized, and more. Switch between light and dark with one click.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c5">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-      </div>
-      <h3>Image Export</h3>
-      <p>Export JSON as beautiful images with syntax highlighting for easy sharing, powered by Rust-native rendering.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c1">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-      </div>
-      <h3>JSON Statistics</h3>
-      <p>Real-time display of key count, nesting depth, byte size, and line count.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c2">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      </div>
-      <h3>i18n Support</h3>
-      <p>Full Chinese and English interface with one-click language switching.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon c3">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <h3>100% Offline</h3>
-      <p>All data stays on your machine. No server, no upload, complete privacy.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Comparison -->
-<section class="section" id="compare">
-  <div class="section-header">
-    <h2 class="section-title">Why <span class="gold">JsonStudio</span>?</h2>
-    <p class="section-desc">See how JsonStudio compares to online JSON tools and other editors.</p>
-  </div>
-  <div class="comparison">
-    <table>
-      <thead>
-        <tr>
-          <th>Feature</th>
-          <th>Online Tools</th>
-          <th>JsonStudio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Offline / No Internet Required</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Data Privacy (100% Local)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Large JSON Data Performance</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Multi-tab Editing</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Tree View & JMESPath / JSONPath Query</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Log-like Text JSON Extraction</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>JSON5 Parsing and Formatting</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Auto-save and Reusable File Tabs</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Ad-Free Experience</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Global Shortcuts & Custom Keybindings</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Image Export</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Local File Operations</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>Custom Settings (Theme, Font, Spacing, Shortcuts...)</td><td class="cross">✗</td><td class="check highlight">✓</td></tr>
-        <tr><td>JSON Schema Generation & Validation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
-        <tr><td>Code Generation</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
-        <tr><td>JSON Converter (YAML/XML/...)</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
-        <tr><td>JSON Diff</td><td class="check">✓</td><td class="check highlight">✓</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<!-- Tech Stack -->
-<section class="section">
-  <div class="section-header">
-    <h2 class="section-title">Built with <span class="gold">Modern</span> Tech</h2>
-    <p class="section-desc">Leveraging the best tools for performance, security, and developer experience.</p>
-  </div>
-  <div class="tech-grid">
-    <div class="tech-pill">Rust</div>
-    <div class="tech-pill">JavaScript</div>
-    <div class="tech-pill">Tauri 2.0</div>
-    <div class="tech-pill">Svelte 5</div>
-    <div class="tech-pill">Monaco Editor</div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta">
-  <h2>Ready to Supercharge Your JSON Workflow?</h2>
-  <p>Free, open source, and available on all major platforms.</p>
-  <div class="hero-actions">
-    <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Download Now</span>
-    </a>
-    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      <span>View on GitHub</span>
-    </a>
-  </div>
-</section>
-
-<div class="download-note">
-  <strong>macOS note:</strong> choose <code>aarch64</code> for Apple Silicon and <code>x64</code> for Intel. Current macOS builds are not Apple Developer ID notarized, so first launch may require right-clicking <strong>Json Studio.app</strong> and choosing <strong>Open</strong>.
-</div>
-
-<!-- More Resources -->
-<section class="resources">
-  <h2 class="resource-title">More Resources</h2>
-  <div class="resource-grid">
-    <a href="/json-formatter" class="resource-card"><strong>JSON Formatter</strong><span>Format, validate, and repair JSON/JSON5</span></a>
-    <a href="/json-diff" class="resource-card"><strong>JSON Diff Tool</strong><span>Compare JSON files and API responses side by side</span></a>
-    <a href="/json-converter" class="resource-card"><strong>JSON Converter</strong><span>Convert between YAML, XML, TOML, and CSV</span></a>
-    <a href="/json-schema" class="resource-card"><strong>JSON Schema</strong><span>Generate and validate schemas</span></a>
-    <a href="/code-generator" class="resource-card"><strong>Code Generator</strong><span>Generate typed code from JSON</span></a>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-left">&copy; 2026 JsonStudio · <span>MIT License</span></div>
-    <div class="footer-links">
-      <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
-      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">Releases</a>
-      <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">Issues</a>
-    </div>
-  </div>
-</footer>
-
-<!-- Lightbox Modal -->
-<div id="imageModal" class="modal" onclick="closeModal()">
-  <img id="modalImg" src="">
-</div>
-
-<script>
-const modal = document.getElementById('imageModal');
-const modalImg = document.getElementById('modalImg');
-const themeToggle = document.getElementById('theme-toggle');
-const themeMeta = document.querySelector('meta[name="theme-color"]');
-const storageKey = 'jsonstudio-site-theme';
-
-function applyTheme(theme) {
-  const nextTheme = theme === 'light' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = nextTheme;
-  try {
-    localStorage.setItem(storageKey, nextTheme);
-  } catch {}
-  if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
-
-  document.querySelectorAll('img[data-dark-src][data-light-src]').forEach(img => {
-    img.src = nextTheme === 'light' ? img.dataset.lightSrc : img.dataset.darkSrc;
-  });
-
-  if (themeToggle) {
-    const label = nextTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
-    themeToggle.setAttribute('aria-label', label);
-    themeToggle.setAttribute('title', label);
-  }
-
-  if (modal.style.display === 'flex' && modalImg.dataset.darkSrc && modalImg.dataset.lightSrc) {
-    modalImg.src = nextTheme === 'light' ? modalImg.dataset.lightSrc : modalImg.dataset.darkSrc;
-  }
-}
-
-applyTheme(document.documentElement.dataset.theme);
-
-themeToggle?.addEventListener('click', () => {
-  applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
-});
-
-document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {
-  img.addEventListener('click', () => {
-    modal.style.display = 'flex';
-    modalImg.src = img.src;
-    modalImg.dataset.darkSrc = img.dataset.darkSrc || '';
-    modalImg.dataset.lightSrc = img.dataset.lightSrc || '';
-    document.body.style.overflow = 'hidden'; // Prevent scroll
-  });
-});
-
-function closeModal() {
-  modal.style.display = 'none';
-  document.body.style.overflow = ''; // Restore scroll
-}
-
-// Close with Escape key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeModal();
-});
-</script>
+    // Close with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
 </body>
+
 </html>
