@@ -89,6 +89,12 @@ jobs:
             exit 1
           fi
 
+          # Replace the linker-generated signature with a complete ad-hoc app bundle signature.
+          # This still is not notarization, but it avoids distributing a bundle that macOS
+          # treats as malformed before users can use the normal Gatekeeper override flow.
+          codesign --force --deep --sign - "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
           mkdir -p "$DMG_ROOT" "$BUNDLE_DIR/dmg"
           cp -R "$APP_PATH" "$DMG_ROOT/"
           ln -s /Applications "$DMG_ROOT/Applications"
