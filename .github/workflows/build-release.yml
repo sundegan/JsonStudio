@@ -111,19 +111,71 @@ jobs:
 
           mkdir -p "$DMG_ROOT" "$BUNDLE_DIR/dmg"
           cp -R "$APP_PATH" "$DMG_ROOT/"
-          ln -s /Applications "$DMG_ROOT/Applications"
-          cp "src-tauri/dmg/README_EN.txt" "$DMG_ROOT/README - English.txt"
-          cp "src-tauri/dmg/README_ZH.txt" "$DMG_ROOT/安装说明 - 中文.txt"
+          mkdir -p "$DMG_ROOT/.background"
+          cp "src-tauri/dmg/background.png" "$DMG_ROOT/.background/background.png"
 
           rm -f "$DMG_PATH"
-          hdiutil create -volname "Json Studio" -srcfolder "$DMG_ROOT" -ov -format UDZO "$DMG_PATH"
+          RW_DMG="$TEMP_DIR/Json Studio.rw.dmg"
+          MOUNT_DIR="/Volumes/Json Studio"
+
+          hdiutil detach "$MOUNT_DIR" >/dev/null 2>&1 || true
+          hdiutil create -volname "Json Studio" -srcfolder "$DMG_ROOT" -ov -format UDRW "$RW_DMG"
+          hdiutil attach "$RW_DMG" -readwrite -noverify -noautoopen
+
+          osascript <<'APPLESCRIPT'
+          set applicationsFolder to POSIX file "/Applications" as alias
+          tell application "Finder"
+            tell disk "Json Studio"
+              make new alias file at it to applicationsFolder with properties {name:"Applications"}
+            end tell
+          end tell
+          APPLESCRIPT
+
+          swift - <<'SWIFT'
+          import AppKit
+
+          let iconPath = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns"
+          let aliasPath = "/Volumes/Json Studio/Applications"
+          guard
+            let icon = NSImage(contentsOfFile: iconPath),
+            NSWorkspace.shared.setIcon(icon, forFile: aliasPath, options: [])
+          else {
+            fatalError("Failed to apply Applications folder icon")
+          }
+          SWIFT
+
+          osascript <<'APPLESCRIPT'
+          tell application "Finder"
+            tell disk "Json Studio"
+              open
+              set current view of container window to icon view
+              set toolbar visible of container window to false
+              set statusbar visible of container window to false
+              set the bounds of container window to {120, 120, 780, 520}
+              set viewOptions to the icon view options of container window
+              set arrangement of viewOptions to not arranged
+              set icon size of viewOptions to 96
+              set background picture of viewOptions to file ".background:background.png"
+              set position of item "Json Studio.app" of container window to {180, 220}
+              set position of item "Applications" of container window to {480, 220}
+              close
+              open
+              update without registering applications
+              delay 2
+            end tell
+          end tell
+          APPLESCRIPT
+
+          sync
+          hdiutil detach "$MOUNT_DIR"
+          hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH"
 
           if [ ! -f "$DMG_PATH" ]; then
             echo "❌ Failed to create macOS DMG at: $DMG_PATH"
             exit 1
           fi
 
-          echo "✓ macOS DMG created with install guides: $DMG_PATH"
+          echo "✓ macOS DMG created with drag-to-install layout: $DMG_PATH"
           ls -lh "$DMG_PATH"
           rm -rf "$TEMP_DIR"
 

@@ -1,0 +1,9 @@
+<svg width="660" height="400" viewBox="0 0 660 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="660" height="400" fill="#F6F7F9"/>
+  <rect x="0.5" y="0.5" width="659" height="399" stroke="#D8DDE6"/>
+  <text x="330" y="84" fill="#18202A" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="18" text-anchor="middle">
+    If first launch is blocked, allow it in System Settings &gt; Privacy &amp; Security.
+  </text>
+  <path d="M246 220H414" stroke="#52606D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M386 194L414 220L386 246" stroke="#52606D" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
