@@ -226,4 +226,6 @@ export default {
   'gridView.expandAll': '全部展开',
   'gridView.collapseAll': '全部折叠',
   'gridView.noMatches': '无匹配结果',
+  'gridView.editValue': '编辑值',
+  'gridView.invalidEdit': '值格式无效',
 } as const;

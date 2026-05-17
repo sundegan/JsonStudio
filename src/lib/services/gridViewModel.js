@@ -3,6 +3,7 @@
  *   value: unknown;
  *   path: string;
  *   expandable: boolean;
+ *   exists: boolean;
  * }} GridCell
  *
  * @typedef {{
@@ -50,11 +51,12 @@ function childPath(parentPath, key) {
  * @param {string} path
  * @returns {GridCell}
  */
-function createCell(value, path) {
+function createCell(value, path, exists = true) {
   return {
     value,
     path,
     expandable: isPlainObject(value) || Array.isArray(value),
+    exists,
   };
 }
 
@@ -111,6 +113,7 @@ export function buildGridRoot(value, path = '/', showHeader = true) {
               createCell(
                 Object.prototype.hasOwnProperty.call(entry, column) ? entry[column] : null,
                 childPath(rowPath, column),
+                Object.prototype.hasOwnProperty.call(entry, column),
               ),
             ),
           );

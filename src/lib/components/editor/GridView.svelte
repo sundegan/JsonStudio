@@ -14,8 +14,12 @@
     shouldClearGridSelection,
     updateGridSelections,
   } from '$lib/services/gridSelection.js';
+  import {
+    createGridValueEdit,
+    isGridCellEditable,
+  } from '$lib/services/gridEdit.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   let { content, editor } = $props<{ content: string; editor: MonacoEditor | null }>();
@@ -24,6 +28,7 @@
     value: unknown;
     path: string;
     expandable: boolean;
+    exists: boolean;
   };
 
   type GridRow = {
@@ -44,7 +49,7 @@
   type GridState =
     | { kind: 'empty' }
     | { kind: 'invalid'; error: string }
-    | { kind: 'ok'; root: GridModel; pointers: Record<string, any> };
+    | { kind: 'ok'; root: GridModel; pointers: Record<string, any>; dialect: 'JSON' | 'JSON5' };
 
   type GridSelectionTarget = 'key' | 'value' | 'row';
 
@@ -58,11 +63,18 @@
   let expandedPaths = $state(new Set<string>());
   let selections = $state<GridSelection[]>([]);
   let selectionAnchor = $state<GridSelection | null>(null);
+  let editingPath = $state<string | null>(null);
+  let editingValue = $state('');
+  let editingError = $state('');
+  let editInput = $state<HTMLInputElement | null>(null);
 
   $effect(() => {
     content;
     selections = [];
     selectionAnchor = null;
+    editingPath = null;
+    editingValue = '';
+    editingError = '';
   });
 
   let gridState = $derived.by<GridState>(() => {
@@ -71,7 +83,12 @@
 
     try {
       const parsed = parseJsonDocument(content);
-      return { kind: 'ok', root: buildGridRoot(parsed.data), pointers: parsed.pointers };
+      return {
+        kind: 'ok',
+        root: buildGridRoot(parsed.data),
+        pointers: parsed.pointers,
+        dialect: parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON',
+      };
     } catch (error) {
       return {
         kind: 'invalid',
@@ -158,6 +175,47 @@
   function clearSelections() {
     selections = [];
     selectionAnchor = null;
+  }
+
+  function startEditing(event: MouseEvent, cell: GridCell) {
+    event.stopPropagation();
+    editingPath = cell.path;
+    editingValue = cell.value === null ? 'null' : String(cell.value);
+    editingError = '';
+    tick().then(() => editInput?.focus());
+  }
+
+  function handleEditInput(event: Event) {
+    editingValue = (event.currentTarget as HTMLInputElement).value;
+    editingError = '';
+  }
+
+  function commitEdit(cell: GridCell) {
+    if (gridState.kind !== 'ok' || editingPath !== cell.path) return;
+
+    const result = createGridValueEdit(
+      content,
+      gridState.pointers,
+      cell.path,
+      cell.value,
+      editingValue,
+      gridState.dialect,
+    );
+
+    if (!result.ok || !('edit' in result)) {
+      editingError =
+        'error' in result && typeof result.error === 'string'
+          ? result.error
+          : $t('gridView.invalidEdit');
+      return;
+    }
+
+    editor?.replaceRangeByOffsets(result.edit.start, result.edit.end, result.edit.text);
+    editingPath = null;
+    editingValue = '';
+    editingError = '';
+    clearSelections();
+    editor?.clearExternalSelectionHighlights();
   }
 
   function isSelected(path: string, target: GridSelection['target']) {
@@ -281,7 +339,7 @@
       </button>
     </div>
 
-    {#snippet renderCell(cell: GridCell, label: string | number)}
+    {#snippet renderCell(cell: GridCell, label: string | number, editable: boolean)}
       {#if cell.expandable}
         {@const child = getGridChild(cell)}
         <div class="gv-nested">
@@ -308,9 +366,39 @@
           {/if}
         </div>
       {:else}
-        <span class="gv-cell gv-cell--{cellType(cell.value)}" title={cell.path}>
-          {summarizeGridValue(cell.value)}
-        </span>
+        <div class="gv-value-shell">
+          {#if editable && editingPath === cell.path}
+            <input
+              bind:this={editInput}
+              class="gv-edit-input"
+              class:gv-edit-input--error={Boolean(editingError)}
+              value={editingValue}
+              oninput={handleEditInput}
+              onblur={() => commitEdit(cell)}
+              title={editingError || cell.path}
+            />
+            {#if editingError}
+              <span class="gv-edit-error">{editingError}</span>
+            {/if}
+          {:else}
+            <span class="gv-cell gv-cell--{cellType(cell.value)}" title={cell.path}>
+              {summarizeGridValue(cell.value)}
+            </span>
+            {#if editable}
+              <button
+                class="gv-edit-btn"
+                onclick={(event) => startEditing(event, cell)}
+                type="button"
+                title={$t('gridView.editValue')}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+              </button>
+            {/if}
+          {/if}
+        </div>
       {/if}
     {/snippet}
 
@@ -332,13 +420,14 @@
               <tr class="gv-tr" class:gv-tr--selected={isSelected(row.path, 'row')}>
                 {#each row.cells as cell, cellIndex}
                   {@const cellSelection = getGridSelectionForCell(model, row, cellIndex)}
+                  {@const editable = cellSelection.target === 'value' && isGridCellEditable(cell)}
                   <td
                     class="gv-td"
                     class:gv-td--selected={cellSelection.target !== 'row' && isSelected(cellSelection.path, 'value')}
                     onmousedown={handleCellMouseDown}
                     onclick={(event) => handleCellClick(event, model, row, cellIndex)}
                   >
-                    {@render renderCell(cell, cellLabel(model, row, cellIndex))}
+                    {@render renderCell(cell, cellLabel(model, row, cellIndex), editable)}
                   </td>
                 {/each}
               </tr>
@@ -573,6 +662,63 @@
     white-space: nowrap;
     color: var(--text-primary);
     font-size: 12px;
+  }
+  .gv-value-shell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .gv-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .gv-td:hover .gv-edit-btn,
+  .gv-edit-btn:focus-visible {
+    opacity: 1;
+  }
+  .gv-edit-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .gv-edit-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .gv-edit-input {
+    min-width: 110px;
+    height: 24px;
+    padding: 0 7px;
+    border: 1px solid color-mix(in srgb, var(--accent) 65%, var(--border));
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+    outline: none;
+  }
+  .gv-edit-input--error {
+    border-color: var(--error, #ef4444);
+  }
+  .gv-edit-error {
+    color: var(--error, #ef4444);
+    font-size: 11px;
+    white-space: nowrap;
   }
   .gv-cell--null { color: var(--text-tertiary); font-style: italic; }
   .gv-cell--object,

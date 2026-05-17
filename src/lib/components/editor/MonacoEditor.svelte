@@ -344,6 +344,28 @@
     }
   }
 
+  export function replaceRangeByOffsets(start: number, end: number, text: string) {
+    if (!editor) return;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const startPosition = model.getPositionAt(start);
+    const endPosition = model.getPositionAt(end);
+    model.pushEditOperations(
+      [],
+      [{
+        range: {
+          startLineNumber: startPosition.lineNumber,
+          startColumn: startPosition.column,
+          endLineNumber: endPosition.lineNumber,
+          endColumn: endPosition.column,
+        },
+        text,
+      }],
+      () => null,
+    );
+  }
+
   export function getValue(): string {
     return editor?.getValue() || '';
   }
