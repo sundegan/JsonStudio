@@ -102,6 +102,13 @@ export function updateGridSelections(current, next, options = {}) {
 }
 
 /**
+ * @param {{ closest?: (selector: string) => unknown } | null | undefined} target
+ */
+export function shouldClearGridSelection(target) {
+  return !target?.closest?.('.gv-table');
+}
+
+/**
  * @param {unknown} value
  * @param {string} path
  */

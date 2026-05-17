@@ -11,9 +11,11 @@
     getGridSelectionForCell,
     getGridSelectionRange,
     getGridSelectionText,
+    shouldClearGridSelection,
     updateGridSelections,
   } from '$lib/services/gridSelection.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
+  import { onMount } from 'svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   let { content, editor } = $props<{ content: string; editor: MonacoEditor | null }>();
@@ -153,6 +155,11 @@
     }
   }
 
+  function clearSelections() {
+    selections = [];
+    selectionAnchor = null;
+  }
+
   function isSelected(path: string, target: GridSelection['target']) {
     return selections.some((selection) => selection.path === path && selection.target === target);
   }
@@ -170,6 +177,17 @@
       console.error('Failed to copy grid selection:', error);
     }
   }
+
+  onMount(() => {
+    function handleDocumentPointerDown(event: PointerEvent) {
+      if (selections.length === 0) return;
+      if (!shouldClearGridSelection(event.target as { closest?: (selector: string) => unknown } | null)) return;
+      clearSelections();
+    }
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown);
+    return () => document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  });
 
   $effect(() => {
     if (gridState.kind !== 'ok' || selections.length === 0) {

@@ -4,6 +4,7 @@ import {
   getGridSelectionForCell,
   getGridSelectionRange,
   getGridSelectionText,
+  shouldClearGridSelection,
   updateGridSelections,
 } from '../src/lib/services/gridSelection.js';
 import { buildGridRoot } from '../src/lib/services/gridViewModel.js';
@@ -116,4 +117,22 @@ test('uses cell paths for object-array cell selections', () => {
     path: '/0/name',
     target: 'value',
   });
+});
+
+test('clears grid selection when clicking outside a table', () => {
+  assert.equal(
+    shouldClearGridSelection({
+      closest: (selector) => (selector === '.gv-table' ? null : undefined),
+    }),
+    true,
+  );
+});
+
+test('keeps grid selection when clicking inside any table', () => {
+  assert.equal(
+    shouldClearGridSelection({
+      closest: (selector) => (selector === '.gv-table' ? {} : null),
+    }),
+    false,
+  );
 });
