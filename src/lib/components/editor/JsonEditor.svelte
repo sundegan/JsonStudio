@@ -12,7 +12,7 @@
   import TabBar from './TabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
-  import JsonTreeView from './JsonTreeView.svelte';
+  import RightViewPanel from './RightViewPanel.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
   import LogJsonFragmentsPanel from './LogJsonFragmentsPanel.svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
@@ -27,6 +27,7 @@
     MAX_LOG_JSON_INPUT_LENGTH,
   } from '$lib/services/logJsonFragments.js';
   import { normalizePastedStandaloneJson } from '$lib/services/standaloneJsonPasteNormalize.js';
+  import { clampPanelWidth, getDefaultPanelWidth } from '$lib/services/panelResize.js';
   import { t } from '$lib/i18n';
 
   type LogJsonFragment = {
@@ -94,10 +95,9 @@
   });
   let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
-  const TREE_MIN_WIDTH = 260;
-  const TREE_MAX_WIDTH = 640;
-  let treeViewWidth = $state(320);
+  let treeViewWidth = $state(380);
   let isResizingTreeView = $state(false);
+  let mainWorkspaceEl: HTMLDivElement | null = null;
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -231,6 +231,17 @@
     
     shortcutsStore.init();
 
+    let workspaceResizeObserver: ResizeObserver | null = null;
+    if (mainWorkspaceEl) {
+      treeViewWidth = getDefaultPanelWidth(mainWorkspaceEl.clientWidth);
+      workspaceResizeObserver = new ResizeObserver(([entry]) => {
+        if (isResizingTreeView) return;
+        treeViewWidth = clampPanelWidth(treeViewWidth, entry.contentRect.width);
+        monacoEditor?.getEditorInstance()?.layout();
+      });
+      workspaceResizeObserver.observe(mainWorkspaceEl);
+    }
+
     const handleKeydown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
@@ -307,6 +318,7 @@
     window.addEventListener('keydown', handleKeydown);
     
     return () => {
+      workspaceResizeObserver?.disconnect();
       if (unlistenFormatted) unlistenFormatted();
       if (unlistenRaw) unlistenRaw();
       if (unlistenFileDrop) unlistenFileDrop();
@@ -799,22 +811,20 @@
     });
   }
 
-  function clampTreeWidth(width: number) {
-    return Math.min(TREE_MAX_WIDTH, Math.max(TREE_MIN_WIDTH, width));
-  }
-
   function startTreeResize(event: PointerEvent) {
-    if (!showTreeView) return;
+    if (!showTreeView || !mainWorkspaceEl) return;
 
     event.preventDefault();
     const startX = event.clientX;
     const startWidth = treeViewWidth;
+    const workspaceWidth = mainWorkspaceEl.clientWidth;
     isResizingTreeView = true;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!isResizingTreeView) return;
       const delta = startX - moveEvent.clientX;
-      treeViewWidth = clampTreeWidth(startWidth + delta);
+      treeViewWidth = clampPanelWidth(startWidth + delta, workspaceWidth);
+      requestAnimationFrame(() => monacoEditor?.getEditorInstance()?.layout());
     };
 
     const handlePointerUp = () => {
@@ -1194,9 +1204,13 @@
   {/if}
   
   <!-- Main content area: Tab Bar + Editor + Tree View -->
-  <div class="flex flex-1 min-h-0" class:resizing-tree-view={isResizingTreeView}>
+  <div
+    bind:this={mainWorkspaceEl}
+    class="json-main-workspace"
+    class:resizing-tree-view={isResizingTreeView}
+  >
     <!-- Left section: Tab Bar + Editor -->
-    <div class="flex flex-col flex-1 min-w-0">
+    <div class="json-editor-left">
       <!-- Tab Bar - show different tab bars based on mode -->
       {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && tabsState.tabs.length > 1}
         <TabBar 
@@ -1317,22 +1331,22 @@
       </div>
     </div>
 
-    <!-- Right section: Tree View (spans full height below toolbar) -->
+    <!-- Right section: Unified view panel (Tree / Grid / Graph) -->
     {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel && !isLogJsonTreeSuppressedPendingDetection}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="json-tree-resizer"
         role="separator"
         aria-orientation="vertical"
-        aria-label="Resize tree view"
+        aria-label="Resize view panel"
         tabindex="0"
         onpointerdown={startTreeResize}
       ></div>
       <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
-        <JsonTreeView
+        <RightViewPanel
           content={content}
           editor={monacoEditor}
-          on:toast={(event) => showToast(event.detail.message)}
+          onToast={showToast}
         />
       </div>
     {/if}

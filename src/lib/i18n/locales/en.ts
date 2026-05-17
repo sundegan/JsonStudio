@@ -207,4 +207,23 @@ export default {
   'logJson.close': 'Close panel',
   'logJson.resize': 'Resize fragment list',
   'logJson.resizeHeight': 'Resize result panel',
+
+  // Right panel tabs
+  'rightPanel.hide': 'Hide view panel',
+  'rightPanel.tree': 'Tree',
+  'rightPanel.grid': 'Grid',
+  'rightPanel.graph': 'Graph',
+  'rightPanel.graphComingSoon': 'Graph View Coming Soon',
+  'rightPanel.graphComingSoonHint': 'Visualize JSON as an interactive node graph to understand complex nested structures',
+  'rightPanel.graphTagNodeGraph': 'Node graph',
+  'rightPanel.graphTagForceLayout': 'Force layout',
+
+  // Grid View
+  'gridView.noData': 'No JSON Data',
+  'gridView.noDataHint': 'Enter valid JSON to view as a table',
+  'gridView.invalidJson': 'Invalid JSON Format',
+  'gridView.searchPlaceholder': 'Filter rows...',
+  'gridView.expandAll': 'Expand all',
+  'gridView.collapseAll': 'Collapse all',
+  'gridView.noMatches': 'No matching rows',
 } as const;

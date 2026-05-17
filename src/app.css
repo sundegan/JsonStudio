@@ -163,6 +163,20 @@ body {
 }
 
 /* Editor workspace layout */
+.json-main-workspace {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.json-editor-left {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .json-editor-workspace {
   display: flex;
   flex-direction: column;
@@ -192,6 +206,7 @@ body {
   display: flex;
   height: 100%;
   min-height: 0;
+  min-width: 280px;
   flex-shrink: 0;
   overflow: visible;
   border-left: 1px solid var(--border);
@@ -246,49 +261,6 @@ body {
   border-left: 1px solid var(--border);
   overflow: visible;
   flex: 1;
-}
-
-.json-tree-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.json-tree-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 5px;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  opacity: 0.5;
-}
-
-.json-tree-close-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  opacity: 1;
-}
-
-.json-tree-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 /* Toolbar */

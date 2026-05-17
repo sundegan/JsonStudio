@@ -207,4 +207,23 @@ export default {
   'logJson.close': '关闭面板',
   'logJson.resize': '调整片段列表宽度',
   'logJson.resizeHeight': '调整结果面板高度',
+
+  // Right panel tabs
+  'rightPanel.hide': '隐藏视图面板',
+  'rightPanel.tree': '树形',
+  'rightPanel.grid': '表格',
+  'rightPanel.graph': '图形',
+  'rightPanel.graphComingSoon': '图形视图即将推出',
+  'rightPanel.graphComingSoonHint': '将 JSON 渲染为可交互的节点图，帮助直观理解复杂嵌套结构',
+  'rightPanel.graphTagNodeGraph': '节点图',
+  'rightPanel.graphTagForceLayout': '力导向布局',
+
+  // Grid View
+  'gridView.noData': '暂无 JSON 数据',
+  'gridView.noDataHint': '输入有效的 JSON 查看表格',
+  'gridView.invalidJson': '无效的 JSON 格式',
+  'gridView.searchPlaceholder': '搜索过滤行...',
+  'gridView.expandAll': '全部展开',
+  'gridView.collapseAll': '全部折叠',
+  'gridView.noMatches': '无匹配结果',
 } as const;

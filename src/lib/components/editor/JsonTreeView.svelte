@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { openUrl } from '@tauri-apps/plugin-opener';
-  import { settingsStore } from '$lib/stores/settings';
   import { t } from '$lib/i18n';
+  import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import type MonacoEditor from './MonacoEditor.svelte';
 
@@ -102,21 +102,7 @@
     treeError = '';
 
     try {
-      const { parse } = await import('@mischnic/json-sourcemap');
-
-      // Try to parse as standard JSON first
-      let parsed;
-      try {
-        parsed = parse(content, undefined, { dialect: 'JSON' });
-      } catch (jsonError) {
-        // If standard JSON fails, try JSON5
-        try {
-          parsed = parse(content, undefined, { dialect: 'JSON5' });
-        } catch (json5Error) {
-          // If both fail, throw the original error
-          throw jsonError;
-        }
-      }
+      const parsed = parseJsonDocument(content);
 
       rootData = parsed.data;
       const nodes = parseToTree(parsed.data, parsed.pointers, '');
@@ -425,34 +411,6 @@
 <svelte:window onclick={hideHelp} />
 
 <div class="json-tree-panel">
-  <!-- Header -->
-  <div class="json-tree-header">
-    <div class="flex items-center gap-2">
-      <div class="json-tree-icon">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="2" width="6" height="6" rx="1"/>
-          <rect x="3" y="14" width="6" height="6" rx="1"/>
-          <rect x="15" y="14" width="6" height="6" rx="1"/>
-          <path d="M12 8v3"/>
-          <path d="M12 11h-6"/>
-          <path d="M12 11h6"/>
-          <path d="M6 14v-3"/>
-          <path d="M18 14v-3"/>
-        </svg>
-      </div>
-      <div style="font-size: 14px;" class="font-semibold text-(--text-primary)">{$t('treeView.title')}</div>
-    </div>
-    <button
-      class="json-tree-close-btn"
-      onclick={() => settingsStore.updateSetting('showTreeView', false)}
-      title={$t('treeView.hide')}
-      type="button"
-    >
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 6L6 18M6 6l12 12"/>
-      </svg>
-    </button>
-  </div>
 
   <!-- Toolbar -->
   <div class="json-tree-toolbar">
