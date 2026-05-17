@@ -80,3 +80,11 @@ test('editor setValue keeps destructive operations undoable through Monaco edits
   assert.match(setValueBody, /pushEditOperations/);
   assert.doesNotMatch(setValueBody, /editor\.setValue\(newValue\)/);
 });
+
+test('editor range replacement keeps grid edits undoable through Monaco edits', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url), 'utf8');
+  const replaceBody = source.match(/export function replaceRangeByOffsets\(start: number, end: number, text: string\) \{[\s\S]*?\n  \}/)?.[0] || '';
+
+  assert.match(replaceBody, /pushEditOperations/);
+  assert.match(replaceBody, /getPositionAt/);
+});

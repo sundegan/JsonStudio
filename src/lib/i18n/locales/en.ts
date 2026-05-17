@@ -226,4 +226,6 @@ export default {
   'gridView.expandAll': 'Expand all',
   'gridView.collapseAll': 'Collapse all',
   'gridView.noMatches': 'No matching rows',
+  'gridView.editValue': 'Edit value',
+  'gridView.invalidEdit': 'Invalid value',
 } as const;
