@@ -172,16 +172,20 @@
   }
 
   $effect(() => {
-    if (gridState.kind !== 'ok' || selections.length === 0) return;
+    if (gridState.kind !== 'ok' || selections.length === 0) {
+      editor?.clearExternalSelectionHighlights();
+      return;
+    }
 
     const editorInstance = editor?.getEditorInstance();
     const model = editorInstance?.getModel();
     if (!editorInstance || !model) return;
 
-    const ranges = selections
+    const sourceRanges = selections
       .map((selection) => getGridSelectionRange(gridState.pointers, selection.path, selection.target))
-      .filter((range): range is { start: number; end: number } => range !== null)
-      .map((range) => {
+      .filter((range): range is { start: number; end: number } => range !== null);
+
+    const ranges = sourceRanges.map((range) => {
         const start = model.getPositionAt(range.start);
         const end = model.getPositionAt(Math.max(range.start + 1, range.end));
         return {
@@ -192,9 +196,24 @@
         };
       });
 
-    if (ranges.length === 0) return;
+    if (ranges.length === 0) {
+      editor?.clearExternalSelectionHighlights();
+      return;
+    }
 
     editorInstance.setSelections(ranges);
+    editor?.setExternalSelectionHighlights(
+      sourceRanges.map((range) => {
+        const start = model.getPositionAt(range.start);
+        const end = model.getPositionAt(Math.max(range.start + 1, range.end));
+        return {
+          startLineNumber: start.lineNumber,
+          startColumn: start.column,
+          endLineNumber: end.lineNumber,
+          endColumn: end.column,
+        };
+      }),
+    );
     editorInstance.revealPositionInCenter({
       lineNumber: ranges[0].selectionStartLineNumber,
       column: ranges[0].selectionStartColumn,

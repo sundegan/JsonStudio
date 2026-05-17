@@ -127,6 +127,7 @@
   let container: HTMLDivElement;
   let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
+  let externalSelectionDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
   let editorDomNode: HTMLElement | null = null;
   let findWidgetHoverHandler: ((event: MouseEvent) => void) | null = null;
   
@@ -316,6 +317,8 @@
     }
     findWidgetHoverHandler = null;
     editorDomNode = null;
+    externalSelectionDecorations?.clear();
+    externalSelectionDecorations = null;
     editor?.dispose();
   });
   
@@ -398,6 +401,36 @@
   export function getEditorInstance() {
     return editor;
   }
+
+  export function setExternalSelectionHighlights(ranges: Monaco.Range[]) {
+    if (!editor || !monaco) return;
+
+    const decorations = ranges.map((range) => ({
+      range,
+      options: {
+        className: 'json-external-selection',
+        isWholeLine: false,
+      },
+    }));
+
+    if (!externalSelectionDecorations) {
+      externalSelectionDecorations = editor.createDecorationsCollection(decorations);
+      return;
+    }
+
+    externalSelectionDecorations.set(decorations);
+  }
+
+  export function clearExternalSelectionHighlights() {
+    externalSelectionDecorations?.clear();
+  }
 </script>
 
 <div bind:this={container} class="w-full h-full min-h-[200px]"></div>
+
+<style>
+  :global(.json-external-selection) {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    border-radius: 2px;
+  }
+</style>
