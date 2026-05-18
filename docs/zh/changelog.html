@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>更新日志 - JsonStudio</title>
+<meta name="description" content="追踪 JsonStudio 的演进过程。每一次发布都让我们离完美的 JSON 编辑器更近一步。">
+<meta name="author" content="sundegan">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="canonical" href="https://jsonstudio.js.org/zh/changelog">
+<link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/changelog">
+<link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/changelog">
+<link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/changelog">
+
+<!-- Open Graph -->
+<meta property="og:title" content="更新日志 - JsonStudio">
+<meta property="og:description" content="追踪 JsonStudio 的演进过程。每一次发布都让我们离完美的 JSON 编辑器更近一步。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jsonstudio.js.org/zh/changelog">
+<meta property="og:image" content="https://jsonstudio.js.org/icon.png">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
+
+<script>
+  (() => {
+    let savedTheme = null;
+    try {
+      savedTheme = localStorage.getItem('jsonstudio-site-theme');
+    } catch { }
+    const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+  })();
+</script>
+
+<link rel="stylesheet" href="../global.css">
+</head><body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/zh/" class="nav-brand"><img src="../icon.png" alt="JsonStudio">JsonStudio</a>
+    <div class="nav-right">
+      <a href="/zh/#features" class="nav-link">功能</a>
+      <a href="/zh/changelog" class="nav-link active">更新日志</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+        </svg>
+        GitHub
+      </a>
+      <button class="theme-btn" type="button" id="theme-toggle" aria-label="切换到浅色主题"
+        title="切换到浅色主题">
+        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
+        </svg>
+        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z" />
+        </svg>
+      </button>
+      <a href="/changelog" class="lang-btn" hreflang="en" lang="en">English</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <div class="breadcrumb-list">
+    <a href="/zh/">首页</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>更新日志</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+    变更记录
+  </span>
+  <h1>版本<span class="gold">记录</span></h1>
+  <p class="hero-sub">追踪 JsonStudio 的演进过程。每一次发布都让我们离完美的 JSON 编辑器更近一步。</p>
+</section>
+
+<!-- Content -->
+<section class="section">
+  <div class="changelog-container">
+    <div class="timeline">
+      
+      <!-- v1.2.1 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.2.1</span>
+          <span class="timeline-date">2026-05-14</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>日志 JSON 片段可视化增强</strong>：加强日志片段提取后的高亮与结果展示，便于快速定位和查看结构化内容。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>编辑器与标签页体验</strong>：提升语言模式切换一致性，优化 JSON/JSON5 连续编辑体验，并改善标签切换时相关面板响应速度。</li>
+            <li><strong>文档与官网体验优化</strong>：更新 README 与官网文案，完善功能演示分区，并优化明暗主题下的演示展示一致性。</li>
+            <li><strong>发布流程稳定性</strong>：改进构建与发布资源处理流程，提升打包输出的稳定性和可预期性。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li><strong>格式化与高亮一致性</strong>：修复若干 JSON5 格式化与混合内容高亮的边界问题。</li>
+            <li><strong>日志审查交互噪音</strong>：减少日志片段场景中的无效提示和干扰性光标/高亮表现。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.2.1" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v1.2.1
+          </a>
+        </div>
+      </div>
+
+      <!-- v1.2.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.2.0</span>
+          <span class="timeline-date">2026-05-08</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>自动保存</strong>：新增可选的自动保存设置，可自动保存已关联文件且存在改动的标签页。</li>
+            <li><strong>日志类文本与 JSON 混合内容格式化</strong>：在日志等普通文本和 JSON 数据混合的内容中检测 JSON、类 JSON/JSON5、转义 JSON、可修复 JSON 片段，保持原始编辑器内容不被替换，并将提取出的 JSON 数据格式化为结构化结果展示。</li>
+            <li><strong>新建文档自动编号</strong>：新文档使用 <code>Untitled-1</code>、<code>Untitled-2</code> 等名称，便于区分多个未命名标签页。</li>
+            <li><strong>日志 JSON 提取单测</strong>：覆盖混合日志、多片段、类 JSON/JSON5、转义 JSON、无 JSON 内容、字符串内括号等场景。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>粘贴格式化体验</strong>：Diff 模式支持粘贴后自动格式化；普通编辑模式下对独立 JSON/JSON5/转义 JSON 进行合适的自动格式化。</li>
+            <li><strong>文件标签页体验</strong>：关闭未保存文件前提示，重新打开文件时复用已有 tab，格式化等会改写内容的操作保持可撤销。</li>
+            <li><strong>桌面端标题栏主题适配</strong>：macOS 窗口标题栏背景跟随深色/浅色主题，减少突兀的白色标题栏。</li>
+            <li><strong>快捷键注册稳定性</strong>：快捷键注册失败时不再导致应用启动失败。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li><strong>JSON 格式化顺序</strong>：默认格式化时保留对象 key 原始顺序，不再按字母排序。</li>
+            <li><strong>异步粘贴竞态</strong>：避免粘贴后的异步格式化在用户继续输入后覆盖新内容。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.2.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v1.2.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v1.1.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.1.0</span>
+          <span class="timeline-date">2026-03-10</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>Tree View 新增 JSONPath 查询模式</strong>：在树形视图工具栏中加入查询模式切换器，支持在 <code>JMESPath</code> 和 <code>JSONPath</code> 之间直接切换。</li>
+            <li><strong>支持 JSON5 语法</strong>：编辑器和Tree View支持 JSON5 数据的解析和匹配。</li>
+            <li><strong>JSON 工具独立页面</strong>：为 JSON Formatter、Converter、Schema、Diff 等工具新增独立站点页面。</li>
+            <li><strong>搜索引擎站点验证</strong>：补充 Google、百度、360 搜索、搜狗等站点验证元数据。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>编辑器高亮体验</strong>：优化 JSON/JSON5 的高亮反馈，提升查询和定位时的可读性。</li>
+            <li><strong>项目站点 SEO 优化</strong>：优化页面标题、描述、功能文案和 favicon 展示。</li>
+            <li><strong>文档内容更新</strong>：更新 README 中的网站链接与 badge 格式，为代码生成功能文档补充深色模式截图。</li>
+            <li><strong>Schema 视图细节优化</strong>：简化静态分隔图标样式，使界面更干净一致。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li><strong>桌面端 Monaco 初始化</strong>：改为使用打包内置的 Monaco 实例，提高桌面构建下的初始化稳定性。</li>
+            <li><strong>错误图标样式</strong>：调整错误图标的圆形细节。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.1.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v1.1.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v1.0.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.0.0</span>
+          <span class="timeline-date">2026-03-05</span>
+        </div>
+        <div class="timeline-body">
+          <p><strong>🎉 首个稳定版本发布！</strong></p>
+          <h3>新增</h3>
+          <ul>
+            <li><strong>文件监听系统</strong>：自动检测文件被外部程序修改并重新加载。</li>
+            <li><strong>多文件拖放支持</strong>：支持一次性拖放多个文件到应用中打开。</li>
+            <li><strong>智能 Tab 复用</strong>：打开文件时，会复用空的 Untitled tab，而不是总是创建新 tab。</li>
+            <li><strong>工具栏横向滚动</strong>：当窗口过窄时，工具栏支持横向滚动。</li>
+            <li><strong>可复用的确认对话框组件</strong>：现代化、可自定义的确认对话框，替代浏览器原生 confirm。</li>
+            <li><strong>重置所有快捷键</strong>：设置面板新增按钮，可一键将所有快捷键重置为默认值。</li>
+            <li><strong>GitHub Pages 项目主页</strong>：完整的项目网站，支持中英文双语。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>提高 localStorage 限制</strong>：单个 tab 的内容大小限制从 100KB 提升到 1MB。</li>
+            <li><strong>改进窗口尺寸约束</strong>：确保所有工具栏按钮始终可见。</li>
+            <li><strong>增强 Tab 管理</strong>：修复不一致并优化切换/关闭逻辑。</li>
+            <li><strong>重新设计的色彩系统</strong>：改进对比度并统一 UI 元素。</li>
+            <li><strong>现代化的 UI 组件</strong>：在所有视图和面板中提供高级外观。</li>
+            <li><strong>增强的工具栏功能</strong>：更好的校验和用户反馈。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li><strong>Tab 管理问题</strong>：修复命名和活动状态问题。</li>
+            <li><strong>文件操作</strong>：修复统计信息和内容同步问题。</li>
+            <li><strong>界面问题</strong>：修复按钮可见性和图标渲染问题。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.0.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v1.0.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.5.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.5.0</span>
+          <span class="timeline-date">2026-03-04</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li>图片导出功能，基于 Rust 原生渲染。</li>
+            <li>JSON Schema 生成与验证。</li>
+            <li>多种编程语言的代码生成。</li>
+            <li>JSON 与 YAML、XML、TOML、CSV 双向转换。</li>
+            <li>一键修复 JSON 数据。</li>
+            <li>完整的全中英文国际化。</li>
+            <li>编辑器快捷键可自定义。</li>
+            <li>新增 Rose Ivy 浅色主题。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li>工具栏布局与图标优化。</li>
+            <li>树视图布局与响应式表现。</li>
+            <li>Diff 编辑器样式。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li>修复冷启动时文件关联打开显示空白的问题。</li>
+            <li>修复大内容图片导出空白/模糊的问题。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.5.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v0.5.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.4.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.4.0</span>
+          <span class="timeline-date">2026-02-28</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>JMESPath 查询支持</strong>：强大的 JSON 查询能力，实时高亮匹配。</li>
+            <li><strong>新增配色主题</strong>：Dracula、Nord、Solarized Light 等。</li>
+            <li><strong>JSON 文件关联</strong>：在系统中注册 .json 文件类型。</li>
+            <li><strong>Tree View 关闭按钮</strong>：快速隐藏 Tree View 面板。</li>
+            <li><strong>JMESPath 帮助弹窗</strong>：内置包含示例的快速参考。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>复制路径 + 值</strong>：同时复制 JMESPath 和值。</li>
+            <li><strong>展开/折叠切换</strong>：带动态图标的单个按钮。</li>
+            <li><strong>JSON 错误显示</strong>：更清晰的警告图标和消息。</li>
+            <li><strong>设置面板</strong>：重构布局以提升可读性。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li>修复查找组件的 hover 事件冒泡。</li>
+            <li>修复切换标签页时编辑器内容未保存。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.4.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v0.4.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.3.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.3.0</span>
+          <span class="timeline-date">2026-01-13</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>多标签支持</strong>：实现带拖拽排序的标签管理。</li>
+            <li><strong>标签右键菜单</strong>：固定标签、关闭其他标签、关闭所有标签。</li>
+            <li><strong>JSON 树形视图</strong>：在树形面板中可视化 JSON 结构。</li>
+            <li><strong>JSON 查询面板</strong>：使用 JSONPath 或 JSON Pointer 查询数据。</li>
+            <li><strong>对比模式支持多标签</strong>：对比模式下独立的标签管理。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li>树形视图侧边栏高度与布局。</li>
+            <li>状态栏高亮与字体大小。</li>
+            <li>统一标签栏高度与样式。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.3.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v0.3.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.2.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.2.0</span>
+          <span class="timeline-date">2026-01-11</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li>文件操作：新建/打开/保存/另存为，及拖拽支持。</li>
+            <li>对比模式：编辑器内 JSON 对比。</li>
+            <li>粘贴自动格式化。</li>
+            <li>变更记录文档（发布说明）。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.2.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v0.2.0
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.1.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.1.0</span>
+          <span class="timeline-date">2026-01-07</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li>初始版本发布。</li>
+            <li>JSON 格式化与压缩。</li>
+            <li>转义/反转义工具。</li>
+            <li>JSON 统计与校验。</li>
+            <li>基于 Monaco 的 JSON 编辑器，支持语法高亮。</li>
+            <li>主题切换与编辑器设置。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.1.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v0.1.0
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">&copy; 2026 JsonStudio · <span>MIT 许可证</span></div>
+    <div class="footer-links">
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">版本发布</a>
+      <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">问题反馈</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const storageKey = 'jsonstudio-site-theme';
+
+  function applyTheme(theme) {
+    const nextTheme = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    try {
+      localStorage.setItem(storageKey, nextTheme);
+    } catch { }
+    if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
+
+    if (themeToggle) {
+      const label = nextTheme === 'light' ? '切换到深色主题' : '切换到浅色主题';
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
+    }
+  }
+
+  applyTheme(document.documentElement.dataset.theme);
+
+  themeToggle?.addEventListener('click', () => {
+    applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+  });
+</script>
+
+</body>
+</html>
