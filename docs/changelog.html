@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog - JsonStudio</title>
+<meta name="description" content="Track the evolution of JsonStudio. Every release brings us closer to the perfect JSON editor.">
+<meta name="author" content="sundegan">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="canonical" href="https://jsonstudio.js.org/changelog">
+<link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/changelog">
+<link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/changelog">
+<link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/changelog">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Changelog - JsonStudio">
+<meta property="og:description" content="Track the evolution of JsonStudio. Every release brings us closer to the perfect JSON editor.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jsonstudio.js.org/changelog">
+<meta property="og:image" content="https://jsonstudio.js.org/icon.png">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
+
+<link rel="stylesheet" href="global.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
+    <div class="nav-right">
+      <a href="/#features" class="nav-link">Features</a>
+      <a href="/json-diff" class="nav-link">Diff</a>
+      <a href="/json-converter" class="nav-link">Converter</a>
+      <a href="/changelog" class="nav-link active">Changelog</a>
+      <a href="/zh/changelog" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <div class="breadcrumb-list">
+    <a href="/">Home</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>Changelog</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+    CHANGELOG
+  </span>
+  <h1>Version <span class="gold">History</span></h1>
+  <p class="hero-sub">Track the evolution of JsonStudio. Every release brings us closer to the perfect JSON editor.</p>
+</section>
+
+<!-- Content -->
+<section class="section">
+  <div class="changelog-container">
+    <div class="timeline">
+      
+      <!-- v1.2.1 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.2.1</span>
+          <span class="timeline-date">2026-05-14</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li><strong>Log JSON fragment visibility</strong>: enhanced log-fragment readability with clearer extraction highlighting and improved result presentation.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li><strong>Editor and tab experience</strong>: smoother language-mode consistency, better JSON/JSON5 editing continuity, and faster panel response during tab switching.</li>
+            <li><strong>Documentation and website polish</strong>: refreshed README and website messaging, improved feature showcases, and refined light/dark demo presentation.</li>
+            <li><strong>Release workflow resilience</strong>: improved release asset/build handling for more predictable packaging output.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li><strong>Formatting and highlighting consistency</strong>: resolved several edge cases affecting JSON5 formatting and mixed-content syntax highlighting behavior.</li>
+            <li><strong>Interaction noise in log review</strong>: reduced distracting cursor/highlight artifacts and unnecessary prompts during log-fragment workflows.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.2.1" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v1.2.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.2.0</span>
+          <span class="timeline-date">2026-05-08</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li><strong>Auto-save</strong>: add an optional auto-save setting to save modified file-backed tabs automatically.</li>
+            <li><strong>Mixed log-like text and JSON formatting</strong>: detect JSON, JSON5-like, escaped JSON, and repairable JSON fragments inside log-like text, keep the original editor content unchanged, and display the extracted JSON data as formatted structured results.</li>
+            <li><strong>Auto-numbered untitled tabs</strong>: new documents are named <code>Untitled-1</code>, <code>Untitled-2</code>, and so on for easier tab identification.</li>
+            <li><strong>Unit tests for log JSON extraction</strong>: cover mixed logs, multiple fragments, JSON5-like input, escaped JSON, invalid content, and braces inside strings.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li><strong>Paste normalization</strong>: auto-format pasted JSON in diff mode and standalone JSON/JSON5/escaped JSON in normal editor mode where appropriate.</li>
+            <li><strong>File tab workflow</strong>: prompt before closing unsaved changes, reuse an already opened file tab instead of opening duplicates, and keep destructive editor operations undoable.</li>
+            <li><strong>Desktop titlebar theming</strong>: align the macOS window titlebar background with the active light/dark theme.</li>
+            <li><strong>Shortcut registration robustness</strong>: prevent application startup failure when shortcut registration fails.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li><strong>JSON formatting order</strong>: preserve object key order instead of sorting keys alphabetically by default.</li>
+            <li><strong>Async paste race</strong>: avoid overwriting newer user edits when asynchronous paste formatting finishes after additional input.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.2.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v1.1.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.1.0</span>
+          <span class="timeline-date">2026-03-10</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li><strong>JSONPath query mode in Tree View</strong>: add a query mode switcher so users can choose between <code>JMESPath</code> and <code>JSONPath</code> directly in the Tree View toolbar.</li>
+            <li><strong>JSON5 syntax</strong>: The editor and Tree View support parsing and matching of JSON5 data.</li>
+            <li><strong>JSON tool landing pages</strong>: add dedicated website pages for JSON Formatter, Converter, Schema, and Diff.</li>
+            <li><strong>Search engine site verification</strong>: add site verification metadata for Google, Baidu, 360 Search, and Sogou.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li><strong>Editor highlighting</strong>: optimize JSON/JSON5 highlight feedback to improve readability during querying and navigation.</li>
+            <li><strong>Project website SEO</strong>: optimize page titles, descriptions, feature wording, and favicon display.</li>
+            <li><strong>Documentation updates</strong>: update website links and badge formatting in README, add dark-mode screenshots for code generation docs.</li>
+            <li><strong>Schema view details</strong>: simplify the static divider icon styling for a cleaner and more consistent appearance.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li><strong>Desktop Monaco initialization</strong>: initialize Monaco using the bundled instance to improve desktop build reliability.</li>
+            <li><strong>Error icon styling</strong>: adjust the circular details of the error icon.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.1.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v1.0.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.0.0</span>
+          <span class="timeline-date">2026-03-05</span>
+        </div>
+        <div class="timeline-body">
+          <p><strong>🎉 First Stable Release!</strong></p>
+          <h3>Added</h3>
+          <ul>
+            <li><strong>File watching system</strong>: Automatically detect and reload files when modified externally.</li>
+            <li><strong>Multi-file drag & drop</strong>: Support opening multiple files at once.</li>
+            <li><strong>Intelligent tab reuse</strong>: Reuse empty untitled tabs when opening files.</li>
+            <li><strong>Horizontal scrollbar for toolbar</strong>: Better support for narrow windows.</li>
+            <li><strong>Reusable ConfirmDialog component</strong>: Modern, customizable confirmation dialog.</li>
+            <li><strong>Reset all shortcuts</strong>: Quickly reset keyboard shortcuts to defaults.</li>
+            <li><strong>GitHub Pages landing page</strong>: Comprehensive project website with bilingual support.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li><strong>Increased localStorage limit</strong>: Raised limit from 100KB to 1MB per tab.</li>
+            <li><strong>Improved window size constraints</strong>: Ensures all toolbar buttons remain visible.</li>
+            <li><strong>Enhanced tab management</strong>: Fixed inconsistencies and optimized switching/closing logic.</li>
+            <li><strong>Redesigned color system</strong>: Improved contrast and unified UI elements.</li>
+            <li><strong>Modernized UI components</strong>: Premium look across all views and panels.</li>
+            <li><strong>Enhanced toolbar functionality</strong>: Better validation and user feedback.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li><strong>Tab management bugs</strong>: Resolved naming and active state issues.</li>
+            <li><strong>File operations</strong>: Fixed stats and content sync issues.</li>
+            <li><strong>UI issues</strong>: Resolved button visibility and icon rendering problems.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.0.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.5.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.5.0</span>
+          <span class="timeline-date">2026-03-04</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li>Image export powered by Rust-native rendering.</li>
+            <li>JSON Schema generation and validation.</li>
+            <li>Code generation in multiple programming languages.</li>
+            <li>Bidirectional conversion between JSON and YAML, XML, TOML, CSV.</li>
+            <li>One-click JSON data repair.</li>
+            <li>Full Chinese/English internationalization.</li>
+            <li>Customizable editor shortcuts.</li>
+            <li>New Rose Ivy light theme.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li>Toolbar layout and group dividers.</li>
+            <li>Tree View layout and responsiveness.</li>
+            <li>Diff editor styles.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li>Fixed file association opening blank on cold start.</li>
+            <li>Fixed image export blank/blurry for large content.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.5.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.4.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.4.0</span>
+          <span class="timeline-date">2026-02-28</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li><strong>JMESPath query support</strong>: Powerful JSON querying with real-time match highlighting.</li>
+            <li><strong>New color themes</strong>: Dracula, Nord, Solarized Light, and more.</li>
+            <li><strong>JSON file associations</strong>: Register .json file type in the system.</li>
+            <li><strong>Tree View close button</strong>: Quickly hide the Tree View panel.</li>
+            <li><strong>JMESPath help popover</strong>: Built-in quick reference with examples.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li><strong>Copy path + value</strong>: Copies both JMESPath and value.</li>
+            <li><strong>Expand/Collapse toggle</strong>: Single button with dynamic icon.</li>
+            <li><strong>JSON error display</strong>: Clearer warning icon and message.</li>
+            <li><strong>Settings panel</strong>: Refactored layout for better readability.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li>Fixed find widget hover event propagation.</li>
+            <li>Fixed editor content changes not being saved when switching tabs.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.4.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.3.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.3.0</span>
+          <span class="timeline-date">2026-01-13</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li><strong>Multi-tab support</strong>: implement tab management with drag-and-drop reordering.</li>
+            <li><strong>Tab context menu</strong>: Pin Tab, Close Other Tabs, Close All Tabs.</li>
+            <li><strong>JSON Tree View</strong>: Visualize JSON structure in a tree panel.</li>
+            <li><strong>JSON Query Panel</strong>: Query JSON data using JSONPath or JSON Pointer.</li>
+            <li><strong>Diff mode support multi-tab</strong>: Independent tab management in diff mode.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li>Tree View sidebar height and layout.</li>
+            <li>Status bar highlights and font size.</li>
+            <li>Unified tab bar height and styling.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.3.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.2.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.2.0</span>
+          <span class="timeline-date">2026-01-11</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li>File operations: new/open/save/save-as, plus drag-and-drop.</li>
+            <li>Diff mode for in-editor JSON comparison.</li>
+            <li>Auto-format on paste.</li>
+            <li>Changelog documentation for release notes.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.2.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+      <!-- v0.1.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v0.1.0</span>
+          <span class="timeline-date">2026-01-07</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li>Initial release.</li>
+            <li>JSON formatting and minification.</li>
+            <li>Escape/unescape utilities.</li>
+            <li>JSON statistics and validation.</li>
+            <li>Monaco-based JSON editor with syntax highlighting.</li>
+            <li>Theme switching and editor settings.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v0.1.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT License</span></div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/json-diff">JSON Diff</a>
+      <a href="/json-converter">Converter</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
