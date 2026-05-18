@@ -26,10 +26,21 @@
 <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
 <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
-<link rel="manifest" href="/site.webmanifest">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/site.webmanifest">
 
-<link rel="stylesheet" href="global.css">
+  <script>
+    (() => {
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('jsonstudio-site-theme');
+      } catch { }
+      const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+    })();
+  </script>
+
+  <link rel="stylesheet" href="global.css">
 </head>
 <body>
 
@@ -38,14 +49,34 @@
   <div class="nav-inner">
     <a href="/" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
     <div class="nav-right">
-      <a href="/json-formatter" class="nav-link">Formatter</a>
-      <a href="/json-converter" class="nav-link">Converter</a>
       <a href="/changelog" class="nav-link">Changelog</a>
-      <a href="/zh/json-diff" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        Star
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+        </svg>
+        GitHub
       </a>
+      <button class="theme-btn" type="button" id="theme-toggle" aria-label="Switch to light theme"
+        title="Switch to light theme">
+        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
+        </svg>
+        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z" />
+        </svg>
+      </button>
+      <a href="/zh/json-diff" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
     </div>
   </div>
 </nav>
@@ -175,7 +206,7 @@
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-inner">
-    <p>&copy; 2025 JsonStudio. Built for developers by developers.</p>
+    <p>&copy; 2026 JsonStudio. Built for developers by developers.</p>
     <div class="footer-links">
       <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
       <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">Feedback</a>

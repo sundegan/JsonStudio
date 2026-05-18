@@ -29,37 +29,68 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
 <link rel="manifest" href="/site.webmanifest">
 
+<script>
+  (() => {
+    let savedTheme = null;
+    try {
+      savedTheme = localStorage.getItem('jsonstudio-site-theme');
+    } catch { }
+    const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+  })();
+</script>
+
 <link rel="stylesheet" href="../global.css">
 </head>
 <body>
 
 <!-- Nav -->
 <nav class="nav">
-  <div class="nav-inner">
-    <a href="/zh/" class="nav-brand"><img src="../icon.png" alt="JsonStudio">JsonStudio</a>
-    <div class="nav-right">
-      <a href="/zh/json-formatter" class="nav-link">格式化</a>
-      <a href="/zh/json-diff" class="nav-link">对比</a>
-      <a href="/zh/json-converter" class="nav-link">转换</a>
-      <a href="/zh/changelog" class="nav-link">更新日志</a>
-      <a href="/json-validator" class="lang-btn" hreflang="en" lang="en">English</a>
-      <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        Star
-      </a>
-    </div>
+<div class="nav-inner">
+  <a href="/zh/" class="nav-brand"><img src="../icon.png" alt="JsonStudio">JsonStudio</a>
+  <div class="nav-right">
+    <a href="/zh/json-formatter" class="nav-link">格式化</a>
+    <a href="/zh/json-diff" class="nav-link">对比</a>
+    <a href="/zh/json-converter" class="nav-link">转换</a>
+    <a href="/zh/changelog" class="nav-link">更新日志</a>
+    <a href="/json-schema" class="lang-btn" hreflang="en" lang="en">English</a>
+    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+      </svg>
+      GitHub
+    </a>
+    <button class="theme-btn" type="button" id="theme-toggle" aria-label="切换到浅色主题" title="切换到浅色主题">
+      <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2" />
+        <path d="M12 20v2" />
+        <path d="m4.93 4.93 1.41 1.41" />
+        <path d="m17.66 17.66 1.41 1.41" />
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+        <path d="m6.34 17.66-1.41 1.41" />
+        <path d="m19.07 4.93-1.41 1.41" />
+      </svg>
+      <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z" />
+      </svg>
+    </button>
   </div>
+</div>
 </nav>
 
 <!-- Breadcrumb -->
 <div class="breadcrumb">
-  <div class="breadcrumb-list">
-    <a href="/zh/">首页</a>
-    <span class="breadcrumb-separator">/</span>
-    <span>JSON 验证</span>
-  </div>
+<div class="breadcrumb-list">
+  <a href="/zh/">首页</a>
+  <span class="breadcrumb-separator">/</span>
+  <span>JSON Schema</span>
 </div>
-
+</div>
 <!-- Hero -->
 <section class="hero">
   <span class="hero-badge">
@@ -245,7 +276,7 @@
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT 许可证</span></div>
+    <div class="footer-left">&copy; 2026 JsonStudio · <span>MIT 许可证</span></div>
     <div class="footer-links">
       <a href="/zh/">首页</a>
       <a href="/zh/json-formatter">JSON 格式化</a>
@@ -256,5 +287,26 @@
   </div>
 </footer>
 
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    const storageKey = 'jsonstudio-site-theme';
+
+    function applyTheme(theme) {
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      try {
+        localStorage.setItem(storageKey, nextTheme);
+      } catch { }
+      if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
+    }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.dataset.theme;
+        applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      });
+    }
+  </script>
 </body>
 </html>

@@ -29,7 +29,18 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
 <link rel="manifest" href="/site.webmanifest">
 
-<link rel="stylesheet" href="../global.css">
+  <script>
+    (() => {
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem('jsonstudio-site-theme');
+      } catch { }
+      const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+    })();
+  </script>
+
+  <link rel="stylesheet" href="../global.css">
 </head>
 <body>
 
@@ -42,11 +53,32 @@
       <a href="/zh/json-diff" class="nav-link">对比</a>
       <a href="/zh/json-converter" class="nav-link">转换</a>
       <a href="/zh/changelog" class="nav-link">更新日志</a>
-      <a href="/json-formatter" class="lang-btn" hreflang="en" lang="en">English</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        Star
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+        </svg>
+        GitHub
       </a>
+      <button class="theme-btn" type="button" id="theme-toggle" aria-label="切换到浅色主题" title="切换到浅色主题">
+        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
+        </svg>
+        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z" />
+        </svg>
+      </button>
+      <a href="../json-formatter.html" class="lang-btn" hreflang="en" lang="en">English</a>
     </div>
   </div>
 </nav>
@@ -81,7 +113,11 @@
 
 <!-- Screenshot -->
 <div class="screenshot-box">
-  <img src="../images_zh/editor_dark.png" alt="JsonStudio 中的 JSON 格式化工具">
+  <img src="../images_zh/editor_dark.png" 
+       data-dark-src="../images_zh/editor_dark.png"
+       data-light-src="../images_zh/editor.png" 
+       class="theme-image"
+       alt="JsonStudio 中的 JSON 格式化工具">
 </div>
 
 <!-- Content -->
@@ -246,16 +282,78 @@
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT 许可证</span></div>
+    <div class="footer-left">&copy; 2026 JsonStudio · <span>MIT 许可证</span></div>
     <div class="footer-links">
       <a href="/zh/">首页</a>
       <a href="/zh/json-diff">JSON 对比</a>
       <a href="/zh/json-converter">格式转换</a>
-      <a href="/zh/json-validator">Schema 验证</a>
+      <a href="/zh/json-schema">Schema 验证</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
     </div>
   </div>
 </footer>
+
+<!-- Lightbox Modal -->
+<div id="imageModal" class="modal" onclick="closeModal()">
+  <img id="modalImg" src="">
+</div>
+
+<script>
+  const modal = document.getElementById('imageModal');
+  const modalImg = document.getElementById('modalImg');
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const storageKey = 'jsonstudio-site-theme';
+
+  function applyTheme(theme) {
+    const nextTheme = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    try {
+      localStorage.setItem(storageKey, nextTheme);
+    } catch { }
+    if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
+
+    document.querySelectorAll('img[data-dark-src][data-light-src]').forEach(img => {
+      img.src = nextTheme === 'light' ? img.dataset.lightSrc : img.dataset.darkSrc;
+    });
+
+    if (themeToggle) {
+      const label = nextTheme === 'light' ? '切换到深色主题' : '切换到浅色主题';
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
+    }
+
+    if (modal.style.display === 'flex' && modalImg.dataset.darkSrc && modalImg.dataset.lightSrc) {
+      modalImg.src = nextTheme === 'light' ? modalImg.dataset.lightSrc : modalImg.dataset.darkSrc;
+    }
+  }
+
+  applyTheme(document.documentElement.dataset.theme);
+
+  themeToggle?.addEventListener('click', () => {
+    applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+  });
+
+  document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {
+    img.addEventListener('click', () => {
+      modal.style.display = 'flex';
+      modalImg.src = img.src;
+      modalImg.dataset.darkSrc = img.dataset.darkSrc || '';
+      modalImg.dataset.lightSrc = img.dataset.lightSrc || '';
+      document.body.style.overflow = 'hidden'; // Prevent scroll
+    });
+  });
+
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = ''; // Restore scroll
+  }
+
+  // Close with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
 
 </body>
 </html>
