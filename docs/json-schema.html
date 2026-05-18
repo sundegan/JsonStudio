@@ -308,5 +308,26 @@
   </div>
 </footer>
 
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    const storageKey = 'jsonstudio-site-theme';
+
+    function applyTheme(theme) {
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      try {
+        localStorage.setItem(storageKey, nextTheme);
+      } catch { }
+      if (themeMeta) themeMeta.content = nextTheme === 'light' ? '#f8fafc' : '#0a0a0f';
+    }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.dataset.theme;
+        applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      });
+    }
+  </script>
 </body>
 </html>
