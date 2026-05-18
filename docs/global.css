@@ -376,7 +376,7 @@ a:hover{opacity:.85}
   height: 14px;
   border-radius: 50%;
   background: var(--accent);
-  border: 3px solid var(--bg1);
+  border: 3px solid var(--bg);
   z-index: 2;
 }
 
@@ -404,7 +404,7 @@ a:hover{opacity:.85}
 .timeline-version {
   font-size: 24px;
   font-weight: 700;
-  color: var(--text1);
+  color: var(--text);
 }
 
 .timeline-date {
@@ -434,7 +434,7 @@ a:hover{opacity:.85}
 }
 
 .timeline-body strong {
-  color: var(--text1);
+  color: var(--text);
 }
 
 .release-link {
@@ -446,7 +446,7 @@ a:hover{opacity:.85}
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text1);
+  color: var(--text);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -463,3 +463,20 @@ a:hover{opacity:.85}
   width: 16px;
   height: 16px;
 }
+
+/* Add this at the end of the changelog section */
+@media (max-width: 600px) {
+  .changelog-container {
+    padding: 20px 16px;
+  }
+  .timeline {
+    padding-left: 30px;
+  }
+  .timeline-dot {
+    left: -30px;
+  }
+  .timeline-line {
+    left: -24px;
+  }
+}
+
