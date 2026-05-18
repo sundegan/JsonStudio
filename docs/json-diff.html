@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JSON Diff Tool - Compare JSON Files Side by Side | JsonStudio</title>
-<meta name="description" content="JsonStudio's JSON diff tool compares two JSON files side by side with syntax highlighting. See added, deleted, and modified lines instantly. Free desktop tool for macOS, Windows, Linux.">
-<meta name="keywords" content="JSON diff, JSON compare, JSON comparison, compare JSON, JSON diff tool, JSON difference, JSON compare online, JSON diff viewer, side by side JSON diff, JSON merge, compare two JSON files">
+<title>JSON Diff - Compare JSON Files Online & Offline | JsonStudio</title>
+<meta name="description" content="The best JSON diff tool for professional developers. Compare two JSON objects, find differences instantly, and merge changes. Side-by-side view with Monaco Editor integration.">
+<meta name="keywords" content="JSON diff, JSON compare, compare JSON, JSON difference, side by side JSON diff, online JSON diff, desktop JSON diff">
 <meta name="author" content="sundegan">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="theme-color" content="#0a0a0f">
@@ -15,8 +15,8 @@
 <link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-diff">
 
 <!-- Open Graph -->
-<meta property="og:title" content="JSON Diff Tool - Compare JSON Files | JsonStudio">
-<meta property="og:description" content="Compare two JSON files side by side with highlighting. Fast, offline JSON diff tool for developers.">
+<meta property="og:title" content="JSON Diff - Compare JSON Files | JsonStudio">
+<meta property="og:description" content="Compare JSON objects side-by-side with professional diff tools.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jsonstudio.js.org/json-diff">
 <meta property="og:image" content="https://jsonstudio.js.org/icon.png">
@@ -40,7 +40,7 @@
     <div class="nav-right">
       <a href="/json-formatter" class="nav-link">Formatter</a>
       <a href="/json-converter" class="nav-link">Converter</a>
-      <a href="/json-validator" class="nav-link">Validator</a>
+      <a href="/changelog" class="nav-link">Changelog</a>
       <a href="/zh/json-diff" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -62,11 +62,11 @@
 <!-- Hero -->
 <section class="hero">
   <span class="hero-badge">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M16 3h5v5M4 21L21 4M4 3h5v5M21 21L4 4"/></svg>
     JSON DIFF
   </span>
-  <h1><span class="gold">JSON Diff</span> Tool - Compare JSON Files</h1>
-  <p class="hero-sub">Compare two JSON files side by side with real-time syntax highlighting. See added, deleted, and modified lines instantly. Perfect for comparing API responses, config files, or data snapshots.</p>
+  <h1><span class="gold">JSON Diff</span> - Side-by-Side</h1>
+  <p class="hero-sub">Compare two JSON objects with professional accuracy. Highlight differences, detect changes, and merge content with a side-by-side view designed for developers.</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -80,157 +80,94 @@
 
 <!-- Screenshot -->
 <div class="screenshot-box">
-  <img src="images_en/json_diff_dark.png" alt="JSON Diff Tool in JsonStudio">
+  <img src="images_en/json_diff.png" alt="JSON Diff in JsonStudio">
 </div>
 
 <!-- Content -->
 <section class="section">
   <div class="content">
     <h2>What is JSON Diff?</h2>
-    <p>JSON diff (or JSON comparison) is the process of comparing two JSON files to identify differences between them. JsonStudio's JSON diff tool displays both files <strong>side by side</strong> with color-coded highlighting to show what's been added, deleted, or modified.</p>
+    <p>JSON Diff (Difference) is the process of comparing two JSON objects to find what has changed, been added, or been removed. It is essential for debugging API responses, tracking configuration changes, and merging data structures.</p>
 
-    <h2>Why Use JsonStudio JSON Diff Tool?</h2>
-    <p>JsonStudio's JSON diff tool is a <strong>native desktop application</strong> that outperforms online JSON diff tools in speed, privacy, and features.</p>
-
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon c1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
-        <h3>Real-time Comparison</h3>
-        <p>See differences instantly as you edit, no need to click "Compare".</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon c2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-        </div>
-        <h3>Color-coded Highlighting</h3>
-        <p>Green for additions, red for deletions, yellow for modifications.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon c3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-        </div>
-        <h3>Diff Statistics</h3>
-        <p>Status bar shows count of added, deleted, and modified lines.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon c4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-        </div>
-        <h3>Complete Privacy</h3>
-        <p>All comparison happens locally, your data never leaves your machine.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon c1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </div>
-        <h3>Large File Support</h3>
-        <p>Compare multi-MB JSON files without browser freezing.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon c2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-        </div>
-        <h3>No Ads</h3>
-        <p>Clean interface focused on productivity.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon c3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-        </div>
-        <h3>Offline</h3>
-        <p>Works without internet connection.</p>
-      </div>
-    </div>
-
-    <h2>JSON Diff Features</h2>
+    <h2>Key Features of JsonStudio Diff</h2>
 
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon c1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="18"/></svg>
         </div>
         <h3>Side-by-Side View</h3>
-        <p>Compare two JSON files in a split-pane view with synchronized scrolling.</p>
+        <p>Compare two JSON objects side-by-side with clear color-coded highlights for differences.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon c2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </div>
-        <h3>Syntax Highlighting</h3>
-        <p>Full JSON syntax highlighting with bracket pair colorization for easy reading.</p>
+        <h3>Inline Diffing</h3>
+        <p>See exactly which characters changed within a line for precise comparison.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon c3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
-        <h3>Diff Statistics</h3>
-        <p>Real-time statistics showing number of added, deleted, and modified lines.</p>
+        <h3>Semantic Comparison</h3>
+        <p>Compares the underlying JSON structure, ignoring whitespace or key ordering differences.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon c4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><polyline points="12 12 12 21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/><polyline points="16 16 12 12 8 16"/></svg>
         </div>
-        <h3>Inline Editing</h3>
-        <p>Edit both JSON files directly in the diff view and see changes update in real-time.</p>
+        <h3>Large File Support</h3>
+        <p>Effortlessly compare large JSON files without lag or crashes.</p>
       </div>
     </div>
 
     <h2>How to Use JSON Diff in JsonStudio</h2>
     <ol>
       <li><strong>Download and install</strong> JsonStudio from <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">GitHub Releases</a></li>
-      <li><strong>Open the Diff tool</strong> from the left sidebar</li>
-      <li><strong>Paste or load</strong> your first JSON file in the left pane</li>
-      <li><strong>Paste or load</strong> your second JSON file in the right pane</li>
-      <li><strong>View differences</strong> – additions (green), deletions (red), modifications (yellow)</li>
-      <li><strong>Check statistics</strong> in the status bar for a summary of changes</li>
+      <li>Open the <strong>Diff Tool</strong> from the sidebar</li>
+      <li>Paste your <strong>Original JSON</strong> in the left pane</li>
+      <li>Paste your <strong>Modified JSON</strong> in the right pane</li>
+      <li>Differences will be <strong>highlighted instantly</strong></li>
     </ol>
 
-    <h2>JSON Diff vs Online Tools</h2>
-    <p>Here's why JsonStudio's JSON diff tool is superior to online alternatives:</p>
-    <ul>
-      <li><strong>Performance:</strong> Online diff tools freeze on large files. JsonStudio handles multi-MB JSON files smoothly with native Rust performance.</li>
-      <li><strong>Privacy:</strong> Online tools upload your JSON to their servers. JsonStudio processes everything locally – your sensitive data stays private.</li>
-      <li><strong>Real-time updates:</strong> Online tools require clicking "Compare" button. JsonStudio updates differences as you type.</li>
-      <li><strong>Professional editor:</strong> Online tools use basic textarea. JsonStudio uses Monaco Editor with advanced features like multi-cursor editing, find/replace, and code folding.</li>
-      <li><strong>Offline:</strong> Online diff tools require internet. JsonStudio works anywhere, anytime.</li>
-    </ul>
+    <h2>Why Use a Desktop Diff Tool?</h2>
+    <div class="comparison">
+      <div class="comp-item">
+        <div class="comp-title">Desktop App (JsonStudio)</div>
+        <ul>
+          <li><strong>100% Private:</strong> Your data never leaves your machine.</li>
+          <li><strong>Offline:</strong> Works without an internet connection.</li>
+          <li><strong>Performance:</strong> Handles huge files easily.</li>
+          <li><strong>Native Experience:</strong> Shortcuts and system integration.</li>
+        </ul>
+      </div>
+      <div class="comp-item">
+        <div class="comp-title">Online Tools</div>
+        <ul>
+          <li><strong>Privacy Risk:</strong> Your JSON is uploaded to a server.</li>
+          <li><strong>Ad-Heavy:</strong> Often cluttered with distracting ads.</li>
+          <li><strong>Limited Size:</strong> Often crashes on large objects.</li>
+          <li><strong>Unreliable:</strong> Requires constant internet.</li>
+        </ul>
+      </div>
+    </div>
 
-    <h2>Frequently Asked Questions</h2>
-
-    <h3>Is JsonStudio JSON diff tool free?</h3>
-    <p>Yes, JsonStudio is completely free and open source (MIT License). The JSON diff feature is included with no limitations.</p>
-
-    <h3>Can I compare large JSON files?</h3>
-    <p>Yes, JsonStudio can compare JSON files of several megabytes smoothly. It's built with Rust for high performance.</p>
-
-    <h3>Does it work offline?</h3>
-    <p>Yes, JsonStudio works 100% offline. All JSON comparison happens locally on your computer.</p>
-
-    <h3>What platforms are supported?</h3>
     <p>JsonStudio is available for macOS, Windows, and Linux. Download from <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">GitHub Releases</a>.</p>
-
-    <h3>Can I edit JSON while comparing?</h3>
-    <p>Yes, both JSON editors in the diff view are fully editable. Changes are reflected in real-time with updated highlighting.</p>
   </div>
 </section>
 
 <!-- CTA -->
 <section class="cta">
-  <h2>Ready to Compare JSON Files?</h2>
+  <h2>Get Professional JSON Diff Today</h2>
   <p>Download JsonStudio and experience the best JSON diff tool.</p>
   <div class="hero-actions">
     <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span>Download Now</span>
-    </a>
-    <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="btn-outline">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-      <span>View on GitHub</span>
     </a>
   </div>
 </section>
@@ -238,16 +175,34 @@
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-left">&copy; 2025 JsonStudio · <span>MIT License</span></div>
+    <p>&copy; 2025 JsonStudio. Built for developers by developers.</p>
     <div class="footer-links">
-      <a href="/">Home</a>
-      <a href="/json-formatter">JSON Formatter</a>
-      <a href="/json-converter">Converter</a>
-      <a href="/json-validator">Validator</a>
       <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
+      <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">Feedback</a>
     </div>
   </div>
 </footer>
+
+<script>
+  // Theme Toggle
+  const themeToggle = document.getElementById('theme-toggle');
+  const html = document.documentElement;
+  
+  const getTheme = () => localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const setTheme = (theme) => {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  };
+
+  setTheme(getTheme());
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const newTheme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    });
+  }
+</script>
 
 </body>
 </html>
