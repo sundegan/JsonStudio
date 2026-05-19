@@ -1331,7 +1331,7 @@
       </div>
     </div>
 
-    <!-- Right section: Unified view panel (Tree / Grid / Graph) -->
+    <!-- Right section: Unified view panel (Tree / Grid) -->
     {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel && !isLogJsonTreeSuppressedPendingDetection}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div

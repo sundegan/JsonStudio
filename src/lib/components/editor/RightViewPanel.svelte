@@ -5,7 +5,7 @@
   import GridView from './GridView.svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
-  type RightViewTab = 'tree' | 'grid' | 'graph';
+  type RightViewTab = 'tree' | 'grid';
 
   let {
     content,
@@ -41,14 +41,6 @@
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
         <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
-      </svg>`,
-    },
-    {
-      id: 'graph',
-      labelKey: 'rightPanel.graph',
-      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
-        <path d="M7 12h5m5-5.5-5 5m0 1 5 5"/>
       </svg>`,
     },
   ];
@@ -103,36 +95,6 @@
       </div>
     {/if}
 
-    <!-- Graph tab: placeholder for future implementation -->
-    {#if activeTab === 'graph'}
-      <div class="rvp-view rvp-graph-placeholder">
-        <div class="rvp-graph-content">
-          <!-- Graph icon -->
-          <svg class="rvp-graph-icon" viewBox="0 0 80 80" fill="none">
-            <circle cx="40" cy="40" r="38" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.2"/>
-            <!-- Nodes -->
-            <circle cx="40" cy="18" r="6" fill="var(--accent)" opacity="0.8"/>
-            <circle cx="16" cy="56" r="6" fill="var(--accent)" opacity="0.6"/>
-            <circle cx="64" cy="56" r="6" fill="var(--accent)" opacity="0.6"/>
-            <circle cx="40" cy="44" r="5" fill="var(--accent)" opacity="0.4"/>
-            <!-- Edges -->
-            <line x1="40" y1="24" x2="40" y2="39" stroke="var(--accent)" stroke-width="1.5" opacity="0.5"/>
-            <line x1="36" y1="47" x2="20" y2="52" stroke="var(--accent)" stroke-width="1.5" opacity="0.4"/>
-            <line x1="44" y1="47" x2="60" y2="52" stroke="var(--accent)" stroke-width="1.5" opacity="0.4"/>
-          </svg>
-
-          <div class="rvp-graph-title">{$t('rightPanel.graphComingSoon')}</div>
-          <div class="rvp-graph-hint">{$t('rightPanel.graphComingSoonHint')}</div>
-
-          <!-- Tags -->
-          <div class="rvp-graph-tags">
-            <span class="rvp-graph-tag">D3.js</span>
-            <span class="rvp-graph-tag">{$t('rightPanel.graphTagNodeGraph')}</span>
-            <span class="rvp-graph-tag">{$t('rightPanel.graphTagForceLayout')}</span>
-          </div>
-        </div>
-      </div>
-    {/if}
   </div>
 </div>
 
@@ -256,68 +218,5 @@
   .rvp-view--hidden {
     visibility: hidden;
     pointer-events: none;
-  }
-
-  /* ── Graph Placeholder ── */
-  .rvp-graph-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .rvp-graph-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 24px;
-    text-align: center;
-    max-width: 240px;
-  }
-
-  .rvp-graph-icon {
-    width: 72px;
-    height: 72px;
-    color: var(--text-secondary);
-    opacity: 0.6;
-    animation: rvp-float 3s ease-in-out infinite;
-  }
-
-  @keyframes rvp-float {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-5px); }
-  }
-
-  .rvp-graph-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-primary);
-    opacity: 0.8;
-  }
-
-  .rvp-graph-hint {
-    font-size: 11px;
-    color: var(--text-secondary);
-    opacity: 0.6;
-    line-height: 1.6;
-  }
-
-  .rvp-graph-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-    margin-top: 4px;
-  }
-
-  .rvp-graph-tag {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
-    background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
-    color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
-    letter-spacing: 0.03em;
   }
 </style>
