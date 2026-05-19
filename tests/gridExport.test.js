@@ -83,6 +83,50 @@ test('splits long pdf exports across multiple pages', () => {
   assert.ok(pageCount > 1);
 });
 
+test('keeps nested object-array pdf rows together when they fit on a page', () => {
+  const value = [
+    {
+      id: 'a1b2c3d4-e5f6-4a5b-8c9d-1234567890ab',
+      name: 'Evelyn Brooks',
+      phoneNumber: '111-222-3333',
+      plan: {
+        name: 'Unlimited Talk & Data 50GB',
+        price: 89.99,
+        features: ['5G', 'Unlimited Calls'],
+      },
+      dataUsageGB: 47.9,
+    },
+    {
+      id: 'b2c3d4e5-f6a7-4b6c-9d0e-234567890bcd',
+      name: 'Mason Cart11',
+      phoneNumber: '222-333-4444',
+      plan: {
+        name: 'Basic 10GB',
+        price: 39.99,
+        features: ['12G', 'Unlimited Calls'],
+      },
+      dataUsageGB: 9.4,
+    },
+    {
+      id: 'c3d4e5f6-a7b8-4c7d-0e1f-34567890cdef',
+      name: 'Olivia Green',
+      phoneNumber: '333-444-5555',
+      plan: {
+        name: 'Student 15GB',
+        price: 49.99,
+        features: ['4G', 'Student Discount'],
+      },
+      dataUsageGB: 12.7,
+    },
+  ];
+
+  const text = new TextDecoder().decode(createGridPdfBytes(value));
+  const pageCount = Number(text.match(/\/Count (\d+)/)?.[1]);
+
+  assert.ok(pageCount <= 3);
+  assert.equal(text.match(/Student Discount/g)?.length, 1);
+});
+
 test('creates xlsx bytes as a valid zip container', () => {
   const bytes = createGridXlsxBytes({ userId: 123 });
   assert.deepEqual(Array.from(bytes.slice(0, 4)), [0x50, 0x4b, 0x03, 0x04]);
