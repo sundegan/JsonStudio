@@ -18,11 +18,26 @@
     createGridValueEdit,
     isGridCellEditable,
   } from '$lib/services/gridEdit.js';
+  import { saveBinaryFileDialog } from '$lib/services/file';
+  import { getGridExportFileName } from '$lib/services/gridExportModel.js';
+  import { shouldCloseGridExportMenu } from '$lib/services/gridExportMenu.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
   import { onMount, tick } from 'svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
-  let { content, editor } = $props<{ content: string; editor: MonacoEditor | null }>();
+  let {
+    content,
+    editor,
+    activeTabPath,
+    activeTabName,
+    onToast,
+  } = $props<{
+    content: string;
+    editor: MonacoEditor | null;
+    activeTabPath: string | null;
+    activeTabName: string | null;
+    onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  }>();
 
   type GridCell = {
     value: unknown;
@@ -67,6 +82,8 @@
   let editingValue = $state('');
   let editingError = $state('');
   let editInput = $state<HTMLInputElement | null>(null);
+  let isExporting = $state(false);
+  let isExportMenuOpen = $state(false);
 
   $effect(() => {
     content;
@@ -222,6 +239,30 @@
     return selections.some((selection) => selection.path === path && selection.target === target);
   }
 
+  async function exportGrid(format: 'pdf' | 'xlsx') {
+    if (gridState.kind !== 'ok' || isExporting) {
+      if (gridState.kind !== 'ok') onToast($t('gridView.invalidExport'), 'info');
+      return;
+    }
+
+    isExporting = true;
+    try {
+      const { createGridPdfBytes, createGridXlsxBytes } = await import('$lib/services/gridExportFiles.js');
+      const bytes = format === 'pdf'
+        ? createGridPdfBytes(gridState.root.source)
+        : createGridXlsxBytes(gridState.root.source);
+      const fileName = getGridExportFileName(activeTabPath ?? activeTabName, format);
+      const savedPath = await saveBinaryFileDialog(bytes, fileName, format);
+      if (savedPath) onToast($t('gridView.exportSuccess'));
+    } catch (error) {
+      console.error('Failed to export grid:', error);
+      onToast($t('gridView.exportFailed'), 'error');
+    } finally {
+      isExporting = false;
+      isExportMenuOpen = false;
+    }
+  }
+
   async function handleKeydown(event: KeyboardEvent) {
     const isMac = navigator.platform.toUpperCase().includes('MAC');
     const commandKey = isMac ? event.metaKey : event.ctrlKey;
@@ -243,8 +284,18 @@
       clearSelections();
     }
 
+    function handleExportPointerDown(event: PointerEvent) {
+      if (!isExportMenuOpen) return;
+      if (!shouldCloseGridExportMenu(event.target as { closest?: (selector: string) => unknown } | null)) return;
+      isExportMenuOpen = false;
+    }
+
     document.addEventListener('pointerdown', handleDocumentPointerDown);
-    return () => document.removeEventListener('pointerdown', handleDocumentPointerDown);
+    document.addEventListener('pointerdown', handleExportPointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handleDocumentPointerDown);
+      document.removeEventListener('pointerdown', handleExportPointerDown);
+    };
   });
 
   $effect(() => {
@@ -337,6 +388,32 @@
           </svg>
         {/if}
       </button>
+      <div class="gv-export">
+        <button
+          class="gv-toolbar-btn"
+          class:gv-toolbar-btn--active={isExportMenuOpen}
+          onclick={() => { isExportMenuOpen = !isExportMenuOpen; }}
+          disabled={isExporting}
+          title={$t('gridView.export')}
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <path d="m7 10 5 5 5-5"/>
+            <path d="M12 15V3"/>
+          </svg>
+        </button>
+        {#if isExportMenuOpen}
+          <div class="gv-export-menu">
+            <button onclick={() => exportGrid('pdf')} disabled={isExporting} type="button">
+              {$t('gridView.exportPdf')}
+            </button>
+            <button onclick={() => exportGrid('xlsx')} disabled={isExporting} type="button">
+              {$t('gridView.exportExcel')}
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
 
     {#snippet renderCell(cell: GridCell, label: string | number, editable: boolean)}
@@ -520,6 +597,10 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
   }
+  .gv-toolbar-btn--active {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
   .gv-toolbar-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
@@ -527,6 +608,43 @@
   .gv-toolbar-btn svg {
     width: 16px;
     height: 16px;
+  }
+  .gv-export {
+    position: relative;
+    display: flex;
+  }
+  .gv-export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 5;
+    min-width: 112px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--bg-primary);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  }
+  .gv-export-menu button {
+    display: flex;
+    width: 100%;
+    height: 28px;
+    align-items: center;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .gv-export-menu button:hover:not(:disabled) {
+    background: var(--bg-hover);
+  }
+  .gv-export-menu button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
   .gv-scroll {
     flex: 1;

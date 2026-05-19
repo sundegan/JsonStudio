@@ -217,6 +217,12 @@ export default {
   'rightPanel.graphComingSoonHint': 'Visualize JSON as an interactive node graph to understand complex nested structures',
   'rightPanel.graphTagNodeGraph': 'Node graph',
   'rightPanel.graphTagForceLayout': 'Force layout',
+  'gridView.exportPdf': 'Export PDF',
+  'gridView.exportExcel': 'Export Excel',
+  'gridView.export': 'Export',
+  'gridView.exportSuccess': 'Grid exported',
+  'gridView.exportFailed': 'Failed to export grid',
+  'gridView.invalidExport': 'Current content cannot be exported',
 
   // Grid View
   'gridView.noData': 'No JSON Data',

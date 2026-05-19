@@ -1,0 +1,197 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  buildGridExportModel,
+  buildGridExportSections,
+  getGridExportFileName,
+} from '../src/lib/services/gridExportModel.js';
+import {
+  createGridPdfBytes,
+  createGridXlsxBytes,
+  getGridPdfLayout,
+  getGridPdfSectionHeight,
+  getGridSheetColumnWidths,
+} from '../src/lib/services/gridExportFiles.js';
+
+test('builds a fully expanded export model for nested JSON', () => {
+  const model = buildGridExportModel({
+    userId: 123,
+    roles: ['admin', 'editor'],
+    profile: {
+      email: 'alice@example.com',
+    },
+  });
+
+  assert.equal(model.kind, 'object');
+  assert.deepEqual(model.rows.map((row) => row.cells[0].value), ['userId', 'roles', 'profile']);
+  assert.equal(model.rows[1].cells[1].child.kind, 'array');
+  assert.equal(model.rows[2].cells[1].child.kind, 'object');
+  assert.deepEqual(
+    model.rows[1].cells[1].child.rows.map((row) => row.cells[1].value),
+    ['admin', 'editor'],
+  );
+});
+
+test('builds nested export sections instead of flattening child tables into sibling rows', () => {
+  const sections = buildGridExportSections({
+    userId: 123,
+    roles: ['admin', 'editor'],
+    profile: { email: 'alice@example.com' },
+  });
+
+  assert.deepEqual(
+    sections.rows.map((row) => [row.key, row.value, row.child?.kind ?? null]),
+    [
+      ['userId', '123', null],
+      ['roles', '[2]', 'array'],
+      ['profile', '{1}', 'object'],
+    ],
+  );
+  assert.deepEqual(
+    sections.rows[1].child.rows.map((row) => [row.key, row.value]),
+    [
+      ['0', 'admin'],
+      ['1', 'editor'],
+    ],
+  );
+  assert.deepEqual(
+    sections.rows[2].child.rows.map((row) => [row.key, row.value]),
+    [['email', 'alice@example.com']],
+  );
+});
+
+test('uses document title when creating export filenames', () => {
+  assert.equal(getGridExportFileName('/tmp/example.json', 'pdf'), 'example-grid.pdf');
+  assert.equal(getGridExportFileName(null, 'xlsx'), 'grid-export.xlsx');
+});
+
+test('creates pdf bytes with a valid header and without exported key/value labels', () => {
+  const bytes = createGridPdfBytes({ userId: 123 });
+  const header = new TextDecoder().decode(bytes.slice(0, 8));
+  const text = new TextDecoder().decode(bytes);
+  assert.match(header, /^%PDF-1\.[0-9]/);
+  assert.doesNotMatch(text, /\bkey\b/);
+  assert.doesNotMatch(text, /\bvalue\b/);
+});
+
+test('splits long pdf exports across multiple pages', () => {
+  const value = Object.fromEntries(
+    Array.from({ length: 60 }, (_, index) => [`field${index}`, index]),
+  );
+  const text = new TextDecoder().decode(createGridPdfBytes(value));
+  const pageCount = Number(text.match(/\/Count (\d+)/)?.[1]);
+  assert.ok(pageCount > 1);
+});
+
+test('creates xlsx bytes as a valid zip container', () => {
+  const bytes = createGridXlsxBytes({ userId: 123 });
+  assert.deepEqual(Array.from(bytes.slice(0, 4)), [0x50, 0x4b, 0x03, 0x04]);
+  assert.match(new TextDecoder().decode(bytes), /\[Content_Types\]\.xml/);
+  assert.match(new TextDecoder().decode(bytes), /xl\/worksheets\/sheet1\.xml/);
+});
+
+test('xlsx export omits key/value headers', async () => {
+  const bytes = createGridXlsxBytes({ userId: 123 });
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.read(bytes, { type: 'array' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  assert.equal(sheet.A1.v, 'userId');
+  assert.equal(sheet.B1.v, '123');
+});
+
+test('xlsx export renders nested values as child table columns with merged parent key cells', async () => {
+  const bytes = createGridXlsxBytes({
+    userId: 123,
+    roles: ['admin', 'editor'],
+    profile: {
+      email: 'alice@example.com',
+      lastLogin: '2026-05-13T22:30:00+08:00',
+    },
+  });
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.read(bytes, { type: 'array' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  assert.equal(sheet.A1.v, 'userId');
+  assert.equal(sheet.B1.v, '123');
+  assert.equal(sheet.A2.v, 'roles');
+  assert.equal(sheet.B2.v, '0');
+  assert.equal(sheet.C2.v, 'admin');
+  assert.equal(sheet.B3.v, '1');
+  assert.equal(sheet.C3.v, 'editor');
+  assert.equal(sheet.A4.v, 'profile');
+  assert.equal(sheet.B4.v, 'email');
+  assert.equal(sheet.C4.v, 'alice@example.com');
+  assert.equal(sheet.B5.v, 'lastLogin');
+  assert.equal(sheet.C5.v, '2026-05-13T22:30:00+08:00');
+  assert.deepEqual(
+    sheet['!merges'].map((range) => XLSX.utils.encode_range(range)),
+    ['A2:A3', 'A4:A5'],
+  );
+});
+
+test('sizes pdf sections from content while keeping child tables inside the parent value column', () => {
+  const layout = getGridPdfLayout({
+    userId: 123,
+    profile: {
+      email: 'alice@example.com',
+      lastLogin: '2026-05-13T22:30:00+08:00',
+    },
+  }, 180);
+
+  assert.ok(layout.keyWidth < layout.valueWidth);
+  assert.ok(layout.totalWidth < 180);
+  assert.ok(layout.children.profile.totalWidth <= layout.valueWidth - 6);
+});
+
+test('sizes xlsx columns from exported content instead of fixed defaults', () => {
+  assert.deepEqual(
+    getGridSheetColumnWidths([
+      ['userId', '123'],
+      ['metrics', 'loginCount', '42'],
+      ['', 'successRate', '0.98'],
+    ]),
+    [7, 11, 4],
+  );
+});
+
+test('measures nested pdf section height from the rendered table instead of a rough estimate', () => {
+  const height = getGridPdfSectionHeight({
+    profile: {
+      email: 'alice@example.com',
+      lastLogin: '2026-05-13T22:30:00+08:00',
+    },
+  }, 'profile', 180);
+
+  assert.ok(height > 20);
+});
+
+test('measures deeply nested pdf section height recursively', () => {
+  const shallowHeight = getGridPdfSectionHeight({
+    profile: {
+      email: 'alice@example.com',
+      lastLogin: '2026-05-13T22:30:00+08:00',
+    },
+  }, 'profile', 180);
+  const deepHeight = getGridPdfSectionHeight({
+    profile: {
+      contact: {
+        email: 'alice@example.com',
+        lastLogin: '2026-05-13T22:30:00+08:00',
+      },
+    },
+  }, 'profile', 180);
+
+  assert.ok(deepHeight > shallowHeight);
+});
+
+test('does not leak measurement tables into the exported pdf body', () => {
+  const text = new TextDecoder().decode(createGridPdfBytes({
+    metrics: {
+      loginCount: 42,
+      successRate: 0.98,
+    },
+  }));
+
+  assert.equal(text.match(/loginCount/g)?.length, 1);
+});

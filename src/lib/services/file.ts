@@ -26,6 +26,18 @@ export async function saveFileDialog(content: string): Promise<string | null> {
   return result;
 }
 
+export async function saveBinaryFileDialog(
+  bytes: Uint8Array,
+  defaultFileName: string,
+  extension: string,
+): Promise<string | null> {
+  return await invoke<string | null>('save_binary_file_dialog', {
+    bytes: Array.from(bytes),
+    defaultFileName,
+    extension,
+  });
+}
+
 /**
  * Read file content by path (for drag & drop)
  */

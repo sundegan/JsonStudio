@@ -56,6 +56,33 @@ pub async fn save_file_dialog(app: AppHandle, content: String) -> Result<Option<
     }
 }
 
+#[tauri::command]
+pub async fn save_binary_file_dialog(
+    app: AppHandle,
+    bytes: Vec<u8>,
+    default_file_name: String,
+    extension: String,
+) -> Result<Option<String>, String> {
+    let file_path = app.dialog()
+        .file()
+        .add_filter("Export Files", &[extension.as_str()])
+        .add_filter("All Files", &["*"])
+        .set_file_name(&default_file_name)
+        .blocking_save_file();
+
+    match file_path {
+        Some(path) => {
+            let path_str = path.to_string();
+            let path_buf = PathBuf::from(&path_str);
+            tokio::fs::write(&path_buf, bytes)
+                .await
+                .map_err(|e| format!("Failed to save file: {}", e))?;
+            Ok(Some(path_str))
+        }
+        None => Ok(None),
+    }
+}
+
 /// Read file content by path (for drag & drop)
 #[tauri::command]
 pub async fn read_file(path: String) -> Result<String, String> {

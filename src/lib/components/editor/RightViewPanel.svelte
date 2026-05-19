@@ -10,10 +10,14 @@
   let {
     content,
     editor,
+    activeTabPath,
+    activeTabName,
     onToast,
   } = $props<{
     content: string;
     editor: MonacoEditor | null;
+    activeTabPath: string | null;
+    activeTabName: string | null;
     onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   }>();
 
@@ -95,7 +99,7 @@
     <!-- Grid tab: only mounted when active to avoid unnecessary JSON parsing overhead -->
     {#if activeTab === 'grid'}
       <div class="rvp-view">
-        <GridView {content} {editor} />
+        <GridView {content} {editor} {activeTabPath} {activeTabName} {onToast} />
       </div>
     {/if}
 

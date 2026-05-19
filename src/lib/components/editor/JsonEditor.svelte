@@ -1346,6 +1346,8 @@
         <RightViewPanel
           content={content}
           editor={monacoEditor}
+          activeTabPath={$activeTab?.filePath ?? null}
+          activeTabName={$activeTab?.fileName ?? null}
           onToast={showToast}
         />
       </div>

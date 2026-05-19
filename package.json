@@ -32,11 +32,14 @@
     "jmespath": "^0.16.0",
     "jsonpath-plus": "^10.4.0",
     "jsonrepair": "^3.13.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "monaco-editor": "^0.55.1",
     "prettier": "^3.8.3",
     "quicktype-core": "^23.2.6",
     "tailwind-merge": "^3.4.0",
-    "tailwind-variants": "^3.2.2"
+    "tailwind-variants": "^3.2.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@internationalized/date": "^3.10.1",

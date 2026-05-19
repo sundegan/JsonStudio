@@ -217,6 +217,12 @@ export default {
   'rightPanel.graphComingSoonHint': '将 JSON 渲染为可交互的节点图，帮助直观理解复杂嵌套结构',
   'rightPanel.graphTagNodeGraph': '节点图',
   'rightPanel.graphTagForceLayout': '力导向布局',
+  'gridView.exportPdf': '导出 PDF',
+  'gridView.exportExcel': '导出 Excel',
+  'gridView.export': '导出',
+  'gridView.exportSuccess': 'Grid 已导出',
+  'gridView.exportFailed': '导出 Grid 失败',
+  'gridView.invalidExport': '当前内容无法导出',
 
   // Grid View
   'gridView.noData': '暂无 JSON 数据',
