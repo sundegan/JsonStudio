@@ -1,7 +1,7 @@
 const PANEL_MIN_WIDTH = 280;
-const PANEL_MAX_WIDTH = 960;
+const PANEL_MAX_WIDTH = 1500;
 const EDITOR_MIN_WIDTH = 240;
-const PANEL_MAX_RATIO = 0.6;
+const PANEL_MAX_RATIO = 0.7;
 const PANEL_DEFAULT_RATIO = 0.38;
 
 /**

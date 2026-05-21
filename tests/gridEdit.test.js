@@ -4,6 +4,7 @@ import {
   createGridValueEdit,
   formatGridEditValue,
   isGridCellEditable,
+  isGridEditCommitKey,
 } from '../src/lib/services/gridEdit.js';
 import { parseJsonDocument } from '../src/lib/services/jsonDocumentParse.js';
 import { buildGridRoot } from '../src/lib/services/gridViewModel.js';
@@ -22,6 +23,12 @@ test('does not mark synthetic array-object placeholders as editable', () => {
   assert.equal(root.rows[0].cells[1].value, null);
   assert.equal(root.rows[0].cells[1].exists, false);
   assert.equal(isGridCellEditable(root.rows[0].cells[1]), false);
+});
+
+test('commits grid edits on plain Enter after composition has finished', () => {
+  assert.equal(isGridEditCommitKey({ key: 'Enter', isComposing: false }), true);
+  assert.equal(isGridEditCommitKey({ key: 'Enter', isComposing: true }), false);
+  assert.equal(isGridEditCommitKey({ key: 'Escape', isComposing: false }), false);
 });
 
 test('formats edited strings while preserving quote style', () => {

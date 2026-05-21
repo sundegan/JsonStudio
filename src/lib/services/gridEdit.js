@@ -11,6 +11,13 @@ export function isGridCellEditable(cell) {
 }
 
 /**
+ * @param {{ key: string; isComposing?: boolean }} event
+ */
+export function isGridEditCommitKey(event) {
+  return event.key === 'Enter' && !event.isComposing;
+}
+
+/**
  * @param {string} value
  */
 function quoteSingleString(value) {

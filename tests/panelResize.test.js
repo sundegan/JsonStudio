@@ -4,11 +4,12 @@ import { clampPanelWidth, getDefaultPanelWidth } from '../src/lib/services/panel
 
 test('keeps the side panel within min and max widths', () => {
   assert.equal(clampPanelWidth(120, 1200), 280);
-  assert.equal(clampPanelWidth(1200, 1200), 720);
+  assert.equal(clampPanelWidth(1200, 1200), 840);
+  assert.equal(clampPanelWidth(2000, 1800), 1260);
 });
 
 test('preserves a usable editor width when the workspace is narrow', () => {
-  assert.equal(clampPanelWidth(600, 900), 540);
+  assert.equal(clampPanelWidth(700, 900), 630);
   assert.equal(clampPanelWidth(600, 520), 280);
 });
 

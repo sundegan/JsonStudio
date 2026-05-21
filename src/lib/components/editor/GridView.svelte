@@ -17,6 +17,7 @@
   import {
     createGridValueEdit,
     isGridCellEditable,
+    isGridEditCommitKey,
   } from '$lib/services/gridEdit.js';
   import { saveBinaryFileDialog } from '$lib/services/file';
   import { getGridExportFileName } from '$lib/services/gridExportModel.js';
@@ -205,6 +206,12 @@
   function handleEditInput(event: Event) {
     editingValue = (event.currentTarget as HTMLInputElement).value;
     editingError = '';
+  }
+
+  function handleEditKeydown(event: KeyboardEvent, cell: GridCell) {
+    if (!isGridEditCommitKey(event)) return;
+    event.preventDefault();
+    commitEdit(cell);
   }
 
   function commitEdit(cell: GridCell) {
@@ -451,6 +458,7 @@
               class:gv-edit-input--error={Boolean(editingError)}
               value={editingValue}
               oninput={handleEditInput}
+              onkeydown={(event) => handleEditKeydown(event, cell)}
               onblur={() => commitEdit(cell)}
               title={editingError || cell.path}
             />
