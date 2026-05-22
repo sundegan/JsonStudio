@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { t } from '$lib/i18n';
+  import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
+  import { createTreeKeyEdit, isTreeKeyEditable } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import type MonacoEditor from './MonacoEditor.svelte';
 
@@ -11,9 +13,18 @@
     value: unknown;
     type: 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
     path: string;
+    parentType: 'object' | 'array';
+    siblingKeys: string[];
     children?: TreeNode[];
     startOffset: number;
     endOffset: number;
+  };
+
+  type TreeEditState = {
+    kind: 'key' | 'value';
+    path: string;
+    input: string;
+    error: string;
   };
 
   type QueryExample = {
@@ -59,6 +70,8 @@
   let treeError = $state('');
   let isLoading = $state(false);
   let previousContent = $state('');
+  let parsedPointers = $state<Record<string, any>>({});
+  let parsedDialect = $state<'JSON' | 'JSON5'>('JSON');
   let rootData = $state<unknown>(null);
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
@@ -71,11 +84,14 @@
   let expandedNodes = $state<Set<string>>(new Set());
   let isAllExpanded = $state(false);
   let helpOpen = $state(false);
+  let treeEdit = $state<TreeEditState | null>(null);
+  let treeEditInput = $state<HTMLInputElement | null>(null);
 
   // Build tree when content changes
   $effect(() => {
     if (content !== previousContent) {
       previousContent = content;
+      treeEdit = null;
       buildTree();
     }
   });
@@ -92,6 +108,7 @@
       treeNodes = [];
       treeError = '';
       rootData = null;
+      parsedPointers = {};
       queryError = '';
       queryMatchedRoot = false;
       isAllExpanded = false;
@@ -105,6 +122,8 @@
       const parsed = parseJsonDocument(content);
 
       rootData = parsed.data;
+      parsedPointers = parsed.pointers;
+      parsedDialect = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
       const nodes = parseToTree(parsed.data, parsed.pointers, '');
       treeNodes = nodes;
       
@@ -117,6 +136,7 @@
       treeError = e instanceof Error ? e.message : 'Failed to parse JSON';
       treeNodes = [];
       rootData = null;
+      parsedPointers = {};
       isAllExpanded = false;
     } finally {
       isLoading = false;
@@ -140,6 +160,8 @@
           value: item,
           type: getValueType(item),
           path,
+          parentType: 'array',
+          siblingKeys: [],
           startOffset: pointerInfo?.value?.pos ?? 0,
           endOffset: pointerInfo?.valueEnd?.pos ?? 0,
         };
@@ -151,7 +173,9 @@
         nodes.push(node);
       });
     } else if (typeof data === 'object' && data !== null) {
-      Object.entries(data).forEach(([key, value]) => {
+      const entries = Object.entries(data);
+      const keys = entries.map(([key]) => key);
+      entries.forEach(([key, value]) => {
         const path = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
         const pointerInfo = pointers[path];
 
@@ -160,6 +184,8 @@
           value,
           type: getValueType(value),
           path,
+          parentType: 'object',
+          siblingKeys: keys.filter((entry) => entry !== key),
           startOffset: pointerInfo?.value?.pos ?? 0,
           endOffset: pointerInfo?.valueEnd?.pos ?? 0,
         };
@@ -309,6 +335,76 @@
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     selectNode(node);
+  }
+
+  function isTreeValueEditable(node: TreeNode) {
+    return node.type !== 'object' && node.type !== 'array';
+  }
+
+  function beginTreeEdit(event: MouseEvent, node: TreeNode, kind: TreeEditState['kind']) {
+    if (kind === 'key' && !isTreeKeyEditable(node)) return;
+    if (kind === 'value' && !isTreeValueEditable(node)) return;
+    event.stopPropagation();
+    treeEdit = {
+      kind,
+      path: node.path,
+      input: kind === 'key'
+        ? node.key
+        : node.value === null
+          ? 'null'
+          : String(node.value),
+      error: '',
+    };
+    tick().then(() => treeEditInput?.focus());
+  }
+
+  function handleTreeEditInput(event: Event) {
+    if (!treeEdit) return;
+    treeEdit = {
+      ...treeEdit,
+      input: (event.currentTarget as HTMLInputElement).value,
+      error: '',
+    };
+  }
+
+  function handleTreeEditKeydown(event: KeyboardEvent, node: TreeNode) {
+    event.stopPropagation();
+    if (!isGridEditCommitKey(event)) return;
+    event.preventDefault();
+    commitTreeEdit(node);
+  }
+
+  function commitTreeEdit(node: TreeNode) {
+    if (!treeEdit || treeEdit.path !== node.path) return;
+
+    const result = treeEdit.kind === 'key'
+      ? createTreeKeyEdit(parsedPointers, node.path, treeEdit.input, node.siblingKeys)
+      : createGridValueEdit(
+          content,
+          parsedPointers,
+          node.path,
+          node.value,
+          treeEdit.input,
+          parsedDialect,
+        );
+
+    if (!result.ok || !('edit' in result)) {
+      treeEdit = {
+        ...treeEdit,
+        error: 'error' in result && typeof result.error === 'string'
+          ? result.error
+          : 'Invalid edit',
+      };
+      tick().then(() => treeEditInput?.focus());
+      return;
+    }
+
+    editor?.replaceRangeByOffsets(result.edit.start, result.edit.end, result.edit.text);
+    treeEdit = null;
+  }
+
+  function isEditing(node: TreeNode, kind: TreeEditState['kind']) {
+    return treeEdit?.path === node.path && treeEdit.kind === kind;
   }
 
   function expandAll() {
@@ -676,7 +772,70 @@
 
             <!-- Key-Value Pair -->
             <div class="tree-key-value">
-              <span class="tree-key">{node.key}</span>{#if showValue}<span class="tree-colon">:</span><span class="tree-value tree-value-{node.type}">{formatValue(node)}</span>{:else if hasChild}<span class="tree-child-count">({childCount})</span>{/if}
+              {#if isEditing(node, 'key')}
+                <span class="tree-edit-field">
+                  <input
+                    class="tree-edit-input"
+                    bind:this={treeEditInput}
+                    value={treeEdit?.input ?? ''}
+                    oninput={handleTreeEditInput}
+                    onblur={() => commitTreeEdit(node)}
+                    onkeydown={(e) => handleTreeEditKeydown(e, node)}
+                    onclick={(e) => e.stopPropagation()}
+                    spellcheck="false"
+                  />
+                  {#if treeEdit?.error}
+                    <span class="tree-edit-error">{treeEdit.error}</span>
+                  {/if}
+                </span>
+              {:else}
+                {#if isTreeKeyEditable(node)}
+                  <span
+                    class="tree-edit-target tree-edit-target--editable"
+                    ondblclick={(e) => beginTreeEdit(e, node, 'key')}
+                    role="button"
+                    tabindex="-1"
+                    aria-label="Edit key"
+                  >
+                    <span class="tree-key">{node.key}</span>
+                  </span>
+                {:else}
+                  <span class="tree-key">{node.key}</span>
+                {/if}
+              {/if}
+              {#if showValue}
+                <span class="tree-colon">:</span>
+                {#if isEditing(node, 'value')}
+                  <span class="tree-edit-field">
+                    <input
+                      class="tree-edit-input"
+                      bind:this={treeEditInput}
+                      value={treeEdit?.input ?? ''}
+                      oninput={handleTreeEditInput}
+                      onblur={() => commitTreeEdit(node)}
+                      onkeydown={(e) => handleTreeEditKeydown(e, node)}
+                      onclick={(e) => e.stopPropagation()}
+                      spellcheck="false"
+                    />
+                    {#if treeEdit?.error}
+                      <span class="tree-edit-error">{treeEdit.error}</span>
+                    {/if}
+                  </span>
+                {:else}
+                  <span
+                    class="tree-edit-target"
+                    class:tree-edit-target--editable={isTreeValueEditable(node)}
+                    ondblclick={(e) => beginTreeEdit(e, node, 'value')}
+                    role="button"
+                    tabindex="-1"
+                    aria-label="Edit value"
+                  >
+                    <span class="tree-value tree-value-{node.type}">{formatValue(node)}</span>
+                  </span>
+                {/if}
+              {:else if hasChild}
+                <span class="tree-child-count">({childCount})</span>
+              {/if}
             </div>
 
             <!-- Copy Path Button -->
@@ -1015,6 +1174,43 @@
     color: var(--text-secondary);
     font-size: 11px;
     text-align: right;
+  }
+
+  .tree-edit-target,
+  .tree-edit-field {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .tree-edit-target--editable {
+    cursor: text;
+  }
+
+  .tree-edit-field {
+    flex-wrap: wrap;
+  }
+
+  .tree-edit-input {
+    width: min(180px, 100%);
+    height: 20px;
+    padding: 0 5px;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+    outline: none;
+  }
+
+  .tree-edit-input:focus {
+    box-shadow: 0 0 0 2px var(--accent-glow);
+  }
+
+  .tree-edit-error {
+    color: var(--error, #ef4444);
+    font-size: 10px;
+    white-space: nowrap;
   }
 
 </style>
