@@ -5,6 +5,7 @@
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import { settingsStore } from '$lib/stores/settings';
+  import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { t } from '$lib/i18n';
   import type { EditorTheme } from '$lib/config/monacoThemes';
   import type MonacoEditor from './MonacoEditor.svelte';
@@ -315,9 +316,19 @@
       if (result) {
         const [path, fileContent] = result;
         const name = await getFileName(path);
+        const [{ formatJson, getJsonStats }, { formatJson5 }] = await Promise.all([
+          import('$lib/services/json'),
+          import('$lib/services/json5Format.js'),
+        ]);
+        const normalizedContent = await normalizeOpenedJson(fileContent, {
+          indent: tabSize,
+          formatJson,
+          getJsonStats,
+          formatJson5,
+        });
 
         // Smart open: reuse empty tab or create new one
-        const maxTabsReached = tabsStore.openFile(fileContent, path, name);
+        const maxTabsReached = tabsStore.openFile(normalizedContent, path, name);
         
         if (maxTabsReached) {
           onToast('Maximum 10 tabs reached', 'info');

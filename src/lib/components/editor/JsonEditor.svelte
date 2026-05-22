@@ -27,6 +27,7 @@
     MAX_LOG_JSON_INPUT_LENGTH,
   } from '$lib/services/logJsonFragments.js';
   import { normalizePastedStandaloneJson } from '$lib/services/standaloneJsonPasteNormalize.js';
+  import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { clampPanelWidth, getDefaultPanelWidth } from '$lib/services/panelResize.js';
   import { t } from '$lib/i18n';
 
@@ -122,14 +123,24 @@
       try {
         const fileContent = await readFile(filePath);
         const name = await getFileName(filePath);
-        const maxTabsReached = tabsStore.openFile(fileContent, filePath, name);
+        const [{ formatJson }, { formatJson5 }] = await Promise.all([
+          import('$lib/services/json'),
+          import('$lib/services/json5Format.js'),
+        ]);
+        const normalizedContent = await normalizeOpenedJson(fileContent, {
+          indent: settings.tabSize,
+          formatJson,
+          getJsonStats,
+          formatJson5,
+        });
+        const maxTabsReached = tabsStore.openFile(normalizedContent, filePath, name);
         
         if (maxTabsReached) {
           showToast('Maximum 10 tabs reached', 'info');
           break;
         }
         
-        quickDetectFormatAndSwitchLanguage(fileContent);  // Immediate language switch
+        quickDetectFormatAndSwitchLanguage(normalizedContent);  // Immediate language switch
         await updateStats(true);  // Show JSON5 toast if detected
         showToast(`Opened: ${name || 'file'}`);
       } catch (e) {
