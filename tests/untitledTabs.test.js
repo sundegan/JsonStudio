@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FIRST_UNTITLED_NAME, getNextUntitledName } from '../src/lib/stores/untitledTabs.js';
+import {
+  FIRST_UNTITLED_NAME,
+  getNextUntitledName,
+  getSaveFileName,
+} from '../src/lib/stores/untitledTabs.js';
 
 test('first untitled tab starts at Untitled-1', () => {
   assert.equal(FIRST_UNTITLED_NAME, 'Untitled-1');
@@ -40,4 +44,10 @@ test('legacy Untitled tab is treated as Untitled-1', () => {
   ];
 
   assert.equal(getNextUntitledName(tabs), 'Untitled-2');
+});
+
+test('save filenames reuse the current tab name with a json extension', () => {
+  assert.equal(getSaveFileName('Untitled-2'), 'Untitled-2.json');
+  assert.equal(getSaveFileName('sample.json'), 'sample.json');
+  assert.equal(getSaveFileName(null), 'untitled.json');
 });

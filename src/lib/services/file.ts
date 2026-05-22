@@ -21,8 +21,8 @@ export async function saveFile(path: string, content: string): Promise<void> {
  * Save content to new file using save dialog
  * @returns File path or null if cancelled
  */
-export async function saveFileDialog(content: string): Promise<string | null> {
-  const result = await invoke<string | null>('save_file_dialog', { content });
+export async function saveFileDialog(content: string, defaultFileName: string): Promise<string | null> {
+  const result = await invoke<string | null>('save_file_dialog', { content, defaultFileName });
   return result;
 }
 

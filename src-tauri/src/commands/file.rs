@@ -35,12 +35,16 @@ pub async fn save_file(path: String, content: String) -> Result<(), String> {
 
 /// Save content to a new file using save dialog
 #[tauri::command]
-pub async fn save_file_dialog(app: AppHandle, content: String) -> Result<Option<String>, String> {
+pub async fn save_file_dialog(
+    app: AppHandle,
+    content: String,
+    default_file_name: String,
+) -> Result<Option<String>, String> {
     let file_path = app.dialog()
         .file()
         .add_filter("JSON Files", &["json"])
         .add_filter("All Files", &["*"])
-        .set_file_name("untitled.json")
+        .set_file_name(&default_file_name)
         .blocking_save_file();
 
     match file_path {

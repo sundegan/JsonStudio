@@ -5,6 +5,7 @@
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import { settingsStore } from '$lib/stores/settings';
+  import { getSaveFileName } from '$lib/stores/untitledTabs.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { t } from '$lib/i18n';
   import type { EditorTheme } from '$lib/config/monacoThemes';
@@ -391,7 +392,7 @@
     }
 
     try {
-      const path = await saveFileDialog(content);
+      const path = await saveFileDialog(content, getSaveFileName(activeTab.fileName));
       if (path) {
         const name = await getFileName(path);
         tabsStore.updateTabFile(activeTab.id, path, name);

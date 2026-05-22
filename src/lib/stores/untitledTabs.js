@@ -22,6 +22,15 @@ export function getNextUntitledName(tabs) {
 }
 
 /**
+ * @param {string | null | undefined} fileName
+ */
+export function getSaveFileName(fileName) {
+  const name = fileName?.trim();
+  if (!name) return 'untitled.json';
+  return name.toLowerCase().endsWith('.json') ? name : `${name}.json`;
+}
+
+/**
  * @param {{ filePath: string | null; fileName: string | null }} tab
  */
 function isUntitledTab(tab) {
