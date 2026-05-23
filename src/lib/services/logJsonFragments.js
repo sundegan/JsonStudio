@@ -78,10 +78,15 @@ export function getStandaloneEscapedJsonContent(content) {
  * @returns {{ formatted: string, kind: LogJsonFragment['kind'] } | null}
  */
 function normalizeJsonCandidate(value, indent) {
+  const unescaped = tryUnescapeLoose(value);
+  if (unescaped && unescaped !== value && startsLikeJson(unescaped)) {
+    const formatted = tryFormatJson(unescaped, indent);
+    if (formatted) return { formatted, kind: 'Escaped JSON' };
+  }
+
   const direct = tryFormatJson(value, indent);
   if (direct) return { formatted: direct, kind: 'JSON' };
 
-  const unescaped = tryUnescapeLoose(value);
   if (unescaped && unescaped !== value) {
     const formatted = tryFormatJson(unescaped, indent);
     if (formatted) return { formatted, kind: 'Escaped JSON' };
@@ -185,6 +190,37 @@ function hasJson5Syntax(value) {
  * @returns {{ start: number, end: number, raw: string, line: number, column: number }[]}
  */
 function findJsonCandidates(content, maxFragments) {
+  const structuralCandidates = findStructuralJsonCandidates(content, maxFragments);
+  if (structuralCandidates.length === 1 && isWholeContentCandidate(content, structuralCandidates[0])) {
+    return structuralCandidates;
+  }
+
+  const stringCandidates = findEscapedJsonStringCandidates(content, maxFragments, structuralCandidates);
+  return [...structuralCandidates, ...stringCandidates]
+    .sort((a, b) => a.start - b.start || a.end - b.end)
+    .slice(0, maxFragments);
+}
+
+/**
+ * @param {string} content
+ * @param {{ start: number, end: number }} candidate
+ */
+function isWholeContentCandidate(content, candidate) {
+  let start = 0;
+  while (start < content.length && /\s/.test(content[start])) start += 1;
+
+  let end = content.length - 1;
+  while (end >= 0 && /\s/.test(content[end])) end -= 1;
+
+  return candidate.start === start && candidate.end === end;
+}
+
+/**
+ * @param {string} content
+ * @param {number} maxFragments
+ * @returns {{ start: number, end: number, raw: string, line: number, column: number }[]}
+ */
+function findStructuralJsonCandidates(content, maxFragments) {
   const candidates = [];
   let line = 1;
   let column = 1;
@@ -218,6 +254,126 @@ function findJsonCandidates(content, maxFragments) {
   }
 
   return candidates;
+}
+
+/**
+ * @param {string} content
+ * @param {number} maxFragments
+ * @param {{ start: number, end: number }[]} structuralCandidates
+ * @returns {{ start: number, end: number, raw: string, line: number, column: number }[]}
+ */
+function findEscapedJsonStringCandidates(content, maxFragments, structuralCandidates) {
+  const candidates = [];
+  let index = 0;
+
+  while (index < content.length && candidates.length < maxFragments) {
+    const char = content[index];
+    if (char !== '"' && char !== "'") {
+      index += 1;
+      continue;
+    }
+
+    const end = findQuotedStringEnd(content, index, char);
+    if (end === -1) break;
+
+    const raw = content.slice(index, end + 1);
+    if (char === "'" && isShellQuotedJsonBlock(raw)) {
+      index += 1;
+      continue;
+    }
+
+    if (
+      isInsideStructuralCandidate(structuralCandidates, index, end) ||
+      hasStructuralCandidateInside(structuralCandidates, index, end) ||
+      !isEscapedJsonStringCandidate(raw)
+    ) {
+      index = end + 1;
+      continue;
+    }
+
+    const position = getLineColumnAt(content, index);
+    candidates.push({
+      start: index,
+      end,
+      raw,
+      line: position.line,
+      column: position.column,
+    });
+    index = end + 1;
+  }
+
+  return candidates;
+}
+
+/**
+ * @param {{ start: number, end: number }[]} candidates
+ * @param {number} start
+ * @param {number} end
+ */
+function hasStructuralCandidateInside(candidates, start, end) {
+  return candidates.some((candidate) => candidate.start > start && candidate.end < end);
+}
+
+/**
+ * @param {{ start: number, end: number }[]} candidates
+ * @param {number} start
+ * @param {number} end
+ */
+function isInsideStructuralCandidate(candidates, start, end) {
+  return candidates.some((candidate) => candidate.start < start && candidate.end > end);
+}
+
+/**
+ * @param {string} raw
+ */
+function isEscapedJsonStringCandidate(raw) {
+  const unescaped = tryUnescapeLoose(raw);
+  if (!unescaped) return false;
+  return startsLikeJson(unescaped);
+}
+
+/**
+ * Shell commands often wrap JSON request bodies in single quotes. Treat that
+ * outer quote as a shell boundary, not as a JSON string that should hide all
+ * nested escaped JSON fields from the scanner.
+ *
+ * @param {string} raw
+ */
+function isShellQuotedJsonBlock(raw) {
+  if (!raw.startsWith("'") || !raw.endsWith("'")) return false;
+  return startsLikeJson(raw.slice(1, -1));
+}
+
+/**
+ * @param {string} value
+ */
+function startsLikeJson(value) {
+  const trimmed = value.trim();
+  return trimmed.startsWith('{') || trimmed.startsWith('[');
+}
+
+/**
+ * @param {string} content
+ * @param {number} start
+ * @param {'"' | "'"} quote
+ */
+function findQuotedStringEnd(content, start, quote) {
+  let escaped = false;
+  for (let index = start + 1; index < content.length; index += 1) {
+    const char = content[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (char === quote) {
+      return index;
+    }
+  }
+  return -1;
 }
 
 /**
@@ -320,9 +476,20 @@ function advancePosition(text, line, column) {
  */
 function inferFragmentLabel(content, start, fallbackIndex) {
   const before = content.slice(Math.max(0, start - 80), start);
-  const match = before.match(/([A-Za-z_$][\w.$-]*)\s*[:=]\s*["']?\s*$/);
+  const match = before.match(
+    /(?:--?([A-Za-z_$][\w.$-]*)|["']?([A-Za-z_$][\w.$-]*)["']?\s*[:=])\s*["']?\s*$/
+  );
   if (match) {
-    return match[1];
+    return match[1] || match[2];
   }
   return `Fragment ${fallbackIndex}`;
+}
+
+/**
+ * @param {string} content
+ * @param {number} offset
+ * @returns {{ line: number, column: number }}
+ */
+function getLineColumnAt(content, offset) {
+  return advancePosition(content.slice(0, offset), 1, 1);
 }

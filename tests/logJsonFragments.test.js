@@ -64,6 +64,70 @@ test('unescapes escaped JSON fragments', () => {
   assert.equal(fragments[0].formatted, '{\n  "id": 1,\n  "event": "login"\n}');
 });
 
+test('extracts escaped JSON strings from mixed log text', () => {
+  const log = [
+    '2026-05-23T08:15:30.123Z INFO service=billing trace=abc-123',
+    String.raw`context="{\"orderId\":\"ord-1001\",\"total\":42.5,\"items\":[{\"sku\":\"A-1\",\"qty\":2},{\"sku\":\"B-7\",\"qty\":1}],\"meta\":{\"coupon\":null,\"flags\":[true,false]}}"`,
+    String.raw`audit="[{\"step\":\"reserve\",\"ok\":true},{\"step\":\"charge\",\"ok\":true}]"`,
+    'latency=18ms',
+  ].join(' ');
+
+  const fragments = extractLogJsonFragments(log);
+
+  assert.equal(fragments.length, 2);
+  assert.equal(fragments[0].label, 'context');
+  assert.equal(fragments[0].kind, 'Escaped JSON');
+  assert.equal(fragments[0].formatted, `{
+  "orderId": "ord-1001",
+  "total": 42.5,
+  "items": [
+    {
+      "sku": "A-1",
+      "qty": 2
+    },
+    {
+      "sku": "B-7",
+      "qty": 1
+    }
+  ],
+  "meta": {
+    "coupon": null,
+    "flags": [
+      true,
+      false
+    ]
+  }
+}`);
+  assert.equal(fragments[1].label, 'audit');
+  assert.equal(fragments[1].kind, 'Escaped JSON');
+  assert.equal(fragments[1].formatted, `[
+  {
+    "step": "reserve",
+    "ok": true
+  },
+  {
+    "step": "charge",
+    "ok": true
+  }
+]`);
+});
+
+test('extracts JSON payloads from curl data arguments with nested escaped JSON strings', () => {
+  const curl = String.raw`curl 'https://mcs.snssdk.com/list' \
+  -H 'accept: */*' \
+  -H 'content-type: application/json; charset=UTF-8' \
+  -H 'sec-ch-ua: "Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"' \
+  --data-raw '[{"events":[{"event":"applog_trace","params":"{\"count\":3,\"state\":\"net\",\"key\":\"log\",\"params_for_special\":\"applog_trace\",\"aid\":2608,\"platform\":\"web\",\"_staging_flag\":1,\"sdk_version\":\"4.2.9\",\"event_index\":1779548677267}","local_time_ms":1779547742896}],"user":{"user_unique_id":"7620469511225804288","user_id":"1680531454957182","user_is_login":true,"web_id":"7620469511225804288"},"header":{"app_id":2608,"os_name":"mac","os_version":"10_15_7","device_model":"Macintosh","language":"zh-CN","creative_id":null,"ad_id":null,"campaign_id":null,"platform":"Web","sdk_version":"4.2.9","sdk_lib":"js","timezone":8,"tz_offset":-28800,"resolution":"1920x1080","browser":"Chrome","browser_version":"147.0.0.0","referrer":"https://juejin.cn/post/7589958976227344394?searchId=202605161715123B84ED46E8021FB3C2B5","referrer_host":"juejin.cn","width":1920,"height":1080,"screen_width":1920,"screen_height":1080,"custom":"{\"student_verify_status\":\"not_student\",\"from_seo\":0,\"user_level\":1,\"profile_id\":\"1680531454957182\"}"},"local_time":1779547742}]'`;
+
+  const fragments = extractLogJsonFragments(curl);
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, 'data-raw');
+  assert.equal(fragments[0].kind, 'JSON');
+  assert.match(fragments[0].formatted, /"event": "applog_trace"/);
+  assert.match(fragments[0].formatted, /"custom": "{\\"student_verify_status\\":\\"not_student\\"/);
+});
+
 test('returns no fragments for text without JSON candidates', () => {
   const fragments = extractLogJsonFragments('INFO request completed in 12ms');
 
@@ -75,6 +139,14 @@ test('does not split braces inside JSON strings', () => {
 
   assert.equal(fragments.length, 1);
   assert.equal(fragments[0].formatted, '{\n  "message": "hello {world}",\n  "ok": true\n}');
+});
+
+test('does not extract JSON-looking string values from a complete JSON document', () => {
+  const fragments = extractLogJsonFragments('{"template":"{}","items":"[]"}');
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, 'Fragment 1');
+  assert.equal(fragments[0].formatted, '{\n  "template": "{}",\n  "items": "[]"\n}');
 });
 
 test('does not split braces inside escaped JSON strings', () => {
