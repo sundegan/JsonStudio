@@ -1,4 +1,4 @@
-export const MAX_TABS = 10;
+export const MAX_TABS = 15;
 
 /**
  * @param {{ tabs: Array<any>, activeTabId: string | null }} state

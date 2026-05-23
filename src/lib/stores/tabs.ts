@@ -148,6 +148,7 @@ function createTabsStore() {
     
     // Add new tab
     addTab: (content: string = '', filePath: string | null = null, fileName: string | null = null) => {
+      let added = false;
       update(state => {
         // Check max tabs limit
         if (state.tabs.length >= MAX_TABS) {
@@ -165,8 +166,10 @@ function createTabsStore() {
           activeTabId: newTab.id,
         };
         saveState(newState);
+        added = true;
         return newState;
       });
+      return added;
     },
     
     // Open file: reuse empty tab if possible, otherwise create new tab

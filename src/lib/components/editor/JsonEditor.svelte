@@ -28,7 +28,9 @@
   } from '$lib/services/logJsonFragments.js';
   import { normalizePastedStandaloneJson } from '$lib/services/standaloneJsonPasteNormalize.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
+  import { openClipboardContentInNewTab } from '$lib/services/clipboardTabs.js';
   import { clampPanelWidth, getDefaultPanelWidth } from '$lib/services/panelResize.js';
+  import { MAX_TABS } from '$lib/stores/tabOpen.js';
   import { t } from '$lib/i18n';
 
   type LogJsonFragment = {
@@ -136,7 +138,7 @@
         const maxTabsReached = tabsStore.openFile(normalizedContent, filePath, name);
         
         if (maxTabsReached) {
-          showToast('Maximum 10 tabs reached', 'info');
+          showToast(`Maximum ${MAX_TABS} tabs reached`, 'info');
           break;
         }
         
@@ -183,34 +185,38 @@
       
       // Listen for successfully formatted JSON
       unlistenFormatted = await listen<string>('clipboard-formatted', async (event) => {
-        const currentTab = $activeTab;
-        if (!currentTab) return;
-
-        const nextContent = await normalizeEditorPastedStandaloneJson(event.payload).catch(() => null) || event.payload;
-        
-        content = nextContent;
-        monacoEditor?.setValue(nextContent);
-        tabsStore.updateTabContent(currentTab.id, nextContent);
-        quickDetectFormatAndSwitchLanguage(nextContent);  // Immediate language switch
-        scheduleLogJsonDetection(nextContent);
-        updateStats(true);  // Show JSON5 toast if detected
+        const result = await openClipboardContentInNewTab(event.payload, {
+          tabsStore,
+          normalize: normalizeEditorPastedStandaloneJson,
+        });
+        if (!result.opened) {
+          showToast(`Maximum ${MAX_TABS} tabs reached`, 'error');
+          return;
+        }
         showToast('Clipboard content formatted');
+        queueMicrotask(() => {
+          quickDetectFormatAndSwitchLanguage(result.content);
+          scheduleLogJsonDetection(result.content);
+          updateStats(true);
+        });
       });
       
       // Listen for raw paste (when JSON is invalid)
       unlistenRaw = await listen<string>('clipboard-pasted-raw', async (event) => {
-        const currentTab = $activeTab;
-        if (!currentTab) return;
-
-        const nextContent = await normalizeEditorPastedStandaloneJson(event.payload).catch(() => null) || event.payload;
-        
-        content = nextContent;
-        monacoEditor?.setValue(nextContent);
-        tabsStore.updateTabContent(currentTab.id, nextContent);
-        quickDetectFormatAndSwitchLanguage(nextContent);  // Immediate language switch
-        scheduleLogJsonDetection(nextContent);
-        updateStats(true);  // Show JSON5 toast if detected
+        const result = await openClipboardContentInNewTab(event.payload, {
+          tabsStore,
+          normalize: normalizeEditorPastedStandaloneJson,
+        });
+        if (!result.opened) {
+          showToast(`Maximum ${MAX_TABS} tabs reached`, 'error');
+          return;
+        }
         showToast('Clipboard content pasted (invalid JSON)');
+        queueMicrotask(() => {
+          quickDetectFormatAndSwitchLanguage(result.content);
+          scheduleLogJsonDetection(result.content);
+          updateStats(true);
+        });
       });
 
       // Listen for file drop events

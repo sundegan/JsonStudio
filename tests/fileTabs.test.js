@@ -20,6 +20,10 @@ function createTab(overrides = {}) {
   };
 }
 
+test('allows up to 15 tabs', () => {
+  assert.equal(MAX_TABS, 15);
+});
+
 test('reopening an unmodified file reuses and refreshes the existing tab', () => {
   const state = {
     tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json', fileName: 'a.json', content: '{"old":true}' })],
