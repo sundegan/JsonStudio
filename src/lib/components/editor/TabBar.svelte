@@ -116,10 +116,6 @@
     confirmAction = null;
   }
   
-  function handleNewTab() {
-    tabsStore.addTab();
-  }
-  
   // Drag and drop handlers
   function handleDragStart(tabId: string, event: DragEvent) {
     if (!event.dataTransfer) return;
@@ -298,23 +294,6 @@
         </div>
       </div>
     {/each}
-  </div>
-  
-  <!-- Actions area -->
-  <div class="flex items-center pl-1.5 shrink-0 border-l border-(--border) ml-1.5 h-full">
-    <button
-      class="w-5 h-5 flex items-center justify-center rounded-md
-             text-(--text-secondary)
-             hover:bg-(--bg-hover) hover:text-(--text-primary)
-             active:bg-(--bg-tertiary)
-             transition-all duration-150"
-      onclick={handleNewTab}
-      title="New Tab (Cmd+T)"
-    >
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M14 7v1H8v6H7V8H1V7h6V1h1v6h6z"/>
-      </svg>
-    </button>
   </div>
 </div>
 

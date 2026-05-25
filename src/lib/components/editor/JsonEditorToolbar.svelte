@@ -406,7 +406,11 @@
   }
 
   function handleNewFile() {
-    tabsStore.addTab();
+    const created = tabsStore.addTab();
+    if (!created) {
+      onToast(`Maximum ${MAX_TABS} tabs reached`, 'info');
+      return;
+    }
     onToast('New tab created');
   }
 </script>

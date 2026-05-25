@@ -62,6 +62,30 @@ test('opening a new file reports the tab limit only when no existing tab can be 
   assert.equal(result.maxTabsReached, true);
 });
 
+test('toolbar reports the tab limit instead of success when new tab creation fails', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/JsonEditorToolbar.svelte', import.meta.url),
+    'utf8',
+  );
+  const handlerBody = source.match(/function handleNewFile\(\) \{[\s\S]*?\n  \}/)?.[0] || '';
+
+  assert.match(handlerBody, /const\s+created\s*=\s*tabsStore\.addTab\(\)/);
+  assert.match(handlerBody, /if\s*\(!created\)/);
+  assert.match(handlerBody, /Maximum \$\{MAX_TABS\} tabs reached/);
+  assert.match(handlerBody, /return/);
+  assert.match(handlerBody, /New tab created/);
+});
+
+test('tab bar does not expose a separate inline new-tab button', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/TabBar.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.doesNotMatch(source, /function handleNewTab\(\)/);
+  assert.doesNotMatch(source, /title="New Tab \(Cmd\+T\)"/);
+});
+
 test('close confirmation is required only when unsaved changes would be discarded', () => {
   const tabs = [
     createTab({ id: 'keep', isModified: false }),
