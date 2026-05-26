@@ -2,8 +2,10 @@
   // Monaco Editor Svelte wrapper component
   import { onMount, onDestroy } from 'svelte';
   import type * as Monaco from 'monaco-editor';
+  import { openUrl } from '@tauri-apps/plugin-opener';
   import { initMonaco } from '$lib/services/monaco';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
+  import { getJsonStringUrlAtColumn } from '$lib/services/editorLinks.js';
   
   // Props
   let {
@@ -138,6 +140,15 @@
     '.find-widget .monaco-custom-toggle.codicon-find-selection',
     '.find-widget .codicon-find-selection',
   ].join(', ');
+
+  async function openEditorUrl(url: string) {
+    try {
+      await openUrl(url);
+    } catch (error) {
+      console.error('Failed to open editor link:', error);
+      window.open(url, '_blank');
+    }
+  }
   
   // Watch value changes
   $effect(() => {
@@ -295,6 +306,23 @@
 
       editor.onDidPaste((event) => {
         onPaste(event);
+      });
+
+      editor.onMouseDown((event) => {
+        const browserEvent = event.event.browserEvent;
+        if (browserEvent.button !== 0 || (!browserEvent.metaKey && !browserEvent.ctrlKey)) return;
+
+        const position = event.target.position;
+        const model = editor?.getModel();
+        if (!position || !model) return;
+
+        const lineText = model.getLineContent(position.lineNumber);
+        const url = getJsonStringUrlAtColumn(lineText, position.column);
+        if (!url) return;
+
+        event.event.preventDefault();
+        event.event.stopPropagation();
+        void openEditorUrl(url);
       });
     }
 
