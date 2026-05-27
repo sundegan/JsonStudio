@@ -144,6 +144,7 @@ pub fn run() {
                 queue_or_emit_open_files(app, paths);
             }
         }))
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
