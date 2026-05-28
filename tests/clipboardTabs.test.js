@@ -18,7 +18,7 @@ test('opens formatted clipboard content in a new tab without updating the curren
     normalize: async (value) => value.replace('true', 'false'),
   });
 
-  assert.deepEqual(result, { content: '{"ok":false}', opened: true });
+  assert.deepEqual(result, { content: '{"ok":false}' });
   assert.deepEqual(calls, [['addTab', '{"ok":false}']]);
 });
 
@@ -34,11 +34,11 @@ test('falls back to the original clipboard payload when normalization returns nu
     normalize: async () => null,
   });
 
-  assert.deepEqual(result, { content: 'not json', opened: true });
+  assert.deepEqual(result, { content: 'not json' });
   assert.deepEqual(calls, [['addTab', 'not json']]);
 });
 
-test('reports when clipboard content cannot be opened because the tab limit was reached', async () => {
+test('returns normalized content after adding clipboard content to a new tab', async () => {
   const result = await openClipboardContentInNewTab('{"ok":true}', {
     tabsStore: {
       addTab() {
@@ -48,5 +48,5 @@ test('reports when clipboard content cannot be opened because the tab limit was 
     normalize: async (value) => value,
   });
 
-  assert.deepEqual(result, { content: '{"ok":true}', opened: false });
+  assert.deepEqual(result, { content: '{"ok":true}' });
 });

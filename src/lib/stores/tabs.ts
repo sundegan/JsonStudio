@@ -2,7 +2,7 @@ import { writable, derived } from 'svelte/store';
 import type { JsonStats } from '$lib/services/json';
 import { fileWatcherService } from '$lib/services/fileWatcher';
 import { FIRST_UNTITLED_NAME, getNextUntitledName } from './untitledTabs.js';
-import { MAX_TABS, openFileInTabs } from './tabOpen.js';
+import { openFileInTabs } from './tabOpen.js';
 
 export interface Tab {
   id: string;                    // Unique identifier
@@ -148,14 +148,7 @@ function createTabsStore() {
     
     // Add new tab
     addTab: (content: string = '', filePath: string | null = null, fileName: string | null = null) => {
-      let added = false;
       update(state => {
-        // Check max tabs limit
-        if (state.tabs.length >= MAX_TABS) {
-          console.warn(`Maximum ${MAX_TABS} tabs allowed`);
-          return state;
-        }
-        
         const newTab = createNewTab(
           content,
           filePath,
@@ -166,20 +159,17 @@ function createTabsStore() {
           activeTabId: newTab.id,
         };
         saveState(newState);
-        added = true;
         return newState;
       });
-      return added;
     },
     
     // Open file: reuse empty tab if possible, otherwise create new tab
     openFile: (content: string, filePath: string, fileName: string | null) => {
-      let maxTabsReached = false;
       update(state => {
-        const existingResult = openFileInTabs(state, content, filePath, fileName);
-        if (existingResult.state !== state) {
-          saveState(existingResult.state);
-          return existingResult.state;
+        const existingState = openFileInTabs(state, content, filePath, fileName);
+        if (existingState !== state) {
+          saveState(existingState);
+          return existingState;
         }
 
         const currentTab = state.tabs.find(t => t.id === state.activeTabId);
@@ -198,12 +188,6 @@ function createTabsStore() {
           return newState;
         }
         
-        // Check max tabs limit
-        if (existingResult.maxTabsReached) {
-          maxTabsReached = existingResult.maxTabsReached;
-          return state;
-        }
-        
         // Create new tab
         const newTab = createNewTab(content, filePath, fileName);
         const newState = {
@@ -213,7 +197,6 @@ function createTabsStore() {
         saveState(newState);
         return newState;
       });
-      return maxTabsReached;
     },
     
     // Remove tab by ID

@@ -30,7 +30,6 @@
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { openClipboardContentInNewTab } from '$lib/services/clipboardTabs.js';
   import { clampPanelWidth, getDefaultPanelWidth } from '$lib/services/panelResize.js';
-  import { MAX_TABS } from '$lib/stores/tabOpen.js';
   import { t } from '$lib/i18n';
 
   type LogJsonFragment = {
@@ -135,12 +134,7 @@
           getJsonStats,
           formatJson5,
         });
-        const maxTabsReached = tabsStore.openFile(normalizedContent, filePath, name);
-        
-        if (maxTabsReached) {
-          showToast(`Maximum ${MAX_TABS} tabs reached`, 'info');
-          break;
-        }
+        tabsStore.openFile(normalizedContent, filePath, name);
         
         quickDetectFormatAndSwitchLanguage(normalizedContent);  // Immediate language switch
         await updateStats(true);  // Show JSON5 toast if detected
@@ -189,10 +183,6 @@
           tabsStore,
           normalize: normalizeEditorPastedStandaloneJson,
         });
-        if (!result.opened) {
-          showToast(`Maximum ${MAX_TABS} tabs reached`, 'error');
-          return;
-        }
         showToast('Clipboard content formatted');
         queueMicrotask(() => {
           quickDetectFormatAndSwitchLanguage(result.content);
@@ -207,10 +197,6 @@
           tabsStore,
           normalize: normalizeEditorPastedStandaloneJson,
         });
-        if (!result.opened) {
-          showToast(`Maximum ${MAX_TABS} tabs reached`, 'error');
-          return;
-        }
         showToast('Clipboard content pasted (invalid JSON)');
         queueMicrotask(() => {
           quickDetectFormatAndSwitchLanguage(result.content);

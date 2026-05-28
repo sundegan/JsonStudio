@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { MAX_TABS, openFileInTabs } from '../src/lib/stores/tabOpen.js';
+import { openFileInTabs } from '../src/lib/stores/tabOpen.js';
 import {
   shouldConfirmCloseAllTabs,
   shouldConfirmCloseOtherTabs,
@@ -20,10 +20,6 @@ function createTab(overrides = {}) {
   };
 }
 
-test('allows up to 15 tabs', () => {
-  assert.equal(MAX_TABS, 15);
-});
-
 test('reopening an unmodified file reuses and refreshes the existing tab', () => {
   const state = {
     tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json', fileName: 'a.json', content: '{"old":true}' })],
@@ -32,10 +28,9 @@ test('reopening an unmodified file reuses and refreshes the existing tab', () =>
 
   const result = openFileInTabs(state, '{"new":true}', '/tmp/a.json', 'a.json');
 
-  assert.equal(result.maxTabsReached, false);
-  assert.equal(result.state.activeTabId, 'tab-1');
-  assert.equal(result.state.tabs[0].content, '{"new":true}');
-  assert.equal(result.state.tabs.length, 1);
+  assert.equal(result.activeTabId, 'tab-1');
+  assert.equal(result.tabs[0].content, '{"new":true}');
+  assert.equal(result.tabs.length, 1);
 });
 
 test('reopening a modified file activates the existing tab without discarding edits', () => {
@@ -46,33 +41,31 @@ test('reopening a modified file activates the existing tab without discarding ed
 
   const result = openFileInTabs(state, '{"disk":true}', '/tmp/a.json', 'a.json');
 
-  assert.equal(result.state.activeTabId, 'tab-1');
-  assert.equal(result.state.tabs[0].content, '{"draft":true}');
-  assert.equal(result.state.tabs[0].isModified, true);
+  assert.equal(result.activeTabId, 'tab-1');
+  assert.equal(result.tabs[0].content, '{"draft":true}');
+  assert.equal(result.tabs[0].isModified, true);
 });
 
-test('opening a new file reports the tab limit only when no existing tab can be reused', () => {
-  const tabs = Array.from({ length: MAX_TABS }, (_, index) =>
-    createTab({ id: `tab-${index}`, filePath: `/tmp/${index}.json` })
-  );
+test('opening a new file leaves creation to the tabs store', () => {
+  const state = {
+    tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json' })],
+    activeTabId: 'tab-1',
+  };
 
-  const result = openFileInTabs({ tabs, activeTabId: tabs[0].id }, '{}', '/tmp/new.json', 'new.json');
+  const result = openFileInTabs(state, '{}', '/tmp/new.json', 'new.json');
 
-  assert.equal(result.state.tabs.length, MAX_TABS);
-  assert.equal(result.maxTabsReached, true);
+  assert.equal(result, state);
 });
 
-test('toolbar reports the tab limit instead of success when new tab creation fails', async () => {
+test('toolbar creates new tabs directly', async () => {
   const source = await readFile(
     new URL('../src/lib/components/editor/JsonEditorToolbar.svelte', import.meta.url),
     'utf8',
   );
   const handlerBody = source.match(/function handleNewFile\(\) \{[\s\S]*?\n  \}/)?.[0] || '';
 
-  assert.match(handlerBody, /const\s+created\s*=\s*tabsStore\.addTab\(\)/);
-  assert.match(handlerBody, /if\s*\(!created\)/);
-  assert.match(handlerBody, /Maximum \$\{MAX_TABS\} tabs reached/);
-  assert.match(handlerBody, /return/);
+  assert.match(handlerBody, /tabsStore\.addTab\(\)/);
+  assert.doesNotMatch(handlerBody, /Maximum/);
   assert.match(handlerBody, /New tab created/);
 });
 

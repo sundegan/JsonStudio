@@ -1,15 +1,14 @@
 /**
  * @param {string} payload
  * @param {{
- *   tabsStore: { addTab: (content: string) => boolean | void },
+ *   tabsStore: { addTab: (content: string) => void },
  *   normalize: (value: string) => Promise<string | null>,
  * }} options
  */
 export async function openClipboardContentInNewTab(payload, { tabsStore, normalize }) {
   const nextContent = await normalize(payload).catch(() => null) || payload;
-  const opened = tabsStore.addTab(nextContent) !== false;
+  tabsStore.addTab(nextContent);
   return {
     content: nextContent,
-    opened,
   };
 }

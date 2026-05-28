@@ -7,7 +7,6 @@
   import { settingsStore } from '$lib/stores/settings';
   import { getSaveFileName } from '$lib/stores/untitledTabs.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
-  import { MAX_TABS } from '$lib/stores/tabOpen.js';
   import { t } from '$lib/i18n';
   import type { EditorTheme } from '$lib/config/monacoThemes';
   import type MonacoEditor from './MonacoEditor.svelte';
@@ -330,12 +329,7 @@
         });
 
         // Smart open: reuse empty tab or create new one
-        const maxTabsReached = tabsStore.openFile(normalizedContent, path, name);
-        
-        if (maxTabsReached) {
-          onToast(`Maximum ${MAX_TABS} tabs reached`, 'info');
-          return;
-        }
+        tabsStore.openFile(normalizedContent, path, name);
 
         await onStatsUpdate();
         onToast(`Opened: ${name || 'file'}`);
@@ -406,11 +400,7 @@
   }
 
   function handleNewFile() {
-    const created = tabsStore.addTab();
-    if (!created) {
-      onToast(`Maximum ${MAX_TABS} tabs reached`, 'info');
-      return;
-    }
+    tabsStore.addTab();
     onToast('New tab created');
   }
 </script>
