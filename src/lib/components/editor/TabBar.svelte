@@ -43,6 +43,17 @@
     tabsStore.setActiveTab(tabId);
   }
 
+  function handleTabsWheel(event: WheelEvent) {
+    const container = event.currentTarget as HTMLElement;
+    if (container.scrollWidth <= container.clientWidth) return;
+
+    const scrollDelta = event.deltaX || event.deltaY;
+    if (!scrollDelta) return;
+
+    event.preventDefault();
+    container.scrollLeft += event.deltaX || event.deltaY;
+  }
+
   function closeContextMenu() {
     isContextMenuOpen = false;
     contextMenuTabId = null;
@@ -267,7 +278,7 @@
 </script>
 
 <div class="flex items-center bg-(--bg-primary) border-b border-(--border) shrink-0 px-3 py-1" style="height: 30px;">
-  <div class="flex items-center flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container gap-1.5 h-full" bind:this={tabsContainer}>
+  <div class="flex items-center flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container gap-1.5 h-full" bind:this={tabsContainer} onwheel={handleTabsWheel}>
     {#each tabs as tab (tab.id)}
       <div
         class="tab-button group flex items-center justify-between px-2 text-[10.5px] 

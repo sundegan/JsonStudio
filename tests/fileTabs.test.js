@@ -105,6 +105,16 @@ test('tab bar uses pointer events instead of native html drag events', async () 
   assert.doesNotMatch(source, /ondragstart=/);
 });
 
+test('tab bar maps normal wheel scrolling to horizontal scrolling', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/TabBar.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /onwheel=\{handleTabsWheel\}/);
+  assert.match(source, /scrollLeft \+= event\.deltaX \|\| event\.deltaY/);
+});
+
 test('close confirmation is required only when unsaved changes would be discarded', () => {
   const tabs = [
     createTab({ id: 'keep', isModified: false }),
