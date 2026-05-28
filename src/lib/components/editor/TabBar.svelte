@@ -5,7 +5,8 @@
     shouldConfirmCloseOtherTabs,
     shouldConfirmCloseTab,
   } from '$lib/stores/tabClose.js';
-  import { createEventDispatcher, onMount, tick } from 'svelte';
+  import { getTabInsertionTarget } from '$lib/stores/tabOrder.js';
+  import { onMount, tick } from 'svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   
   let { tabs, activeTabId } = $props<{
@@ -13,10 +14,12 @@
     activeTabId: string | null;
   }>();
   
-  const dispatch = createEventDispatcher();
-  
-  let draggedTabId = $state<string | null>(null);
   let dragOverTabId = $state<string | null>(null);
+  let dragOverPosition = $state<'before' | 'after'>('before');
+  let dragInsertionIndex = $state<number | null>(null);
+  let pointerDragStart = $state<{ tabId: string; x: number; y: number } | null>(null);
+  let isPointerDragging = $state(false);
+  let suppressNextClick = $state(false);
   let contextMenuX = $state(0);
   let contextMenuY = $state(0);
   let contextMenuTabId = $state<string | null>(null);
@@ -30,25 +33,19 @@
   let confirmAction = $state<'tab' | 'others' | 'all' | null>(null);
   let confirmMessage = $state('');
 
-  function handleTabClick(tabId: string) {
+  function handleTabClick(tabId: string, event: MouseEvent) {
+    if (suppressNextClick) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressNextClick = false;
+      return;
+    }
     tabsStore.setActiveTab(tabId);
   }
 
   function closeContextMenu() {
     isContextMenuOpen = false;
     contextMenuTabId = null;
-  }
-
-  function handleTabContextMenu(tabId: string, event: MouseEvent) {
-    event.preventDefault();
-    const menuWidth = 180;
-    const menuHeight = 80;
-    const maxX = window.innerWidth - menuWidth - 8;
-    const maxY = window.innerHeight - menuHeight - 8;
-    contextMenuX = Math.max(8, Math.min(event.clientX, maxX));
-    contextMenuY = Math.max(8, Math.min(event.clientY, maxY));
-    contextMenuTabId = tabId;
-    isContextMenuOpen = true;
   }
 
   function handleCloseOtherTabs() {
@@ -85,21 +82,6 @@
     closeContextMenu();
   }
   
-  function handleCloseTab(tabId: string, event: MouseEvent) {
-    event.stopPropagation();
-    
-    const tab = tabs.find((t: Tab) => t.id === tabId);
-    if (shouldConfirmCloseTab(tabs, tabId)) {
-      tabToClose = tabId;
-      confirmAction = 'tab';
-      confirmMessage = `"${tab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
-      isConfirmOpen = true;
-      return;
-    }
-    
-    tabsStore.removeTab(tabId);
-  }
-
   function onConfirmClose() {
     if (confirmAction === 'all') {
       tabsStore.closeAllTabs();
@@ -117,62 +99,121 @@
     confirmAction = null;
   }
   
-  // Drag and drop handlers
-  function handleDragStart(tabId: string, event: DragEvent) {
-    if (!event.dataTransfer) return;
-    draggedTabId = tabId;
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/html', tabId);
-    
-    // Add dragging class with slight delay for visual feedback
-    setTimeout(() => {
-      const element = event.target as HTMLElement;
-      element.classList.add('dragging');
-    }, 0);
-  }
-  
-  function handleDragEnd(event: DragEvent) {
-    draggedTabId = null;
+  function resetPointerDragState() {
     dragOverTabId = null;
-    
-    const element = event.target as HTMLElement;
-    element.classList.remove('dragging');
+    dragOverPosition = 'before';
+    dragInsertionIndex = null;
+    pointerDragStart = null;
+    isPointerDragging = false;
   }
-  
-  function handleDragOver(tabId: string, event: DragEvent) {
-    event.preventDefault();
-    if (!event.dataTransfer) return;
-    
-    event.dataTransfer.dropEffect = 'move';
-    
-    if (draggedTabId && draggedTabId !== tabId) {
-      dragOverTabId = tabId;
+
+  function getTabRects() {
+    if (!tabsContainer) return [];
+    return Array.from(tabsContainer.querySelectorAll<HTMLElement>('[data-tab-id]'))
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          id: element.dataset.tabId || '',
+          left: rect.left,
+          width: rect.width,
+        };
+      })
+      .filter((rect) => rect.id);
+  }
+
+  function updatePointerDragTarget(clientX: number) {
+    const target = getTabInsertionTarget(getTabRects(), clientX);
+    if (!target) {
+      dragOverTabId = null;
+      dragInsertionIndex = null;
+      return;
     }
+
+    dragOverTabId = target.targetTabId;
+    dragOverPosition = target.position;
+    dragInsertionIndex = target.insertionIndex;
   }
-  
-  function handleDragLeave() {
-    dragOverTabId = null;
+
+  function handleTabPointerDown(tabId: string, event: PointerEvent) {
+    if (event.button !== 0) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest('button, [role="button"]')) return;
+
+    closeContextMenu();
+    pointerDragStart = { tabId, x: event.clientX, y: event.clientY };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   }
-  
-  function handleDrop(targetTabId: string, event: DragEvent) {
+
+  function handleTabPointerMove(event: PointerEvent) {
+    if (!pointerDragStart) return;
+
+    const moveX = Math.abs(event.clientX - pointerDragStart.x);
+    const moveY = Math.abs(event.clientY - pointerDragStart.y);
+    if (!isPointerDragging && Math.max(moveX, moveY) < 4) return;
+
     event.preventDefault();
+    isPointerDragging = true;
+    updatePointerDragTarget(event.clientX);
+  }
+
+  function handleTabPointerUp(event: PointerEvent) {
+    const start = pointerDragStart;
+    const wasDragging = isPointerDragging;
+
+    if (start && wasDragging) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressNextClick = true;
+
+      const fromIndex = tabs.findIndex((tab: Tab) => tab.id === start.tabId);
+      if (fromIndex !== -1 && dragInsertionIndex !== null) {
+        tabsStore.reorderTabs(fromIndex, dragInsertionIndex);
+      }
+    }
+
+    try {
+      (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+    } catch {
+      // The pointer can already be released if the OS cancels the gesture.
+    }
+    resetPointerDragState();
+  }
+
+  function handleTabPointerCancel() {
+    resetPointerDragState();
+  }
+
+  function handleTabContextMenu(tabId: string, event: MouseEvent) {
+    if (isPointerDragging) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    const menuWidth = 180;
+    const menuHeight = 80;
+    const maxX = window.innerWidth - menuWidth - 8;
+    const maxY = window.innerHeight - menuHeight - 8;
+    contextMenuX = Math.max(8, Math.min(event.clientX, maxX));
+    contextMenuY = Math.max(8, Math.min(event.clientY, maxY));
+    contextMenuTabId = tabId;
+    isContextMenuOpen = true;
+  }
+
+  function handleCloseTab(tabId: string, event: MouseEvent) {
     event.stopPropagation();
     
-    if (!draggedTabId || draggedTabId === targetTabId) {
-      draggedTabId = null;
-      dragOverTabId = null;
+    const tab = tabs.find((t: Tab) => t.id === tabId);
+    if (shouldConfirmCloseTab(tabs, tabId)) {
+      tabToClose = tabId;
+      confirmAction = 'tab';
+      confirmMessage = `"${tab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
+      isConfirmOpen = true;
       return;
     }
     
-    const fromIndex = tabs.findIndex((t: Tab) => t.id === draggedTabId);
-    const toIndex = tabs.findIndex((t: Tab) => t.id === targetTabId);
-    
-    if (fromIndex !== -1 && toIndex !== -1) {
-      tabsStore.reorderTabs(fromIndex, toIndex);
-    }
-    
-    draggedTabId = null;
-    dragOverTabId = null;
+    tabsStore.removeTab(tabId);
   }
   
   function getTabDisplayName(tab: Tab): string {
@@ -236,15 +277,13 @@
                  ? 'bg-color-mix(in srgb, var(--accent) 10%, var(--bg-secondary)) text-(--accent) !border-color-mix(in srgb, var(--accent) 30%, var(--border)) shadow-sm font-semibold' 
                  : 'text-(--text-secondary) border-transparent hover:bg-(--bg-hover)'
                }
-               {dragOverTabId === tab.id ? 'drag-over' : ''}"
-        draggable="true"
-        onclick={() => handleTabClick(tab.id)}
+               {dragOverTabId === tab.id ? `drag-over drag-over-${dragOverPosition}` : ''}"
+        onclick={(e) => handleTabClick(tab.id, e)}
         oncontextmenu={(e) => handleTabContextMenu(tab.id, e)}
-        ondragstart={(e) => handleDragStart(tab.id, e)}
-        ondragend={handleDragEnd}
-        ondragover={(e) => handleDragOver(tab.id, e)}
-        ondragleave={handleDragLeave}
-        ondrop={(e) => handleDrop(tab.id, e)}
+        onpointerdown={(e) => handleTabPointerDown(tab.id, e)}
+        onpointermove={handleTabPointerMove}
+        onpointerup={handleTabPointerUp}
+        onpointercancel={handleTabPointerCancel}
         role="tab"
         aria-selected={tab.id === activeTabId}
         tabindex="0"
@@ -354,16 +393,24 @@
   
 
   /* Drag indicator */
-  .tab-button.drag-over::before {
+  .tab-button.drag-over::before,
+  .tab-button.drag-over::after {
     content: '';
     position: absolute;
-    left: -1px;
     top: 4px;
     bottom: 4px;
     width: 2px;
     background: color-mix(in srgb, var(--accent) 80%, transparent);
     border-radius: 2px;
     box-shadow: 0 0 4px var(--accent-glow);
+  }
+
+  .tab-button.drag-over-before::before {
+    left: -1px;
+  }
+
+  .tab-button.drag-over-after::after {
+    right: -1px;
   }
   
   /* Custom scrollbar */

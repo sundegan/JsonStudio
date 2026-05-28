@@ -92,6 +92,19 @@ test('tab bar scrolls the active tab into view when the active tab changes', asy
   assert.match(source, /inline:\s*'nearest'/);
 });
 
+test('tab bar uses pointer events instead of native html drag events', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/TabBar.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /onpointerdown=/);
+  assert.match(source, /onpointermove=/);
+  assert.match(source, /onpointerup=/);
+  assert.doesNotMatch(source, /draggable="true"/);
+  assert.doesNotMatch(source, /ondragstart=/);
+});
+
 test('close confirmation is required only when unsaved changes would be discarded', () => {
   const tabs = [
     createTab({ id: 'keep', isModified: false }),

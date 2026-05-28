@@ -3,6 +3,7 @@ import type { JsonStats } from '$lib/services/json';
 import { fileWatcherService } from '$lib/services/fileWatcher';
 import { FIRST_UNTITLED_NAME, getNextUntitledName } from './untitledTabs.js';
 import { openFileInTabs } from './tabOpen.js';
+import { moveTabToInsertionIndex } from './tabOrder.js';
 
 export interface Tab {
   id: string;                    // Unique identifier
@@ -134,14 +135,6 @@ function saveState(state: TabsState) {
 
 function createTabsStore() {
   const { subscribe, set, update } = writable<TabsState>(loadState());
-
-  function moveTab(tabs: Tab[], fromIndex: number, toIndex: number) {
-    if (fromIndex === toIndex) return tabs;
-    const newTabs = [...tabs];
-    const [removed] = newTabs.splice(fromIndex, 1);
-    newTabs.splice(toIndex, 0, removed);
-    return newTabs;
-  }
 
   return {
     subscribe,
@@ -313,9 +306,9 @@ function createTabsStore() {
     },
     
     // Reorder tabs (for drag & drop)
-    reorderTabs: (fromIndex: number, toIndex: number) => {
+    reorderTabs: (fromIndex: number, insertionIndex: number) => {
       update(state => {
-        const newTabs = moveTab(state.tabs, fromIndex, toIndex);
+        const newTabs = moveTabToInsertionIndex(state.tabs, fromIndex, insertionIndex);
         const newState = {
           ...state,
           tabs: newTabs,
@@ -361,13 +354,13 @@ function createTabsStore() {
             -1
           );
           const insertIndex = lastPinnedIndex + 1;
-          newTabs = moveTab(updatedTabs, tabIndex, insertIndex);
+          newTabs = moveTabToInsertionIndex(updatedTabs, tabIndex, insertIndex);
         } else {
           const firstUnpinnedIndex = updatedTabs.findIndex(
             (tab, index) => !tab.isPinned && index !== tabIndex
           );
-          const insertIndex = firstUnpinnedIndex === -1 ? updatedTabs.length - 1 : firstUnpinnedIndex;
-          newTabs = moveTab(updatedTabs, tabIndex, insertIndex);
+          const insertIndex = firstUnpinnedIndex === -1 ? updatedTabs.length : firstUnpinnedIndex;
+          newTabs = moveTabToInsertionIndex(updatedTabs, tabIndex, insertIndex);
         }
 
         const newState: TabsState = {
