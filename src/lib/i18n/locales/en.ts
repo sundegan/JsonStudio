@@ -179,7 +179,6 @@ export default {
 
   // Export image
   'toolbar.exportImage': 'Export Image',
-  'toolbar.exportImageCopied': 'Image copied to clipboard',
   'toolbar.exportImageSaved': 'Image saved',
   'toolbar.exportImageFailed': 'Failed to export image',
   'toolbar.noContentExport': 'No content to export',

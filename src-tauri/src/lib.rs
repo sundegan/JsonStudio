@@ -1,6 +1,5 @@
 mod commands;
 
-use commands::clipboard::copy_image_to_clipboard;
 use commands::codegen::{code_to_json, json_to_code};
 use commands::convert::{
     csv_to_json, json_to_csv, json_to_toml, json_to_xml, json_to_yaml, toml_to_json, xml_to_json,
@@ -227,7 +226,6 @@ pub fn run() {
             csv_to_json,
             json_to_code,
             code_to_json,
-            copy_image_to_clipboard,
             export_json_image,
             get_pending_files
         ])

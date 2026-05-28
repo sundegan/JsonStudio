@@ -179,7 +179,6 @@ export default {
 
   // Export image
   'toolbar.exportImage': '导出图片',
-  'toolbar.exportImageCopied': '图片已复制到剪贴板',
   'toolbar.exportImageSaved': '图片已保存',
   'toolbar.exportImageFailed': '导出图片失败',
   'toolbar.noContentExport': '没有可导出的内容',

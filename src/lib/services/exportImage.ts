@@ -108,6 +108,16 @@ export async function exportJsonAsImage(options: ExportOptions): Promise<string>
   return pngBase64;
 }
 
-export async function copyImageToClipboard(pngBase64: string): Promise<void> {
-  await invoke('copy_image_to_clipboard', { pngBase64 });
+export function pngBase64ToBytes(pngBase64: string): Uint8Array {
+  const base64 = pngBase64.includes(',')
+    ? pngBase64.slice(pngBase64.indexOf(',') + 1)
+    : pngBase64;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
 }

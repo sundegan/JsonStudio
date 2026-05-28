@@ -1,7 +1,7 @@
 <script lang="ts">
   import { escapeString, unescapeString } from '$lib/services/json';
-  import { openFileDialog, saveFile as writeFile, saveFileDialog, getFileName } from '$lib/services/file';
-  import { exportJsonAsImage, copyImageToClipboard } from '$lib/services/exportImage';
+  import { openFileDialog, saveFile as writeFile, saveFileDialog, saveBinaryFileDialog, getFileName } from '$lib/services/file';
+  import { exportJsonAsImage, pngBase64ToBytes } from '$lib/services/exportImage';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import { settingsStore } from '$lib/stores/settings';
@@ -24,6 +24,12 @@
   }
 
   const LARGE_FILE_THRESHOLD = 1024 * 1024;
+
+  function getExportImageFileName(fileName: string | null | undefined) {
+    const name = fileName?.trim();
+    if (!name) return 'json-export.png';
+    return `${name.replace(/\.[^.]+$/, '') || 'json-export'}.png`;
+  }
 
   const {
     isDiffMode,
@@ -100,8 +106,12 @@
         fontSize: appSettings.fontSize,
         lineHeight: appSettings.lineHeight,
       });
-      await copyImageToClipboard(pngBase64);
-      onToast($t('toolbar.exportImageCopied'));
+      const pngBytes = pngBase64ToBytes(pngBase64);
+      const fileName = getExportImageFileName(activeTab?.fileName);
+      const savedPath = await saveBinaryFileDialog(pngBytes, fileName, 'png');
+      if (savedPath) {
+        onToast($t('toolbar.exportImageSaved'));
+      }
     } catch (e: any) {
       console.error('Export image failed:', e);
       onToast($t('toolbar.exportImageFailed'), 'error');
