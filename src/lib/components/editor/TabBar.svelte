@@ -5,7 +5,7 @@
     shouldConfirmCloseOtherTabs,
     shouldConfirmCloseTab,
   } from '$lib/stores/tabClose.js';
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onMount, tick } from 'svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   
   let { tabs, activeTabId } = $props<{
@@ -22,6 +22,7 @@
   let contextMenuTabId = $state<string | null>(null);
   let isContextMenuOpen = $state(false);
   let contextMenuRef = $state<HTMLDivElement | null>(null);
+  let tabsContainer = $state<HTMLDivElement | null>(null);
   
   // Confirm dialog state
   let isConfirmOpen = $state(false);
@@ -185,6 +186,21 @@
     return contextMenuTabId ? tabs.find((tab: Tab) => tab.id === contextMenuTabId) || null : null;
   }
 
+  $effect(() => {
+    const tabId = activeTabId;
+    tabs.length;
+    tick().then(() => {
+      if (!tabId || !tabsContainer) return;
+      const activeTab = Array.from(tabsContainer.querySelectorAll<HTMLElement>('[data-tab-id]'))
+        .find((element) => element.dataset.tabId === tabId);
+      activeTab?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+      });
+    });
+  });
+
   onMount(() => {
     const handleWindowClick = (event: MouseEvent) => {
       if (!isContextMenuOpen) return;
@@ -210,7 +226,7 @@
 </script>
 
 <div class="flex items-center bg-(--bg-primary) border-b border-(--border) shrink-0 px-3 py-1" style="height: 30px;">
-  <div class="flex items-center flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container gap-1.5 h-full">
+  <div class="flex items-center flex-1 min-w-0 overflow-x-auto overflow-y-hidden tabs-container gap-1.5 h-full" bind:this={tabsContainer}>
     {#each tabs as tab (tab.id)}
       <div
         class="tab-button group flex items-center justify-between px-2 text-[10.5px] 
@@ -232,6 +248,7 @@
         role="tab"
         aria-selected={tab.id === activeTabId}
         tabindex="0"
+        data-tab-id={tab.id}
       >
         <!-- Left spacer to balance the right actions, ensuring perfect centering -->
         <div class="w-4 flex-shrink-0"></div>

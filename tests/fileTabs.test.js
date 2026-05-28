@@ -79,6 +79,19 @@ test('tab bar does not expose a separate inline new-tab button', async () => {
   assert.doesNotMatch(source, /title="New Tab \(Cmd\+T\)"/);
 });
 
+test('tab bar scrolls the active tab into view when the active tab changes', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/TabBar.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /bind:this=\{tabsContainer\}/);
+  assert.match(source, /querySelectorAll<HTMLElement>/);
+  assert.match(source, /element\.dataset\.tabId === tabId/);
+  assert.match(source, /scrollIntoView\(/);
+  assert.match(source, /inline:\s*'nearest'/);
+});
+
 test('close confirmation is required only when unsaved changes would be discarded', () => {
   const tabs = [
     createTab({ id: 'keep', isModified: false }),
