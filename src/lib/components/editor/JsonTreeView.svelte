@@ -4,7 +4,7 @@
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
-  import { createTreeKeyEdit, isTreeKeyEditable } from '$lib/services/treeEdit.js';
+  import { createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import type MonacoEditor from './MonacoEditor.svelte';
 
@@ -205,62 +205,6 @@
     return segment.replace(/~/g, '~0').replace(/\//g, '~1');
   }
 
-  function decodePointerSegment(segment: string): string {
-    return segment.replace(/~1/g, '/').replace(/~0/g, '~');
-  }
-
-  function pointerToJmesPath(path: string, data: unknown): string {
-    if (!path || path === '/') return '';
-    const segments = path.split('/').slice(1).map(decodePointerSegment);
-    let result = '';
-    let current = data;
-    for (const segment of segments) {
-      const isArrayIndex = Array.isArray(current) && /^[0-9]+$/.test(segment);
-      if (isArrayIndex) {
-        result += `[${segment}]`;
-        current = (current as any)[Number(segment)];
-        continue;
-      }
-      const isIdentifier = /^[A-Za-z_][0-9A-Za-z_]*$/.test(segment);
-      const token = isIdentifier ? segment : JSON.stringify(segment);
-      result = result ? `${result}.${token}` : token;
-      if (current && typeof current === 'object' && !Array.isArray(current)) {
-        current = (current as Record<string, unknown>)[segment];
-      } else {
-        current = undefined;
-      }
-    }
-    return result;
-  }
-
-  function pointerToJsonPath(path: string, data: unknown): string {
-    if (!path || path === '/') return '$';
-
-    const segments = path.split('/').slice(1).map(decodePointerSegment);
-    let result = '$';
-    let current = data;
-
-    for (const segment of segments) {
-      const isArrayIndex = Array.isArray(current) && /^[0-9]+$/.test(segment);
-      if (isArrayIndex) {
-        result += `[${segment}]`;
-        current = (current as any)[Number(segment)];
-        continue;
-      }
-
-      const isIdentifier = /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(segment);
-      result += isIdentifier ? `.${segment}` : `[${JSON.stringify(segment)}]`;
-
-      if (current && typeof current === 'object' && !Array.isArray(current)) {
-        current = (current as Record<string, unknown>)[segment];
-      } else {
-        current = undefined;
-      }
-    }
-
-    return result;
-  }
-
   function getValueType(value: unknown): TreeNode['type'] {
     if (value === null) return 'null';
     if (Array.isArray(value)) return 'array';
@@ -428,16 +372,11 @@
   }
 
   async function copyEntry(node: TreeNode) {
-    const queryPath = queryMode === 'jsonpath'
-      ? pointerToJsonPath(node.path, rootData)
-      : pointerToJmesPath(node.path, rootData);
-    const dotPath = queryPath || node.key;
-    const valueText = JSON.stringify(node.value) ?? 'null';
-    const entryText = `${dotPath}: ${valueText}`;
+    const entryText = createTreeValueCopyText(content, parsedPointers, node.path, node.value);
 
     try {
       await navigator.clipboard.writeText(entryText);
-      dispatch('toast', { message: $t('treeView.pathValueCopied') });
+      dispatch('toast', { message: $t('treeView.valueCopied') });
     } catch (e) {}
   }
 
@@ -838,11 +777,11 @@
               {/if}
             </div>
 
-            <!-- Copy Path Button -->
+            <!-- Copy Value Button -->
             <button
               class="tree-copy-btn"
               onclick={(e) => { e.stopPropagation(); copyEntry(node); }}
-              title={$t('treeView.copyPathValue')}
+              title={$t('treeView.copyValue')}
               type="button"
             >
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

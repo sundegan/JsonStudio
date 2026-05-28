@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  createTreeValueCopyText,
   createTreeKeyEdit,
   isTreeKeyEditable,
   validateTreeKeyName,
@@ -43,6 +44,29 @@ test('quotes escaped key text during a source edit', () => {
   const parsed = parseJsonDocument(content);
 
   assert.equal(createTreeKeyEdit(parsed.pointers, '/name', 'a"b', []).edit.text, '"a\\"b"');
+});
+
+test('creates tree copy text from the node value source range only', () => {
+  const content = `{
+  "name": "Alice",
+  "profile": {
+    "age": 20
+  },
+  "tags": [
+    "json",
+    "tool"
+  ]
+}`;
+  const parsed = parseJsonDocument(content);
+
+  assert.equal(createTreeValueCopyText(content, parsed.pointers, '/name', 'Alice'), '"Alice"');
+  assert.equal(createTreeValueCopyText(content, parsed.pointers, '/profile', parsed.data.profile), `{
+    "age": 20
+  }`);
+  assert.equal(createTreeValueCopyText(content, parsed.pointers, '/tags', parsed.data.tags), `[
+    "json",
+    "tool"
+  ]`);
 });
 
 test('tree view exposes key and primitive value edit writeback on double click', () => {

@@ -39,3 +39,21 @@ export function createTreeKeyEdit(pointers, path, nextKey, siblingKeys) {
     },
   };
 }
+
+/**
+ * @param {string} content
+ * @param {Record<string, any>} pointers
+ * @param {string} path
+ * @param {unknown} value
+ */
+export function createTreeValueCopyText(content, pointers, path, value) {
+  const pointer = pointers[path];
+  const start = pointer?.value?.pos;
+  const end = pointer?.valueEnd?.pos;
+
+  if (Number.isInteger(start) && Number.isInteger(end) && end > start) {
+    return content.slice(start, end);
+  }
+
+  return JSON.stringify(value) ?? 'null';
+}
