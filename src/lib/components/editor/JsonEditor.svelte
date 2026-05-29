@@ -1334,26 +1334,48 @@
       </div>
     </div>
 
-    <!-- Right section: Unified view panel (Tree / Grid) -->
-    {#if showTreeView && !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel && !isLogJsonTreeSuppressedPendingDetection}
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-      <div
-        class="json-tree-resizer"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize view panel"
-        tabindex="0"
-        onpointerdown={startTreeResize}
-      ></div>
-      <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
-        <RightViewPanel
-          content={content}
-          editor={monacoEditor}
-          activeTabPath={$activeTab?.filePath ?? null}
-          activeTabName={$activeTab?.fileName ?? null}
-          onToast={showToast}
-        />
+    <!-- Unified Right Section & Toggler -->
+    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel && !isLogJsonTreeSuppressedPendingDetection}
+      
+      {#if showTreeView}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div
+          class="json-tree-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize view panel"
+          tabindex="0"
+          onpointerdown={startTreeResize}
+        ></div>
+      {/if}
+
+      <div class="json-view-toggler-zone" class:is-closed={!showTreeView}>
+        <button 
+          class="json-view-toggle-btn"
+          onclick={() => settingsStore.updateSetting('showTreeView', !showTreeView)}
+          title={showTreeView ? $t('rightPanel.hide') : $t('rightPanel.show')}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            {#if showTreeView}
+              <polygon points="8,4 16,12 8,20" /> <!-- Right arrow -->
+            {:else}
+              <polygon points="16,4 8,12 16,20" /> <!-- Left arrow -->
+            {/if}
+          </svg>
+        </button>
       </div>
+
+      {#if showTreeView}
+        <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
+          <RightViewPanel
+            content={content}
+            editor={monacoEditor}
+            activeTabPath={$activeTab?.filePath ?? null}
+            activeTabName={$activeTab?.fileName ?? null}
+            onToast={showToast}
+          />
+        </div>
+      {/if}
     {/if}
   </div>
 
@@ -1490,5 +1512,69 @@
   .json-fix-dismiss svg {
     width: 12px;
     height: 12px;
+  }
+
+  .json-view-toggler-zone {
+    position: relative;
+    width: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Only add the invisible hover area when closed */
+  .json-view-toggler-zone.is-closed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -10px;
+    right: -10px;
+    z-index: 1; /* For hover detection area */
+  }
+
+  .json-view-toggle-btn {
+    position: absolute;
+    left: -7px;
+    width: 14px;
+    height: 56px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s, color 0.2s;
+    z-index: 2;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Trigger hover from the resizer or the zone */
+  :global(.json-tree-resizer:hover) + .json-view-toggler-zone .json-view-toggle-btn,
+  .json-view-toggler-zone:hover .json-view-toggle-btn,
+  .json-view-toggle-btn:focus-visible {
+    opacity: 1;
+  }
+
+  .json-view-toggle-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .json-view-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .json-view-toggler-zone.is-closed .json-view-toggle-btn {
+    left: -14px;
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    opacity: 1;
   }
 </style>

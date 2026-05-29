@@ -209,6 +209,7 @@ export default {
 
   // Right panel tabs
   'rightPanel.hide': 'Hide view panel',
+  'rightPanel.show': 'Show view panel',
   'rightPanel.tree': 'Tree',
   'rightPanel.grid': 'Grid',
   'gridView.exportPdf': 'Export PDF',

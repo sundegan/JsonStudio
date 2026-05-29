@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { settingsStore } from '$lib/stores/settings';
   import { t } from '$lib/i18n';
   import JsonTreeView from './JsonTreeView.svelte';
   import GridView from './GridView.svelte';
@@ -63,18 +62,6 @@
         </button>
       {/each}
     </div>
-
-    <!-- Close panel button -->
-    <button
-      class="rvp-close-btn"
-      onclick={() => settingsStore.updateSetting('showTreeView', false)}
-      title={$t('rightPanel.hide')}
-      type="button"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 6L6 18M6 6l12 12"/>
-      </svg>
-    </button>
   </div>
 
   <!-- View content -->
@@ -178,28 +165,6 @@
   .rvp-tab-label {
     font-size: 12px;
   }
-
-  /* Close button */
-  .rvp-close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 0;
-    transition: color 0.15s, background 0.15s;
-  }
-  .rvp-close-btn:hover {
-    color: var(--text-primary);
-    background: var(--bg-hover);
-  }
-  .rvp-close-btn svg { width: 14px; height: 14px; }
 
   /* ── View Content ── */
   .rvp-content {

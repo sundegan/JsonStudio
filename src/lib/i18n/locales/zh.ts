@@ -209,6 +209,7 @@ export default {
 
   // Right panel tabs
   'rightPanel.hide': '隐藏视图面板',
+  'rightPanel.show': '显示视图面板',
   'rightPanel.tree': '树形',
   'rightPanel.grid': '表格',
   'gridView.exportPdf': '导出 PDF',
