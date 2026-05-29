@@ -1244,7 +1244,7 @@
     <!-- Left section: Tab Bar + Editor -->
     <div class="json-editor-left">
       <!-- Tab Bar - show different tab bars based on mode -->
-      {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && tabsState.tabs.length > 1}
+      {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && tabsState.tabs.length >= 1}
         <TabBar 
           tabs={tabsState.tabs} 
           activeTabId={tabsState.activeTabId}
