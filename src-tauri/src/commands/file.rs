@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Serialize, Deserialize)]
 pub struct FileNode {
@@ -201,4 +202,12 @@ pub async fn create_untitled_json(dir_path: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create file: {}", e))?;
 
     Ok(file_path.to_string_lossy().into_owned())
+}
+
+/// Reveal file in system file explorer (select the file)
+#[tauri::command]
+pub fn show_in_folder(app: AppHandle, path: String) -> Result<(), String> {
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| format!("Failed to reveal in folder: {}", e))
 }

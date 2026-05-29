@@ -8,14 +8,14 @@ use commands::convert::{
 use commands::export_image::export_json_image;
 use commands::file::{
     get_file_name, is_json_file, open_file_dialog, read_file, save_binary_file_dialog, save_file,
-    save_file_dialog, open_folder_dialog, read_json_dir, create_untitled_json
+    save_file_dialog, open_folder_dialog, read_json_dir, create_untitled_json, show_in_folder,
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
 use commands::json::{
     json_escape, json_format, json_minify, json_stats, json_unescape, json_validate,
 };
 use commands::shortcuts::{format_clipboard_and_show, show_main_window, update_shortcut};
-use commands::window::{open_devtools, set_window_theme};
+use commands::window::{open_devtools, quit_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
@@ -230,7 +230,9 @@ pub fn run() {
             json_to_code,
             code_to_json,
             export_json_image,
-            get_pending_files
+            get_pending_files,
+            show_in_folder,
+            quit_app
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

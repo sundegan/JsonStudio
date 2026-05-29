@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { invoke } from '@tauri-apps/api/core';
+  import { t } from '$lib/i18n';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import {
     shouldConfirmCloseAllTabs,
@@ -145,6 +147,12 @@
     dragInsertionIndex = target.insertionIndex;
   }
 
+  function handleTabMiddleClick(tabId: string, event: MouseEvent) {
+    if (event.button !== 1) return;
+    event.preventDefault();
+    handleCloseTab(tabId, event);
+  }
+
   function handleTabPointerDown(tabId: string, event: PointerEvent) {
     if (event.button !== 0) return;
 
@@ -193,6 +201,14 @@
 
   function handleTabPointerCancel() {
     resetPointerDragState();
+  }
+
+  async function handleOpenInFileExplorer() {
+    const tab = getContextMenuTab();
+    if (tab?.filePath) {
+      await invoke('show_in_folder', { path: tab.filePath });
+    }
+    closeContextMenu();
   }
 
   function handleTabContextMenu(tabId: string, event: MouseEvent) {
@@ -290,6 +306,7 @@
                }
                {dragOverTabId === tab.id ? `drag-over drag-over-${dragOverPosition}` : ''}"
         onclick={(e) => handleTabClick(tab.id, e)}
+        onauxclick={(e) => handleTabMiddleClick(tab.id, e)}
         oncontextmenu={(e) => handleTabContextMenu(tab.id, e)}
         onpointerdown={(e) => handleTabPointerDown(tab.id, e)}
         onpointermove={handleTabPointerMove}
@@ -372,6 +389,14 @@
     style={`left: ${contextMenuX}px; top: ${contextMenuY}px;`}
     role="menu"
   >
+    {#if contextTab?.filePath}
+      <button class="tab-context-menu-item" onclick={handleOpenInFileExplorer} role="menuitem">
+        {navigator.platform.toUpperCase().indexOf('MAC') >= 0 
+          ? $t('tabs.revealInFinder') 
+          : $t('tabs.revealInExplorer')}
+      </button>
+      <div class="tab-context-menu-separator"></div>
+    {/if}
     <button class="tab-context-menu-item" onclick={handleTogglePinTab} role="menuitem">
       {contextTab?.isPinned ? 'Unpin Tab' : 'Pin Tab'}
     </button>
@@ -459,6 +484,12 @@
 
   .tab-context-menu-item:hover {
     background: var(--bg-hover);
+  }
+
+  .tab-context-menu-separator {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 8px;
   }
 
   .pin-button {
