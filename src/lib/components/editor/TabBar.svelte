@@ -146,6 +146,12 @@
     dragInsertionIndex = target.insertionIndex;
   }
 
+  function handleTabMiddleClick(tabId: string, event: MouseEvent) {
+    if (event.button !== 1) return;
+    event.preventDefault();
+    handleCloseTab(tabId, event);
+  }
+
   function handleTabPointerDown(tabId: string, event: PointerEvent) {
     if (event.button !== 0) return;
 
@@ -299,6 +305,7 @@
                }
                {dragOverTabId === tab.id ? `drag-over drag-over-${dragOverPosition}` : ''}"
         onclick={(e) => handleTabClick(tab.id, e)}
+        onauxclick={(e) => handleTabMiddleClick(tab.id, e)}
         oncontextmenu={(e) => handleTabContextMenu(tab.id, e)}
         onpointerdown={(e) => handleTabPointerDown(tab.id, e)}
         onpointermove={handleTabPointerMove}
