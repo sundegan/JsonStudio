@@ -150,16 +150,21 @@
   let isConfirmOpen = $state(false);
   let confirmMessage = $state('');
   let tabToClose = $state<string | null>(null);
+  let confirmAction = $state<'close' | 'close_others' | null>(null);
 
   function handleConfirmClose() {
-    if (tabToClose) {
+    if (confirmAction === 'close_others' && tabToClose) {
+      tabsStore.closeOtherTabs(tabToClose);
+    } else if (tabToClose) {
       tabsStore.removeTab(tabToClose);
-      tabToClose = null;
     }
+    tabToClose = null;
+    confirmAction = null;
   }
 
   function handleCancelClose() {
     tabToClose = null;
+    confirmAction = null;
   }
 
   onMount(() => {
@@ -245,7 +250,7 @@
       workspaceResizeObserver.observe(mainWorkspaceEl);
     }
 
-    const handleKeydown = (e: KeyboardEvent) => {
+    const handleKeydown = async (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
 
@@ -255,7 +260,7 @@
         tabsStore.addTab();
         return;
       }
-      if (cmdOrCtrl && e.key === 'w') {
+      if (cmdOrCtrl && !e.shiftKey && e.key === 'w') {
         e.preventDefault();
         const currentTab = $activeTab;
         if (currentTab) {
@@ -314,6 +319,30 @@
           case 'minify_escape': toolbarRef?.minifyEscapeContent(); break;
           case 'fold_all': toolbarRef?.foldAllContent(); break;
           case 'unfold_all': toolbarRef?.unfoldAllContent(); break;
+          case 'close_other_tabs': {
+            const activeTabId = tabsState.activeTabId;
+            if (activeTabId) {
+              const { shouldConfirmCloseOtherTabs } = await import('$lib/stores/tabClose.js');
+              if (shouldConfirmCloseOtherTabs(tabsState.tabs, activeTabId)) {
+                tabToClose = activeTabId;
+                confirmAction = 'close_others';
+                confirmMessage = 'Other tabs have unsaved changes. Close them anyway?';
+                isConfirmOpen = true;
+              } else {
+                tabsStore.closeOtherTabs(activeTabId);
+              }
+            }
+            break;
+          }
+          case 'quit_app': {
+            try {
+              const { invoke } = await import('@tauri-apps/api/core');
+              await invoke('quit_app');
+            } catch {
+              window.close();
+            }
+            break;
+          }
         }
       }
     };

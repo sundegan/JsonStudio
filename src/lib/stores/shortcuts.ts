@@ -24,6 +24,8 @@ export interface ShortcutsSettings {
   minifyEscape: ShortcutConfig;
   foldAll: ShortcutConfig;
   unfoldAll: ShortcutConfig;
+  closeOtherTabs: ShortcutConfig;
+  quitApp: ShortcutConfig;
 }
 
 const defaultShortcuts: ShortcutsSettings = {
@@ -112,6 +114,20 @@ const defaultShortcuts: ShortcutsSettings = {
     description: 'Unfold all JSON nodes',
     defaultKey: 'CommandOrControl+Shift+]',
     currentKey: 'CommandOrControl+Shift+]',
+  },
+  closeOtherTabs: {
+    id: 'close_other_tabs',
+    name: 'Close Other Tabs',
+    description: 'Close all tabs except the current one',
+    defaultKey: 'CommandOrControl+Shift+W',
+    currentKey: 'CommandOrControl+Shift+W',
+  },
+  quitApp: {
+    id: 'quit_app',
+    name: 'Quit',
+    description: 'Quit the application',
+    defaultKey: 'CommandOrControl+Q',
+    currentKey: 'CommandOrControl+Q',
   },
 };
 

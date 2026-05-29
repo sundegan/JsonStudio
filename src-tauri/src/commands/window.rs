@@ -61,6 +61,12 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
     Ok(())
 }
 
+/// Quit the application
+#[tauri::command]
+pub fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 /// Open developer tools
 #[tauri::command]
 pub fn open_devtools(_window: tauri::WebviewWindow) {
