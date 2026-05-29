@@ -209,42 +209,40 @@ body {
   min-width: 280px;
   flex-shrink: 0;
   overflow: visible;
-  border-left: 1px solid var(--border);
   position: relative;
   z-index: 3;
 }
 
-.json-tree-resizer {
-  width: 4px;
+.json-tree-resizer,
+.json-folder-resizer {
+  width: 1px;
   cursor: col-resize;
   align-self: stretch;
-  background: var(--bg-secondary);
-  border-left: 1px solid transparent;
-  border-right: 1px solid transparent;
+  background: var(--border);
   flex-shrink: 0;
   transition: background 0.15s;
   touch-action: none;
   position: relative;
 }
 
-.json-tree-resizer:hover {
+.json-tree-resizer:hover,
+.json-folder-resizer:hover {
   background: var(--accent, #3b82f6);
-  border-left-color: var(--border);
-  border-right-color: var(--border);
 }
 
 .json-tree-resizer:focus-visible,
-.resizing-tree-view .json-tree-resizer {
-  background: var(--bg-secondary);
-  border-left-color: var(--border);
-  border-right-color: var(--border);
+.resizing-tree-view .json-tree-resizer,
+.json-folder-resizer:focus-visible,
+.resizing-tree-view .json-folder-resizer {
+  background: var(--accent, #3b82f6);
 }
 
-.json-tree-resizer::before {
+.json-tree-resizer::before,
+.json-folder-resizer::before {
   content: '';
   position: absolute;
-  left: -2px;
-  right: -2px;
+  left: -4px;
+  right: -4px;
   top: 0;
   bottom: 0;
 }

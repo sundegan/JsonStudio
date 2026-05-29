@@ -16,6 +16,7 @@
     lineHeight: 20,
     tabSize: 2,
     showTreeView: true,
+    showFolderView: true,
     autoSave: false,
   });
   
@@ -67,6 +68,10 @@
 
   function handleTreeViewToggle(value: boolean) {
     settingsStore.updateSetting('showTreeView', value);
+  }
+
+  function handleFolderViewToggle(value: boolean) {
+    settingsStore.updateSetting('showFolderView', value);
   }
 
   function handleAutoSaveToggle(value: boolean) {
@@ -268,6 +273,23 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">{$t('settings.folderView')}</span>
+                  <span class="settings-hint">{$t('settings.folderViewHint')}</span>
+                </div>
+                <button
+                  class="settings-toggle {settings.showFolderView ? 'is-on' : ''}"
+                  onclick={() => handleFolderViewToggle(!settings.showFolderView)}
+                  type="button"
+                  aria-pressed={settings.showFolderView}
+                >
+                  <span class="settings-toggle-thumb"></span>
+                </button>
               </div>
             </div>
 

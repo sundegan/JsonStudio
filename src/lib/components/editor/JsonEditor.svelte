@@ -13,6 +13,7 @@
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
   import RightViewPanel from './RightViewPanel.svelte';
+  import FolderSidebar from './FolderSidebar.svelte';
   import JsonEditorToast from './JsonEditorToast.svelte';
   import LogJsonFragmentsPanel from './LogJsonFragmentsPanel.svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
@@ -29,7 +30,7 @@
   import { normalizePastedStandaloneJson } from '$lib/services/standaloneJsonPasteNormalize.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { openClipboardContentInNewTab } from '$lib/services/clipboardTabs.js';
-  import { clampPanelWidth, getDefaultPanelWidth } from '$lib/services/panelResize.js';
+  import { clampPanelWidth, getDefaultPanelWidth, clampFolderWidth } from '$lib/services/panelResize.js';
   import { t } from '$lib/i18n';
 
   type LogJsonFragment = {
@@ -99,6 +100,8 @@
   let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
   let treeViewWidth = $state(380);
   let isResizingTreeView = $state(false);
+  let folderViewWidth = $state(220);
+  let isResizingFolderView = $state(false);
   let mainWorkspaceEl: HTMLDivElement | null = null;
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
@@ -116,6 +119,7 @@
     lineHeight: 20,
     tabSize: 2,
     showTreeView: true,
+    showFolderView: true,
     autoSave: false,
   });
   
@@ -449,6 +453,7 @@
   let lineHeight = $derived(settings.lineHeight);
   let tabSize = $derived(settings.tabSize);
   let showTreeView = $derived(settings.showTreeView);
+  let showFolderView = $derived(settings.showFolderView);
   let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && logJsonFragments.length > 0);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
   $effect(() => {
@@ -840,6 +845,32 @@
     window.addEventListener('pointerup', handlePointerUp);
   }
 
+  function startFolderResize(event: PointerEvent) {
+    if (!showFolderView || !mainWorkspaceEl) return;
+
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = folderViewWidth;
+    const workspaceWidth = mainWorkspaceEl.clientWidth;
+    isResizingFolderView = true;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!isResizingFolderView) return;
+      const delta = moveEvent.clientX - startX;
+      folderViewWidth = clampFolderWidth(startWidth + delta, workspaceWidth);
+      requestAnimationFrame(() => monacoEditor?.getEditorInstance()?.layout());
+    };
+
+    const handlePointerUp = () => {
+      isResizingFolderView = false;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  }
+
   function updateDiffStats(changes: Array<{
     originalStartLineNumber: number;
     originalEndLineNumber: number;
@@ -1210,9 +1241,43 @@
   <div
     bind:this={mainWorkspaceEl}
     class="json-main-workspace"
-    class:resizing-tree-view={isResizingTreeView}
+    class:resizing-tree-view={isResizingTreeView || isResizingFolderView}
   >
-    <!-- Left section: Tab Bar + Editor -->
+    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel}
+      <!-- Folder Sidebar Area -->
+      {#if showFolderView}
+        <div class="json-folder-container" style={`width: ${folderViewWidth}px;`}>
+          <FolderSidebar />
+        </div>
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div
+          class="json-folder-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize folder panel"
+          tabindex="0"
+          onpointerdown={startFolderResize}
+        ></div>
+      {/if}
+
+      <div class="json-view-toggler-zone left" class:is-closed={!showFolderView}>
+        <button 
+          class="json-view-toggle-btn"
+          onclick={() => settingsStore.updateSetting('showFolderView', !showFolderView)}
+          title={showFolderView ? $t('folderView.hide') : $t('folderView.show')}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            {#if showFolderView}
+              <polygon points="16,4 8,12 16,20" /> <!-- Left arrow -->
+            {:else}
+              <polygon points="8,4 16,12 8,20" /> <!-- Right arrow -->
+            {/if}
+          </svg>
+        </button>
+      </div>
+    {/if}
+
+    <!-- Center section: Tab Bar + Editor -->
     <div class="json-editor-left">
       <!-- Tab Bar - show different tab bars based on mode -->
       {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && tabsState.tabs.length > 1}
@@ -1514,6 +1579,13 @@
     height: 12px;
   }
 
+  .json-folder-container {
+    height: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
   .json-view-toggler-zone {
     position: relative;
     width: 0;
@@ -1553,8 +1625,15 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   }
 
+  /* Left-side specific toggler styling */
+  .json-view-toggler-zone.left .json-view-toggle-btn {
+    left: auto;
+    right: -7px;
+  }
+
   /* Trigger hover from the resizer or the zone */
   :global(.json-tree-resizer:hover) + .json-view-toggler-zone .json-view-toggle-btn,
+  :global(.json-folder-resizer:hover) + .json-view-toggler-zone .json-view-toggle-btn,
   .json-view-toggler-zone:hover .json-view-toggle-btn,
   .json-view-toggle-btn:focus-visible {
     opacity: 1;
@@ -1575,6 +1654,18 @@
     border-right: none;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+    opacity: 1;
+  }
+
+  .json-view-toggler-zone.left.is-closed .json-view-toggle-btn {
+    left: auto;
+    right: -14px;
+    border-right: 1px solid var(--border);
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 7px;
+    border-bottom-right-radius: 7px;
     opacity: 1;
   }
 </style>

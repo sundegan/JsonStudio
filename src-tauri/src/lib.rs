@@ -8,7 +8,7 @@ use commands::convert::{
 use commands::export_image::export_json_image;
 use commands::file::{
     get_file_name, is_json_file, open_file_dialog, read_file, save_binary_file_dialog, save_file,
-    save_file_dialog,
+    save_file_dialog, open_folder_dialog, read_json_dir, create_untitled_json
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
 use commands::json::{
@@ -210,6 +210,9 @@ pub fn run() {
             save_file,
             save_file_dialog,
             save_binary_file_dialog,
+            open_folder_dialog,
+            read_json_dir,
+            create_untitled_json,
             read_file,
             is_json_file,
             get_file_name,

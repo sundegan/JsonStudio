@@ -45,9 +45,11 @@ export default {
   'settings.lineHeight': '行高',
   'settings.lineHeightHint': '行间垂直间距（14–36 px）',
   'settings.indentSize': '缩进大小',
-  'settings.indentSizeHint': '每级缩进空格数（1–8）',
-  'settings.treeView': 'JSON 树形视图',
-  'settings.treeViewHint': '在编辑器旁显示 JSON 树形视图',
+  'settings.indentSizeHint': '每次缩进的空格数 (1–8)',
+  'settings.treeView': '树形视图边栏',
+  'settings.treeViewHint': '在编辑器旁显示 JSON 结构面板',
+  'settings.folderView': '文件夹边栏',
+  'settings.folderViewHint': '在编辑器旁显示文件夹面板',
   'settings.autoSave': '自动保存',
   'settings.autoSaveHint': '自动将更改保存到本地文件',
 
@@ -210,6 +212,14 @@ export default {
   // Right panel tabs
   'rightPanel.hide': '隐藏视图面板',
   'rightPanel.show': '显示视图面板',
+
+  // Folder View
+  'folderView.title': '文件夹',
+  'folderView.noFolder': '未打开文件夹',
+  'folderView.openFolder': '打开文件夹',
+  'folderView.show': '显示文件夹',
+  'folderView.hide': '隐藏文件夹',
+  'folderView.hint': '仅显示当前目录下的 JSON 文件，忽略子文件夹。',
   'rightPanel.tree': '树形',
   'rightPanel.grid': '表格',
   'gridView.exportPdf': '导出 PDF',

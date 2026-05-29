@@ -48,6 +48,8 @@ export default {
   'settings.indentSizeHint': 'Spaces per indentation level (1–8)',
   'settings.treeView': 'Tree View Sidebar',
   'settings.treeViewHint': 'Show JSON structure panel beside editor',
+  'settings.folderView': 'Folder Sidebar',
+  'settings.folderViewHint': 'Show folder panel beside editor',
   'settings.autoSave': 'Auto Save',
   'settings.autoSaveHint': 'Automatically save changes to the local file',
 
@@ -210,6 +212,14 @@ export default {
   // Right panel tabs
   'rightPanel.hide': 'Hide view panel',
   'rightPanel.show': 'Show view panel',
+
+  // Folder View
+  'folderView.title': 'Folder',
+  'folderView.noFolder': 'No folder opened',
+  'folderView.openFolder': 'Open Folder',
+  'folderView.show': 'Show Folder',
+  'folderView.hide': 'Hide Folder',
+  'folderView.hint': 'Shows top-level JSON files only, ignoring subdirectories.',
   'rightPanel.tree': 'Tree',
   'rightPanel.grid': 'Grid',
   'gridView.exportPdf': 'Export PDF',
