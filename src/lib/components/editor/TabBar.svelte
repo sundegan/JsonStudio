@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { invoke } from '@tauri-apps/api/core';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import {
     shouldConfirmCloseAllTabs,
@@ -195,6 +196,14 @@
     resetPointerDragState();
   }
 
+  async function handleOpenInFileExplorer() {
+    const tab = getContextMenuTab();
+    if (tab?.filePath) {
+      await invoke('show_in_folder', { path: tab.filePath });
+    }
+    closeContextMenu();
+  }
+
   function handleTabContextMenu(tabId: string, event: MouseEvent) {
     if (isPointerDragging) {
       event.preventDefault();
@@ -372,6 +381,12 @@
     style={`left: ${contextMenuX}px; top: ${contextMenuY}px;`}
     role="menu"
   >
+    {#if contextTab?.filePath}
+      <button class="tab-context-menu-item" onclick={handleOpenInFileExplorer} role="menuitem">
+        Open in File Explorer
+      </button>
+      <div class="tab-context-menu-separator"></div>
+    {/if}
     <button class="tab-context-menu-item" onclick={handleTogglePinTab} role="menuitem">
       {contextTab?.isPinned ? 'Unpin Tab' : 'Pin Tab'}
     </button>
@@ -459,6 +474,12 @@
 
   .tab-context-menu-item:hover {
     background: var(--bg-hover);
+  }
+
+  .tab-context-menu-separator {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 8px;
   }
 
   .pin-button {

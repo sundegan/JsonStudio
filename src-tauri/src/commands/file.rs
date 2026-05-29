@@ -2,6 +2,7 @@
 use std::path::PathBuf;
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 /// Open a JSON file using file picker dialog
 #[tauri::command]
@@ -112,4 +113,12 @@ pub fn get_file_name(path: String) -> Option<String> {
         .file_name()
         .and_then(|name| name.to_str())
         .map(|s| s.to_string())
+}
+
+/// Reveal file in system file explorer (select the file)
+#[tauri::command]
+pub fn show_in_folder(app: AppHandle, path: String) -> Result<(), String> {
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| format!("Failed to reveal in folder: {}", e))
 }

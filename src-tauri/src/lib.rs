@@ -8,7 +8,7 @@ use commands::convert::{
 use commands::export_image::export_json_image;
 use commands::file::{
     get_file_name, is_json_file, open_file_dialog, read_file, save_binary_file_dialog, save_file,
-    save_file_dialog,
+    save_file_dialog, show_in_folder,
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
 use commands::json::{
@@ -227,7 +227,8 @@ pub fn run() {
             json_to_code,
             code_to_json,
             export_json_image,
-            get_pending_files
+            get_pending_files,
+            show_in_folder
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
