@@ -132,6 +132,11 @@ export default {
   'treeView.exampleCopied': '已复制示例 JSON',
   'treeView.exampleQueries': '示例查询',
   'treeView.rootMatched': '查询命中了根文档 ($)。',
+  'treeView.dragJsonOnly': '拖拽移动仅支持标准 JSON，且需先清除当前搜索。',
+  'treeView.dragInvalidTarget': '无法将此节点移动到该位置。',
+  'treeView.dragDuplicateKey': '目标对象中已存在同名 key，无法移动。',
+  'treeView.dragIntoDescendant': '无法将节点移动到自身或其子节点中。',
+  'treeView.dragMoved': '节点已移动',
 
   // Status bar
   'status.keys': '个键',

@@ -132,6 +132,11 @@ export default {
   'treeView.exampleCopied': 'Example JSON copied',
   'treeView.exampleQueries': 'Example Queries',
   'treeView.rootMatched': 'Query matched the root document ($).',
+  'treeView.dragJsonOnly': 'Drag and drop is available for standard JSON without an active search.',
+  'treeView.dragInvalidTarget': 'Cannot move this node to that location.',
+  'treeView.dragDuplicateKey': 'Cannot move because the target object already has this key.',
+  'treeView.dragIntoDescendant': 'Cannot move a node into itself or one of its children.',
+  'treeView.dragMoved': 'Node moved',
 
   // Status bar
   'status.keys': 'keys',

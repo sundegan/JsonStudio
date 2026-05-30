@@ -4,7 +4,7 @@
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
-  import { createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable } from '$lib/services/treeEdit.js';
+  import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import type MonacoEditor from './MonacoEditor.svelte';
 
@@ -26,6 +26,8 @@
     input: string;
     error: string;
   };
+
+  type TreeDropPosition = 'before' | 'inside' | 'after';
 
   type QueryExample = {
     query: string;
@@ -86,6 +88,15 @@
   let helpOpen = $state(false);
   let treeEdit = $state<TreeEditState | null>(null);
   let treeEditInput = $state<HTMLInputElement | null>(null);
+  let draggedPath = $state<string | null>(null);
+  let dragTargetPath = $state<string | null>(null);
+  let dragPosition = $state<TreeDropPosition | null>(null);
+  let pendingMovedPath = $state<string | null>(null);
+  let pendingEditKeyPath = $state<string | null>(null);
+  let pointerDragStart = $state<{ path: string; x: number; y: number } | null>(null);
+  let isPointerDragging = $state(false);
+  let suppressNextTreeClick = $state(false);
+  let treeNodeByPath = $state<Map<string, TreeNode>>(new Map());
 
   // Build tree when content changes
   $effect(() => {
@@ -106,6 +117,9 @@
   async function buildTree() {
     if (!content.trim()) {
       treeNodes = [];
+      treeNodeByPath = new Map();
+      pendingMovedPath = null;
+      pendingEditKeyPath = null;
       treeError = '';
       rootData = null;
       parsedPointers = {};
@@ -126,15 +140,33 @@
       parsedDialect = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
       const nodes = parseToTree(parsed.data, parsed.pointers, '');
       treeNodes = nodes;
+      treeNodeByPath = indexTreeNodes(nodes);
       
       // Auto-expand first level
       if (nodes.length > 0) {
-        expandedNodes = new Set(nodes.map(n => n.path));
+        const nextExpanded = new Set(nodes.map(n => n.path));
+        if (pendingMovedPath) {
+          getAncestorPaths(pendingMovedPath).forEach((path) => nextExpanded.add(path));
+          selectedPath = pendingMovedPath;
+          pendingMovedPath = null;
+        }
+        if (pendingEditKeyPath) {
+          treeEdit = createTreeKeyEditState(pendingEditKeyPath);
+          pendingEditKeyPath = null;
+          tick().then(() => {
+            treeEditInput?.focus();
+            treeEditInput?.select();
+          });
+        }
+        expandedNodes = nextExpanded;
       }
       isAllExpanded = false;
     } catch (e) {
       treeError = e instanceof Error ? e.message : 'Failed to parse JSON';
       treeNodes = [];
+      treeNodeByPath = new Map();
+      pendingMovedPath = null;
+      pendingEditKeyPath = null;
       rootData = null;
       parsedPointers = {};
       isAllExpanded = false;
@@ -201,8 +233,37 @@
     return nodes;
   }
 
+  function indexTreeNodes(nodes: TreeNode[]) {
+    const index = new Map<string, TreeNode>();
+    const visit = (items: TreeNode[]) => {
+      for (const item of items) {
+        index.set(item.path, item);
+        if (item.children) visit(item.children);
+      }
+    };
+    visit(nodes);
+    return index;
+  }
+
+  function createTreeKeyEditState(path: string): TreeEditState | null {
+    const node = treeNodeByPath.get(path);
+    if (!node || !isTreeKeyEditable(node)) return null;
+
+    return {
+      kind: 'key',
+      path,
+      input: node.key,
+      error: '',
+    };
+  }
+
   function encodePointerSegment(segment: string): string {
     return segment.replace(/~/g, '~0').replace(/\//g, '~1');
+  }
+
+  function getAncestorPaths(path: string): string[] {
+    const segments = path.split('/').slice(1);
+    return segments.slice(0, -1).map((_, index) => `/${segments.slice(0, index + 1).join('/')}`);
   }
 
   function getValueType(value: unknown): TreeNode['type'] {
@@ -275,6 +336,16 @@
     editorInstance.focus();
   }
 
+  function handleTreeNodeClick(event: MouseEvent, node: TreeNode) {
+    if (suppressNextTreeClick) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressNextTreeClick = false;
+      return;
+    }
+    selectNode(node);
+  }
+
   function handleNodeKeydown(event: KeyboardEvent, node: TreeNode) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
@@ -283,6 +354,150 @@
 
   function isTreeValueEditable(node: TreeNode) {
     return node.type !== 'object' && node.type !== 'array';
+  }
+
+  function isTreeDragEnabled() {
+    if (parsedDialect !== 'JSON') return false;
+    return !treeError && rootData !== null && searchQuery.trim() === '';
+  }
+
+  function getTreeDropPosition(clientY: number, element: HTMLElement, node: TreeNode): TreeDropPosition {
+    const rect = element.getBoundingClientRect();
+    const y = clientY - rect.top;
+    if (node.type !== 'object' && node.type !== 'array') {
+      return y < rect.height * 0.5 ? 'before' : 'after';
+    }
+    if (y < rect.height * 0.25) return 'before';
+    if (y > rect.height * 0.75) return 'after';
+    return 'inside';
+  }
+
+  function clearTreeDragState() {
+    draggedPath = null;
+    dragTargetPath = null;
+    dragPosition = null;
+    pointerDragStart = null;
+    isPointerDragging = false;
+  }
+
+  function showTreeDragError(errorKey: string) {
+    dispatch('toast', { message: $t(errorKey) });
+  }
+
+  function getTreePointerDropTarget(clientX: number, clientY: number) {
+    const element = document.elementFromPoint(clientX, clientY);
+    const targetElement = element?.closest<HTMLElement>('[data-tree-path]');
+    const targetPath = targetElement?.dataset.treePath;
+    const targetNode = targetPath ? treeNodeByPath.get(targetPath) : null;
+
+    if (!targetElement || !targetNode) {
+      return null;
+    }
+
+    return {
+      path: targetNode.path,
+      position: getTreeDropPosition(clientY, targetElement, targetNode),
+    };
+  }
+
+  function updateTreePointerDragTarget(clientX: number, clientY: number) {
+    const dropTarget = getTreePointerDropTarget(clientX, clientY);
+
+    if (!dropTarget) {
+      dragTargetPath = null;
+      dragPosition = null;
+      return;
+    }
+
+    dragTargetPath = dropTarget.path;
+    dragPosition = dropTarget.position;
+  }
+
+  function moveTreeNode(sourcePath: string, targetPath: string, position: TreeDropPosition) {
+    if (!isTreeDragEnabled()) {
+      showTreeDragError('treeView.dragJsonOnly');
+      return;
+    }
+
+    const result = createTreeDragMove({
+      data: rootData,
+      sourcePath,
+      targetPath,
+      position,
+    });
+
+    if (!result.ok) {
+      showTreeDragError(result.error);
+      return;
+    }
+
+    pendingMovedPath = result.movedPath;
+    pendingEditKeyPath = result.editKey ? result.movedPath : null;
+    selectedPath = result.movedPath;
+    expandedNodes = new Set([...expandedNodes, ...getAncestorPaths(result.movedPath)]);
+    editor?.setValue(JSON.stringify(result.data, null, 2));
+    dispatch('toast', { message: $t('treeView.dragMoved') });
+  }
+
+  function handleTreePointerDown(event: PointerEvent, node: TreeNode) {
+    if (event.button !== 0) return;
+    if (event.detail > 1) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest('button, input, select, textarea')) return;
+
+    treeEdit = null;
+    draggedPath = node.path;
+    pointerDragStart = { path: node.path, x: event.clientX, y: event.clientY };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function handleTreePointerMove(event: PointerEvent) {
+    const start = pointerDragStart;
+    if (!start) return;
+
+    const moveX = Math.abs(event.clientX - start.x);
+    const moveY = Math.abs(event.clientY - start.y);
+    if (!isPointerDragging && Math.max(moveX, moveY) < 4) return;
+
+    event.preventDefault();
+    if (!isTreeDragEnabled()) {
+      showTreeDragError('treeView.dragJsonOnly');
+      clearTreeDragState();
+      return;
+    }
+
+    isPointerDragging = true;
+    updateTreePointerDragTarget(event.clientX, event.clientY);
+  }
+
+  function handleTreePointerUp(event: PointerEvent) {
+    const start = pointerDragStart;
+    const wasDragging = isPointerDragging;
+    const dropTarget = getTreePointerDropTarget(event.clientX, event.clientY);
+    const targetPath = dropTarget?.path ?? dragTargetPath;
+    const position = dropTarget?.position ?? dragPosition;
+
+    if (start && wasDragging) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressNextTreeClick = true;
+
+      if (targetPath && position) {
+        moveTreeNode(start.path, targetPath, position);
+      }
+    }
+
+    try {
+      (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+    } catch {
+      // The pointer can already be released if the OS cancels the gesture.
+    }
+    clearTreeDragState();
+  }
+
+  function handleTreePointerCancel() {
+    clearTreeDragState();
   }
 
   function beginTreeEdit(event: MouseEvent, node: TreeNode, kind: TreeEditState['kind']) {
@@ -653,11 +868,24 @@
         {@const childCount = getChildCount(node)}
         {@const showValue = node.type !== 'object' && node.type !== 'array'}
         
-        <div class="tree-node" class:tree-node-selected={isSelected} class:tree-node-matched={isMatched}>
+        <div
+          class="tree-node"
+          class:tree-node-selected={isSelected}
+          class:tree-node-matched={isMatched}
+          class:tree-node-dragging={draggedPath === node.path}
+          class:tree-node-drop-before={dragTargetPath === node.path && dragPosition === 'before'}
+          class:tree-node-drop-inside={dragTargetPath === node.path && dragPosition === 'inside'}
+          class:tree-node-drop-after={dragTargetPath === node.path && dragPosition === 'after'}
+        >
           <div 
             class="tree-node-content"
-            onclick={() => selectNode(node)}
+            data-tree-path={node.path}
+            onclick={(e) => handleTreeNodeClick(e, node)}
             onkeydown={(e) => handleNodeKeydown(e, node)}
+            onpointerdown={(e) => handleTreePointerDown(e, node)}
+            onpointermove={handleTreePointerMove}
+            onpointerup={handleTreePointerUp}
+            onpointercancel={handleTreePointerCancel}
             role="button"
             tabindex="0"
           >
@@ -1150,6 +1378,36 @@
     color: var(--error, #ef4444);
     font-size: 10px;
     white-space: nowrap;
+  }
+
+  .tree-node-dragging {
+    opacity: 0.55;
+  }
+
+  .tree-node-drop-before::after,
+  .tree-node-drop-after::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--accent);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .tree-node-drop-before::after {
+    top: 0;
+  }
+
+  .tree-node-drop-after::after {
+    bottom: 0;
+  }
+
+  .tree-node-drop-inside .tree-node-content {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
 </style>
