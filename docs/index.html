@@ -96,7 +96,8 @@
   "downloadUrl": "https://github.com/sundegan/JsonStudio/releases",
   "sameAs": [
     "https://github.com/sundegan/JsonStudio",
-    "https://github.com/sundegan/JsonStudio/releases"
+    "https://github.com/sundegan/JsonStudio/releases",
+    "https://github.com/sundegan/homebrew-tap"
   ],
   "featureList": [
     "JSON formatter and prettify",
@@ -180,6 +181,22 @@
         </svg>
         <span>View on GitHub</span>
       </a>
+    </div>
+    <div class="install-card" aria-label="Install JsonStudio with Homebrew">
+      <code><span class="prompt">$</span> brew install --cask sundegan/tap/json-studio</code>
+      <button class="install-copy" type="button" data-copy-command="brew install --cask sundegan/tap/json-studio"
+        data-default-label="Copy command" data-copied-label="Copied" aria-label="Copy Homebrew install command"
+        title="Copy command">
+        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+        <svg class="copied-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </button>
     </div>
   </section>
 
@@ -737,6 +754,7 @@
       <div class="footer-links">
         <a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a>
         <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank">Releases</a>
+        <a href="https://github.com/sundegan/homebrew-tap" target="_blank">Homebrew</a>
         <a href="https://github.com/sundegan/JsonStudio/issues" target="_blank">Issues</a>
       </div>
     </div>
@@ -781,6 +799,47 @@
 
     themeToggle?.addEventListener('click', () => {
       applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+    });
+
+    document.querySelectorAll('.install-copy').forEach(button => {
+      const defaultLabel = button.dataset.defaultLabel || 'Copy command';
+      const copiedLabel = button.dataset.copiedLabel || 'Copied';
+
+      button.addEventListener('click', async () => {
+        try {
+          const command = button.dataset.copyCommand || '';
+          let copied = false;
+          if (navigator.clipboard?.writeText) {
+            try {
+              await navigator.clipboard.writeText(command);
+              copied = true;
+            } catch { }
+          }
+          if (!copied) {
+            const textarea = document.createElement('textarea');
+            textarea.value = command;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+          }
+          button.classList.add('is-copied');
+          button.setAttribute('aria-label', copiedLabel);
+          button.setAttribute('title', copiedLabel);
+          window.setTimeout(() => {
+            button.classList.remove('is-copied');
+            button.setAttribute('aria-label', defaultLabel);
+            button.setAttribute('title', defaultLabel);
+          }, 1600);
+        } catch {
+          button.classList.remove('is-copied');
+          button.setAttribute('aria-label', defaultLabel);
+          button.setAttribute('title', defaultLabel);
+        }
+      });
     });
 
     document.querySelectorAll('.showcase-visual img, .screenshot-box img').forEach(img => {

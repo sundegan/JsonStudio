@@ -98,6 +98,12 @@ Generate JSON Schema from data, validate JSON against a schema, and inspect deta
 
 Download the latest installer from [GitHub Releases](https://github.com/sundegan/JsonStudio/releases).
 
+### Homebrew (macOS)
+
+```sh
+brew install --cask sundegan/tap/json-studio
+```
+
 ### macOS
 
 1. Download the DMG for your Mac architecture (`aarch64` for Apple Silicon, `x64` for Intel).
