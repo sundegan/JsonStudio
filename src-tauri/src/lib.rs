@@ -19,7 +19,10 @@ use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
-use tauri::menu::{MenuBuilder, SubmenuBuilder};
+use tauri::{
+    image::Image,
+    menu::{AboutMetadataBuilder, MenuBuilder, SubmenuBuilder},
+};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -91,9 +94,30 @@ fn check_for_update_menu_text(language: &str) -> &'static str {
 }
 
 #[cfg(target_os = "macos")]
+fn about_metadata() -> tauri::Result<tauri::menu::AboutMetadata<'static>> {
+    let icon_image = image::load_from_memory(include_bytes!("../icons/icon.png"))
+        .map_err(|error| tauri::Error::Anyhow(error.into()))?
+        .to_rgba8();
+    let (width, height) = icon_image.dimensions();
+    let icon = Image::new_owned(icon_image.into_raw(), width, height);
+
+    Ok(AboutMetadataBuilder::new()
+        .name(Some("Json Studio"))
+        .version(Some(env!("CARGO_PKG_VERSION")))
+        .short_version(Some(env!("CARGO_PKG_VERSION")))
+        .copyright(Some("Copyright © 2025 Json Studio"))
+        .website(Some("https://github.com/sundegan/JsonStudio"))
+        .website_label(Some("GitHub"))
+        .credits(Some("GitHub: https://github.com/sundegan/JsonStudio"))
+        .icon(Some(icon))
+        .build())
+}
+
+#[cfg(target_os = "macos")]
 fn set_macos_app_menu(app: &tauri::AppHandle, language: &str) -> tauri::Result<()> {
+    let about_metadata = about_metadata()?;
     let app_menu = SubmenuBuilder::new(app, "Json Studio")
-        .about(None)
+        .about(Some(about_metadata))
         .separator()
         .text("check_for_update", check_for_update_menu_text(language))
         .separator()

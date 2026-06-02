@@ -6,7 +6,12 @@ test('macOS app menu exposes check update and emits frontend event', () => {
   const libRs = readFileSync(new URL('../src-tauri/src/lib.rs', import.meta.url), 'utf8');
 
   assert.match(libRs, /SubmenuBuilder::new\(app,\s*"Json Studio"\)/);
-  assert.match(libRs, /\.about\(None\)/);
+  assert.match(libRs, /AboutMetadataBuilder::new\(\)/);
+  assert.match(libRs, /include_bytes!\("\.\.\/icons\/icon\.png"\)/);
+  assert.match(libRs, /\.website\(Some\("https:\/\/github\.com\/sundegan\/JsonStudio"\)\)/);
+  assert.match(libRs, /\.website_label\(Some\("GitHub"\)\)/);
+  assert.match(libRs, /\.credits\(Some\("GitHub: https:\/\/github\.com\/sundegan\/JsonStudio"\)\)/);
+  assert.match(libRs, /\.about\(Some\(about_metadata\)\)/);
   assert.match(libRs, /fn check_for_update_menu_text\(language: &str\) -> &'static str/);
   assert.match(libRs, /"en"\s*=>\s*"Check for Updates\.\.\."/);
   assert.match(libRs, /_\s*=>\s*"检查更新\.\.\."/);
