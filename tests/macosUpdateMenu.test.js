@@ -28,10 +28,13 @@ test('settings panel listens for menu check update event', () => {
   );
 
   assert.match(settingsPanel, /import \{ listen \} from '@tauri-apps\/api\/event';/);
+  assert.match(settingsPanel, /checkInstallAndNotifyAppUpdate/);
   assert.match(settingsPanel, /listen\('check-for-update'/);
   assert.match(settingsPanel, /handleMenuCheckForUpdate/);
-  assert.match(settingsPanel, /isOpen = true/);
-  assert.match(settingsPanel, /handleCheckForUpdate\(\)/);
+  assert.match(settingsPanel, /message: async content => window\.alert\(content\)/);
+  assert.match(settingsPanel, /confirm: async content => window\.confirm\(content\)/);
+  assert.match(settingsPanel, /relaunch: \(\) => invoke\('restart_app'\)/);
+  assert.doesNotMatch(settingsPanel, /async function handleMenuCheckForUpdate\(\) \{\n\s+isOpen = true;/);
 });
 
 test('settings store syncs macOS menu language with app language', () => {

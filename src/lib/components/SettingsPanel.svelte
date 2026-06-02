@@ -7,6 +7,7 @@
   import { settingsStore, darkThemes, lightThemes, type AppSettings } from '$lib/stores/settings';
   import { shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import {
+    checkInstallAndNotifyAppUpdate,
     checkForAppUpdate,
     createInitialUpdaterState,
     installAppUpdate,
@@ -137,8 +138,19 @@
   }
 
   async function handleMenuCheckForUpdate() {
-    isOpen = true;
-    await handleCheckForUpdate();
+    await checkInstallAndNotifyAppUpdate({
+      check,
+      message: async content => window.alert(content),
+      confirm: async content => window.confirm(content),
+      relaunch: () => invoke('restart_app'),
+      labels: {
+        latest: $t('settings.updateLatest'),
+        available: version =>
+          `${$t('settings.menuUpdateAvailable')}${version ? ` ${version}` : ''}\n${$t('settings.menuUpdateDownloading')}`,
+        readyToRestart: $t('settings.menuUpdateReadyToRestart'),
+        failed: $t('settings.updateFailed'),
+      },
+    });
   }
 
   async function handleInstallUpdate() {

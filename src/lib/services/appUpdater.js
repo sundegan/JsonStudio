@@ -103,6 +103,44 @@ export async function installAppUpdate(state, deps = {}) {
 }
 
 /**
+ * @param {{
+ *   check: () => Promise<AppUpdate | null>,
+ *   message: (content: string) => Promise<void>,
+ *   confirm: (content: string) => Promise<boolean>,
+ *   relaunch: () => Promise<void>,
+ *   labels: {
+ *     latest: string,
+ *     available: (version?: string) => string,
+ *     readyToRestart: string,
+ *     failed: string,
+ *   },
+ * }} deps
+ * @returns {Promise<{ status: 'latest' | 'installed' | 'error' }>}
+ */
+export async function checkInstallAndNotifyAppUpdate(deps) {
+  try {
+    const update = await deps.check();
+    if (!update) {
+      await deps.message(deps.labels.latest);
+      return { status: 'latest' };
+    }
+
+    await deps.message(deps.labels.available(update.version));
+    await update.downloadAndInstall();
+
+    const shouldRestart = await deps.confirm(deps.labels.readyToRestart);
+    if (shouldRestart) {
+      await deps.relaunch();
+    }
+
+    return { status: 'installed' };
+  } catch (error) {
+    await deps.message(`${deps.labels.failed}\n${getErrorMessage(error)}`);
+    return { status: 'error' };
+  }
+}
+
+/**
  * @param {{ relaunch: () => Promise<void> }} deps
  * @returns {Promise<void>}
  */
