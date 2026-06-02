@@ -15,9 +15,11 @@ use commands::json::{
     json_escape, json_format, json_minify, json_stats, json_unescape, json_validate,
 };
 use commands::shortcuts::{format_clipboard_and_show, show_main_window, update_shortcut};
-use commands::window::{open_devtools, quit_app, set_window_theme};
+use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+#[cfg(target_os = "macos")]
+use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -158,6 +160,24 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
 
+            #[cfg(target_os = "macos")]
+            {
+                let app_menu = SubmenuBuilder::new(app, "Json Studio")
+                    .text("check_for_update", "检查更新...")
+                    .separator()
+                    .quit()
+                    .build()?;
+                let menu = MenuBuilder::new(app).items(&[&app_menu]).build()?;
+                app.set_menu(menu)?;
+
+                app.on_menu_event(|app_handle, event| {
+                    if event.id().0.as_str() == "check_for_update" {
+                        focus_main_window(app_handle);
+                        let _ = app_handle.emit("check-for-update", ());
+                    }
+                });
+            }
+
             // Register global shortcut: show app
             let show_app_handle = app_handle.clone();
             if let Err(error) = app.global_shortcut().on_shortcut(
@@ -237,7 +257,8 @@ pub fn run() {
             export_json_image,
             get_pending_files,
             show_in_folder,
-            quit_app
+            quit_app,
+            restart_app
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

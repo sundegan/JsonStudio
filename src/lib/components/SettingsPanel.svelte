@@ -1,11 +1,23 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { getVersion } from '@tauri-apps/api/app';
+  import { invoke } from '@tauri-apps/api/core';
+  import { listen } from '@tauri-apps/api/event';
+  import { check } from '@tauri-apps/plugin-updater';
   import { settingsStore, darkThemes, lightThemes, type AppSettings } from '$lib/stores/settings';
   import { shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import {
+    checkForAppUpdate,
+    createInitialUpdaterState,
+    installAppUpdate,
+    restartAfterAppUpdate,
+  } from '$lib/services/appUpdater';
   import { t, availableLocales, localeNames, type Locale } from '$lib/i18n';
   import ShortcutRecorder from './ShortcutRecorder.svelte';
 
   let isOpen = $state(false);
   let shortcuts = $state<ShortcutsSettings | null>(null);
+  let updaterState = $state(createInitialUpdaterState(''));
   
   let settings = $state<AppSettings>({
     isDarkMode: false,
@@ -32,6 +44,42 @@
       shortcuts = newShortcuts;
     });
     return () => unsubscribe();
+  });
+
+  onMount(() => {
+    let unlistenCheckForUpdate: (() => void) | null = null;
+
+    getVersion()
+      .then(version => {
+        updaterState = { ...updaterState, currentVersion: version };
+      })
+      .catch(error => {
+        updaterState = {
+          ...updaterState,
+          status: 'error',
+          messageKey: 'settings.updateFailed',
+          error: error instanceof Error ? error.message : String(error),
+        };
+      });
+
+    listen('check-for-update', () => {
+      void handleMenuCheckForUpdate();
+    })
+      .then(unlisten => {
+        unlistenCheckForUpdate = unlisten;
+      })
+      .catch(error => {
+        updaterState = {
+          ...updaterState,
+          status: 'error',
+          messageKey: 'settings.updateFailed',
+          error: error instanceof Error ? error.message : String(error),
+        };
+      });
+
+    return () => {
+      unlistenCheckForUpdate?.();
+    };
   });
 
   export function open() {
@@ -76,6 +124,48 @@
 
   function handleAutoSaveToggle(value: boolean) {
     settingsStore.updateSetting('autoSave', value);
+  }
+
+  async function handleCheckForUpdate() {
+    updaterState = {
+      ...updaterState,
+      status: 'checking',
+      messageKey: 'settings.updateChecking',
+      error: null,
+    };
+    updaterState = await checkForAppUpdate(updaterState, { check });
+  }
+
+  async function handleMenuCheckForUpdate() {
+    isOpen = true;
+    await handleCheckForUpdate();
+  }
+
+  async function handleInstallUpdate() {
+    updaterState = {
+      ...updaterState,
+      status: 'installing',
+      messageKey: 'settings.updateInstalling',
+      error: null,
+    };
+    updaterState = await installAppUpdate(updaterState);
+  }
+
+  async function handleRestartAfterUpdate() {
+    try {
+      await restartAfterAppUpdate({ relaunch: () => invoke('restart_app') });
+    } catch (error) {
+      updaterState = {
+        ...updaterState,
+        status: 'error',
+        messageKey: 'settings.updateFailed',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  function isUpdaterBusy() {
+    return updaterState.status === 'checking' || updaterState.status === 'installing';
   }
 
   function handleBackdropClick(e: MouseEvent) {
@@ -324,6 +414,70 @@
                 >
                   <span class="settings-toggle-thumb"></span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- App -->
+        <section class="settings-section">
+          <h3 class="settings-section-title">{$t('settings.application')}</h3>
+
+          <div class="settings-list">
+            <div class="settings-item">
+              <div class="settings-item-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">{$t('settings.currentVersion')}</span>
+                  <span class="settings-hint">{updaterState.currentVersion || $t('settings.versionUnknown')}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-row settings-update-row">
+                <div class="settings-item-label">
+                  <span class="settings-item-name">{$t('settings.autoUpdate')}</span>
+                  <span class="settings-hint">
+                    {$t(updaterState.messageKey)}
+                    {#if updaterState.update?.version}
+                      <span class="settings-inline-version">{updaterState.update.version}</span>
+                    {/if}
+                  </span>
+                  {#if updaterState.error}
+                    <span class="settings-error">{updaterState.error}</span>
+                  {/if}
+                </div>
+
+                <div class="settings-update-actions">
+                  <button
+                    class="settings-secondary-btn"
+                    onclick={handleCheckForUpdate}
+                    disabled={isUpdaterBusy()}
+                    type="button"
+                  >
+                    {updaterState.status === 'checking' ? $t('settings.updateCheckingButton') : $t('settings.checkUpdate')}
+                  </button>
+
+                  {#if updaterState.status === 'available'}
+                    <button
+                      class="settings-primary-btn"
+                      onclick={handleInstallUpdate}
+                      type="button"
+                    >
+                      {$t('settings.installUpdate')}
+                    </button>
+                  {/if}
+
+                  {#if updaterState.status === 'ready-to-restart'}
+                    <button
+                      class="settings-primary-btn"
+                      onclick={handleRestartAfterUpdate}
+                      type="button"
+                    >
+                      {$t('settings.restartApp')}
+                    </button>
+                  {/if}
+                </div>
               </div>
             </div>
           </div>
@@ -748,6 +902,74 @@
   .settings-action-link:hover {
     background: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
+  }
+
+  .settings-update-row {
+    align-items: flex-start;
+  }
+
+  .settings-update-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+    max-width: 280px;
+  }
+
+  .settings-primary-btn,
+  .settings-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .settings-primary-btn {
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent);
+  }
+
+  .settings-primary-btn:hover {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+
+  .settings-secondary-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+  }
+
+  .settings-secondary-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .settings-secondary-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .settings-inline-version {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    color: var(--accent);
+    margin-left: 4px;
+  }
+
+  .settings-error {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #ef4444;
   }
 
   /* Shortcut group label */

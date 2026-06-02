@@ -67,6 +67,12 @@ pub fn quit_app(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+/// Restart the application after an update has been installed.
+#[tauri::command]
+pub fn restart_app(app: tauri::AppHandle) {
+    app.restart();
+}
+
 /// Open developer tools
 #[tauri::command]
 pub fn open_devtools(_window: tauri::WebviewWindow) {
