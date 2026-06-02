@@ -163,7 +163,13 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             {
                 let app_menu = SubmenuBuilder::new(app, "Json Studio")
+                    .about(None)
+                    .separator()
                     .text("check_for_update", "检查更新...")
+                    .separator()
+                    .hide()
+                    .hide_others()
+                    .show_all()
                     .separator()
                     .quit()
                     .build()?;
