@@ -82,6 +82,15 @@ function saveSettings(settings: AppSettings) {
   }
 }
 
+async function syncAppMenuLanguage(language: Locale) {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('set_app_menu_language', { language });
+  } catch (error) {
+    console.error('Failed to update app menu language:', error);
+  }
+}
+
 // Create settings store
 function createSettingsStore() {
   const { subscribe, set, update } = writable<AppSettings>(defaultSettings);
@@ -94,6 +103,7 @@ function createSettingsStore() {
       const settings = loadSettings();
       set(settings);
       locale.set(settings.language);
+      void syncAppMenuLanguage(settings.language);
     },
     
     // Update single setting
@@ -106,6 +116,7 @@ function createSettingsStore() {
       
       if (key === 'language') {
         locale.set(value as Locale);
+        void syncAppMenuLanguage(value as Locale);
       }
 
       // If updating dark mode, sync macOS window theme

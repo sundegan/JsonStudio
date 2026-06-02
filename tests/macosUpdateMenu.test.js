@@ -7,7 +7,11 @@ test('macOS app menu exposes check update and emits frontend event', () => {
 
   assert.match(libRs, /SubmenuBuilder::new\(app,\s*"Json Studio"\)/);
   assert.match(libRs, /\.about\(None\)/);
-  assert.match(libRs, /\.text\("check_for_update",\s*"检查更新\.\.\."\)/);
+  assert.match(libRs, /fn check_for_update_menu_text\(language: &str\) -> &'static str/);
+  assert.match(libRs, /"en"\s*=>\s*"Check for Updates\.\.\."/);
+  assert.match(libRs, /_\s*=>\s*"检查更新\.\.\."/);
+  assert.match(libRs, /\.text\("check_for_update",\s*check_for_update_menu_text\(language\)\)/);
+  assert.match(libRs, /fn set_app_menu_language\(app: tauri::AppHandle, language: String\)/);
   assert.match(libRs, /\.hide\(\)/);
   assert.match(libRs, /\.hide_others\(\)/);
   assert.match(libRs, /\.show_all\(\)/);
@@ -28,4 +32,13 @@ test('settings panel listens for menu check update event', () => {
   assert.match(settingsPanel, /handleMenuCheckForUpdate/);
   assert.match(settingsPanel, /isOpen = true/);
   assert.match(settingsPanel, /handleCheckForUpdate\(\)/);
+});
+
+test('settings store syncs macOS menu language with app language', () => {
+  const settingsStore = readFileSync(new URL('../src/lib/stores/settings.ts', import.meta.url), 'utf8');
+
+  assert.match(settingsStore, /async function syncAppMenuLanguage\(language: Locale\)/);
+  assert.match(settingsStore, /invoke\('set_app_menu_language', \{ language \}\)/);
+  assert.match(settingsStore, /void syncAppMenuLanguage\(settings\.language\)/);
+  assert.match(settingsStore, /void syncAppMenuLanguage\(value as Locale\)/);
 });

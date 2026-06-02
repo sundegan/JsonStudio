@@ -82,6 +82,48 @@ fn queue_or_emit_open_files(app: &tauri::AppHandle, paths: Vec<String>) {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn check_for_update_menu_text(language: &str) -> &'static str {
+    match language {
+        "en" => "Check for Updates...",
+        _ => "检查更新...",
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn set_macos_app_menu(app: &tauri::AppHandle, language: &str) -> tauri::Result<()> {
+    let app_menu = SubmenuBuilder::new(app, "Json Studio")
+        .about(None)
+        .separator()
+        .text("check_for_update", check_for_update_menu_text(language))
+        .separator()
+        .hide()
+        .hide_others()
+        .show_all()
+        .separator()
+        .quit()
+        .build()?;
+    let menu = MenuBuilder::new(app).items(&[&app_menu]).build()?;
+    app.set_menu(menu)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn set_app_menu_language(app: tauri::AppHandle, language: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        set_macos_app_menu(&app, &language).map_err(|error| error.to_string())?;
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = language;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,19 +204,7 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             {
-                let app_menu = SubmenuBuilder::new(app, "Json Studio")
-                    .about(None)
-                    .separator()
-                    .text("check_for_update", "检查更新...")
-                    .separator()
-                    .hide()
-                    .hide_others()
-                    .show_all()
-                    .separator()
-                    .quit()
-                    .build()?;
-                let menu = MenuBuilder::new(app).items(&[&app_menu]).build()?;
-                app.set_menu(menu)?;
+                set_macos_app_menu(&app_handle, "zh")?;
 
                 app.on_menu_event(|app_handle, event| {
                     if event.id().0.as_str() == "check_for_update" {
@@ -264,7 +294,8 @@ pub fn run() {
             get_pending_files,
             show_in_folder,
             quit_app,
-            restart_app
+            restart_app,
+            set_app_menu_language
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
