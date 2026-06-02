@@ -23,6 +23,7 @@
     "@monaco-editor/loader": "^1.7.0",
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "bits-ui": "^2.15.2",

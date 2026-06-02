@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": [
       "nsis",      
       "dmg",       
@@ -60,6 +61,17 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNDMEU0NzQzM0VGMjUwQjcKUldTM1VQSStRMGNPUE9OY0tzbWdSMEMrUnVrRTUrdmo1b2FkN0lqVWRhMkN5clVqWDRBaVh3Y2sK",
+      "endpoints": [
+        "https://github.com/sundegan/JsonStudio/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

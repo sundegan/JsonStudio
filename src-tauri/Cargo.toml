@@ -44,6 +44,9 @@ walkdir = "2.4"
 cocoa = "0.25"
 objc = "0.2"
 
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-updater = "2"
+
 [profile.dev.package.image]
 opt-level = 3
 

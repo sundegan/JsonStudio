@@ -65,10 +65,10 @@ jobs:
         run: |
           if [ "${{ matrix.platform }}" == "macos-latest" ]; then
             # macOS: build the .app, then package our own drag-and-drop DMG with install guides.
-            pnpm tauri build ${{ matrix.args }} --bundles app
+            pnpm tauri build ${{ matrix.args }} --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
           else
             # Other platforms: normal build
-            pnpm tauri build ${{ matrix.args }}
+            pnpm tauri build ${{ matrix.args }} --config '{"bundle":{"createUpdaterArtifacts":false}}'
           fi
         shell: bash
 

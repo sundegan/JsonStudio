@@ -3,18 +3,18 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'  # Triggered when pushing tags starting with 'v' (e.g., v0.1.0)
-  workflow_dispatch:  # Allow manual trigger
+      - 'v*'
+  workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Tag name (e.g., v0.1.0)'
+        description: 'Tag name (e.g., v1.2.2)'
         required: true
         type: string
 
 jobs:
   build-tauri:
     permissions:
-      contents: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -24,28 +24,32 @@ jobs:
             args: '--target aarch64-apple-darwin'
             os_name: 'macos'
             arch_suffix: 'aarch64'
+            updater_platform: 'darwin-aarch64'
           - platform: 'macos-latest'
             target: 'x86_64-apple-darwin'
             args: '--target x86_64-apple-darwin'
             os_name: 'macos'
             arch_suffix: 'x64'
+            updater_platform: 'darwin-x86_64'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
             args: '--target x86_64-unknown-linux-gnu'
             os_name: 'linux'
             arch_suffix: 'amd64'
+            updater_platform: 'linux-x86_64'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
             args: '--target x86_64-pc-windows-msvc'
             os_name: 'windows'
             arch_suffix: 'x64'
+            updater_platform: 'windows-x86_64'
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history including tag information
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -72,19 +76,45 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate release version
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+
+          const tag = process.env.RELEASE_TAG;
+          const expectedVersion = tag.replace(/^v/, '');
+          const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+          const tauriVersion = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8')).version;
+
+          if (packageVersion !== expectedVersion || tauriVersion !== expectedVersion) {
+            throw new Error(
+              `Release tag ${tag} must match package.json (${packageVersion}) and tauri.conf.json (${tauriVersion})`
+            );
+          }
+          NODE
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+
       - name: Build frontend
         run: pnpm build
 
-      - name: Build Tauri app (without auto-upload)
+      - name: Build Tauri app and updater artifacts
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "TAURI_SIGNING_PRIVATE_KEY secret is required for signed updater artifacts."
+            exit 1
+          fi
+
           if [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            # macOS: build the .app, then package our own drag-and-drop DMG with install guides.
             pnpm tauri build ${{ matrix.args }} --bundles app
           else
-            # Other platforms: normal build
             pnpm tauri build ${{ matrix.args }}
           fi
-        shell: bash
 
       - name: Add macOS install guides to DMG
         if: matrix.platform == 'macos-latest'
@@ -98,14 +128,11 @@ jobs:
           DMG_ROOT="$TEMP_DIR/dmg"
 
           if [ ! -d "$APP_PATH" ]; then
-            echo "❌ App not found at: $APP_PATH"
+            echo "App not found at: $APP_PATH"
             ls -la "$BUNDLE_DIR/macos/" || true
             exit 1
           fi
 
-          # Replace the linker-generated signature with a complete ad-hoc app bundle signature.
-          # This still is not notarization, but it avoids distributing a bundle that macOS
-          # treats as malformed before users can use the normal Gatekeeper override flow.
           codesign --force --deep --sign - "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
@@ -171,185 +198,221 @@ jobs:
           hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH"
 
           if [ ! -f "$DMG_PATH" ]; then
-            echo "❌ Failed to create macOS DMG at: $DMG_PATH"
+            echo "Failed to create macOS DMG at: $DMG_PATH"
             exit 1
           fi
 
-          echo "✓ macOS DMG created with drag-to-install layout: $DMG_PATH"
           ls -lh "$DMG_PATH"
           rm -rf "$TEMP_DIR"
 
-      - name: Rename artifacts with OS name
+      - name: Prepare release and updater artifacts
         shell: bash
         run: |
+          set -euo pipefail
+
           BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
           VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
-          
+          VERSION_NO_V="${VERSION#v}"
+          RELEASE_DIR="./release-assets"
+          METADATA_DIR="./updater-metadata"
+          UPDATER_PLATFORM="${{ matrix.updater_platform }}"
+
+          mkdir -p "$RELEASE_DIR" "$METADATA_DIR"
+
           if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            # Windows: rename .exe files (Tauri may replace spaces with dots in filename)
-            # Match any version suffix to avoid mismatches between tag and app version.
             shopt -s nullglob
-            CANDIDATES=(
+            INSTALLER_CANDIDATES=(
               "$BUNDLE_DIR/nsis/Json Studio"*"_x64-setup.exe"
               "$BUNDLE_DIR/nsis/Json.Studio"*"_x64-setup.exe"
             )
-            RENAMED_EXE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
-            
-            if [ ${#CANDIDATES[@]} -gt 0 ]; then
-              ORIGINAL_EXE="${CANDIDATES[0]}"
-              if [ "$ORIGINAL_EXE" == "$RENAMED_EXE" ]; then
-                echo "✓ Windows installer already named: $RENAMED_EXE"
-              else
-                mv "$ORIGINAL_EXE" "$RENAMED_EXE"
-                echo "✓ Renamed Windows installer: $RENAMED_EXE"
-              fi
-            else
-              echo "❌ Windows installer not found"
-              echo "Files in nsis directory:"
+            UPDATER_FILE="$RELEASE_DIR/Json Studio_${VERSION_NO_V}_windows_${{ matrix.arch_suffix }}-setup.exe"
+
+            if [ ${#INSTALLER_CANDIDATES[@]} -eq 0 ]; then
+              echo "Windows installer not found"
               ls -la "$BUNDLE_DIR/nsis/" || true
               exit 1
             fi
+
+            ORIGINAL_INSTALLER="${INSTALLER_CANDIDATES[0]}"
+            ORIGINAL_SIG="$ORIGINAL_INSTALLER.sig"
+            cp "$ORIGINAL_INSTALLER" "$UPDATER_FILE"
+            cp "$ORIGINAL_SIG" "$UPDATER_FILE.sig"
           elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
-            # Linux: rename AppImage (Tauri may replace spaces with dots in filename)
-            # Match any version suffix to avoid mismatches between tag and app version.
             shopt -s nullglob
-            CANDIDATES=(
+            APPIMAGE_CANDIDATES=(
               "$BUNDLE_DIR/appimage/Json Studio"*"_amd64.AppImage"
               "$BUNDLE_DIR/appimage/Json.Studio"*"_amd64.AppImage"
             )
-            RENAMED_APPIMAGE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
-            
-            if [ ${#CANDIDATES[@]} -gt 0 ]; then
-              ORIGINAL_APPIMAGE="${CANDIDATES[0]}"
-              if [ "$ORIGINAL_APPIMAGE" == "$RENAMED_APPIMAGE" ]; then
-                echo "✓ Linux AppImage already named: $RENAMED_APPIMAGE"
-              else
-                mv "$ORIGINAL_APPIMAGE" "$RENAMED_APPIMAGE"
-                echo "✓ Renamed Linux AppImage: $RENAMED_APPIMAGE"
-              fi
-            else
-              echo "❌ Linux AppImage not found"
-              echo "Files in appimage directory:"
+            UPDATER_FILE="$RELEASE_DIR/Json Studio_${VERSION_NO_V}_linux_${{ matrix.arch_suffix }}.AppImage"
+
+            if [ ${#APPIMAGE_CANDIDATES[@]} -eq 0 ]; then
+              echo "Linux AppImage not found"
               ls -la "$BUNDLE_DIR/appimage/" || true
               exit 1
             fi
-          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            # macOS: rename the standard Tauri DMG for release upload.
-            shopt -s nullglob
-            CANDIDATES=(
-              "$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_macos_${{ matrix.arch_suffix }}.dmg"
-              "$BUNDLE_DIR/dmg/Json Studio"*"${{ matrix.arch_suffix }}.dmg"
-              "$BUNDLE_DIR/dmg/Json.Studio"*"${{ matrix.arch_suffix }}.dmg"
-            )
-            RENAMED_DMG="$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_macos_${{ matrix.arch_suffix }}.dmg"
 
-            if [ ${#CANDIDATES[@]} -gt 0 ]; then
-              ORIGINAL_DMG="${CANDIDATES[0]}"
-              if [ "$ORIGINAL_DMG" == "$RENAMED_DMG" ]; then
-                echo "✓ macOS DMG already named: $RENAMED_DMG"
-              else
-                mv "$ORIGINAL_DMG" "$RENAMED_DMG"
-                echo "✓ Renamed macOS DMG: $RENAMED_DMG"
-              fi
-            else
-              echo "❌ macOS DMG not found"
-              echo "Files in dmg directory:"
+            ORIGINAL_APPIMAGE="${APPIMAGE_CANDIDATES[0]}"
+            ORIGINAL_SIG="$ORIGINAL_APPIMAGE.sig"
+            cp "$ORIGINAL_APPIMAGE" "$UPDATER_FILE"
+            cp "$ORIGINAL_SIG" "$UPDATER_FILE.sig"
+          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+            shopt -s nullglob
+            DMG_FILE="$BUNDLE_DIR/dmg/Json Studio_${VERSION_NO_V}_macos_${{ matrix.arch_suffix }}.dmg"
+            ARCHIVE_CANDIDATES=(
+              "$BUNDLE_DIR/macos/Json Studio.app.tar.gz"
+              "$BUNDLE_DIR/macos/Json.Studio.app.tar.gz"
+            )
+            UPDATER_FILE="$RELEASE_DIR/Json Studio_${VERSION_NO_V}_macos_${{ matrix.arch_suffix }}.app.tar.gz"
+
+            if [ ! -f "$DMG_FILE" ]; then
+              echo "macOS DMG not found at $DMG_FILE"
               ls -la "$BUNDLE_DIR/dmg/" || true
               exit 1
             fi
+
+            if [ ${#ARCHIVE_CANDIDATES[@]} -eq 0 ]; then
+              echo "macOS updater archive not found"
+              ls -la "$BUNDLE_DIR/macos/" || true
+              exit 1
+            fi
+
+            ORIGINAL_ARCHIVE="${ARCHIVE_CANDIDATES[0]}"
+            ORIGINAL_SIG="$ORIGINAL_ARCHIVE.sig"
+            cp "$DMG_FILE" "$RELEASE_DIR/$(basename "$DMG_FILE")"
+            cp "$ORIGINAL_ARCHIVE" "$UPDATER_FILE"
+            cp "$ORIGINAL_SIG" "$UPDATER_FILE.sig"
           fi
 
-      - name: Prepare upload file path
+          if [ ! -f "$UPDATER_FILE.sig" ]; then
+            echo "Updater signature missing for $UPDATER_FILE"
+            find "$BUNDLE_DIR" -type f -name "*.sig" -print
+            exit 1
+          fi
+
+          export METADATA_DIR UPDATER_FILE UPDATER_PLATFORM
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const metadataDir = process.env.METADATA_DIR;
+          const updaterFile = process.env.UPDATER_FILE;
+          const platform = process.env.UPDATER_PLATFORM;
+          const signature = fs.readFileSync(`${updaterFile}.sig`, 'utf8').trim();
+
+          fs.writeFileSync(
+            path.join(metadataDir, `${platform}.json`),
+            JSON.stringify(
+              {
+                platform,
+                asset: path.basename(updaterFile),
+                signature,
+              },
+              null,
+              2
+            )
+          );
+          NODE
+
+          find "$RELEASE_DIR" -maxdepth 1 -type f -print
+          find "$METADATA_DIR" -maxdepth 1 -type f -print
+
+      - name: Upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-files-${{ matrix.os_name }}-${{ matrix.arch_suffix }}
+          path: release-assets/*
+          if-no-files-found: error
+
+      - name: Upload updater metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-metadata-${{ matrix.os_name }}-${{ matrix.arch_suffix }}
+          path: updater-metadata/*.json
+          if-no-files-found: error
+
+  publish-release:
+    needs: build-tauri
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download release files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-files-*
+          path: dist/release
+          merge-multiple: true
+
+      - name: Download updater metadata
+        uses: actions/download-artifact@v4
+        with:
+          pattern: updater-metadata-*
+          path: dist/updater-metadata
+          merge-multiple: true
+
+      - name: Generate latest.json
         shell: bash
         run: |
-          BUNDLE_DIR="./src-tauri/target/${{ matrix.target }}/release/bundle"
-          VERSION="${{ github.event.inputs.tag_name || github.ref_name }}"
-          
-          if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-            # Windows: find renamed .exe file
-            EXE_FILE="$BUNDLE_DIR/nsis/Json Studio_${VERSION#v}_windows_${{ matrix.arch_suffix }}-setup.exe"
-            if [ -f "$EXE_FILE" ]; then
-              echo "UPLOAD_FILE=$EXE_FILE" >> $GITHUB_ENV
-              echo "✓ Found Windows installer: $EXE_FILE"
-            else
-              echo "❌ Windows installer not found at: $EXE_FILE"
-              ls -la "$BUNDLE_DIR/nsis/" || true
-              exit 1
-            fi
-          elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
-            # Linux: find renamed AppImage
-            APPIMAGE_FILE="$BUNDLE_DIR/appimage/Json Studio_${VERSION#v}_linux_${{ matrix.arch_suffix }}.AppImage"
-            if [ -f "$APPIMAGE_FILE" ]; then
-              echo "UPLOAD_FILE=$APPIMAGE_FILE" >> $GITHUB_ENV
-              echo "✓ Found Linux AppImage: $APPIMAGE_FILE"
-            else
-              echo "❌ Linux AppImage not found at: $APPIMAGE_FILE"
-              ls -la "$BUNDLE_DIR/appimage/" || true
-              exit 1
-            fi
-          elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-            # macOS: find renamed standard DMG
-            DMG_FILE="$BUNDLE_DIR/dmg/Json Studio_${VERSION#v}_macos_${{ matrix.arch_suffix }}.dmg"
-            if [ -f "$DMG_FILE" ]; then
-              echo "UPLOAD_FILE=$DMG_FILE" >> $GITHUB_ENV
-              echo "✓ Found macOS DMG: $DMG_FILE"
-            else
-              echo "❌ macOS DMG not found at: $DMG_FILE"
-              ls -la "$BUNDLE_DIR/dmg/" || true
-              exit 1
-            fi
-          fi
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
 
-      - name: Upload Windows artifacts
-        if: matrix.platform == 'windows-latest'
-        uses: softprops/action-gh-release@v2.6.2
-        with:
-          files: ${{ env.UPLOAD_FILE }}
-          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
-          body: |
-            View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md
+          const repo = process.env.GITHUB_REPOSITORY;
+          const tag = process.env.RELEASE_TAG;
+          const version = tag.replace(/^v/, '');
+          const metadataDir = 'dist/updater-metadata';
+          const releaseDir = 'dist/release';
+          const platforms = {};
 
-            macOS note: download the DMG for your Mac architecture, open it, then drag `Json Studio.app` into Applications. These builds are not Apple Developer ID notarized, so macOS may ask you to confirm the first launch via right-click Open or System Settings > Privacy & Security.
-          draft: true
-          prerelease: false
-          fail_on_unmatched_files: false
-          overwrite_files: true
+          for (const file of fs.readdirSync(metadataDir)) {
+            if (!file.endsWith('.json')) continue;
+            const metadata = JSON.parse(fs.readFileSync(path.join(metadataDir, file), 'utf8'));
+            platforms[metadata.platform] = {
+              signature: metadata.signature,
+              url: `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(metadata.asset)}`,
+            };
+          }
+
+          const requiredPlatforms = ['darwin-aarch64', 'darwin-x86_64', 'linux-x86_64', 'windows-x86_64'];
+          const missing = requiredPlatforms.filter((platform) => !platforms[platform]);
+          if (missing.length > 0) {
+            throw new Error(`Missing updater metadata for ${missing.join(', ')}`);
+          }
+
+          fs.writeFileSync(
+            path.join(releaseDir, 'latest.json'),
+            JSON.stringify(
+              {
+                version,
+                notes: `See https://github.com/${repo}/releases/tag/${encodeURIComponent(tag)}`,
+                pub_date: new Date().toISOString(),
+                platforms,
+              },
+              null,
+              2
+            )
+          );
+          NODE
+
+          cat dist/release/latest.json
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
 
-      - name: Upload macOS artifacts
-        if: matrix.platform == 'macos-latest'
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2.6.2
         with:
-          files: ${{ env.UPLOAD_FILE }}
+          files: dist/release/*
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
           body: |
             View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md
 
-            macOS note: download the DMG for your Mac architecture, open it, then drag `Json Studio.app` into Applications. These builds are not Apple Developer ID notarized, so macOS may ask you to confirm the first launch via right-click Open or System Settings > Privacy & Security.
-          draft: true
-          prerelease: false
-          fail_on_unmatched_files: false
-          overwrite_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Linux artifacts
-        if: matrix.platform == 'ubuntu-22.04'
-        uses: softprops/action-gh-release@v2.6.2
-        with:
-          files: ${{ env.UPLOAD_FILE }}
-          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          name: 'Json Studio ${{ github.event.inputs.tag_name || github.ref_name }}'
-          body: |
-            View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md
+            Auto-update metadata is published as `latest.json` for the Tauri updater.
 
             macOS note: download the DMG for your Mac architecture, open it, then drag `Json Studio.app` into Applications. These builds are not Apple Developer ID notarized, so macOS may ask you to confirm the first launch via right-click Open or System Settings > Privacy & Security.
-          draft: true
+          draft: false
           prerelease: false
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
