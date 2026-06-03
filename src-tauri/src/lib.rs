@@ -19,10 +19,7 @@ use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
-use tauri::{
-    image::Image,
-    menu::{AboutMetadataBuilder, MenuBuilder, SubmenuBuilder},
-};
+use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -86,6 +83,14 @@ fn queue_or_emit_open_files(app: &tauri::AppHandle, paths: Vec<String>) {
 }
 
 #[cfg(target_os = "macos")]
+fn about_menu_text(language: &str) -> &'static str {
+    match language {
+        "en" => "About Json Studio",
+        _ => "关于 Json Studio",
+    }
+}
+
+#[cfg(target_os = "macos")]
 fn check_for_update_menu_text(language: &str) -> &'static str {
     match language {
         "en" => "Check for Updates...",
@@ -94,30 +99,9 @@ fn check_for_update_menu_text(language: &str) -> &'static str {
 }
 
 #[cfg(target_os = "macos")]
-fn about_metadata() -> tauri::Result<tauri::menu::AboutMetadata<'static>> {
-    let icon_image = image::load_from_memory(include_bytes!("../icons/icon.png"))
-        .map_err(|error| tauri::Error::Anyhow(error.into()))?
-        .to_rgba8();
-    let (width, height) = icon_image.dimensions();
-    let icon = Image::new_owned(icon_image.into_raw(), width, height);
-
-    Ok(AboutMetadataBuilder::new()
-        .name(Some("Json Studio"))
-        .version(Some(env!("CARGO_PKG_VERSION")))
-        .short_version(Some(env!("CARGO_PKG_VERSION")))
-        .copyright(Some("Copyright © 2025 Json Studio"))
-        .website(Some("https://github.com/sundegan/JsonStudio"))
-        .website_label(Some("GitHub"))
-        .credits(Some("GitHub: https://github.com/sundegan/JsonStudio"))
-        .icon(Some(icon))
-        .build())
-}
-
-#[cfg(target_os = "macos")]
 fn set_macos_app_menu(app: &tauri::AppHandle, language: &str) -> tauri::Result<()> {
-    let about_metadata = about_metadata()?;
     let app_menu = SubmenuBuilder::new(app, "Json Studio")
-        .about(Some(about_metadata))
+        .text("show_about", about_menu_text(language))
         .separator()
         .text("check_for_update", check_for_update_menu_text(language))
         .separator()
@@ -231,9 +215,16 @@ pub fn run() {
                 set_macos_app_menu(&app_handle, "zh")?;
 
                 app.on_menu_event(|app_handle, event| {
-                    if event.id().0.as_str() == "check_for_update" {
-                        focus_main_window(app_handle);
-                        let _ = app_handle.emit("check-for-update", ());
+                    match event.id().0.as_str() {
+                        "show_about" => {
+                            focus_main_window(app_handle);
+                            let _ = app_handle.emit("show-about", ());
+                        }
+                        "check_for_update" => {
+                            focus_main_window(app_handle);
+                            let _ = app_handle.emit("check-for-update", ());
+                        }
+                        _ => {}
                     }
                 });
             }

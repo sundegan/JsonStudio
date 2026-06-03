@@ -26,6 +26,12 @@ export default {
   'toolbar.pinToTop': '置顶',
   'toolbar.unpinFromTop': '取消置顶',
 
+  // About
+  'about.close': '关闭关于窗口',
+  'about.tagline': '快速、现代的 JSON 桌面工具',
+  'about.version': '版本',
+  'about.github': 'GitHub',
+
   // Settings panel
   'settings.title': '设置',
   'settings.appearance': '外观',

@@ -26,6 +26,12 @@ export default {
   'toolbar.pinToTop': 'Pin to Top',
   'toolbar.unpinFromTop': 'Unpin from Top',
 
+  // About
+  'about.close': 'Close about dialog',
+  'about.tagline': 'Fast, modern JSON desktop tooling',
+  'about.version': 'Version',
+  'about.github': 'GitHub',
+
   // Settings panel
   'settings.title': 'Settings',
   'settings.appearance': 'Appearance',

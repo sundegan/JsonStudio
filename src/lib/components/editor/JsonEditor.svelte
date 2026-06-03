@@ -21,6 +21,7 @@
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
+  import AboutDialog from '$lib/components/AboutDialog.svelte';
   import { jsonrepair } from 'jsonrepair';
   import {
     extractLogJsonFragments,
@@ -1494,6 +1495,7 @@
 
   <!-- Settings panel -->
   <SettingsPanel bind:this={settingsPanel} />
+  <AboutDialog />
 
   <ConfirmDialog
     bind:isOpen={isConfirmOpen}

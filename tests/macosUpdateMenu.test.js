@@ -6,12 +6,8 @@ test('macOS app menu exposes check update and emits frontend event', () => {
   const libRs = readFileSync(new URL('../src-tauri/src/lib.rs', import.meta.url), 'utf8');
 
   assert.match(libRs, /SubmenuBuilder::new\(app,\s*"Json Studio"\)/);
-  assert.match(libRs, /AboutMetadataBuilder::new\(\)/);
-  assert.match(libRs, /include_bytes!\("\.\.\/icons\/icon\.png"\)/);
-  assert.match(libRs, /\.website\(Some\("https:\/\/github\.com\/sundegan\/JsonStudio"\)\)/);
-  assert.match(libRs, /\.website_label\(Some\("GitHub"\)\)/);
-  assert.match(libRs, /\.credits\(Some\("GitHub: https:\/\/github\.com\/sundegan\/JsonStudio"\)\)/);
-  assert.match(libRs, /\.about\(Some\(about_metadata\)\)/);
+  assert.match(libRs, /fn about_menu_text\(language: &str\) -> &'static str/);
+  assert.match(libRs, /\.text\("show_about",\s*about_menu_text\(language\)\)/);
   assert.match(libRs, /fn check_for_update_menu_text\(language: &str\) -> &'static str/);
   assert.match(libRs, /"en"\s*=>\s*"Check for Updates\.\.\."/);
   assert.match(libRs, /_\s*=>\s*"检查更新\.\.\."/);
@@ -22,8 +18,23 @@ test('macOS app menu exposes check update and emits frontend event', () => {
   assert.match(libRs, /\.show_all\(\)/);
   assert.match(libRs, /app\.on_menu_event/);
   assert.match(libRs, /event\.id\(\)\.0\.as_str\(\)/);
+  assert.match(libRs, /"show_about"/);
+  assert.match(libRs, /emit\("show-about"/);
   assert.match(libRs, /"check_for_update"/);
   assert.match(libRs, /emit\("check-for-update"/);
+});
+
+test('custom about dialog listens for menu event and shows app metadata', () => {
+  const aboutDialog = readFileSync(new URL('../src/lib/components/AboutDialog.svelte', import.meta.url), 'utf8');
+  const jsonEditor = readFileSync(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(jsonEditor, /import AboutDialog from '\$lib\/components\/AboutDialog\.svelte';/);
+  assert.match(jsonEditor, /<AboutDialog \/>/);
+  assert.match(aboutDialog, /listen\('show-about'/);
+  assert.match(aboutDialog, /getVersion\(\)/);
+  assert.match(aboutDialog, /src="\/app-icon\.png"/);
+  assert.match(aboutDialog, /openUrl\('https:\/\/github\.com\/sundegan\/JsonStudio'\)/);
+  assert.doesNotMatch(aboutDialog, /short_version|Version \\{version\\} \\(\\{version\\}\\)/);
 });
 
 test('settings panel listens for menu check update event', () => {
