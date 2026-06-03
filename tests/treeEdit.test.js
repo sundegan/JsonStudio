@@ -110,19 +110,24 @@ test('tree view wires drag and drop moves through full document writeback', () =
   assert.match(source, /editor\?\.setValue\(JSON\.stringify\(result\.data, null, 2\)\)/);
 });
 
-test('tree view query mode selector uses the styled toolbar control', () => {
+test('tree view query mode selector opens a custom menu below the control', () => {
   const source = readFileSync(
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
     'utf8',
   );
 
-  assert.match(source, /class="json-tree-mode-control"/);
-  assert.match(source, /class="json-tree-mode-label"/);
-  assert.match(source, /class="json-tree-mode-chevron"/);
-  assert.match(source, /\.json-tree-mode-control:focus-within/);
-  assert.match(source, /\.json-tree-mode-select \{/);
-  assert.match(source, /background: transparent;/);
-  assert.doesNotMatch(source, /background-image:\s*\n\s*linear-gradient/);
+  assert.match(source, /let queryModeMenuOpen = \$state\(false\);/);
+  assert.match(source, /class="json-tree-mode-button"/);
+  assert.match(source, /class="json-tree-mode-menu"/);
+  assert.match(source, /class="json-tree-mode-option/);
+  assert.match(source, /class="json-tree-mode-arrow"/);
+  assert.match(source, /top: calc\(100% \+ 6px\);/);
+  assert.match(source, /left: 0;/);
+  assert.match(source, /width: 100%;/);
+  assert.match(source, /min-width: 88px;/);
+  assert.match(source, /z-index: 20;/);
+  assert.match(source, /font-size: 10\.5px;/);
+  assert.doesNotMatch(source, /<select[\s\S]*class="json-tree-mode-select"/);
 });
 
 test('moves object fields before and after siblings', () => {

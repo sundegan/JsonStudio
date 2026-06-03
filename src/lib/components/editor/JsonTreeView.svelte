@@ -78,6 +78,7 @@
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
   let queryMode = $state<QueryMode>('jmespath');
+  let queryModeMenuOpen = $state(false);
   let queryError = $state('');
   let queryMatchedRoot = $state(false);
   let queryMatches = $state<Set<string>>(new Set());
@@ -653,12 +654,22 @@
     return QUERY_EXAMPLES[mode];
   }
 
+  function selectQueryMode(mode: QueryMode) {
+    queryMode = mode;
+    queryModeMenuOpen = false;
+  }
+
   function hideHelp() {
     helpOpen = false;
   }
+
+  function hideFloatingControls() {
+    helpOpen = false;
+    queryModeMenuOpen = false;
+  }
 </script>
 
-<svelte:window onclick={hideHelp} />
+<svelte:window onclick={hideFloatingControls} />
 
 <div class="json-tree-panel">
 
@@ -691,20 +702,54 @@
     </div>
 
     <div class="json-tree-toolbar-actions">
-      <div class="json-tree-mode-control">
-        <span class="json-tree-mode-label">{getQueryModeLabel(queryMode)}</span>
-        <select
-          class="json-tree-mode-select"
-          bind:value={queryMode}
+      <div class="json-tree-mode-field">
+        <button
+          class="json-tree-mode-button"
+          class:is-open={queryModeMenuOpen}
+          type="button"
           aria-label={$t('treeView.queryMode')}
+          aria-haspopup="listbox"
+          aria-expanded={queryModeMenuOpen}
           title={$t('treeView.queryMode')}
+          onclick={(e) => {
+            e.stopPropagation();
+            queryModeMenuOpen = !queryModeMenuOpen;
+            helpOpen = false;
+          }}
         >
-          <option value="jmespath">{$t('treeView.modeJmespath')}</option>
-          <option value="jsonpath">{$t('treeView.modeJsonpath')}</option>
-        </select>
-        <svg class="json-tree-mode-chevron" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m7 10 5 5 5-5" />
-        </svg>
+          <span>{getQueryModeLabel(queryMode)}</span>
+          <svg class="json-tree-mode-arrow" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="m4.5 6.25 3.5 3.5 3.5-3.5" />
+          </svg>
+        </button>
+
+        {#if queryModeMenuOpen}
+          <div
+            class="json-tree-mode-menu"
+            role="listbox"
+            aria-label={$t('treeView.queryMode')}
+            tabindex="-1"
+          >
+            <button
+              class="json-tree-mode-option {queryMode === 'jmespath' ? 'is-active' : ''}"
+              type="button"
+              role="option"
+              aria-selected={queryMode === 'jmespath'}
+              onclick={() => selectQueryMode('jmespath')}
+            >
+              {$t('treeView.modeJmespath')}
+            </button>
+            <button
+              class="json-tree-mode-option {queryMode === 'jsonpath' ? 'is-active' : ''}"
+              type="button"
+              role="option"
+              aria-selected={queryMode === 'jsonpath'}
+              onclick={() => selectQueryMode('jsonpath')}
+            >
+              {$t('treeView.modeJsonpath')}
+            </button>
+          </div>
+        {/if}
       </div>
 
       <div
@@ -1060,77 +1105,101 @@
     flex-shrink: 0;
   }
 
-  .json-tree-mode-control {
+  .json-tree-mode-field {
     position: relative;
-    height: 28px;
-    min-width: 126px;
+    flex-shrink: 0;
+  }
+
+  .json-tree-mode-button {
+    height: 26px;
+    min-width: 88px;
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 0 9px 0 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--bg-primary) 92%, var(--bg-secondary));
+    padding: 0 22px 0 9px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+    background: color-mix(in srgb, var(--bg-primary) 94%, var(--bg-secondary));
     color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    transition: all 0.16s ease;
-    flex-shrink: 0;
-  }
-
-  .json-tree-mode-control:hover {
-    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-    background: color-mix(in srgb, var(--accent) 5%, var(--bg-primary));
-  }
-
-  .json-tree-mode-control:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
-  }
-
-  .json-tree-mode-label {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 10.5px;
+    font-weight: 600;
     line-height: 1;
-    color: var(--text-primary);
-    pointer-events: none;
-  }
-
-  .json-tree-mode-select {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: transparent;
     cursor: pointer;
     outline: none;
-    appearance: none;
-    -webkit-appearance: none;
+    transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
   }
 
-  .json-tree-mode-select option {
-    color: var(--text-primary);
-    background: var(--bg-primary);
+  .json-tree-mode-button:hover,
+  .json-tree-mode-button.is-open {
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+    background: color-mix(in srgb, var(--accent) 4%, var(--bg-primary));
   }
 
-  .json-tree-mode-chevron {
-    width: 16px;
-    height: 16px;
+  .json-tree-mode-button:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  .json-tree-mode-arrow {
+    position: absolute;
+    top: 50%;
+    right: 7px;
+    width: 13px;
+    height: 13px;
     color: var(--text-secondary);
     fill: none;
     stroke: currentColor;
-    stroke-width: 2.2;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
     pointer-events: none;
-    transition: transform 0.16s ease, color 0.16s ease;
+    transform: translateY(-50%);
+    transition: color 0.16s ease;
   }
 
-  .json-tree-mode-control:hover .json-tree-mode-chevron,
-  .json-tree-mode-control:focus-within .json-tree-mode-chevron {
+  .json-tree-mode-button:hover .json-tree-mode-arrow,
+  .json-tree-mode-button.is-open .json-tree-mode-arrow,
+  .json-tree-mode-button:focus-visible .json-tree-mode-arrow {
+    color: var(--accent);
+  }
+
+  .json-tree-mode-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    width: 100%;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  }
+
+  .json-tree-mode-option {
+    width: 100%;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .json-tree-mode-option:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .json-tree-mode-option.is-active {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
   }
 
