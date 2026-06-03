@@ -21,6 +21,8 @@ export interface TabsState {
 }
 
 const STORAGE_KEY = 'jsonstudio_tabs_state';
+const MAX_PERSISTED_CONTENT_SIZE = 1024 * 1024; // 1MB per tab
+
 // Create empty stats object
 function createEmptyStats(): JsonStats {
   return {
@@ -31,6 +33,10 @@ function createEmptyStats(): JsonStats {
     format_type: '',
     error_info: null,
   };
+}
+
+function getStatsForPersistedContent(content: string, stats: JsonStats | undefined): JsonStats {
+  return content.trim() ? (stats ?? createEmptyStats()) : createEmptyStats();
 }
 
 // Generate unique ID
@@ -76,10 +82,13 @@ function loadState(): TabsState {
       const sanitizedTabs: Tab[] = parsed.tabs.reduce<Tab[]>((result, tab) => {
         const filePath = tab.filePath ?? null;
         const fileName = tab.fileName ?? (filePath ? null : getNextUntitledName(result));
+        const content = tab.content ?? '';
         result.push({
           ...tab,
           filePath,
           fileName,
+          content,
+          stats: getStatsForPersistedContent(content, tab.stats),
           isModified: false,
           isPinned: tab.isPinned ?? false,
         });
@@ -116,15 +125,17 @@ function loadState(): TabsState {
 function saveState(state: TabsState) {
   try {
     // Limit what we save to avoid localStorage quota issues
-    // localStorage typically has 5-10MB limit, we use 1MB per tab as safe limit
-    const MAX_CONTENT_SIZE = 1024 * 1024; // 1MB
+    // localStorage typically has 5-10MB limit, so 1MB per tab is a safe limit.
     
     const toSave: TabsState = {
-      tabs: state.tabs.map(tab => ({
-        ...tab,
-        // Limit content size for storage
-        content: tab.content.length > MAX_CONTENT_SIZE ? '' : tab.content,
-      })),
+      tabs: state.tabs.map(tab => {
+        const content = tab.content.length > MAX_PERSISTED_CONTENT_SIZE ? '' : tab.content;
+        return {
+          ...tab,
+          content,
+          stats: getStatsForPersistedContent(content, tab.stats),
+        };
+      }),
       activeTabId: state.activeTabId,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
