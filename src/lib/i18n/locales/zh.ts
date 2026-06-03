@@ -28,7 +28,7 @@ export default {
 
   // About
   'about.close': '关闭关于窗口',
-  'about.tagline': '快速、现代的 JSON 桌面工具',
+  'about.tagline': '为日常开发打造的快速、现代桌面 JSON 应用',
   'about.version': '版本',
   'about.github': 'GitHub',
 

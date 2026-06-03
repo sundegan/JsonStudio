@@ -28,7 +28,7 @@ export default {
 
   // About
   'about.close': 'Close about dialog',
-  'about.tagline': 'Fast, modern JSON desktop tooling',
+  'about.tagline': 'A fast, modern desktop JSON app built for daily development.',
   'about.version': 'Version',
   'about.github': 'GitHub',
 
