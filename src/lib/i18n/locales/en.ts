@@ -34,6 +34,7 @@ export default {
 
   // Settings panel
   'settings.title': 'Settings',
+  'settings.close': 'Close settings',
   'settings.appearance': 'Appearance',
   'settings.theme': 'Theme',
   'settings.themeHint': 'Switch between light and dark appearance',

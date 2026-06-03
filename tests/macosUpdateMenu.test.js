@@ -57,6 +57,24 @@ test('settings panel listens for menu check update event', () => {
   assert.doesNotMatch(settingsPanel, /async function handleMenuCheckForUpdate\(\) \{\n\s+isOpen = true;/);
 });
 
+test('settings panel groups categories into tabs', () => {
+  const settingsPanel = readFileSync(
+    new URL('../src/lib/components/SettingsPanel.svelte', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(settingsPanel, /type SettingsTab = 'appearance' \| 'editor' \| 'shortcuts' \| 'application';/);
+  assert.match(settingsPanel, /const settingsTabs: Array<\{ id: SettingsTab; labelKey: string \}> = \[/);
+  assert.match(settingsPanel, /class="settings-tabs"/);
+  assert.match(settingsPanel, /class="settings-tab \{activeTab === tab\.id \? 'is-active' : ''\}"/);
+  assert.match(settingsPanel, /\{#if activeTab === 'appearance'\}/);
+  assert.match(settingsPanel, /\{#if activeTab === 'editor'\}/);
+  assert.match(settingsPanel, /\{#if activeTab === 'shortcuts' && shortcuts\}/);
+  assert.match(settingsPanel, /\{#if activeTab === 'application'\}/);
+  assert.match(settingsPanel, /grid-template-columns: 168px minmax\(0, 1fr\);/);
+  assert.match(settingsPanel, /@media \(max-width: 760px\)/);
+});
+
 test('settings store syncs macOS menu language with app language', () => {
   const settingsStore = readFileSync(new URL('../src/lib/stores/settings.ts', import.meta.url), 'utf8');
 

@@ -16,7 +16,17 @@
   import { t, availableLocales, localeNames, type Locale } from '$lib/i18n';
   import ShortcutRecorder from './ShortcutRecorder.svelte';
 
+  type SettingsTab = 'appearance' | 'editor' | 'shortcuts' | 'application';
+
+  const settingsTabs: Array<{ id: SettingsTab; labelKey: string }> = [
+    { id: 'appearance', labelKey: 'settings.appearance' },
+    { id: 'editor', labelKey: 'settings.editor' },
+    { id: 'shortcuts', labelKey: 'settings.shortcuts' },
+    { id: 'application', labelKey: 'settings.application' },
+  ];
+
   let isOpen = $state(false);
+  let activeTab = $state<SettingsTab>('appearance');
   let shortcuts = $state<ShortcutsSettings | null>(null);
   let updaterState = $state(createInitialUpdaterState(''));
   
@@ -85,6 +95,10 @@
 
   export function open() {
     isOpen = true;
+  }
+
+  function selectTab(tab: SettingsTab) {
+    activeTab = tab;
   }
 
   function handleThemeModeToggle() {
@@ -199,11 +213,15 @@
   <div
     class="settings-backdrop"
     onclick={handleBackdropClick}
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="settings-title"
+    role="presentation"
   >
-    <div class="settings-dialog" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="settings-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+      tabindex="-1"
+    >
       <!-- Header -->
       <div class="settings-header">
         <h2 id="settings-title" class="settings-title">{$t('settings.title')}</h2>
@@ -211,6 +229,7 @@
           class="settings-close-btn"
           onclick={() => { isOpen = false; }}
           type="button"
+          aria-label={$t('settings.close')}
         >
           <svg class="w-4.5 h-4.5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12"/>
@@ -218,8 +237,23 @@
         </button>
       </div>
 
-      <!-- Content -->
-      <div class="settings-body">
+      <div class="settings-content">
+        <nav class="settings-tabs" aria-label={$t('settings.title')}>
+          {#each settingsTabs as tab}
+            <button
+              class="settings-tab {activeTab === tab.id ? 'is-active' : ''}"
+              type="button"
+              aria-current={activeTab === tab.id ? 'page' : undefined}
+              onclick={() => selectTab(tab.id)}
+            >
+              {$t(tab.labelKey)}
+            </button>
+          {/each}
+        </nav>
+
+        <!-- Content -->
+        <div class="settings-body">
+        {#if activeTab === 'appearance'}
         <!-- Appearance -->
         <section class="settings-section">
           <h3 class="settings-section-title">{$t('settings.appearance')}</h3>
@@ -318,7 +352,9 @@
             {/if}
           </div>
         </section>
+        {/if}
 
+        {#if activeTab === 'editor'}
         <!-- Editor -->
         <section class="settings-section">
           <h3 class="settings-section-title">{$t('settings.editor')}</h3>
@@ -331,11 +367,11 @@
                   <span class="settings-hint">{$t('settings.fontSizeHint')}</span>
                 </div>
                 <div class="settings-number-input">
-                  <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize > 10) handleFontSizeChange(settings.fontSize - 1); }} disabled={settings.fontSize <= 10} type="button">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize > 10) handleFontSizeChange(settings.fontSize - 1); }} disabled={settings.fontSize <= 10} type="button" title={$t('settings.fontSize')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
                   </button>
                   <span class="settings-stepper-value">{settings.fontSize}</span>
-                  <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize < 24) handleFontSizeChange(settings.fontSize + 1); }} disabled={settings.fontSize >= 24} type="button">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.fontSize < 24) handleFontSizeChange(settings.fontSize + 1); }} disabled={settings.fontSize >= 24} type="button" title={$t('settings.fontSize')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                 </div>
@@ -349,11 +385,11 @@
                   <span class="settings-hint">{$t('settings.lineHeightHint')}</span>
                 </div>
                 <div class="settings-number-input">
-                  <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight > 14) handleLineHeightChange(settings.lineHeight - 1); }} disabled={settings.lineHeight <= 14} type="button">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight > 14) handleLineHeightChange(settings.lineHeight - 1); }} disabled={settings.lineHeight <= 14} type="button" title={$t('settings.lineHeight')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
                   </button>
                   <span class="settings-stepper-value">{settings.lineHeight}</span>
-                  <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight < 36) handleLineHeightChange(settings.lineHeight + 1); }} disabled={settings.lineHeight >= 36} type="button">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.lineHeight < 36) handleLineHeightChange(settings.lineHeight + 1); }} disabled={settings.lineHeight >= 36} type="button" title={$t('settings.lineHeight')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                 </div>
@@ -367,11 +403,11 @@
                   <span class="settings-hint">{$t('settings.indentSizeHint')}</span>
                 </div>
                 <div class="settings-number-input">
-                  <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize > 1) handleTabSizeChange(settings.tabSize - 1); }} disabled={settings.tabSize <= 1} type="button">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize > 1) handleTabSizeChange(settings.tabSize - 1); }} disabled={settings.tabSize <= 1} type="button" title={$t('settings.indentSize')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
                   </button>
                   <span class="settings-stepper-value">{settings.tabSize}</span>
-                  <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize < 8) handleTabSizeChange(settings.tabSize + 1); }} disabled={settings.tabSize >= 8} type="button">
+                  <button class="settings-stepper-btn" onclick={() => { if (settings.tabSize < 8) handleTabSizeChange(settings.tabSize + 1); }} disabled={settings.tabSize >= 8} type="button" title={$t('settings.indentSize')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                 </div>
@@ -389,6 +425,7 @@
                   onclick={() => handleFolderViewToggle(!settings.showFolderView)}
                   type="button"
                   aria-pressed={settings.showFolderView}
+                  title={$t('settings.folderView')}
                 >
                   <span class="settings-toggle-thumb"></span>
                 </button>
@@ -406,6 +443,7 @@
                   onclick={() => handleTreeViewToggle(!settings.showTreeView)}
                   type="button"
                   aria-pressed={settings.showTreeView}
+                  title={$t('settings.treeView')}
                 >
                   <span class="settings-toggle-thumb"></span>
                 </button>
@@ -423,6 +461,7 @@
                   onclick={() => handleAutoSaveToggle(!settings.autoSave)}
                   type="button"
                   aria-pressed={settings.autoSave}
+                  title={$t('settings.autoSave')}
                 >
                   <span class="settings-toggle-thumb"></span>
                 </button>
@@ -430,7 +469,9 @@
             </div>
           </div>
         </section>
+        {/if}
 
+        {#if activeTab === 'application'}
         <!-- App -->
         <section class="settings-section">
           <h3 class="settings-section-title">{$t('settings.application')}</h3>
@@ -494,9 +535,10 @@
             </div>
           </div>
         </section>
+        {/if}
 
+        {#if activeTab === 'shortcuts' && shortcuts}
         <!-- Shortcuts -->
-        {#if shortcuts}
         <section class="settings-section">
           <div class="flex items-center justify-between mb-3">
             <h3 class="settings-section-title !mb-0">{$t('settings.shortcuts')}</h3>
@@ -569,6 +611,7 @@
           </div>
         </section>
         {/if}
+        </div>
       </div>
     </div>
   </div>
@@ -598,7 +641,7 @@
     border-radius: 16px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
     width: 100%;
-    max-width: 720px;
+    max-width: 860px;
     max-height: 75vh;
     display: flex;
     flex-direction: column;
@@ -641,9 +684,53 @@
     color: var(--text-primary);
   }
 
+  .settings-content {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+  }
+
+  .settings-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 12px;
+    border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    background: color-mix(in srgb, var(--bg-secondary) 36%, transparent);
+  }
+
+  .settings-tab {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    transition: all 0.18s ease;
+  }
+
+  .settings-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .settings-tab.is-active {
+    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+
   /* Body */
   .settings-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 24px 28px 32px;
   }
@@ -1035,6 +1122,36 @@
     to { 
       opacity: 1;
       transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .settings-dialog {
+      max-height: 82vh;
+    }
+
+    .settings-content {
+      grid-template-columns: 1fr;
+    }
+
+    .settings-tabs {
+      flex-direction: row;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 12px 16px;
+      border-right: none;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    }
+
+    .settings-tab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+
+    .settings-body {
+      padding: 18px 16px 24px;
     }
   }
 </style>
