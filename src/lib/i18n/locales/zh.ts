@@ -34,6 +34,7 @@ export default {
 
   // Settings panel
   'settings.title': '设置',
+  'settings.close': '关闭设置',
   'settings.appearance': '外观',
   'settings.theme': '主题',
   'settings.themeHint': '切换亮色和暗色外观',
