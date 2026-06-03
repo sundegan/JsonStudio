@@ -110,6 +110,21 @@ test('tree view wires drag and drop moves through full document writeback', () =
   assert.match(source, /editor\?\.setValue\(JSON\.stringify\(result\.data, null, 2\)\)/);
 });
 
+test('tree view query mode selector uses the styled toolbar control', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /class="json-tree-mode-control"/);
+  assert.match(source, /class="json-tree-mode-label"/);
+  assert.match(source, /class="json-tree-mode-chevron"/);
+  assert.match(source, /\.json-tree-mode-control:focus-within/);
+  assert.match(source, /\.json-tree-mode-select \{/);
+  assert.match(source, /background: transparent;/);
+  assert.doesNotMatch(source, /background-image:\s*\n\s*linear-gradient/);
+});
+
 test('moves object fields before and after siblings', () => {
   const data = { a: 1, b: 2, c: 3 };
 
