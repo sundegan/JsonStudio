@@ -6,6 +6,7 @@
   import { t } from '$lib/i18n';
 
   const githubUrl = 'https://github.com/sundegan/JsonStudio';
+  const githubLabel = 'sundegan/JsonStudio';
 
   let isOpen = $state(false);
   let version = $state('');
@@ -87,7 +88,7 @@
         </div>
         <button class="about-link" type="button" onclick={openGithub}>
           <span>{$t('about.github')}</span>
-          <strong>{githubUrl}</strong>
+          <strong title={githubUrl}>{githubLabel}</strong>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7 17 17 7M9 7h8v8" />
           </svg>
@@ -234,7 +235,10 @@
   .about-link strong {
     flex: 1;
     color: var(--accent);
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .about-link svg {

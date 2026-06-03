@@ -33,7 +33,11 @@ test('custom about dialog listens for menu event and shows app metadata', () => 
   assert.match(aboutDialog, /listen\('show-about'/);
   assert.match(aboutDialog, /getVersion\(\)/);
   assert.match(aboutDialog, /src="\/app-icon\.png"/);
+  assert.match(aboutDialog, /const githubLabel = 'sundegan\/JsonStudio';/);
+  assert.match(aboutDialog, /<strong title=\{githubUrl\}>\{githubLabel\}<\/strong>/);
   assert.match(aboutDialog, /openUrl\('https:\/\/github\.com\/sundegan\/JsonStudio'\)/);
+  assert.match(aboutDialog, /text-overflow: ellipsis;/);
+  assert.match(aboutDialog, /white-space: nowrap;/);
   assert.doesNotMatch(aboutDialog, /short_version|Version \\{version\\} \\(\\{version\\}\\)/);
 });
 
