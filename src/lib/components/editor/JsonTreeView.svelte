@@ -691,15 +691,21 @@
     </div>
 
     <div class="json-tree-toolbar-actions">
-      <select
-        class="json-tree-mode-select"
-        bind:value={queryMode}
-        aria-label={$t('treeView.queryMode')}
-        title={$t('treeView.queryMode')}
-      >
-        <option value="jmespath">{$t('treeView.modeJmespath')}</option>
-        <option value="jsonpath">{$t('treeView.modeJsonpath')}</option>
-      </select>
+      <div class="json-tree-mode-control">
+        <span class="json-tree-mode-label">{getQueryModeLabel(queryMode)}</span>
+        <select
+          class="json-tree-mode-select"
+          bind:value={queryMode}
+          aria-label={$t('treeView.queryMode')}
+          title={$t('treeView.queryMode')}
+        >
+          <option value="jmespath">{$t('treeView.modeJmespath')}</option>
+          <option value="jsonpath">{$t('treeView.modeJsonpath')}</option>
+        </select>
+        <svg class="json-tree-mode-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m7 10 5 5 5-5" />
+        </svg>
+      </div>
 
       <div
         class="json-tree-help"
@@ -1054,32 +1060,78 @@
     flex-shrink: 0;
   }
 
-  .json-tree-mode-select {
-    height: 22px;
-    min-width: 90px;
-    padding: 0 22px 0 8px;
-    border-radius: 6px;
+  .json-tree-mode-control {
+    position: relative;
+    height: 28px;
+    min-width: 126px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 9px 0 12px;
+    border-radius: 8px;
     border: 1px solid var(--border);
-    background: var(--bg-primary);
+    background: color-mix(in srgb, var(--bg-primary) 92%, var(--bg-secondary));
     color: var(--text-primary);
-    font-size: 11px;
-    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.16s ease;
+    flex-shrink: 0;
+  }
+
+  .json-tree-mode-control:hover {
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    background: color-mix(in srgb, var(--accent) 5%, var(--bg-primary));
+  }
+
+  .json-tree-mode-control:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+  }
+
+  .json-tree-mode-label {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    pointer-events: none;
+  }
+
+  .json-tree-mode-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: transparent;
     cursor: pointer;
     outline: none;
     appearance: none;
-    background-image:
-      linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
-      linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
-    background-position:
-      calc(100% - 13px) 9px,
-      calc(100% - 8px) 9px;
-    background-size: 5px 5px, 5px 5px;
-    background-repeat: no-repeat;
+    -webkit-appearance: none;
   }
 
-  .json-tree-mode-select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
+  .json-tree-mode-select option {
+    color: var(--text-primary);
+    background: var(--bg-primary);
+  }
+
+  .json-tree-mode-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+    transition: transform 0.16s ease, color 0.16s ease;
+  }
+
+  .json-tree-mode-control:hover .json-tree-mode-chevron,
+  .json-tree-mode-control:focus-within .json-tree-mode-chevron {
+    color: var(--accent);
   }
 
   .json-tree-search-box {
