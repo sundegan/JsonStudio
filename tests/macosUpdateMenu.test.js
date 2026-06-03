@@ -72,6 +72,9 @@ test('settings panel groups categories into tabs', () => {
   assert.match(settingsPanel, /\{#if activeTab === 'shortcuts' && shortcuts\}/);
   assert.match(settingsPanel, /\{#if activeTab === 'application'\}/);
   assert.match(settingsPanel, /grid-template-columns: 168px minmax\(0, 1fr\);/);
+  assert.match(settingsPanel, /height: min\(680px, calc\(100vh - 48px\)\);/);
+  assert.match(settingsPanel, /scrollbar-gutter: stable;/);
+  assert.match(settingsPanel, /\.settings-body::-webkit-scrollbar/);
   assert.match(settingsPanel, /@media \(max-width: 760px\)/);
 });
 

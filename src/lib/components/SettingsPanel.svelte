@@ -642,7 +642,7 @@
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
     width: 100%;
     max-width: 860px;
-    max-height: 75vh;
+    height: min(680px, calc(100vh - 48px));
     display: flex;
     flex-direction: column;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -732,7 +732,30 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-tertiary) 55%, transparent) transparent;
     padding: 24px 28px 32px;
+  }
+
+  .settings-body::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .settings-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .settings-body::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+    background-clip: content-box;
+  }
+
+  .settings-body::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--text-tertiary) 75%, transparent);
+    background-clip: content-box;
   }
 
   /* Section */
@@ -1127,7 +1150,7 @@
 
   @media (max-width: 760px) {
     .settings-dialog {
-      max-height: 82vh;
+      height: min(620px, calc(100vh - 32px));
     }
 
     .settings-content {
