@@ -16,6 +16,14 @@ test('macOS app menu exposes check update and emits frontend event', () => {
   assert.match(libRs, /\.hide\(\)/);
   assert.match(libRs, /\.hide_others\(\)/);
   assert.match(libRs, /\.show_all\(\)/);
+  assert.match(libRs, /SubmenuBuilder::new\(app,\s*"Edit"\)/);
+  assert.match(libRs, /\.undo\(\)/);
+  assert.match(libRs, /\.redo\(\)/);
+  assert.match(libRs, /\.cut\(\)/);
+  assert.match(libRs, /\.copy\(\)/);
+  assert.match(libRs, /\.paste\(\)/);
+  assert.match(libRs, /\.select_all\(\)/);
+  assert.match(libRs, /\.items\(&\[&app_menu,\s*&edit_menu\]\)/);
   assert.match(libRs, /app\.on_menu_event/);
   assert.match(libRs, /event\.id\(\)\.0\.as_str\(\)/);
   assert.match(libRs, /"show_about"/);
