@@ -394,6 +394,22 @@
     );
   }
 
+  export function insertTextAtSelection(text: string) {
+    if (!editor || !text) return;
+    const selections = editor.getSelections();
+    if (!selections || selections.length === 0) return;
+
+    editor.executeEdits(
+      'clipboard-paste',
+      selections.map((selection) => ({
+        range: selection,
+        text,
+        forceMoveMarkers: true,
+      })),
+    );
+    editor.focus();
+  }
+
   export function getValue(): string {
     return editor?.getValue() || '';
   }
@@ -450,6 +466,10 @@
   // Get editor instance
   export function getEditorInstance() {
     return editor;
+  }
+
+  export function hasTextFocus(): boolean {
+    return !!editor?.hasTextFocus();
   }
 
   export function setExternalSelectionHighlights(ranges: Monaco.Range[]) {

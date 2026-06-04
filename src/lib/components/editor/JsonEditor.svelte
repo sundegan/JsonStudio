@@ -258,6 +258,13 @@
     const handleKeydown = async (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+      const ctrlOrCmdPaste = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'v';
+
+      if (ctrlOrCmdPaste && monacoEditor?.hasTextFocus()) {
+        e.preventDefault();
+        await pasteSystemClipboardIntoEditor();
+        return;
+      }
 
       // Fixed shortcuts (not customizable)
       if (cmdOrCtrl && e.key === 't') {
@@ -852,6 +859,28 @@
       formatJson,
       getStandaloneEscapedJsonContent,
     });
+  }
+
+  async function readSystemClipboardText() {
+    try {
+      return await navigator.clipboard.readText();
+    } catch {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<string>('read_clipboard_text');
+      } catch (error) {
+        console.error('Failed to read clipboard:', error);
+        return '';
+      }
+    }
+  }
+
+  async function pasteSystemClipboardIntoEditor() {
+    const clipboardText = await readSystemClipboardText();
+    if (!clipboardText) return;
+
+    monacoEditor?.insertTextAtSelection(clipboardText);
+    handleEditorPaste();
   }
 
   function startTreeResize(event: PointerEvent) {

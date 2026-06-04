@@ -58,6 +58,13 @@ pub async fn show_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn read_clipboard_text(app: AppHandle) -> Result<String, String> {
+    app.clipboard()
+        .read_text()
+        .map_err(|e| format!("Failed to read clipboard: {}", e))
+}
+
+#[tauri::command]
 pub async fn format_clipboard_and_show(app: AppHandle) -> Result<(), String> {
     // Get clipboard content
     let clipboard_text = app.clipboard()

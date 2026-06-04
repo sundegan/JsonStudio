@@ -14,7 +14,9 @@ use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWa
 use commands::json::{
     json_escape, json_format, json_minify, json_stats, json_unescape, json_validate,
 };
-use commands::shortcuts::{format_clipboard_and_show, show_main_window, update_shortcut};
+use commands::shortcuts::{
+    format_clipboard_and_show, read_clipboard_text, show_main_window, update_shortcut,
+};
 use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -280,6 +282,7 @@ pub fn run() {
             set_window_theme,
             open_devtools,
             show_main_window,
+            read_clipboard_text,
             format_clipboard_and_show,
             update_shortcut,
             open_file_dialog,
