@@ -22,8 +22,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
 use tauri::menu::{MenuBuilder, SubmenuBuilder};
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+const WINDOW_SCREEN_MARGIN: u32 = 48;
+const DEFAULT_WINDOW_LOGICAL_WIDTH: u32 = 1400;
+const DEFAULT_WINDOW_LOGICAL_HEIGHT: u32 = 900;
+const RESTORED_WINDOW_MAX_SCREEN_RATIO: f64 = 0.9;
 
 static PENDING_FILES: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static FRONTEND_READY: Mutex<bool> = Mutex::new(false);
@@ -82,6 +87,95 @@ fn queue_or_emit_open_files(app: &tauri::AppHandle, paths: Vec<String>) {
     } else {
         PENDING_FILES.lock().unwrap().extend(paths);
     }
+}
+
+fn clamp_axis(value: i32, min: i32, max: i32) -> i32 {
+    value.max(min).min(max)
+}
+
+fn max_window_axis(work_area_axis: u32) -> u32 {
+    ((work_area_axis as f64 * RESTORED_WINDOW_MAX_SCREEN_RATIO).round() as u32)
+        .min(work_area_axis.saturating_sub(WINDOW_SCREEN_MARGIN))
+        .max(work_area_axis / 2)
+        .max(1)
+}
+
+fn restored_window_axis(
+    current_axis: u32,
+    work_area_axis: u32,
+    scale_factor: f64,
+    default_logical_axis: u32,
+) -> u32 {
+    let max_axis = max_window_axis(work_area_axis);
+    if current_axis > work_area_axis.saturating_sub(WINDOW_SCREEN_MARGIN) {
+        return ((default_logical_axis as f64 * scale_factor).round() as u32)
+            .min(max_axis)
+            .max(1);
+    }
+
+    current_axis.min(max_axis).max(1)
+}
+
+fn clamp_main_window_to_visible_area(window: &WebviewWindow) -> tauri::Result<()> {
+    if window.is_maximized()? || window.is_fullscreen()? {
+        return Ok(());
+    }
+
+    let Some(monitor) = window
+        .current_monitor()?
+        .or(window.primary_monitor()?)
+        .or_else(|| window.available_monitors().ok()?.into_iter().next())
+    else {
+        return Ok(());
+    };
+
+    let work_area = *monitor.work_area();
+    let monitor_position = work_area.position;
+    let monitor_size = work_area.size;
+    let scale_factor = monitor.scale_factor();
+    let current_size = window.inner_size()?;
+    let clamped_size = PhysicalSize {
+        width: restored_window_axis(
+            current_size.width,
+            monitor_size.width,
+            scale_factor,
+            DEFAULT_WINDOW_LOGICAL_WIDTH,
+        ),
+        height: restored_window_axis(
+            current_size.height,
+            monitor_size.height,
+            scale_factor,
+            DEFAULT_WINDOW_LOGICAL_HEIGHT,
+        ),
+    };
+
+    if clamped_size != current_size {
+        window.set_size(clamped_size)?;
+    }
+
+    let current_position = window.outer_position()?;
+    let max_x = monitor_position.x + monitor_size.width.saturating_sub(clamped_size.width) as i32;
+    let max_y = monitor_position.y + monitor_size.height.saturating_sub(clamped_size.height) as i32;
+    let clamped_position = PhysicalPosition {
+        x: clamp_axis(current_position.x, monitor_position.x, max_x),
+        y: clamp_axis(current_position.y, monitor_position.y, max_y),
+    };
+
+    if clamped_position != current_position {
+        window.set_position(clamped_position)?;
+    }
+
+    Ok(())
+}
+
+fn schedule_main_window_bounds_clamp(app: &tauri::AppHandle) {
+    let app_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = clamp_main_window_to_visible_area(&window);
+        }
+    });
 }
 
 #[cfg(target_os = "macos")]
@@ -184,6 +278,26 @@ mod tests {
             vec![json_path.to_string_lossy().into_owned()]
         );
     }
+
+    #[test]
+    fn max_window_axis_keeps_restored_windows_below_screen_width() {
+        assert_eq!(max_window_axis(3024), 2722);
+    }
+
+    #[test]
+    fn max_window_axis_handles_tiny_monitors() {
+        assert_eq!(max_window_axis(40), 20);
+    }
+
+    #[test]
+    fn restored_window_axis_uses_default_for_external_display_state() {
+        assert_eq!(restored_window_axis(3040, 3024, 2.0, 1400), 2722);
+    }
+
+    #[test]
+    fn restored_window_axis_preserves_reasonable_user_size() {
+        assert_eq!(restored_window_axis(2200, 3024, 2.0, 1400), 2200);
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -211,6 +325,7 @@ pub fn run() {
         .manage(FileWatcherState::new())
         .setup(|app| {
             let app_handle = app.handle().clone();
+            schedule_main_window_bounds_clamp(&app_handle);
 
             #[cfg(target_os = "macos")]
             {

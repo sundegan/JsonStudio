@@ -8,4 +8,18 @@ test('tauri registers the window state plugin', () => {
 
   assert.match(cargoToml, /tauri-plugin-window-state\s*=\s*"2"/);
   assert.match(libRs, /tauri_plugin_window_state::Builder::default\(\)\.build\(\)/);
+  assert.match(libRs, /schedule_main_window_bounds_clamp\(&app_handle\)/);
+  assert.match(libRs, /RESTORED_WINDOW_MAX_SCREEN_RATIO: f64 = 0\.9/);
+});
+
+test('tauri default window size fits common laptop screens', () => {
+  const config = JSON.parse(
+    readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'),
+  );
+  const mainWindow = config.app.windows[0];
+
+  assert.equal(mainWindow.width, 1400);
+  assert.equal(mainWindow.height, 900);
+  assert.ok(mainWindow.minWidth <= mainWindow.width);
+  assert.ok(mainWindow.minHeight <= mainWindow.height);
 });
