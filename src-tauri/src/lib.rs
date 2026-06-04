@@ -14,9 +14,7 @@ use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWa
 use commands::json::{
     json_escape, json_format, json_minify, json_stats, json_unescape, json_validate,
 };
-use commands::shortcuts::{
-    format_clipboard_and_show, read_clipboard_text, show_main_window, update_shortcut,
-};
+use commands::shortcuts::{format_clipboard_and_show, show_main_window, update_shortcut};
 use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -207,7 +205,18 @@ fn set_macos_app_menu(app: &tauri::AppHandle, language: &str) -> tauri::Result<(
         .separator()
         .quit()
         .build()?;
-    let menu = MenuBuilder::new(app).items(&[&app_menu]).build()?;
+    let edit_menu = SubmenuBuilder::new(app, "Edit")
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
+        .build()?;
+    let menu = MenuBuilder::new(app)
+        .items(&[&app_menu, &edit_menu])
+        .build()?;
     app.set_menu(menu)?;
 
     Ok(())
@@ -397,7 +406,6 @@ pub fn run() {
             set_window_theme,
             open_devtools,
             show_main_window,
-            read_clipboard_text,
             format_clipboard_and_show,
             update_shortcut,
             open_file_dialog,
