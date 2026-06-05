@@ -31,10 +31,24 @@ export function extractLogJsonFragments(content, options = {}) {
 
   const candidates = findJsonCandidates(content, maxCandidates);
   const fragments = [];
+  const acceptedRanges = [];
 
-  for (const candidate of candidates) {
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+    if (isInsideAcceptedRange(acceptedRanges, candidate)) continue;
+
     const parsed = normalizeJsonCandidate(candidate.raw, indent);
-    if (!parsed) continue;
+    if (!parsed) {
+      insertNestedCandidates(candidates, index + 1, findNestedJsonCandidates(content, candidate));
+      continue;
+    }
+    if (isLikelyLogBracketMarker(content, candidate)) continue;
+    const preferredNested = findPreferredNestedPayloadCandidates(content, candidate, indent);
+    if (preferredNested.length > 0 && shouldPreferNestedPayload(candidate, parsed)) {
+      insertNestedCandidates(candidates, index + 1, preferredNested);
+      continue;
+    }
+
     fragments.push({
       label: inferFragmentLabel(content, candidate.start, fragments.length + 1),
       line: candidate.line,
@@ -43,6 +57,7 @@ export function extractLogJsonFragments(content, options = {}) {
       formatted: parsed.formatted,
       kind: parsed.kind,
     });
+    acceptedRanges.push({ start: candidate.start, end: candidate.end });
     if (fragments.length >= maxFragments) break;
   }
 
@@ -254,6 +269,114 @@ function findStructuralJsonCandidates(content, maxFragments) {
   }
 
   return candidates;
+}
+
+/**
+ * @param {string} content
+ * @param {{ start: number, end: number }} parent
+ * @returns {{ start: number, end: number, raw: string, line: number, column: number }[]}
+ */
+function findNestedJsonCandidates(content, parent) {
+  const candidates = [];
+  let index = parent.start + 1;
+
+  while (index < parent.end) {
+    const char = content[index];
+    if (char === '{' || char === '[') {
+      const end = findMatchingJsonEnd(content, index, char);
+      if (end !== -1 && end < parent.end) {
+        const position = getLineColumnAt(content, index);
+        candidates.push({
+          start: index,
+          end,
+          raw: content.slice(index, end + 1),
+          line: position.line,
+          column: position.column,
+        });
+      }
+    }
+    index += 1;
+  }
+
+  return candidates;
+}
+
+/**
+ * @param {{ start: number, end: number }[]} candidates
+ * @param {number} insertAt
+ * @param {{ start: number, end: number, raw: string, line: number, column: number }[]} nested
+ */
+function insertNestedCandidates(candidates, insertAt, nested) {
+  if (nested.length === 0) return;
+  const existing = new Set(candidates.map((candidate) => `${candidate.start}:${candidate.end}`));
+  const uniqueNested = nested.filter((candidate) => !existing.has(`${candidate.start}:${candidate.end}`));
+  if (uniqueNested.length === 0) return;
+  candidates.splice(insertAt, 0, ...uniqueNested.sort((a, b) => a.start - b.start || a.end - b.end));
+}
+
+/**
+ * @param {string} content
+ * @param {{ start: number, end: number }} parent
+ * @param {number} indent
+ * @returns {{ start: number, end: number, raw: string, line: number, column: number }[]}
+ */
+function findPreferredNestedPayloadCandidates(content, parent, indent) {
+  return findNestedJsonCandidates(content, parent).filter((candidate) =>
+    hasExplicitFragmentLabel(content, candidate.start) &&
+    normalizeJsonCandidate(candidate.raw, indent)?.kind === 'JSON'
+  );
+}
+
+/**
+ * @param {{ raw: string }} candidate
+ * @param {{ kind: LogJsonFragment['kind'] }} parsed
+ */
+function shouldPreferNestedPayload(candidate, parsed) {
+  if (parsed.kind === 'JSON') return false;
+  return hasBareScalarEnvelopeField(candidate.raw);
+}
+
+/**
+ * JSON-like log envelopes often combine metadata fields that are not JSON
+ * scalars with one real JSON payload field, for example:
+ * `{operation:Foo.Bar, payload:{"id":1}}`.
+ *
+ * @param {string} value
+ */
+function hasBareScalarEnvelopeField(value) {
+  return /[{,]\s*[A-Za-z_$][\w$-]*\s*:\s*[^"',{}\[\]\s][^,{}\[\]]*/.test(value);
+}
+
+/**
+ * Log prefixes often contain numeric markers like `[1780570105923755786]`.
+ * They are valid JSON arrays but not useful payload fragments, and parsing
+ * them as numbers loses precision in JavaScript.
+ *
+ * @param {string} content
+ * @param {{ start: number, end: number, raw: string }} candidate
+ */
+function isLikelyLogBracketMarker(content, candidate) {
+  if (!/^\[\d{10,}\]$/.test(candidate.raw.trim())) return false;
+  if (isWholeContentCandidate(content, candidate)) return false;
+
+  const label = inferFragmentLabel(content, candidate.start, 1);
+  return label === 'Fragment 1';
+}
+
+/**
+ * @param {{ start: number, end: number }[]} ranges
+ * @param {{ start: number, end: number }} candidate
+ */
+function isInsideAcceptedRange(ranges, candidate) {
+  return ranges.some((range) => candidate.start > range.start && candidate.end < range.end);
+}
+
+/**
+ * @param {string} content
+ * @param {number} start
+ */
+function hasExplicitFragmentLabel(content, start) {
+  return inferFragmentLabel(content, start, 1) !== 'Fragment 1';
 }
 
 /**
