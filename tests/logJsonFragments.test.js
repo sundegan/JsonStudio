@@ -48,6 +48,25 @@ test('does not let invalid bracket prefixes hide later JSON payloads', () => {
   assert.equal(fragments[0].label, 'payload');
 });
 
+test('extracts nested JSON payloads from log envelopes with bracket markers', () => {
+  const log = String.raw`2026-06-04 18:48:25.923768	[6b3d81e51e2b8913439c17372077b8aa] [INFO] [PH]	[rpc_log_wrapper.go/121: 1] [1780570105923755786]Service Called Request: {serviceName:BasicService.BatchQueryRecommendInfo, clientHost:10.196.55.183, clientService:insurance.unified.gateway, req:{"user_id":0,"account_id":0,"lang":"","source":0,"req_list":[{"resource_code":"homepage:banner","id_type":0,"refer_id":"","extend":"{\"spp_biz_id\":\"c202a7326b2c68213bb8f69e053c0a60\"}"},{"resource_code":"homepage:pop_up","id_type":0,"refer_id":"","extend":"{\"spp_biz_id\":\"e232a53ae392039a571457639451263b\"}"},{"resource_code":"homepage:recommend","id_type":0,"refer_id":"","extend":""},{"resource_code":"standalone_homepage:voucher","id_type":0,"refer_id":"","extend":""},{"resource_code":"homepage:referral","id_type":0,"refer_id":"","extend":""},{"resource_code":"homepage:review","id_type":0,"refer_id":"","extend":""},{"resource_code":"homepage:icon","id_type":0,"refer_id":"","extend":""}],"extend":""}}`;
+  const fragments = extractLogJsonFragments(log);
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, 'req');
+  assert.match(fragments[0].formatted, /"resource_code": "homepage:banner"/);
+  assert.doesNotMatch(fragments[0].formatted, /1780570105923755800/);
+});
+
+test('prefers explicitly labeled JSON payloads without depending on field names', () => {
+  const fragments = extractLogJsonFragments('INFO wrapper={operation:Foo.Bar, payloadBody:{"id":1,"ok":true}}');
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, 'payloadBody');
+  assert.equal(fragments[0].kind, 'JSON');
+  assert.equal(fragments[0].formatted, '{\n  "id": 1,\n  "ok": true\n}');
+});
+
 test('repairs JSON-like log payloads', () => {
   const fragments = extractLogJsonFragments("payload={userId: 1, name: 'Alice',}");
 
