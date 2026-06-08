@@ -116,13 +116,22 @@
     };
   }
 
-  $effect(() => {
-    if (!resultEditor || !selectedFragment) return;
-    if (resultEditor.getValue() !== selectedFragment.formatted) {
-      resultEditor.setValue(selectedFragment.formatted);
+  function syncResultEditor(fragment: LogJsonFragment | null) {
+    if (!resultEditor || !fragment) return;
+    if (resultEditor.getValue() !== fragment.formatted) {
+      resultEditor.setValue(fragment.formatted);
       resultEditor.setScrollTop(0);
       resultEditor.setScrollLeft(0);
     }
+  }
+
+  function selectFragment(index: number) {
+    syncResultEditor(fragments[index] || fragments[0] || null);
+    dispatch('select', { index });
+  }
+
+  $effect(() => {
+    syncResultEditor(fragments[selectedIndex] || fragments[0] || null);
   });
 
   $effect(() => {
@@ -246,7 +255,7 @@
             type="button"
             role="tab"
             aria-selected={index === selectedIndex}
-            onclick={() => dispatch('select', { index })}
+            onclick={() => selectFragment(index)}
           >
             <span class="log-json-fragment-row">
               <span class="log-json-fragment-name">{fragment.label}</span>
