@@ -1,4 +1,5 @@
 import jsonSourceMap from '@mischnic/json-sourcemap';
+import { buildJsonSourcePointers, parseJsonSourceModel } from './jsonSourceModel.js';
 
 const { parse } = jsonSourceMap;
 
@@ -8,8 +9,15 @@ const { parse } = jsonSourceMap;
  */
 export function parseJsonDocument(content) {
   try {
+    const parsed = parse(content, undefined, { dialect: 'JSON' });
+    const sourceModel = parseJsonSourceModel(content);
     return {
-      ...parse(content, undefined, { dialect: 'JSON' }),
+      ...parsed,
+      pointers: {
+        ...parsed.pointers,
+        ...buildJsonSourcePointers(sourceModel),
+      },
+      sourceModel,
       dialect: 'JSON',
     };
   } catch (jsonError) {

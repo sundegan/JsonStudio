@@ -4,7 +4,8 @@
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
-  import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable } from '$lib/services/treeEdit.js';
+  import { getJsonSourceValue, isJsonSourceNode } from '$lib/services/jsonSourceModel.js';
+  import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import type MonacoEditor from './MonacoEditor.svelte';
 
@@ -74,6 +75,7 @@
   let previousContent = $state('');
   let parsedPointers = $state<Record<string, any>>({});
   let parsedDialect = $state<'JSON' | 'JSON5'>('JSON');
+  let hasDuplicateSourceKeys = $state(false);
   let rootData = $state<unknown>(null);
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
@@ -124,6 +126,7 @@
       treeError = '';
       rootData = null;
       parsedPointers = {};
+      hasDuplicateSourceKeys = false;
       queryError = '';
       queryMatchedRoot = false;
       isAllExpanded = false;
@@ -139,7 +142,9 @@
       rootData = parsed.data;
       parsedPointers = parsed.pointers;
       parsedDialect = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
-      const nodes = parseToTree(parsed.data, parsed.pointers, '');
+      const sourceModel = 'sourceModel' in parsed ? parsed.sourceModel : null;
+      hasDuplicateSourceKeys = Boolean(sourceModel?.hasDuplicateKeys);
+      const nodes = parseToTree(sourceModel ?? parsed.data, parsed.pointers, '');
       treeNodes = nodes;
       treeNodeByPath = indexTreeNodes(nodes);
       
@@ -170,6 +175,7 @@
       pendingEditKeyPath = null;
       rootData = null;
       parsedPointers = {};
+      hasDuplicateSourceKeys = false;
       isAllExpanded = false;
     } finally {
       isLoading = false;
@@ -181,6 +187,53 @@
 
     if (data === null) {
       return [];
+    }
+
+    if (isJsonSourceNode(data)) {
+      if (data.kind === 'array') {
+        data.items.forEach((item, index) => {
+          const path = parentPath ? `${parentPath}/${index}` : `/${index}`;
+          const node: TreeNode = {
+            key: `[${index}]`,
+            value: item.value,
+            type: getValueType(item),
+            path,
+            parentType: 'array',
+            siblingKeys: [],
+            startOffset: item.start,
+            endOffset: item.end,
+          };
+
+          if (node.type === 'object' || node.type === 'array') {
+            node.children = parseToTree(item, pointers, path);
+          }
+
+          nodes.push(node);
+        });
+      } else if (data.kind === 'object') {
+        const keys = data.entries.map((entry) => entry.key);
+        data.entries.forEach((entry) => {
+          const path = childPathForSourceEntry(parentPath, entry.key, entry.occurrence);
+          const node: TreeNode = {
+            key: entry.key,
+            value: entry.value.value,
+            type: getValueType(entry.value),
+            path,
+            parentType: 'object',
+            siblingKeys: keys.filter((key, index) => key !== entry.key || index === keys.indexOf(entry.key)),
+            startOffset: entry.value.start,
+            endOffset: entry.value.end,
+          };
+
+          if (node.type === 'object' || node.type === 'array') {
+            node.children = parseToTree(entry.value, pointers, path);
+          }
+
+          nodes.push(node);
+        });
+      }
+
+      return nodes;
     }
 
     if (Array.isArray(data)) {
@@ -262,12 +315,18 @@
     return segment.replace(/~/g, '~0').replace(/\//g, '~1');
   }
 
+  function childPathForSourceEntry(parentPath: string, key: string, occurrence: number): string {
+    const basePath = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
+    return occurrence === 0 ? basePath : `${basePath}#${occurrence + 1}`;
+  }
+
   function getAncestorPaths(path: string): string[] {
     const segments = path.split('/').slice(1);
     return segments.slice(0, -1).map((_, index) => `/${segments.slice(0, index + 1).join('/')}`);
   }
 
   function getValueType(value: unknown): TreeNode['type'] {
+    value = getJsonSourceValue(value);
     if (value === null) return 'null';
     if (Array.isArray(value)) return 'array';
     if (typeof value === 'object') return 'object';
@@ -354,11 +413,16 @@
   }
 
   function isTreeValueEditable(node: TreeNode) {
-    return node.type !== 'object' && node.type !== 'array';
+    return !hasDuplicateSourceKeys && node.type !== 'object' && node.type !== 'array';
+  }
+
+  function isTreeKeyEditable(node: TreeNode) {
+    return !hasDuplicateSourceKeys && isEditableTreeKey(node);
   }
 
   function isTreeDragEnabled() {
     if (parsedDialect !== 'JSON') return false;
+    if (hasDuplicateSourceKeys) return false;
     return !treeError && rootData !== null && searchQuery.trim() === '';
   }
 
