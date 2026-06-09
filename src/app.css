@@ -49,17 +49,20 @@ body {
   --warning: #fb923c;
   --error: #f472b6;
   --json-object: #60a5fa;
-  --json-object-bg: rgba(96, 165, 250, 0.12);
-  --json-array: #a78bfa;
-  --json-array-bg: rgba(167, 139, 250, 0.12);
+  --json-object-bg: rgba(96, 165, 250, 0.07);
+  --json-array: #c084fc;
+  --json-array-bg: rgba(192, 132, 252, 0.07);
   --json-string: #34d399;
-  --json-string-bg: rgba(52, 211, 153, 0.12);
-  --json-number: #fb923c;
-  --json-number-bg: rgba(251, 146, 60, 0.12);
-  --json-boolean: #f5c542;
-  --json-boolean-bg: rgba(245, 197, 66, 0.12);
-  --json-null: #9898b0;
-  --json-null-bg: rgba(152, 152, 176, 0.12);
+  --json-string-bg: rgba(52, 211, 153, 0.06);
+  --json-number: #fbbf24;
+  --json-number-bg: rgba(251, 191, 36, 0.07);
+  --json-boolean: #f472b6;
+  --json-boolean-bg: rgba(244, 114, 182, 0.07);
+  --json-null: #a8b0c8;
+  --json-null-bg: rgba(168, 176, 200, 0.06);
+  --json-count: #8b91a8;
+  --tree-line: rgba(152, 152, 176, 0.2);
+  --tree-line-active: rgba(152, 152, 176, 0.42);
 }
 
 .light {
@@ -79,17 +82,20 @@ body {
   --warning: #f59e0b;
   --error: #ef4444;
   --json-object: #3b82f6;
-  --json-object-bg: rgba(59, 130, 246, 0.08);
-  --json-array: #8b5cf6;
-  --json-array-bg: rgba(139, 92, 246, 0.08);
-  --json-string: #10b981;
-  --json-string-bg: rgba(16, 185, 129, 0.08);
-  --json-number: #f59e0b;
-  --json-number-bg: rgba(245, 158, 11, 0.08);
-  --json-boolean: #d99a00;
-  --json-boolean-bg: rgba(217, 154, 0, 0.08);
-  --json-null: #6868a0;
-  --json-null-bg: rgba(104, 104, 160, 0.08);
+  --json-object-bg: rgba(59, 130, 246, 0.06);
+  --json-array: #7c3aed;
+  --json-array-bg: rgba(124, 58, 237, 0.06);
+  --json-string: #059669;
+  --json-string-bg: rgba(5, 150, 105, 0.05);
+  --json-number: #d97706;
+  --json-number-bg: rgba(217, 119, 6, 0.06);
+  --json-boolean: #db2777;
+  --json-boolean-bg: rgba(219, 39, 119, 0.05);
+  --json-null: #64748b;
+  --json-null-bg: rgba(100, 116, 139, 0.05);
+  --json-count: #7a8199;
+  --tree-line: rgba(104, 104, 160, 0.16);
+  --tree-line-active: rgba(104, 104, 160, 0.38);
 }
 
 ::-webkit-scrollbar {
@@ -331,7 +337,7 @@ body {
 }
 
 .tree-list {
-  padding: 8px 0 8px 8px;
+  padding: 6px 0 6px 6px;
   width: fit-content;
   min-width: 100%;
 }
@@ -343,7 +349,7 @@ body {
 }
 
 .tree-node:hover {
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 2%);
 }
 
 .tree-node-matched {
@@ -352,7 +358,7 @@ body {
 }
 
 .tree-node-selected {
-  background: var(--accent-glow) !important;
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-primary)) !important;
 }
 
 .tree-node-selected::before {
@@ -362,16 +368,16 @@ body {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: color-mix(in srgb, var(--accent) 80%, transparent);
+  background: color-mix(in srgb, var(--accent) 65%, transparent);
 }
 
 .tree-node-content {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px 4px 0;
+  gap: 4px;
+  padding: 2px 10px 2px 0;
   cursor: pointer;
-  min-height: 26px;
+  min-height: 22px;
 }
 
 /* Tree lines (Postman style) */
@@ -382,23 +388,23 @@ body {
 }
 
 .tree-line-segment {
-  width: 20px;
+  width: 16px;
   position: relative;
   flex-shrink: 0;
 }
 
 .tree-line-vertical {
   position: absolute;
-  left: 9px;
+  left: 7px;
   top: 0;
   bottom: 0;
   width: 1.5px;
-  background: var(--border);
+  background: var(--tree-line);
   opacity: 1;
 }
 
 .tree-connector {
-  width: 26px;
+  width: 21px;
   position: relative;
   flex-shrink: 0;
   align-self: stretch;
@@ -409,11 +415,11 @@ body {
 .tree-line-corner,
 .tree-line-corner-last {
   position: absolute;
-  left: 9px;
+  left: 7px;
   top: 0;
   bottom: 50%;
   width: 1.5px;
-  background: var(--border);
+  background: var(--tree-line);
   opacity: 1;
 }
 
@@ -423,9 +429,9 @@ body {
   position: absolute;
   left: 1.5px;
   top: 100%;
-  width: 16px;
+  width: 13px;
   height: 1.5px;
-  background: var(--border);
+  background: var(--tree-line);
   opacity: 1;
 }
 
@@ -437,14 +443,14 @@ body {
   top: 100%;
   width: 1.5px;
   height: 200%;
-  background: var(--border);
+  background: var(--tree-line);
   opacity: 1;
 }
 
 /* Toggle button */
 .tree-toggle-area {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,12 +461,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -475,62 +481,69 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 20px;
-  font-size: 11px;
+  height: 18px;
+  font-size: 10.5px;
   font-weight: 600;
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
   flex-shrink: 0;
-  border-radius: 3px;
-  padding: 2px 5px;
-  letter-spacing: -0.3px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 4px;
+  padding: 1px 4px;
+  letter-spacing: 0;
+  opacity: 0.78;
+}
+
+.tree-node:hover .tree-type-icon,
+.tree-node-selected .tree-type-icon {
+  opacity: 0.92;
 }
 
 .tree-type-object {
-  width: 32px;
+  width: 28px;
   color: var(--json-object);
   background: var(--json-object-bg);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
 }
 
 .tree-type-array {
-  width: 32px;
+  width: 28px;
   color: var(--json-array);
   background: var(--json-array-bg);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
 }
 
 .tree-type-string {
-  width: 30px;
+  width: 27px;
   color: var(--json-string);
   background: var(--json-string-bg);
 }
 
 .tree-type-number {
-  width: 34px;
+  width: 31px;
   color: var(--json-number);
   background: var(--json-number-bg);
 }
 
 .tree-type-boolean {
-  width: 36px;
+  width: 33px;
   color: var(--json-boolean);
   background: var(--json-boolean-bg);
 }
 
 .tree-type-null {
-  width: 32px;
+  width: 29px;
   color: var(--json-null);
   background: var(--json-null-bg);
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0.7;
 }
 
 /* Key name styling */
 .tree-key {
-  font-weight: 500;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--text-primary) 94%, white 6%);
   white-space: nowrap;
 }
 
@@ -544,8 +557,8 @@ body {
 }
 
 .tree-colon {
-  color: var(--text-secondary);
-  margin: 0;
+  color: var(--text-tertiary);
+  margin: 0 1px;
   flex-shrink: 0;
 }
 
@@ -555,7 +568,8 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  margin-left: 4px;
+  font-weight: 560;
+  margin-left: 3px;
 }
 
 .tree-value-string {
@@ -572,14 +586,37 @@ body {
 
 .tree-value-null {
   color: var(--json-null);
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 .tree-child-count {
-  color: var(--text-secondary);
-  opacity: 0.6;
-  font-size: 11px;
-  margin-left: 4px;
+  color: var(--json-count);
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-left: 3px;
+  opacity: 0.56;
+  font-variant-numeric: tabular-nums;
+}
+
+.tree-node:hover .tree-child-count,
+.tree-node-selected .tree-child-count {
+  opacity: 0.78;
+}
+
+.tree-node:hover .tree-line-vertical,
+.tree-node:hover .tree-line-corner,
+.tree-node:hover .tree-line-corner-last,
+.tree-node:hover .tree-line-corner::after,
+.tree-node:hover .tree-line-corner-last::after,
+.tree-node:hover .tree-line-corner::before,
+.tree-node-selected .tree-line-vertical,
+.tree-node-selected .tree-line-corner,
+.tree-node-selected .tree-line-corner-last,
+.tree-node-selected .tree-line-corner::after,
+.tree-node-selected .tree-line-corner-last::after,
+.tree-node-selected .tree-line-corner::before {
+  background: var(--tree-line-active);
 }
 
 .tree-copy-btn {
