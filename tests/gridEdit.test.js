@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   createGridValueEdit,
   formatGridEditValue,
@@ -93,4 +94,14 @@ test('preserves JSON5 comments and single-quoted strings during edits', () => {
       text: "'Ada\\'s'",
     },
   });
+});
+
+test('grid view disables inline editing for duplicate-key documents', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/GridView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /hasDuplicateSourceKeys/);
+  assert.match(source, /!gridState\.hasDuplicateSourceKeys && isGridCellEditable\(cell\)/);
 });
