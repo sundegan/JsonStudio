@@ -80,13 +80,20 @@
   let isExporting = $state(false);
   let hasContent = $derived(Boolean(content.trim()));
   let showOpenMenu = $state(false);
+  let showFileActionsMenu = $state(false);
   let openMenuEl = $state<HTMLDivElement | null>(null);
+  let fileActionsMenuEl = $state<HTMLDivElement | null>(null);
   let dropdownTop = $state(0);
   let dropdownLeft = $state(0);
+  let fileActionsDropdownTop = $state(0);
+  let fileActionsDropdownLeft = $state(0);
 
   function handleWindowClick(e: MouseEvent) {
     if (showOpenMenu && openMenuEl && !openMenuEl.contains(e.target as Node)) {
       showOpenMenu = false;
+    }
+    if (showFileActionsMenu && fileActionsMenuEl && !fileActionsMenuEl.contains(e.target as Node)) {
+      showFileActionsMenu = false;
     }
   }
 
@@ -97,6 +104,17 @@
       dropdownLeft = rect.left;
     }
     showOpenMenu = !showOpenMenu;
+    showFileActionsMenu = false;
+  }
+
+  function toggleFileActionsMenu() {
+    if (!showFileActionsMenu && fileActionsMenuEl) {
+      const rect = fileActionsMenuEl.getBoundingClientRect();
+      fileActionsDropdownTop = rect.bottom + 5;
+      fileActionsDropdownLeft = rect.left;
+    }
+    showFileActionsMenu = !showFileActionsMenu;
+    showOpenMenu = false;
   }
 
   async function handleOpenFolder() {
@@ -107,6 +125,11 @@
   function handleOpenFileFromMenu() {
     showOpenMenu = false;
     handleOpenFile();
+  }
+
+  async function handleExportImageFromMenu() {
+    showFileActionsMenu = false;
+    await handleExportImage();
   }
 
   let appSettings = $state<import('$lib/stores/settings').AppSettings>({
@@ -498,10 +521,36 @@
           </div>
         {/if}
       </div>
-      <button class="toolbar-btn" onclick={handleExportImage} disabled={isExporting} title={$t('toolbar.exportImage')}>
-        <svg class="toolbar-icon" style="color: #f43f5e;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-        {$t('toolbar.exportImage')}
-      </button>
+      <div class="toolbar-file-actions-wrap" bind:this={fileActionsMenuEl}>
+        <button
+          class="toolbar-icon-btn"
+          class:is-active={showFileActionsMenu}
+          onclick={toggleFileActionsMenu}
+          title={$t('toolbar.exportImage')}
+          aria-label={$t('toolbar.exportImage')}
+        >
+          <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="1.8"/>
+            <circle cx="12" cy="12" r="1.8"/>
+            <circle cx="19" cy="12" r="1.8"/>
+          </svg>
+        </button>
+        {#if showFileActionsMenu}
+          <div
+            class="toolbar-file-actions-dropdown"
+            style="top: {fileActionsDropdownTop}px; left: {fileActionsDropdownLeft}px;"
+          >
+            <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting}>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="2" width="12" height="12" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="5.5" cy="5.5" r="1" />
+                <path d="M14 10.5l-3-3L3 14" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>{$t('toolbar.exportImage')}</span>
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
 
     <div class="toolbar-divider"></div>
@@ -659,7 +708,8 @@
   }
 
   /* Open dropdown */
-  .toolbar-open-wrap {
+  .toolbar-open-wrap,
+  .toolbar-file-actions-wrap {
     position: relative;
   }
 
@@ -679,7 +729,8 @@
     transform: rotate(180deg);
   }
 
-  .toolbar-open-dropdown {
+  .toolbar-open-dropdown,
+  .toolbar-file-actions-dropdown {
     position: fixed;
     min-width: 168px;
     background: var(--bg-primary);
@@ -691,6 +742,10 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
+  }
+
+  .toolbar-file-actions-dropdown {
+    min-width: 150px;
   }
 
   .open-menu-item {
@@ -715,6 +770,16 @@
     color: var(--text-primary);
   }
 
+  .open-menu-item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .open-menu-item:disabled:hover {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
   .open-menu-item svg {
     width: 14px;
     height: 14px;
@@ -724,6 +789,10 @@
 
   .open-menu-item:last-child svg {
     color: #f5c542;
+  }
+
+  .open-menu-item.export-menu-item svg {
+    color: #f43f5e;
   }
 
   .open-menu-shortcut {
