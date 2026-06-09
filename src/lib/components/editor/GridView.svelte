@@ -101,9 +101,10 @@
 
     try {
       const parsed = parseJsonDocument(content);
+      const sourceModel = 'sourceModel' in parsed ? parsed.sourceModel : null;
       return {
         kind: 'ok',
-        root: buildGridRoot(parsed.data),
+        root: buildGridRoot(sourceModel ?? parsed.data),
         pointers: parsed.pointers,
         dialect: parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON',
       };

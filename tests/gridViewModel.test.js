@@ -7,6 +7,7 @@ import {
   getGridChild,
   summarizeGridValue,
 } from '../src/lib/services/gridViewModel.js';
+import { parseJsonSourceModel } from '../src/lib/services/jsonSourceModel.js';
 
 test('builds an object root as key-value rows without a generic header', () => {
   const root = buildGridRoot({ user: { id: 1 }, active: true });
@@ -21,6 +22,18 @@ test('builds an object root as key-value rows without a generic header', () => {
       ['/active', 'active', true],
     ],
   );
+});
+
+test('builds duplicate object keys as separate rows from source model', () => {
+  const root = buildGridRoot(parseJsonSourceModel('{"meta":{"count":1},"meta":{"count":2}}'));
+
+  assert.equal(root.kind, 'object');
+  assert.deepEqual(root.rows.map((row) => row.cells[0].value), ['meta', 'meta']);
+  assert.deepEqual(root.rows.map((row) => row.cells[1].value), [
+    { count: 1 },
+    { count: 2 },
+  ]);
+  assert.notEqual(root.rows[0].path, root.rows[1].path);
 });
 
 test('builds an array of objects as a column grid while preserving source rows', () => {
