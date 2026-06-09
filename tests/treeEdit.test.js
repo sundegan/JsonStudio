@@ -85,6 +85,19 @@ test('tree view exposes key and primitive value edit writeback on double click',
   assert.doesNotMatch(source, /tree-edit-button/);
 });
 
+test('tree view keeps direct editing enabled for duplicate-key documents', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  const valueEditableBody = source.match(/function isTreeValueEditable[\s\S]*?\n  \}/)?.[0] ?? '';
+  const keyEditableBody = source.match(/function isTreeKeyEditable[\s\S]*?\n  \}/)?.[0] ?? '';
+
+  assert.doesNotMatch(valueEditableBody, /hasDuplicateSourceKeys/);
+  assert.doesNotMatch(keyEditableBody, /hasDuplicateSourceKeys/);
+});
+
 test('tree view wires drag and drop moves through full document writeback', () => {
   const source = readFileSync(
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),

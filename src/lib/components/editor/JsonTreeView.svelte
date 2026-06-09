@@ -212,7 +212,7 @@
         });
       } else if (data.kind === 'object') {
         const keys = data.entries.map((entry) => entry.key);
-        data.entries.forEach((entry) => {
+        data.entries.forEach((entry, entryIndex) => {
           const path = childPathForSourceEntry(parentPath, entry.key, entry.occurrence);
           const node: TreeNode = {
             key: entry.key,
@@ -220,7 +220,7 @@
             type: getValueType(entry.value),
             path,
             parentType: 'object',
-            siblingKeys: keys.filter((key, index) => key !== entry.key || index === keys.indexOf(entry.key)),
+            siblingKeys: keys.filter((_, index) => index !== entryIndex),
             startOffset: entry.value.start,
             endOffset: entry.value.end,
           };
@@ -413,11 +413,11 @@
   }
 
   function isTreeValueEditable(node: TreeNode) {
-    return !hasDuplicateSourceKeys && node.type !== 'object' && node.type !== 'array';
+    return node.type !== 'object' && node.type !== 'array';
   }
 
   function isTreeKeyEditable(node: TreeNode) {
-    return !hasDuplicateSourceKeys && isEditableTreeKey(node);
+    return isEditableTreeKey(node);
   }
 
   function isTreeDragEnabled() {
