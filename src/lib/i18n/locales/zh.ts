@@ -162,6 +162,7 @@ export default {
   'treeView.dragDuplicateKey': '目标对象中已存在同名 key，无法移动。',
   'treeView.dragIntoDescendant': '无法将节点移动到自身或其子节点中。',
   'treeView.dragMoved': '节点已移动',
+  'treeView.duplicateKeysReadOnly': '检测到重复 key，已禁用树形视图编辑和拖拽。',
 
   // Status bar
   'status.keys': '个键',
@@ -268,4 +269,5 @@ export default {
   'gridView.noMatches': '无匹配结果',
   'gridView.editValue': '编辑值',
   'gridView.invalidEdit': '值格式无效',
+  'gridView.duplicateKeysReadOnly': '检测到重复 key，已禁用 Grid 编辑。',
 } as const;

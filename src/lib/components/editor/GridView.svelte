@@ -65,7 +65,13 @@
   type GridState =
     | { kind: 'empty' }
     | { kind: 'invalid'; error: string }
-    | { kind: 'ok'; root: GridModel; pointers: Record<string, any>; dialect: 'JSON' | 'JSON5' };
+    | {
+        kind: 'ok';
+        root: GridModel;
+        pointers: Record<string, any>;
+        dialect: 'JSON' | 'JSON5';
+        hasDuplicateSourceKeys: boolean;
+      };
 
   type GridSelectionTarget = 'key' | 'value' | 'row';
 
@@ -107,6 +113,7 @@
         root: buildGridRoot(sourceModel ?? parsed.data),
         pointers: parsed.pointers,
         dialect: parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON',
+        hasDuplicateSourceKeys: Boolean(sourceModel?.hasDuplicateKeys),
       };
     } catch (error) {
       return {
@@ -379,6 +386,11 @@
           autocomplete="off"
         />
       </div>
+      {#if gridState.hasDuplicateSourceKeys}
+        <span class="gv-readonly-hint" title={$t('gridView.duplicateKeysReadOnly')}>
+          {$t('gridView.duplicateKeysReadOnly')}
+        </span>
+      {/if}
       <button
         class="gv-toolbar-btn"
         onclick={isAllExpanded ? collapseAll : expandAll}
@@ -506,7 +518,7 @@
               <tr class="gv-tr" class:gv-tr--selected={isSelected(row.path, 'row')}>
                 {#each row.cells as cell, cellIndex}
                   {@const cellSelection = getGridSelectionForCell(model, row, cellIndex)}
-                  {@const editable = cellSelection.target === 'value' && isGridCellEditable(cell)}
+                  {@const editable = cellSelection.target === 'value' && !gridState.hasDuplicateSourceKeys && isGridCellEditable(cell)}
                   <td
                     class="gv-td"
                     class:gv-td--selected={cellSelection.target !== 'row' && isSelected(cellSelection.path, 'value')}
@@ -588,6 +600,15 @@
     background: var(--bg-primary);
     color: var(--text-primary);
     font-size: 11px;
+  }
+  .gv-readonly-hint {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--warning, #f59e0b);
+    font-size: 10.5px;
+    font-weight: 600;
   }
   .gv-toolbar-btn {
     display: flex;

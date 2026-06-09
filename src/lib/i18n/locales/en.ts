@@ -162,6 +162,7 @@ export default {
   'treeView.dragDuplicateKey': 'Cannot move because the target object already has this key.',
   'treeView.dragIntoDescendant': 'Cannot move a node into itself or one of its children.',
   'treeView.dragMoved': 'Node moved',
+  'treeView.duplicateKeysReadOnly': 'Duplicate keys detected. Tree editing and drag-and-drop are disabled.',
 
   // Status bar
   'status.keys': 'keys',
@@ -268,4 +269,5 @@ export default {
   'gridView.noMatches': 'No matching rows',
   'gridView.editValue': 'Edit value',
   'gridView.invalidEdit': 'Invalid value',
+  'gridView.duplicateKeysReadOnly': 'Duplicate keys detected. Grid editing is disabled.',
 } as const;

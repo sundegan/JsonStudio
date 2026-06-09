@@ -413,11 +413,11 @@
   }
 
   function isTreeValueEditable(node: TreeNode) {
-    return node.type !== 'object' && node.type !== 'array';
+    return !hasDuplicateSourceKeys && node.type !== 'object' && node.type !== 'array';
   }
 
   function isTreeKeyEditable(node: TreeNode) {
-    return isEditableTreeKey(node);
+    return !hasDuplicateSourceKeys && isEditableTreeKey(node);
   }
 
   function isTreeDragEnabled() {
@@ -447,6 +447,10 @@
 
   function showTreeDragError(errorKey: string) {
     dispatch('toast', { message: $t(errorKey) });
+  }
+
+  function showDuplicateKeysReadOnly() {
+    dispatch('toast', { message: $t('treeView.duplicateKeysReadOnly') });
   }
 
   function getTreePointerDropTarget(clientX: number, clientY: number) {
@@ -479,6 +483,10 @@
   }
 
   function moveTreeNode(sourcePath: string, targetPath: string, position: TreeDropPosition) {
+    if (hasDuplicateSourceKeys) {
+      showDuplicateKeysReadOnly();
+      return;
+    }
     if (!isTreeDragEnabled()) {
       showTreeDragError('treeView.dragJsonOnly');
       return;
@@ -527,7 +535,8 @@
 
     event.preventDefault();
     if (!isTreeDragEnabled()) {
-      showTreeDragError('treeView.dragJsonOnly');
+      if (hasDuplicateSourceKeys) showDuplicateKeysReadOnly();
+      else showTreeDragError('treeView.dragJsonOnly');
       clearTreeDragState();
       return;
     }
@@ -566,6 +575,11 @@
   }
 
   function beginTreeEdit(event: MouseEvent, node: TreeNode, kind: TreeEditState['kind']) {
+    if (hasDuplicateSourceKeys) {
+      event.stopPropagation();
+      showDuplicateKeysReadOnly();
+      return;
+    }
     if (kind === 'key' && !isTreeKeyEditable(node)) return;
     if (kind === 'value' && !isTreeValueEditable(node)) return;
     event.stopPropagation();
