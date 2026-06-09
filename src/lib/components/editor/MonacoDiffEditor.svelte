@@ -2,7 +2,8 @@
   import { onMount, onDestroy } from 'svelte';
   import type * as Monaco from 'monaco-editor';
   import { initMonaco } from '$lib/services/monaco';
-  import { formatJson, unescapeString } from '$lib/services/json';
+  import { unescapeString } from '$lib/services/json';
+  import { formatJsonText } from '$lib/services/json5Format.js';
   import { normalizePastedJson } from '$lib/services/diffPasteNormalize.js';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
 
@@ -199,7 +200,7 @@
     const timer = setTimeout(async () => {
       const sourceValue = model.getValue();
       const normalized = await normalizePastedJson(sourceValue, {
-        format: value => formatJson(value, tabSize),
+        format: value => formatJsonText(value, tabSize),
         unescape: unescapeString,
       });
       if (!normalized || normalized === sourceValue || model.getValue() !== sourceValue) {

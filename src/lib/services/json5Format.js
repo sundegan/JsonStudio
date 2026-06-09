@@ -16,3 +16,18 @@ export async function formatJson5(content, indent = 2) {
     tabWidth: indent,
   });
 }
+
+/**
+ * Format strict JSON from source text so duplicate object keys remain intact.
+ *
+ * @param {string} content
+ * @param {number} indent
+ * @returns {Promise<string>}
+ */
+export async function formatJsonText(content, indent = 2) {
+  return await prettier.format(content, {
+    parser: 'json-stringify',
+    plugins: [babelPlugin, estreePlugin],
+    tabWidth: indent,
+  });
+}
