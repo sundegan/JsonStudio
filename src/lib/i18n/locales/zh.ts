@@ -228,13 +228,6 @@ export default {
   'toolbar.noContentFold': '没有可折叠的内容',
   'toolbar.noContentUnfold': '没有可展开的内容',
 
-  // TabBar
-  'fixJson.fix': '修复 JSON',
-  'fixJson.dismiss': '忽略',
-  'fixJson.success': 'JSON 已修复',
-  'fixJson.failed': 'JSON 修复失败',
-  'fixJson.unrepairable': '无法自动修复，请手动检查',
-
   // Log JSON fragments
   'logJson.title': 'JSON 片段',
   'logJson.detected': '检测到 {count} 个片段',
