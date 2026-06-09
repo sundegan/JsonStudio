@@ -208,11 +208,12 @@
     isProcessing = true;
 
     try {
-      const { formatJson, getJsonStats } = await import('$lib/services/json');
+      const { getJsonStats } = await import('$lib/services/json');
+      const { formatJson5, formatJsonText } = await import('$lib/services/json5Format.js');
       const stats = await getJsonStats(content);
       const formatted = stats.valid && stats.format_type === 'JSON5'
-        ? await (await import('$lib/services/json5Format.js')).formatJson5(content, tabSize)
-        : await formatJson(content, tabSize);
+        ? await formatJson5(content, tabSize)
+        : await formatJsonText(content, tabSize);
       setContentValue(formatted);
       await onStatsUpdate();
     } catch (e) {
@@ -357,13 +358,13 @@
       if (result) {
         const [path, fileContent] = result;
         const name = await getFileName(path);
-        const [{ formatJson, getJsonStats }, { formatJson5 }] = await Promise.all([
+        const [{ getJsonStats }, { formatJson5, formatJsonText }] = await Promise.all([
           import('$lib/services/json'),
           import('$lib/services/json5Format.js'),
         ]);
         const normalizedContent = await normalizeOpenedJson(fileContent, {
           indent: tabSize,
-          formatJson,
+          formatJson: formatJsonText,
           getJsonStats,
           formatJson5,
         });

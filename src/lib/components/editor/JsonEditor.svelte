@@ -125,13 +125,10 @@
       try {
         const fileContent = await readFile(filePath);
         const name = await getFileName(filePath);
-        const [{ formatJson }, { formatJson5 }] = await Promise.all([
-          import('$lib/services/json'),
-          import('$lib/services/json5Format.js'),
-        ]);
+        const { formatJson5, formatJsonText } = await import('$lib/services/json5Format.js');
         const normalizedContent = await normalizeOpenedJson(fileContent, {
           indent: settings.tabSize,
-          formatJson,
+          formatJson: formatJsonText,
           getJsonStats,
           formatJson5,
         });
@@ -840,10 +837,10 @@
     const trimmed = sourceValue.trim();
     if (!trimmed) return null;
 
-    const { formatJson } = await import('$lib/services/json');
+    const { formatJsonText } = await import('$lib/services/json5Format.js');
     return await normalizePastedStandaloneJson(sourceValue, {
       indent: tabSize,
-      formatJson,
+      formatJson: formatJsonText,
       getStandaloneEscapedJsonContent,
     });
   }
@@ -1013,9 +1010,8 @@
     }
   }
 
-  // Paste auto-format: only format standard JSON. JSON5 content must not be
-  // auto-formatted because the backend converts it to standard JSON (losing
-  // comments, Infinity, unquoted keys, single-quote strings, etc.).
+  // Paste auto-format: only format standard JSON. JSON5 content must stay
+  // untouched to preserve comments, Infinity, unquoted keys, and quote style.
   function handleEditorPaste() {
     if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
     pasteFormatTimer = setTimeout(async () => {
