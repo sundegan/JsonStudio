@@ -228,13 +228,6 @@ export default {
   'toolbar.noContentFold': 'No content to fold',
   'toolbar.noContentUnfold': 'No content to unfold',
 
-  // TabBar
-  'fixJson.fix': 'Fix JSON',
-  'fixJson.dismiss': 'Dismiss',
-  'fixJson.success': 'JSON repaired successfully',
-  'fixJson.failed': 'Failed to repair JSON',
-  'fixJson.unrepairable': 'Cannot auto-fix, please check manually',
-
   // Log JSON fragments
   'logJson.title': 'JSON Fragments',
   'logJson.detected': '{count} fragments detected',
