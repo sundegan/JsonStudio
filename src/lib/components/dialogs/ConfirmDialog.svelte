@@ -8,6 +8,7 @@
     message = '',
     confirmText = 'Confirm',
     cancelText = 'Cancel',
+    showCancel = true,
     isDanger = false,
     onConfirm,
     onCancel
@@ -17,6 +18,7 @@
     message: string;
     confirmText?: string;
     cancelText?: string;
+    showCancel?: boolean;
     isDanger?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -26,14 +28,14 @@
 
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === e.currentTarget) {
-      closeDialog(false);
+      if (showCancel) closeDialog(false);
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if (!isOpen) return;
     if (e.key === 'Escape') {
-      closeDialog(false);
+      if (showCancel) closeDialog(false);
     } else if (e.key === 'Enter') {
       closeDialog(true);
     }
@@ -83,9 +85,11 @@
       </div>
 
       <div class="dialog-actions">
-        <button class="dialog-btn dialog-cancel" onclick={() => closeDialog(false)}>
-          {cancelText}
-        </button>
+        {#if showCancel}
+          <button class="dialog-btn dialog-cancel" onclick={() => closeDialog(false)}>
+            {cancelText}
+          </button>
+        {/if}
         <button class="dialog-btn dialog-confirm" class:is-danger={isDanger} onclick={() => closeDialog(true)}>
           {confirmText}
         </button>

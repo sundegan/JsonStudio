@@ -99,6 +99,18 @@ test('tree view disables editing and drag with duplicate-key documents', () => {
   assert.match(source, /treeView\.duplicateKeysReadOnly/);
 });
 
+test('tree view keeps key edit attempts reachable for duplicate-key readonly feedback', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /function canAttemptTreeKeyEdit/);
+  assert.match(source, /\{#if canAttemptTreeKeyEdit\(node\)\}/);
+  assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'key'\)\}/);
+  assert.match(source, /bind:isOpen=\{duplicateKeysDialogOpen\}/);
+});
+
 test('tree view wires drag and drop moves through full document writeback', () => {
   const source = readFileSync(
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),

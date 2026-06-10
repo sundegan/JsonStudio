@@ -7,6 +7,7 @@
   import { getJsonSourceValue, isJsonSourceNode } from '$lib/services/jsonSourceModel.js';
   import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   type TreeNode = {
@@ -100,6 +101,7 @@
   let isPointerDragging = $state(false);
   let suppressNextTreeClick = $state(false);
   let treeNodeByPath = $state<Map<string, TreeNode>>(new Map());
+  let duplicateKeysDialogOpen = $state(false);
 
   // Build tree when content changes
   $effect(() => {
@@ -420,6 +422,10 @@
     return !hasDuplicateSourceKeys && isEditableTreeKey(node);
   }
 
+  function canAttemptTreeKeyEdit(node: TreeNode) {
+    return isEditableTreeKey(node);
+  }
+
   function isTreeDragEnabled() {
     if (parsedDialect !== 'JSON') return false;
     if (hasDuplicateSourceKeys) return false;
@@ -450,7 +456,7 @@
   }
 
   function showDuplicateKeysReadOnly() {
-    dispatch('toast', { message: $t('treeView.duplicateKeysReadOnly') });
+    duplicateKeysDialogOpen = true;
   }
 
   function getTreePointerDropTarget(clientX: number, clientY: number) {
@@ -1085,9 +1091,10 @@
                   {/if}
                 </span>
               {:else}
-                {#if isTreeKeyEditable(node)}
+                {#if canAttemptTreeKeyEdit(node)}
                   <span
-                    class="tree-edit-target tree-edit-target--editable"
+                    class="tree-edit-target"
+                    class:tree-edit-target--editable={isTreeKeyEditable(node)}
                     ondblclick={(e) => beginTreeEdit(e, node, 'key')}
                     role="button"
                     tabindex="-1"
@@ -1173,6 +1180,16 @@
     {/if}
   </div>
 </div>
+
+<ConfirmDialog
+  bind:isOpen={duplicateKeysDialogOpen}
+  title={$t('treeView.duplicateKeysReadOnlyTitle')}
+  message={$t('treeView.duplicateKeysReadOnly')}
+  confirmText={$t('common.ok')}
+  showCancel={false}
+  onConfirm={() => { duplicateKeysDialogOpen = false; }}
+  onCancel={() => { duplicateKeysDialogOpen = false; }}
+/>
 
 <style>
   /* Query Toolbar */

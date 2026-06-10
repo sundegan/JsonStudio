@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.ok': 'OK',
+
   // Toolbar - File operations
   'toolbar.new': 'New',
   'toolbar.open': 'Open',
@@ -162,6 +165,7 @@ export default {
   'treeView.dragDuplicateKey': 'Cannot move because the target object already has this key.',
   'treeView.dragIntoDescendant': 'Cannot move a node into itself or one of its children.',
   'treeView.dragMoved': 'Node moved',
+  'treeView.duplicateKeysReadOnlyTitle': 'Editing unavailable',
   'treeView.duplicateKeysReadOnly': 'Duplicate keys detected. Tree editing and drag-and-drop are disabled.',
 
   // Status bar
@@ -270,5 +274,6 @@ export default {
   'gridView.editKey': 'Edit key',
   'gridView.editValue': 'Edit value',
   'gridView.invalidEdit': 'Invalid value',
+  'gridView.duplicateKeysReadOnlyTitle': 'Editing unavailable',
   'gridView.duplicateKeysReadOnly': 'Duplicate keys detected. Grid editing is disabled.',
 } as const;
