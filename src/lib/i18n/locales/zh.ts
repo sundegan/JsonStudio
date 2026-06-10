@@ -267,6 +267,7 @@ export default {
   'gridView.expandAll': '全部展开',
   'gridView.collapseAll': '全部折叠',
   'gridView.noMatches': '无匹配结果',
+  'gridView.editKey': '编辑 key',
   'gridView.editValue': '编辑值',
   'gridView.invalidEdit': '值格式无效',
   'gridView.duplicateKeysReadOnly': '检测到重复 key，已禁用 Grid 编辑。',

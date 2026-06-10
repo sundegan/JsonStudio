@@ -15,6 +15,7 @@
     updateGridSelections,
   } from '$lib/services/gridSelection.js';
   import {
+    createGridKeyEdit,
     createGridValueEdit,
     isGridCellEditable,
     isGridEditCommitKey,
@@ -86,6 +87,7 @@
   let selections = $state<GridSelection[]>([]);
   let selectionAnchor = $state<GridSelection | null>(null);
   let editingPath = $state<string | null>(null);
+  let editingTarget = $state<GridSelectionTarget | null>(null);
   let editingValue = $state('');
   let editingError = $state('');
   let editInput = $state<HTMLInputElement | null>(null);
@@ -97,6 +99,7 @@
     selections = [];
     selectionAnchor = null;
     editingPath = null;
+    editingTarget = null;
     editingValue = '';
     editingError = '';
   });
@@ -203,10 +206,18 @@
     selectionAnchor = null;
   }
 
-  function startEditing(event: MouseEvent, cell: GridCell) {
+  function gridObjectSiblingKeys(model: GridModel, currentPath: string) {
+    if (model.kind !== 'object') return [];
+    return model.rows
+      .filter((row) => row.path !== currentPath)
+      .map((row) => String(row.cells[0]?.value ?? ''));
+  }
+
+  function startEditing(event: MouseEvent, cell: GridCell, target: GridSelectionTarget) {
     event.stopPropagation();
     editingPath = cell.path;
     editingValue = cell.value === null ? 'null' : String(cell.value);
+    editingTarget = target;
     editingError = '';
     tick().then(() => editInput?.focus());
   }
@@ -216,23 +227,25 @@
     editingError = '';
   }
 
-  function handleEditKeydown(event: KeyboardEvent, cell: GridCell) {
+  function handleEditKeydown(event: KeyboardEvent, cell: GridCell, siblingKeys: string[]) {
     if (!isGridEditCommitKey(event)) return;
     event.preventDefault();
-    commitEdit(cell);
+    commitEdit(cell, siblingKeys);
   }
 
-  function commitEdit(cell: GridCell) {
-    if (gridState.kind !== 'ok' || editingPath !== cell.path) return;
+  function commitEdit(cell: GridCell, siblingKeys: string[]) {
+    if (gridState.kind !== 'ok' || editingPath !== cell.path || !editingTarget) return;
 
-    const result = createGridValueEdit(
-      content,
-      gridState.pointers,
-      cell.path,
-      cell.value,
-      editingValue,
-      gridState.dialect,
-    );
+    const result = editingTarget === 'key'
+      ? createGridKeyEdit(gridState.pointers, cell.path, editingValue, siblingKeys)
+      : createGridValueEdit(
+          content,
+          gridState.pointers,
+          cell.path,
+          cell.value,
+          editingValue,
+          gridState.dialect,
+        );
 
     if (!result.ok || !('edit' in result)) {
       editingError =
@@ -244,6 +257,7 @@
 
     editor?.replaceRangeByOffsets(result.edit.start, result.edit.end, result.edit.text);
     editingPath = null;
+    editingTarget = null;
     editingValue = '';
     editingError = '';
     clearSelections();
@@ -436,7 +450,9 @@
       </div>
     </div>
 
-    {#snippet renderCell(cell: GridCell, label: string | number, editable: boolean)}
+    {#snippet renderCell(cell: GridCell, label: string | number, valueEditable: boolean, keyEditable: boolean, siblingKeys: string[])}
+      {@const editTarget = keyEditable ? 'key' : 'value'}
+      {@const editable = keyEditable || valueEditable}
       {#if cell.expandable}
         {@const child = getGridChild(cell)}
         <div class="gv-nested">
@@ -464,15 +480,15 @@
         </div>
       {:else}
         <div class="gv-value-shell">
-          {#if editable && editingPath === cell.path}
+          {#if editable && editingPath === cell.path && editingTarget === editTarget}
             <input
               bind:this={editInput}
               class="gv-edit-input"
               class:gv-edit-input--error={Boolean(editingError)}
               value={editingValue}
               oninput={handleEditInput}
-              onkeydown={(event) => handleEditKeydown(event, cell)}
-              onblur={() => commitEdit(cell)}
+              onkeydown={(event) => handleEditKeydown(event, cell, siblingKeys)}
+              onblur={() => commitEdit(cell, siblingKeys)}
               title={editingError || cell.path}
             />
             {#if editingError}
@@ -485,9 +501,9 @@
             {#if editable}
               <button
                 class="gv-edit-btn"
-                onclick={(event) => startEditing(event, cell)}
+                onclick={(event) => startEditing(event, cell, editTarget)}
                 type="button"
-                title={$t('gridView.editValue')}
+                title={keyEditable ? $t('gridView.editKey') : $t('gridView.editValue')}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 20h9"/>
@@ -518,14 +534,16 @@
               <tr class="gv-tr" class:gv-tr--selected={isSelected(row.path, 'row')}>
                 {#each row.cells as cell, cellIndex}
                   {@const cellSelection = getGridSelectionForCell(model, row, cellIndex)}
-                  {@const editable = cellSelection.target === 'value' && !gridState.hasDuplicateSourceKeys && isGridCellEditable(cell)}
+                  {@const valueEditable = cellSelection.target === 'value' && !gridState.hasDuplicateSourceKeys && isGridCellEditable(cell)}
+                  {@const keyEditable = model.kind === 'object' && cellIndex === 0 && !gridState.hasDuplicateSourceKeys && cell.exists !== false}
+                  {@const siblingKeys = keyEditable ? gridObjectSiblingKeys(model, row.path) : []}
                   <td
                     class="gv-td"
                     class:gv-td--selected={cellSelection.target !== 'row' && isSelected(cellSelection.path, 'value')}
                     onmousedown={handleCellMouseDown}
                     onclick={(event) => handleCellClick(event, model, row, cellIndex)}
                   >
-                    {@render renderCell(cell, cellLabel(model, row, cellIndex), editable)}
+                    {@render renderCell(cell, cellLabel(model, row, cellIndex), valueEditable, keyEditable, siblingKeys)}
                   </td>
                 {/each}
               </tr>

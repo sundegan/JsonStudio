@@ -267,6 +267,7 @@ export default {
   'gridView.expandAll': 'Expand all',
   'gridView.collapseAll': 'Collapse all',
   'gridView.noMatches': 'No matching rows',
+  'gridView.editKey': 'Edit key',
   'gridView.editValue': 'Edit value',
   'gridView.invalidEdit': 'Invalid value',
   'gridView.duplicateKeysReadOnly': 'Duplicate keys detected. Grid editing is disabled.',
