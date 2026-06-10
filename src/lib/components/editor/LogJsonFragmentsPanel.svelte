@@ -47,6 +47,7 @@
   const MIN_PANEL_HEIGHT = 160;
   const MAX_PANEL_HEIGHT = 520;
   let stopResizeListeners: (() => void) | null = null;
+  let pendingFoldTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clampListWidth(width: number) {
     return Math.min(MAX_LIST_WIDTH, Math.max(MIN_LIST_WIDTH, width));
@@ -122,7 +123,25 @@
       resultEditor.setValue(fragment.formatted);
       resultEditor.setScrollTop(0);
       resultEditor.setScrollLeft(0);
+      scheduleDefaultFold();
     }
+  }
+
+  function scheduleDefaultFold() {
+    if (!resultEditor) return;
+    if (pendingFoldTimer) clearTimeout(pendingFoldTimer);
+    pendingFoldTimer = setTimeout(() => {
+      pendingFoldTimer = null;
+      resultEditor?.getAction('editor.foldLevel3')?.run();
+      resultEditor?.setScrollTop(0);
+      resultEditor?.setScrollLeft(0);
+    }, 0);
+  }
+
+  function clearPendingDefaultFold() {
+    if (!pendingFoldTimer) return;
+    clearTimeout(pendingFoldTimer);
+    pendingFoldTimer = null;
   }
 
   function selectFragment(index: number) {
@@ -166,6 +185,8 @@
       domReadOnly: true,
       minimap: { enabled: false },
       folding: true,
+      showFoldingControls: 'always',
+      foldingStrategy: 'indentation',
       lineNumbers: 'on',
       wordWrap: 'off',
       automaticLayout: true,
@@ -198,10 +219,13 @@
     if (theme) {
       monacoInstance.editor.setTheme(theme);
     }
+
+    scheduleDefaultFold();
   });
 
   onDestroy(() => {
     stopResizeListeners?.();
+    clearPendingDefaultFold();
     resultEditor?.dispose();
   });
 </script>
