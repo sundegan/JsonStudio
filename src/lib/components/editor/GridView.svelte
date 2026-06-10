@@ -25,6 +25,7 @@
   import { shouldCloseGridExportMenu } from '$lib/services/gridExportMenu.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
   import { onMount, tick } from 'svelte';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   let {
@@ -93,6 +94,7 @@
   let editInput = $state<HTMLInputElement | null>(null);
   let isExporting = $state(false);
   let isExportMenuOpen = $state(false);
+  let duplicateKeysDialogOpen = $state(false);
 
   $effect(() => {
     content;
@@ -215,11 +217,19 @@
 
   function startEditing(event: MouseEvent, cell: GridCell, target: GridSelectionTarget) {
     event.stopPropagation();
+    if (gridState.kind === 'ok' && gridState.hasDuplicateSourceKeys) {
+      showDuplicateKeysReadOnly();
+      return;
+    }
     editingPath = cell.path;
     editingValue = cell.value === null ? 'null' : String(cell.value);
     editingTarget = target;
     editingError = '';
     tick().then(() => editInput?.focus());
+  }
+
+  function showDuplicateKeysReadOnly() {
+    duplicateKeysDialogOpen = true;
   }
 
   function handleEditInput(event: Event) {
@@ -400,11 +410,6 @@
           autocomplete="off"
         />
       </div>
-      {#if gridState.hasDuplicateSourceKeys}
-        <span class="gv-readonly-hint" title={$t('gridView.duplicateKeysReadOnly')}>
-          {$t('gridView.duplicateKeysReadOnly')}
-        </span>
-      {/if}
       <button
         class="gv-toolbar-btn"
         onclick={isAllExpanded ? collapseAll : expandAll}
@@ -534,8 +539,8 @@
               <tr class="gv-tr" class:gv-tr--selected={isSelected(row.path, 'row')}>
                 {#each row.cells as cell, cellIndex}
                   {@const cellSelection = getGridSelectionForCell(model, row, cellIndex)}
-                  {@const valueEditable = cellSelection.target === 'value' && !gridState.hasDuplicateSourceKeys && isGridCellEditable(cell)}
-                  {@const keyEditable = model.kind === 'object' && cellIndex === 0 && !gridState.hasDuplicateSourceKeys && cell.exists !== false}
+                  {@const valueEditable = cellSelection.target === 'value' && isGridCellEditable(cell)}
+                  {@const keyEditable = model.kind === 'object' && cellIndex === 0 && cell.exists !== false}
                   {@const siblingKeys = keyEditable ? gridObjectSiblingKeys(model, row.path) : []}
                   <td
                     class="gv-td"
@@ -564,6 +569,16 @@
     </div>
   {/if}
 </div>
+
+<ConfirmDialog
+  bind:isOpen={duplicateKeysDialogOpen}
+  title={$t('gridView.duplicateKeysReadOnlyTitle')}
+  message={$t('gridView.duplicateKeysReadOnly')}
+  confirmText={$t('common.ok')}
+  showCancel={false}
+  onConfirm={() => { duplicateKeysDialogOpen = false; }}
+  onCancel={() => { duplicateKeysDialogOpen = false; }}
+/>
 
 <style>
   .gv-root {
@@ -618,15 +633,6 @@
     background: var(--bg-primary);
     color: var(--text-primary);
     font-size: 11px;
-  }
-  .gv-readonly-hint {
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--warning, #f59e0b);
-    font-size: 10.5px;
-    font-weight: 600;
   }
   .gv-toolbar-btn {
     display: flex;
