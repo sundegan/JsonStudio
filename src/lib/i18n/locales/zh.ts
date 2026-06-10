@@ -165,8 +165,8 @@ export default {
   'treeView.dragDuplicateKey': '目标对象中已存在同名 key，无法移动。',
   'treeView.dragIntoDescendant': '无法将节点移动到自身或其子节点中。',
   'treeView.dragMoved': '节点已移动',
-  'treeView.duplicateKeysReadOnlyTitle': '暂不可编辑',
-  'treeView.duplicateKeysReadOnly': '检测到重复 key，已禁用树形视图编辑和拖拽。',
+  'treeView.duplicateKeysReadOnlyTitle': '检测到重复 key',
+  'treeView.duplicateKeysReadOnly': '同一个对象中出现了多个相同 key。为避免改错同名字段，树形视图编辑和拖拽已暂时禁用，请先处理重复 key。',
 
   // Status bar
   'status.keys': '个键',
@@ -274,6 +274,6 @@ export default {
   'gridView.editKey': '编辑 key',
   'gridView.editValue': '编辑值',
   'gridView.invalidEdit': '值格式无效',
-  'gridView.duplicateKeysReadOnlyTitle': '暂不可编辑',
-  'gridView.duplicateKeysReadOnly': '检测到重复 key，已禁用 Grid 编辑。',
+  'gridView.duplicateKeysReadOnlyTitle': '检测到重复 key',
+  'gridView.duplicateKeysReadOnly': '同一个对象中出现了多个相同 key。为避免改错同名字段，Grid 编辑已暂时禁用，请先处理重复 key。',
 } as const;
