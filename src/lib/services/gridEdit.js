@@ -18,6 +18,16 @@ export function isGridEditCommitKey(event) {
 }
 
 /**
+ * @param {string} nextKey
+ * @param {string[]} siblingKeys
+ */
+function validateGridKeyName(nextKey, siblingKeys) {
+  if (!nextKey) return { ok: false, error: 'Key cannot be empty' };
+  if (siblingKeys.includes(nextKey)) return { ok: false, error: 'Key already exists' };
+  return { ok: true };
+}
+
+/**
  * @param {string} value
  */
 function quoteSingleString(value) {
@@ -110,6 +120,31 @@ export function createGridValueEdit(content, pointers, path, currentValue, input
       start,
       end,
       text: formatted.text,
+    },
+  };
+}
+
+/**
+ * @param {Record<string, any>} pointers
+ * @param {string} path
+ * @param {string} nextKey
+ * @param {string[]} siblingKeys
+ */
+export function createGridKeyEdit(pointers, path, nextKey, siblingKeys) {
+  const validation = validateGridKeyName(nextKey, siblingKeys);
+  if (!validation.ok) return validation;
+
+  const pointer = pointers[path];
+  if (!pointer?.key || !pointer?.keyEnd) {
+    return { ok: false, error: 'Key range not found' };
+  }
+
+  return {
+    ok: true,
+    edit: {
+      start: pointer.key.pos,
+      end: pointer.keyEnd.pos,
+      text: JSON.stringify(nextKey),
     },
   };
 }

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  createGridKeyEdit,
   createGridValueEdit,
   formatGridEditValue,
   isGridCellEditable,
@@ -75,6 +76,39 @@ test('creates a value-only edit without changing surrounding JSON text', () => {
       end: 36,
       text: '"Ada"',
     },
+  });
+});
+
+test('creates a key-only edit for object grid rows', () => {
+  const content = `{
+  "meta": {
+    "count": 2
+  }
+}`;
+  const parsed = parseJsonDocument(content);
+
+  assert.deepEqual(createGridKeyEdit(parsed.pointers, '/meta/count', 'total', []), {
+    ok: true,
+    edit: {
+      start: 18,
+      end: 25,
+      text: '"total"',
+    },
+  });
+});
+
+test('rejects duplicate grid key edits', () => {
+  const content = `{
+  "meta": {
+    "count": 2,
+    "total": 3
+  }
+}`;
+  const parsed = parseJsonDocument(content);
+
+  assert.deepEqual(createGridKeyEdit(parsed.pointers, '/meta/count', 'total', ['total']), {
+    ok: false,
+    error: 'Key already exists',
   });
 });
 
