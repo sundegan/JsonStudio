@@ -121,7 +121,7 @@
   let duplicateKeysDialogOpen = $state(false);
   const TREE_BUILD_DEBOUNCE_MS = 150;
   const TREE_ROW_HEIGHT = 22;
-  const TREE_OVERSCAN_ROWS = 12;
+  const TREE_OVERSCAN_ROWS = 20;
   let treeBuildTimer: ReturnType<typeof setTimeout> | null = null;
   let treeBuildVersion = 0;
   let completedTreeBuildVersion = $state(0);
@@ -822,7 +822,7 @@
 
 <svelte:window onclick={hideFloatingControls} />
 
-<div class="json-tree-panel">
+<div class="json-tree-panel" style={`--tree-row-height: ${TREE_ROW_HEIGHT}px`}>
 
   <!-- Toolbar -->
   <div class="json-tree-toolbar">
@@ -1073,7 +1073,7 @@
         data-tree-build-version={completedTreeBuildVersion}
         class="sr-only"
       >Tree ready</div>
-      {#snippet renderNode(row: TreeRow)}
+      {#snippet renderRow(row: TreeRow)}
         {@const node = row.node}
         {@const depth = row.depth}
         {@const isLast = row.isLast}
@@ -1241,7 +1241,7 @@
       {/snippet}
 
       <div
-        class="tree-list tree-list-virtual"
+        class="tree-virtual-list"
         style:height={`${virtualTreeWindow.totalRows * TREE_ROW_HEIGHT}px`}
         data-visible-row-count={virtualTreeWindow.totalRows}
       >
@@ -1250,7 +1250,7 @@
           style:transform={`translateY(${virtualTreeWindow.offset}px)`}
         >
           {#each virtualTreeWindow.rows as row (row.node.path)}
-            {@render renderNode(row)}
+            {@render renderRow(row)}
           {/each}
         </div>
       </div>
@@ -1714,10 +1714,10 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
-  :global(.tree-list-virtual) {
+  .tree-virtual-list {
     position: relative;
-    padding-top: 0;
-    padding-bottom: 0;
+    width: fit-content;
+    min-width: 100%;
   }
 
   .tree-virtual-window {
@@ -1729,10 +1729,10 @@
     will-change: transform;
   }
 
-  :global(.tree-list-virtual .tree-node),
-  :global(.tree-list-virtual .tree-node-content) {
-    height: 22px;
-    min-height: 22px;
+  .tree-virtual-list .tree-node,
+  .tree-virtual-list .tree-node-content {
+    height: var(--tree-row-height);
+    min-height: var(--tree-row-height);
   }
 
 </style>

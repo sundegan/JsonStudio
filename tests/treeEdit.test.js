@@ -148,7 +148,8 @@ test('tree rendering virtualizes expanded rows inside the scroll viewport', () =
   );
 
   assert.match(source, /const TREE_ROW_HEIGHT = 22/);
-  assert.match(source, /const TREE_OVERSCAN_ROWS = 12/);
+  assert.match(source, /const TREE_OVERSCAN_ROWS = 20/);
+  assert.match(source, /--tree-row-height: \$\{TREE_ROW_HEIGHT\}px/);
   assert.match(source, /let treeNodes = \$state\.raw/);
   assert.match(source, /function buildVisibleTreeIndex/);
   assert.match(source, /new WeakMap<TreeNode\[\], Uint32Array>/);
@@ -158,7 +159,9 @@ test('tree rendering virtualizes expanded rows inside the scroll viewport', () =
   assert.match(source, /nodes\.slice\(startIndex, endIndex\)/);
   assert.match(source, /if \(!hasChildren\(node\)\) return;/);
   assert.match(source, /data-testid="tree-viewport"/);
+  assert.match(source, /class="tree-virtual-list"/);
   assert.match(source, /class="tree-virtual-window"/);
+  assert.doesNotMatch(source, /class="tree-list tree-list-virtual"/);
   assert.doesNotMatch(source, /tree-show-more/);
 });
 
@@ -167,10 +170,16 @@ test('tree edit errors use an overlay without changing the virtual row height', 
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
     'utf8',
   );
+  const globalStyles = readFileSync(
+    new URL('../src/app.css', import.meta.url),
+    'utf8',
+  );
 
   assert.match(source, /\.tree-edit-error \{[\s\S]*position: absolute;/);
   assert.match(source, /\.tree-edit-field \{[\s\S]*flex-wrap: nowrap;/);
-  assert.match(source, /\.tree-list-virtual \.tree-node-content\) \{[\s\S]*height: 22px;/);
+  assert.match(source, /\.tree-virtual-list \.tree-node-content \{[\s\S]*height: var\(--tree-row-height\);/);
+  assert.doesNotMatch(globalStyles, /\.tree-list \{/);
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*min-height: var\(--tree-row-height\);/);
 });
 
 test('tree view disables editing and drag with duplicate-key documents', () => {

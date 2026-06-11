@@ -336,12 +336,6 @@ body {
   height: 100%;
 }
 
-.tree-list {
-  padding: 6px 0 6px 6px;
-  width: fit-content;
-  min-width: 100%;
-}
-
 /* Tree node styling */
 .tree-node {
   position: relative;
@@ -377,7 +371,7 @@ body {
   gap: 4px;
   padding: 2px 10px 2px 0;
   cursor: pointer;
-  min-height: 22px;
+  min-height: var(--tree-row-height);
 }
 
 /* Tree lines (Postman style) */
