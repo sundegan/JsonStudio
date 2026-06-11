@@ -1,9 +1,12 @@
+import { getJsonSourceValue, isJsonSourceNode } from './jsonSourceModel.js';
+
 /**
  * @typedef {{
  *   value: unknown;
  *   path: string;
  *   expandable: boolean;
  *   exists: boolean;
+ *   sourceNode?: import('./jsonSourceModel.js').JsonSourceNode | null;
  * }} GridCell
  *
  * @typedef {{
@@ -27,6 +30,7 @@
  * @returns {value is Record<string, unknown>}
  */
 function isPlainObject(value) {
+  value = getJsonSourceValue(value);
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -52,11 +56,13 @@ function childPath(parentPath, key) {
  * @returns {GridCell}
  */
 function createCell(value, path, exists = true) {
+  const cellValue = getJsonSourceValue(value);
   return {
-    value,
+    value: cellValue,
     path,
-    expandable: isPlainObject(value) || Array.isArray(value),
+    expandable: isPlainObject(value) || Array.isArray(cellValue),
     exists,
+    sourceNode: isJsonSourceNode(value) ? value : null,
   };
 }
 
@@ -76,6 +82,76 @@ function createRow(path, source, cells) {
  * @returns {GridModel}
  */
 export function buildGridRoot(value, path = '/', showHeader = true) {
+  if (isJsonSourceNode(value)) {
+    if (value.kind === 'object') {
+      return {
+        kind: 'object',
+        path,
+        source: value.value,
+        showHeader: false,
+        columns: ['key', 'value'],
+        rows: value.entries.map((entry) => {
+          const pathForValue = childPathForSourceEntry(path, entry.key, entry.occurrence);
+          return createRow(pathForValue, { [entry.key]: entry.value.value }, [
+            createCell(entry.key, pathForValue),
+            createCell(entry.value, pathForValue),
+          ]);
+        }),
+      };
+    }
+
+    if (value.kind === 'array') {
+      const allObjects = value.items.length > 0 && value.items.every((entry) =>
+        isJsonSourceNode(entry) && entry.kind === 'object'
+      );
+
+      if (allObjects) {
+        const objectItems = /** @type {import('./jsonSourceModel.js').JsonSourceObjectNode[]} */ (value.items);
+        const columns = [...new Set(objectItems.flatMap((entry) => entry.entries.map((item) => item.key)))];
+        return {
+          kind: 'array-object',
+          path,
+          source: value.value,
+          showHeader,
+          columns,
+          rows: objectItems.map((entry, index) => {
+            const rowPath = childPath(path, index);
+            const entriesByKey = new Map(entry.entries.map((item) => [item.key, item]));
+            return createRow(
+              rowPath,
+              entry.value,
+              columns.map((column) => {
+                const item = entriesByKey.get(column);
+                return createCell(
+                  item ? item.value : null,
+                  childPath(rowPath, column),
+                  Boolean(item),
+                );
+              }),
+            );
+          }),
+        };
+      }
+
+      return {
+        kind: 'array',
+        path,
+        source: value.value,
+        showHeader: false,
+        columns: ['index', 'value'],
+        rows: value.items.map((entry, index) => {
+          const rowPath = childPath(path, index);
+          return createRow(rowPath, entry.value, [
+            createCell(index, rowPath),
+            createCell(entry, rowPath),
+          ]);
+        }),
+      };
+    } else {
+      value = value.value;
+    }
+  }
+
   if (isPlainObject(value)) {
     return {
       kind: 'object',
@@ -153,13 +229,14 @@ export function buildGridRoot(value, path = '/', showHeader = true) {
  */
 export function getGridChild(cell) {
   if (!cell?.expandable) return null;
-  return buildGridRoot(cell.value, cell.path, false);
+  return buildGridRoot(cell.sourceNode ?? cell.value, cell.path, false);
 }
 
 /**
  * @param {unknown} value
  */
 export function summarizeGridValue(value) {
+  value = getJsonSourceValue(value);
   if (value === null) return 'null';
   if (Array.isArray(value)) return `[${value.length}]`;
   if (isPlainObject(value)) return `{${Object.keys(value).length}}`;
@@ -171,9 +248,20 @@ export function summarizeGridValue(value) {
  * @param {unknown} value
  */
 export function describeExpandableGridValue(label, value) {
+  value = getJsonSourceValue(value);
   if (Array.isArray(value)) return `${label} [${value.length}]`;
   if (isPlainObject(value)) return `${label} {}`;
   return String(label);
+}
+
+/**
+ * @param {string} parentPath
+ * @param {string} key
+ * @param {number} occurrence
+ */
+function childPathForSourceEntry(parentPath, key, occurrence) {
+  const basePath = childPath(parentPath, key);
+  return occurrence === 0 ? basePath : `${basePath}#${occurrence + 1}`;
 }
 
 /**

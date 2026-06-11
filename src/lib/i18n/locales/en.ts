@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.ok': 'OK',
+
   // Toolbar - File operations
   'toolbar.new': 'New',
   'toolbar.open': 'Open',
@@ -162,6 +165,8 @@ export default {
   'treeView.dragDuplicateKey': 'Cannot move because the target object already has this key.',
   'treeView.dragIntoDescendant': 'Cannot move a node into itself or one of its children.',
   'treeView.dragMoved': 'Node moved',
+  'treeView.duplicateKeysReadOnlyTitle': 'Duplicate keys detected',
+  'treeView.duplicateKeysReadOnly': 'An object contains the same key more than once. To avoid updating the wrong entry, Tree editing and drag-and-drop are disabled until you resolve the duplicates.',
 
   // Status bar
   'status.keys': 'keys',
@@ -228,13 +233,6 @@ export default {
   'toolbar.noContentFold': 'No content to fold',
   'toolbar.noContentUnfold': 'No content to unfold',
 
-  // TabBar
-  'fixJson.fix': 'Fix JSON',
-  'fixJson.dismiss': 'Dismiss',
-  'fixJson.success': 'JSON repaired successfully',
-  'fixJson.failed': 'Failed to repair JSON',
-  'fixJson.unrepairable': 'Cannot auto-fix, please check manually',
-
   // Log JSON fragments
   'logJson.title': 'JSON Fragments',
   'logJson.detected': '{count} fragments detected',
@@ -273,6 +271,9 @@ export default {
   'gridView.expandAll': 'Expand all',
   'gridView.collapseAll': 'Collapse all',
   'gridView.noMatches': 'No matching rows',
+  'gridView.editKey': 'Edit key',
   'gridView.editValue': 'Edit value',
   'gridView.invalidEdit': 'Invalid value',
+  'gridView.duplicateKeysReadOnlyTitle': 'Duplicate keys detected',
+  'gridView.duplicateKeysReadOnly': 'An object contains the same key more than once. To avoid updating the wrong entry, Grid editing is disabled until you resolve the duplicates.',
 } as const;
