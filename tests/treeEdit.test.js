@@ -131,14 +131,23 @@ test('tree parsing runs in a cancellable worker instead of the Svelte UI compone
     new URL('../src/lib/services/jsonTreeWorker.js', import.meta.url),
     'utf8',
   );
+  const persistentWorker = readFileSync(
+    new URL('../src/lib/services/persistentWorker.js', import.meta.url),
+    'utf8',
+  );
 
   assert.match(source, /buildJsonTreeModelAsync/);
   assert.match(source, /cancelJsonTreeBuild\(\)/);
   assert.match(source, /isLoading = false;[\s\S]*const version = \+\+treeBuildVersion/);
   assert.match(source, /if \(!source\.trim\(\)\) \{[\s\S]*isLoading = false;/);
   assert.doesNotMatch(source, /parseJsonDocument/);
-  assert.match(workerClient, /new Worker\(/);
-  assert.match(workerClient, /AbortError/);
+  assert.match(workerClient, /createPersistentWorker\(/);
+  assert.match(workerClient, /treeWorker\.run\(\{ content \}\)/);
+  assert.match(workerClient, /task\?\.cancel\(\)/);
+  assert.match(workerClient, /throw new SyntaxError/);
+  assert.match(workerClient, /new Worker\(new URL\('\.\.\/workers\/jsonTree\.worker\.js'/);
+  assert.match(persistentWorker, /if \(worker\) return worker/);
+  assert.doesNotMatch(persistentWorker, /size|queue|dispose/);
 });
 
 test('tree rendering virtualizes expanded rows inside the scroll viewport', () => {

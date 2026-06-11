@@ -1,14 +1,19 @@
 import { extractLogJsonFragments } from './logJsonFragments.js';
+import { createPersistentWorker } from './persistentWorker.js';
 
 /**
  * @typedef {{
- *   worker: Worker
- *   reject: (reason?: unknown) => void
+ *   cancel: () => void
  * }} ActiveTask
  */
 
 /** @type {ActiveTask | null} */
 let activeTask = null;
+const logJsonWorker = createPersistentWorker(
+  () => new Worker(new URL('../workers/logJson.worker.js', import.meta.url), {
+    type: 'module',
+  }),
+);
 
 /**
  * @param {string} content
@@ -21,30 +26,15 @@ export function extractLogJsonFragmentsAsync(content, options = {}) {
   }
 
   cancelLogJsonDetection();
-  const worker = new Worker(new URL('../workers/logJson.worker.js', import.meta.url), {
-    type: 'module',
-  });
-
-  return new Promise((resolve, reject) => {
-    activeTask = { worker, reject };
-    worker.onmessage = (event) => {
-      if (activeTask?.worker === worker) activeTask = null;
-      worker.terminate();
-      if (event.data.ok) resolve(event.data.result);
-      else reject(new Error(event.data.error));
-    };
-    worker.onerror = (event) => {
-      if (activeTask?.worker === worker) activeTask = null;
-      worker.terminate();
-      reject(new Error(event.message || 'Log JSON worker failed'));
-    };
-    worker.postMessage({ content, options });
+  const task = logJsonWorker.run({ content, options });
+  activeTask = task;
+  return task.promise.finally(() => {
+    if (activeTask === task) activeTask = null;
   });
 }
 
 export function cancelLogJsonDetection() {
   const task = activeTask;
   activeTask = null;
-  task?.worker.terminate();
-  task?.reject(new DOMException('Log JSON detection cancelled', 'AbortError'));
+  task?.cancel();
 }
