@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "benchmark:source-model": "node benchmarks/sourceModelBenchmark.js",
+    "benchmark:source-model:quick": "node benchmarks/sourceModelBenchmark.js --quick",
     "preview": "vite preview",
     "test": "node --test \"tests/**/*.test.js\"",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -19,7 +21,6 @@
   },
   "author": "sundegan",
   "dependencies": {
-    "@mischnic/json-sourcemap": "^0.1.1",
     "@monaco-editor/loader": "^1.7.0",
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-opener": "^2",

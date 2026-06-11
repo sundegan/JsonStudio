@@ -26,15 +26,15 @@ export function createTreeKeyEdit(pointers, path, nextKey, siblingKeys) {
   if (!validation.ok) return validation;
 
   const pointer = pointers[path];
-  if (!pointer?.key || !pointer?.keyEnd) {
+  if (pointer?.keyStart == null || pointer?.keyEnd == null) {
     return { ok: false, error: 'Key range not found' };
   }
 
   return {
     ok: true,
     edit: {
-      start: pointer.key.pos,
-      end: pointer.keyEnd.pos,
+      start: pointer.keyStart,
+      end: pointer.keyEnd,
       text: JSON.stringify(nextKey),
     },
   };
@@ -48,8 +48,8 @@ export function createTreeKeyEdit(pointers, path, nextKey, siblingKeys) {
  */
 export function createTreeValueCopyText(content, pointers, path, value) {
   const pointer = pointers[path];
-  const start = pointer?.value?.pos;
-  const end = pointer?.valueEnd?.pos;
+  const start = pointer?.valueStart;
+  const end = pointer?.valueEnd;
 
   if (Number.isInteger(start) && Number.isInteger(end) && end > start) {
     return content.slice(start, end);

@@ -104,12 +104,12 @@ export function formatGridEditValue(currentValue, input, originalSource, dialect
  */
 export function createGridValueEdit(content, pointers, path, currentValue, input, dialect = 'JSON') {
   const pointer = pointers[path];
-  if (!pointer?.value || !pointer?.valueEnd) {
+  if (pointer?.valueStart == null || pointer?.valueEnd == null) {
     return { ok: false, error: 'Value range not found' };
   }
 
-  const start = pointer.value.pos;
-  const end = pointer.valueEnd.pos;
+  const start = pointer.valueStart;
+  const end = pointer.valueEnd;
   const originalSource = content.slice(start, end);
   const formatted = formatGridEditValue(currentValue, input, originalSource, dialect);
   if (!formatted.ok) return formatted;
@@ -135,15 +135,15 @@ export function createGridKeyEdit(pointers, path, nextKey, siblingKeys) {
   if (!validation.ok) return validation;
 
   const pointer = pointers[path];
-  if (!pointer?.key || !pointer?.keyEnd) {
+  if (pointer?.keyStart == null || pointer?.keyEnd == null) {
     return { ok: false, error: 'Key range not found' };
   }
 
   return {
     ok: true,
     edit: {
-      start: pointer.key.pos,
-      end: pointer.keyEnd.pos,
+      start: pointer.keyStart,
+      end: pointer.keyEnd,
       text: JSON.stringify(nextKey),
     },
   };

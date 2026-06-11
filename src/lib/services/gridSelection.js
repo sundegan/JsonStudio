@@ -50,18 +50,18 @@ export function getGridSelectionRange(pointers, path, target) {
   const pointer = pointers[path];
   if (!pointer) return null;
 
-  if (target === 'key' && pointer.key && pointer.keyEnd) {
-    return { start: pointer.key.pos, end: pointer.keyEnd.pos };
+  if (target === 'key' && pointer.keyStart != null && pointer.keyEnd != null) {
+    return { start: pointer.keyStart, end: pointer.keyEnd };
   }
 
   if (target === 'row') {
-    const start = pointer.key?.pos ?? pointer.value?.pos;
-    const end = pointer.valueEnd?.pos ?? pointer.value?.pos;
+    const start = pointer.keyStart ?? pointer.valueStart;
+    const end = pointer.valueEnd ?? pointer.valueStart;
     return start == null || end == null ? null : { start, end };
   }
 
-  if (pointer.value && pointer.valueEnd) {
-    return { start: pointer.value.pos, end: pointer.valueEnd.pos };
+  if (pointer.valueStart != null && pointer.valueEnd != null) {
+    return { start: pointer.valueStart, end: pointer.valueEnd };
   }
 
   return null;

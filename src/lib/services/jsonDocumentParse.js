@@ -1,33 +1,12 @@
-import jsonSourceMap from '@mischnic/json-sourcemap';
-import { buildJsonSourcePointers, parseJsonSourceModel } from './jsonSourceModel.js';
-
-const { parse } = jsonSourceMap;
+import { parseJsonSourceDocument } from './jsonSourceModel.js';
 
 /**
- * Parse editor content using the same JSON -> JSON5 fallback behavior across views.
+ * Parse JSON and JSON5 in one pass while reporting the syntax actually used.
  * @param {string} content
  */
 export function parseJsonDocument(content) {
-  try {
-    const parsed = parse(content, undefined, { dialect: 'JSON' });
-    const sourceModel = parseJsonSourceModel(content);
-    return {
-      ...parsed,
-      pointers: {
-        ...parsed.pointers,
-        ...buildJsonSourcePointers(sourceModel),
-      },
-      sourceModel,
-      dialect: 'JSON',
-    };
-  } catch (jsonError) {
-    try {
-      return {
-        ...parse(content, undefined, { dialect: 'JSON5' }),
-        dialect: 'JSON5',
-      };
-    } catch {
-      throw jsonError;
-    }
-  }
+  return parseJsonSourceDocument(content, {
+    dialect: 'AUTO',
+    retainSourceModel: false,
+  });
 }
