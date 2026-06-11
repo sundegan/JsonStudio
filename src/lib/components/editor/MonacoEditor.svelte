@@ -10,6 +10,7 @@
   // Props
   let {
     value = '',
+    modelKey = '',
     language = 'json',
     theme = 'vs',
     readOnly = false,
@@ -25,6 +26,7 @@
     onPaste = (_event?: unknown) => {},
   }: {
     value?: string;
+    modelKey?: string;
     language?: string;
     theme?: EditorTheme;
     readOnly?: boolean;
@@ -129,6 +131,11 @@
   let container: HTMLDivElement;
   let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco = $state<typeof Monaco | null>(null);
+  const MAX_CACHED_MODELS = 5;
+  const modelsByKey = new Map<string, Monaco.editor.ITextModel>();
+  let retainedModelKeys = new Set<string>();
+  let activeModelKey = '';
+  let isSwitchingModel = false;
   let externalSelectionDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
   let editorDomNode: HTMLElement | null = null;
   let findWidgetHoverHandler: ((event: MouseEvent) => void) | null = null;
@@ -152,13 +159,20 @@
   
   // Watch value changes
   $effect(() => {
+    const nextModelKey = modelKey;
+    if (editor && monaco && nextModelKey && nextModelKey !== activeModelKey) {
+      isInternalChange = false;
+      switchToModel(nextModelKey, value, language);
+      return;
+    }
+
     // If change triggered by internal edit, don't update editor
     if (isInternalChange) {
       isInternalChange = false;
       return;
     }
     
-    // Only update editor when external value actually changes
+    // Only update the active model when external value actually changes
     if (editor && value !== editor.getValue()) {
       const model = editor.getModel();
       if (model) {
@@ -172,6 +186,53 @@
       }
     }
   });
+
+  function switchToModel(key: string, nextValue: string, nextLanguage: string) {
+    if (!editor || !monaco) return;
+
+    let model = modelsByKey.get(key);
+    if (!model) {
+      model = monaco.editor.createModel(nextValue, nextLanguage);
+    } else {
+      modelsByKey.delete(key);
+      if (model.getValue() !== nextValue) {
+        model.setValue(nextValue);
+      }
+      if (model.getLanguageId() !== nextLanguage) {
+        monaco.editor.setModelLanguage(model, nextLanguage);
+      }
+    }
+    modelsByKey.set(key, model);
+
+    isSwitchingModel = true;
+    editor.setModel(model);
+    activeModelKey = key;
+    isSwitchingModel = false;
+    disposeUnretainedModels();
+  }
+
+  function disposeUnretainedModels() {
+    for (const [key, model] of modelsByKey) {
+      if (key === activeModelKey || retainedModelKeys.has(key)) continue;
+      model.dispose();
+      modelsByKey.delete(key);
+    }
+
+    while (modelsByKey.size > MAX_CACHED_MODELS) {
+      const oldest = modelsByKey.entries().next().value as
+        | [string, Monaco.editor.ITextModel]
+        | undefined;
+      if (!oldest) break;
+      const [key, model] = oldest;
+      if (key === activeModelKey) {
+        modelsByKey.delete(key);
+        modelsByKey.set(key, model);
+        continue;
+      }
+      model.dispose();
+      modelsByKey.delete(key);
+    }
+  }
   
   // Watch theme changes and apply theme
   $effect(() => {
@@ -253,10 +314,17 @@
     // mode (top-level `{}` is parsed as a block, not an object — keys lose highlighting).
     registerJson5Language(monacoInstance);
     
+    const initialModel = modelKey
+      ? monacoInstance.editor.createModel(value, language)
+      : undefined;
+    if (initialModel && modelKey) {
+      modelsByKey.set(modelKey, initialModel);
+      activeModelKey = modelKey;
+    }
+
     // Create editor
     editor = monacoInstance.editor.create(container, {
-      value,
-      language,
+      ...(initialModel ? { model: initialModel } : { value, language }),
       theme,
       readOnly,
       minimap: { enabled: minimap },
@@ -296,6 +364,7 @@
     // Listen to content changes
     if (editor) {
       editor.onDidChangeModelContent(() => {
+        if (isSwitchingModel) return;
         const currentValue = editor?.getValue() || '';
         if (currentValue !== value) {
           // Mark as internal change to avoid triggering $effect to reset value
@@ -348,6 +417,10 @@
     externalSelectionDecorations?.clear();
     externalSelectionDecorations = null;
     editor?.dispose();
+    for (const model of modelsByKey.values()) {
+      if (!model.isDisposed()) model.dispose();
+    }
+    modelsByKey.clear();
   });
   
   export function foldAll() {
@@ -398,12 +471,9 @@
     return editor?.getValue() || '';
   }
 
-  export function setLanguage(lang: string) {
-    if (!editor || !monaco) return;
-    const model = editor.getModel();
-    if (model) {
-      monaco.editor.setModelLanguage(model, lang);
-    }
+  export function retainModels(keys: string[]) {
+    retainedModelKeys = new Set(keys);
+    disposeUnretainedModels();
   }
 
   // Monaco Editor native format function

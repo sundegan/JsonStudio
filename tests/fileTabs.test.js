@@ -145,3 +145,86 @@ test('editor range replacement keeps grid edits undoable through Monaco edits', 
   assert.match(replaceBody, /pushEditOperations/);
   assert.match(replaceBody, /getPositionAt/);
 });
+
+test('editor keeps a Monaco model per tab and disposes closed tab models', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /const modelsByKey = new Map/);
+  assert.match(source, /const MAX_CACHED_MODELS = 5/);
+  assert.match(source, /editor\.setModel\(model\)/);
+  assert.match(source, /export function retainModels\(keys: string\[\]\)/);
+  assert.match(source, /model\.dispose\(\)/);
+});
+
+test('main editor uses one lightweight tokenizer for JSON and JSON5', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /language="json5"/);
+  assert.doesNotMatch(source, /quickDetectFormatAndSwitchLanguage/);
+  assert.doesNotMatch(source, /setLanguage\(/);
+});
+
+test('async stats results are discarded after content or tab changes', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /const tabId = currentTab\.id;/);
+  assert.match(source, /const source = content;/);
+  assert.match(source, /sourceTab\.content !== source/);
+  assert.match(source, /\$activeTab\?\.id !== tabId \|\| content !== source/);
+});
+
+test('large clipboard events do not repeat JSON formatting on the UI thread', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url),
+    'utf8',
+  );
+
+  const formattedHandler = source.match(
+    /unlistenFormatted = await listen<string>\('clipboard-formatted'[\s\S]*?\n      \}\);/,
+  )?.[0] || '';
+  assert.match(formattedHandler, /tabsStore\.addTab\(event\.payload\)/);
+  assert.doesNotMatch(formattedHandler, /normalize|formatJsonText|openClipboardContentInNewTab/);
+});
+
+test('log JSON detection runs in a cancellable worker after debounce', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url),
+    'utf8',
+  );
+  const workerClient = await readFile(
+    new URL('../src/lib/services/logJsonWorker.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /extractLogJsonFragmentsAsync/);
+  assert.match(source, /cancelLogJsonDetection\(\)/);
+  assert.match(source, /setTimeout\(async \(\) =>/);
+  assert.match(workerClient, /new Worker\(/);
+  assert.match(workerClient, /AbortError/);
+});
+
+test('editor paste formatting runs outside the UI thread and discards stale results', async () => {
+  const editorSource = await readFile(
+    new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url),
+    'utf8',
+  );
+  const monacoSource = await readFile(
+    new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url),
+    'utf8',
+  );
+  const workerClient = await readFile(
+    new URL('../src/lib/services/pasteFormatWorker.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(monacoSource, /editor\.onDidPaste/);
+  assert.match(editorSource, /onPaste=\{handleEditorPaste\}/);
+  assert.match(editorSource, /const tabId = sourceTab\.id/);
+  assert.match(editorSource, /formatPastedJsonAsync\(sourceValue, tabSize\)/);
+  assert.match(editorSource, /\$activeTab\?\.id !== tabId/);
+  assert.match(editorSource, /currentSourceTab\?\.content !== sourceValue/);
+  assert.match(editorSource, /tabsStore\.updateTabContent\(tabId, normalized\)/);
+  assert.match(editorSource, /function syncActiveTab[\s\S]*?cancelPasteFormat\(\)/);
+  assert.match(workerClient, /new Worker\(/);
+  assert.match(workerClient, /AbortError/);
+});

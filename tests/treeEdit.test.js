@@ -9,6 +9,7 @@ import {
   validateTreeKeyName,
 } from '../src/lib/services/treeEdit.js';
 import { parseJsonDocument } from '../src/lib/services/jsonDocumentParse.js';
+import { buildJsonTreeModel } from '../src/lib/services/jsonTreeModel.js';
 
 test('allows object keys but not array indexes to be edited', () => {
   assert.equal(isTreeKeyEditable({ parentType: 'object' }), true);
@@ -16,9 +17,10 @@ test('allows object keys but not array indexes to be edited', () => {
 });
 
 test('rejects empty and duplicate object key names', () => {
-  assert.equal(validateTreeKeyName('', ['name']).ok, false);
-  assert.equal(validateTreeKeyName('name', ['name']).ok, false);
-  assert.deepEqual(validateTreeKeyName('displayName', ['name']), { ok: true });
+  assert.equal(validateTreeKeyName('', ['name'], 'name').ok, false);
+  assert.equal(validateTreeKeyName('age', ['name', 'age'], 'name').ok, false);
+  assert.deepEqual(validateTreeKeyName('name', ['name', 'age'], 'name'), { ok: true });
+  assert.deepEqual(validateTreeKeyName('displayName', ['name', 'age'], 'name'), { ok: true });
 });
 
 test('creates a source edit that replaces only an object key', () => {
@@ -28,7 +30,13 @@ test('creates a source edit that replaces only an object key', () => {
 }`;
   const parsed = parseJsonDocument(content);
 
-  const result = createTreeKeyEdit(parsed.pointers, '/name', 'displayName', ['age']);
+  const result = createTreeKeyEdit(
+    parsed.pointers,
+    '/name',
+    'displayName',
+    ['name', 'age'],
+    'name',
+  );
 
   assert.deepEqual(result, {
     ok: true,
@@ -44,7 +52,10 @@ test('quotes escaped key text during a source edit', () => {
   const content = '{"name":"Alice"}';
   const parsed = parseJsonDocument(content);
 
-  assert.equal(createTreeKeyEdit(parsed.pointers, '/name', 'a"b', []).edit.text, '"a\\"b"');
+  assert.equal(
+    createTreeKeyEdit(parsed.pointers, '/name', 'a"b', ['name'], 'name').edit.text,
+    '"a\\"b"',
+  );
 });
 
 test('creates tree copy text from the node value source range only', () => {
@@ -79,10 +90,55 @@ test('tree view exposes key and primitive value edit writeback on double click',
   assert.match(source, /createTreeKeyEdit/);
   assert.match(source, /createGridValueEdit/);
   assert.match(source, /replaceRangeByOffsets/);
-  assert.match(source, /if \(content !== previousContent\) \{[\s\S]*treeEdit = null;[\s\S]*buildTree\(\);/);
+  assert.match(source, /if \(content !== previousContent\) \{[\s\S]*treeEdit = null;[\s\S]*scheduleTreeBuild\(content\);/);
   assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'key'\)\}/);
   assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'value'\)\}/);
   assert.doesNotMatch(source, /tree-edit-button/);
+});
+
+test('tree model builds JSON5 nodes, source ranges, and path index outside the component', () => {
+  const content = `{
+  label: 'JSON5',
+  items: [1, 2,],
+}`;
+  const result = buildJsonTreeModel(content);
+
+  assert.equal(result.dialect, 'JSON5');
+  assert.equal(result.nodes[0].key, 'label');
+  assert.equal(result.nodes[0].value, 'JSON5');
+  assert.equal(result.nodeIndex.get('/items/1').value, 2);
+  assert.equal(content.slice(
+    result.nodeIndex.get('/items').startOffset,
+    result.nodeIndex.get('/items').endOffset,
+  ), '[1, 2,]');
+});
+
+test('tree nodes share parent keys instead of copying sibling keys per node', () => {
+  const result = buildJsonTreeModel('{"a":1,"b":2,"c":3}');
+
+  assert.equal(result.nodes[0].parentKeys, result.nodes[1].parentKeys);
+  assert.equal(result.nodes[1].parentKeys, result.nodes[2].parentKeys);
+  assert.deepEqual(result.nodes[0].parentKeys, ['a', 'b', 'c']);
+  assert.equal('siblingKeys' in result.nodes[0], false);
+});
+
+test('tree parsing runs in a cancellable worker instead of the Svelte UI component', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+  const workerClient = readFileSync(
+    new URL('../src/lib/services/jsonTreeWorker.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /buildJsonTreeModelAsync/);
+  assert.match(source, /cancelJsonTreeBuild\(\)/);
+  assert.match(source, /isLoading = false;[\s\S]*const version = \+\+treeBuildVersion/);
+  assert.match(source, /if \(!source\.trim\(\)\) \{[\s\S]*isLoading = false;/);
+  assert.doesNotMatch(source, /parseJsonDocument/);
+  assert.match(workerClient, /new Worker\(/);
+  assert.match(workerClient, /AbortError/);
 });
 
 test('tree view disables editing and drag with duplicate-key documents', () => {

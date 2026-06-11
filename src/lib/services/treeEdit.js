@@ -7,11 +7,14 @@ export function isTreeKeyEditable(node) {
 
 /**
  * @param {string} nextKey
- * @param {string[]} siblingKeys
+ * @param {string[]} parentKeys
+ * @param {string} [currentKey]
  */
-export function validateTreeKeyName(nextKey, siblingKeys) {
+export function validateTreeKeyName(nextKey, parentKeys, currentKey) {
   if (!nextKey) return { ok: false, error: 'Key cannot be empty' };
-  if (siblingKeys.includes(nextKey)) return { ok: false, error: 'Key already exists' };
+  if (nextKey !== currentKey && parentKeys.includes(nextKey)) {
+    return { ok: false, error: 'Key already exists' };
+  }
   return { ok: true };
 }
 
@@ -19,10 +22,11 @@ export function validateTreeKeyName(nextKey, siblingKeys) {
  * @param {Record<string, any>} pointers
  * @param {string} path
  * @param {string} nextKey
- * @param {string[]} siblingKeys
+ * @param {string[]} parentKeys
+ * @param {string} [currentKey]
  */
-export function createTreeKeyEdit(pointers, path, nextKey, siblingKeys) {
-  const validation = validateTreeKeyName(nextKey, siblingKeys);
+export function createTreeKeyEdit(pointers, path, nextKey, parentKeys, currentKey) {
+  const validation = validateTreeKeyName(nextKey, parentKeys, currentKey);
   if (!validation.ok) return validation;
 
   const pointer = pointers[path];

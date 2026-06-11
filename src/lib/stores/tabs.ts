@@ -22,6 +22,9 @@ export interface TabsState {
 
 const STORAGE_KEY = 'jsonstudio_tabs_state';
 const MAX_PERSISTED_CONTENT_SIZE = 1024 * 1024; // 1MB per tab
+const PERSIST_DEBOUNCE_MS = 500;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingPersistState: TabsState | null = null;
 
 // Create empty stats object
 function createEmptyStats(): JsonStats {
@@ -123,6 +126,11 @@ function loadState(): TabsState {
 
 // Save state to localStorage
 function saveState(state: TabsState) {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  pendingPersistState = null;
   try {
     // Limit what we save to avoid localStorage quota issues
     // localStorage typically has 5-10MB limit, so 1MB per tab is a safe limit.
@@ -144,11 +152,28 @@ function saveState(state: TabsState) {
   }
 }
 
+function scheduleSaveState(state: TabsState) {
+  pendingPersistState = state;
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    const pending = pendingPersistState;
+    pendingPersistState = null;
+    if (pending) saveState(pending);
+  }, PERSIST_DEBOUNCE_MS);
+}
+
+function flushPendingPersistence() {
+  const pending = pendingPersistState;
+  if (pending) saveState(pending);
+}
+
 function createTabsStore() {
   const { subscribe, set, update } = writable<TabsState>(loadState());
 
   return {
     subscribe,
+    flushPersistence: flushPendingPersistence,
     
     // Add new tab
     addTab: (content: string = '', filePath: string | null = null, fileName: string | null = null) => {
@@ -247,7 +272,7 @@ function createTabsStore() {
           ...state,
           activeTabId: tabId,
         };
-        saveState(newState);
+        scheduleSaveState(newState);
         return newState;
       });
     },
@@ -263,7 +288,7 @@ function createTabsStore() {
               : tab
           ),
         };
-        saveState(newState);
+        scheduleSaveState(newState);
         return newState;
       });
     },
@@ -311,7 +336,7 @@ function createTabsStore() {
               : tab
           ),
         };
-        saveState(newState);
+        scheduleSaveState(newState);
         return newState;
       });
     },
