@@ -30,6 +30,24 @@
 
   type TreeDropPosition = 'before' | 'inside' | 'after';
 
+  type TreeRow = {
+    node: TreeNode;
+    depth: number;
+    isLast: boolean;
+    parentLines: boolean[];
+  };
+
+  type VirtualTreeWindow = {
+    rows: TreeRow[];
+    totalRows: number;
+    offset: number;
+  };
+
+  type VisibleTreeIndex = {
+    totalRows: number;
+    siblingOffsets: WeakMap<TreeNode[], Uint32Array>;
+  };
+
   type QueryExample = {
     query: string;
     result: string;
@@ -69,14 +87,14 @@
   };
 
   const dispatch = createEventDispatcher<{ toast: { message: string } }>();
-  let treeNodes = $state<TreeNode[]>([]);
+  let treeNodes = $state.raw<TreeNode[]>([]);
   let treeError = $state('');
   let isLoading = $state(false);
   let previousContent = $state('');
-  let parsedPointers = $state<Record<string, any>>({});
+  let parsedPointers = $state.raw<Record<string, any>>({});
   let parsedDialect = $state<'JSON' | 'JSON5'>('JSON');
   let hasDuplicateSourceKeys = $state(false);
-  let rootData = $state<unknown>(null);
+  let rootData = $state.raw<unknown>(null);
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
   let queryMode = $state<QueryMode>('jmespath');
@@ -99,11 +117,30 @@
   let pointerDragStart = $state<{ path: string; x: number; y: number } | null>(null);
   let isPointerDragging = $state(false);
   let suppressNextTreeClick = $state(false);
-  let treeNodeByPath = $state<Map<string, TreeNode>>(new Map());
+  let treeNodeByPath = $state.raw<Map<string, TreeNode>>(new Map());
   let duplicateKeysDialogOpen = $state(false);
   const TREE_BUILD_DEBOUNCE_MS = 150;
+  const TREE_ROW_HEIGHT = 22;
+  const TREE_OVERSCAN_ROWS = 12;
   let treeBuildTimer: ReturnType<typeof setTimeout> | null = null;
   let treeBuildVersion = 0;
+  let completedTreeBuildVersion = $state(0);
+  let treeScrollTop = $state(0);
+  let treeViewportHeight = $state(400);
+  let treeContentElement = $state<HTMLDivElement | null>(null);
+  let visibleTreeIndex = $derived.by(() => buildVisibleTreeIndex(
+    treeNodes,
+    expandedNodes,
+    queryExpandedNodes,
+  ));
+  let virtualTreeWindow = $derived.by(() => buildVirtualTreeWindow(
+    treeNodes,
+    expandedNodes,
+    queryExpandedNodes,
+    visibleTreeIndex,
+    treeScrollTop,
+    treeViewportHeight,
+  ));
 
   // Build tree when content changes
   $effect(() => {
@@ -151,7 +188,9 @@
       queryError = '';
       queryMatchedRoot = false;
       isAllExpanded = false;
+      resetTreeScroll();
       isLoading = false;
+      completedTreeBuildVersion = version;
       return;
     }
 
@@ -169,10 +208,13 @@
       const nodes = parsed.nodes as TreeNode[];
       treeNodes = nodes;
       treeNodeByPath = parsed.nodeIndex as Map<string, TreeNode>;
+      resetTreeScroll();
       
       // Auto-expand first level
       if (nodes.length > 0) {
-        const nextExpanded = new Set(nodes.map((node) => node.path));
+        const nextExpanded = new Set(
+          nodes.filter((node) => hasChildren(node)).map((node) => node.path),
+        );
         if (pendingMovedPath) {
           getAncestorPaths(pendingMovedPath).forEach((path) => nextExpanded.add(path));
           selectedPath = pendingMovedPath;
@@ -189,6 +231,7 @@
         expandedNodes = nextExpanded;
       }
       isAllExpanded = false;
+      completedTreeBuildVersion = version;
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
       if (version !== treeBuildVersion || content !== source) return;
@@ -201,6 +244,8 @@
       parsedPointers = {};
       hasDuplicateSourceKeys = false;
       isAllExpanded = false;
+      resetTreeScroll();
+      completedTreeBuildVersion = version;
     } finally {
       if (version === treeBuildVersion && content === source) {
         isLoading = false;
@@ -253,6 +298,143 @@
     return node.children?.length || 0;
   }
 
+  function buildVisibleTreeIndex(
+    nodes: TreeNode[],
+    expanded: Set<string>,
+    queryExpanded: Set<string>,
+  ): VisibleTreeIndex {
+    const siblingOffsets = new WeakMap<TreeNode[], Uint32Array>();
+
+    function indexSiblings(siblings: TreeNode[]): number {
+      const offsets = new Uint32Array(siblings.length + 1);
+
+      siblings.forEach((node, index) => {
+        let rowCount = 1;
+        if (
+          node.children
+          && (expanded.has(node.path) || queryExpanded.has(node.path))
+        ) {
+          rowCount += indexSiblings(node.children);
+        }
+        offsets[index + 1] = offsets[index] + rowCount;
+      });
+
+      siblingOffsets.set(siblings, offsets);
+      return offsets[offsets.length - 1];
+    }
+
+    return {
+      totalRows: indexSiblings(nodes),
+      siblingOffsets,
+    };
+  }
+
+  function findSiblingIndex(offsets: Uint32Array, rowIndex: number): number {
+    let low = 0;
+    let high = offsets.length - 1;
+
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      if (offsets[middle + 1] <= rowIndex) low = middle + 1;
+      else high = middle;
+    }
+
+    return low;
+  }
+
+  function buildVirtualTreeWindow(
+    nodes: TreeNode[],
+    expanded: Set<string>,
+    queryExpanded: Set<string>,
+    index: VisibleTreeIndex,
+    scrollTop: number,
+    viewportHeight: number,
+  ): VirtualTreeWindow {
+    const startIndex = Math.max(
+      0,
+      Math.floor(scrollTop / TREE_ROW_HEIGHT) - TREE_OVERSCAN_ROWS,
+    );
+    const endIndex = Math.ceil(
+      (scrollTop + viewportHeight) / TREE_ROW_HEIGHT,
+    ) + TREE_OVERSCAN_ROWS;
+    const rows: TreeRow[] = [];
+
+    if (expanded.size === 0 && queryExpanded.size === 0) {
+      const visibleNodes = nodes.slice(startIndex, endIndex);
+      return {
+        rows: visibleNodes.map((node, index) => ({
+          node,
+          depth: 0,
+          isLast: startIndex + index === nodes.length - 1,
+          parentLines: [],
+        })),
+        totalRows: nodes.length,
+        offset: startIndex * TREE_ROW_HEIGHT,
+      };
+    }
+
+    function collectRows(
+      siblings: TreeNode[],
+      depth: number,
+      parentLines: boolean[],
+      rangeStart: number,
+      rangeEnd: number,
+    ) {
+      const offsets = index.siblingOffsets.get(siblings);
+      if (!offsets || rangeStart >= rangeEnd || siblings.length === 0) return;
+
+      let siblingIndex = findSiblingIndex(offsets, rangeStart);
+      while (siblingIndex < siblings.length && offsets[siblingIndex] < rangeEnd) {
+        const node = siblings[siblingIndex];
+        const nodeStart = offsets[siblingIndex];
+        const nodeEnd = offsets[siblingIndex + 1];
+        const isLast = siblingIndex === siblings.length - 1;
+
+        if (nodeStart >= rangeStart && nodeStart < rangeEnd) {
+          rows.push({ node, depth, isLast, parentLines });
+        }
+
+        if (
+          node.children
+          && (expanded.has(node.path) || queryExpanded.has(node.path))
+          && nodeEnd > nodeStart + 1
+        ) {
+          collectRows(
+            node.children,
+            depth + 1,
+            depth === 0 ? [] : [...parentLines, !isLast],
+            Math.max(0, rangeStart - nodeStart - 1),
+            Math.min(nodeEnd - nodeStart - 1, rangeEnd - nodeStart - 1),
+          );
+        }
+
+        siblingIndex += 1;
+      }
+    }
+
+    collectRows(nodes, 0, [], startIndex, Math.min(endIndex, index.totalRows));
+    return {
+      rows,
+      totalRows: index.totalRows,
+      offset: startIndex * TREE_ROW_HEIGHT,
+    };
+  }
+
+  function resetTreeScroll() {
+    treeScrollTop = 0;
+    if (treeContentElement) treeContentElement.scrollTop = 0;
+  }
+
+  function handleTreeScroll(event: Event) {
+    treeScrollTop = (event.currentTarget as HTMLDivElement).scrollTop;
+  }
+
+  function syncTreeScrollPosition() {
+    tick().then(() => {
+      if (treeContentElement) treeScrollTop = treeContentElement.scrollTop;
+    });
+  }
+
   function toggleNode(node: TreeNode) {
     if (expandedNodes.has(node.path)) {
       expandedNodes.delete(node.path);
@@ -261,6 +443,7 @@
     }
     expandedNodes = new Set(expandedNodes);
     isAllExpanded = false;
+    syncTreeScrollPosition();
   }
 
   function selectNode(node: TreeNode) {
@@ -542,20 +725,21 @@
     const allPaths = new Set<string>();
     const collectPaths = (nodes: TreeNode[]) => {
       nodes.forEach(node => {
+        if (!hasChildren(node)) return;
         allPaths.add(node.path);
-        if (node.children) {
-          collectPaths(node.children);
-        }
+        collectPaths(node.children!);
       });
     };
     collectPaths(treeNodes);
     expandedNodes = allPaths;
     isAllExpanded = true;
+    syncTreeScrollPosition();
   }
 
   function collapseAll() {
     expandedNodes = new Set();
     isAllExpanded = false;
+    resetTreeScroll();
   }
 
   async function copyEntry(node: TreeNode) {
@@ -577,10 +761,6 @@
       case 'null': return '∅';
       default: return '';
     }
-  }
-
-  function isLastChild(nodes: TreeNode[], index: number): boolean {
-    return index === nodes.length - 1;
   }
 
   async function updateQueryMatches(
@@ -849,16 +1029,22 @@
   {/if}
 
   <!-- Tree Content -->
-  <div class="json-tree-content">
+  <div
+    class="json-tree-content"
+    bind:this={treeContentElement}
+    bind:clientHeight={treeViewportHeight}
+    onscroll={handleTreeScroll}
+    data-testid="tree-viewport"
+  >
     {#if isLoading}
-      <div class="json-tree-empty">
+      <div class="json-tree-empty" data-testid="tree-loading">
         <svg class="w-8 h-8 text-(--text-secondary) animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
         </svg>
         <div class="text-xs text-(--text-secondary) mt-2">{$t('treeView.parsing')}</div>
       </div>
     {:else if treeError}
-      <div class="json-tree-empty">
+      <div class="json-tree-empty" data-testid="tree-error">
         <svg class="w-12 h-12 text-(--text-secondary) opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
           <line x1="12" y1="9" x2="12" y2="13"/>
@@ -867,7 +1053,7 @@
         <div class="text-xs font-medium text-(--text-primary) mt-3 opacity-70">{$t('treeView.invalidJson')}</div>
       </div>
     {:else if treeNodes.length === 0}
-      <div class="json-tree-empty">
+      <div class="json-tree-empty" data-testid="tree-empty">
         <svg class="w-12 h-12 text-(--text-secondary) opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="2" width="6" height="6" rx="1"/>
           <rect x="3" y="14" width="6" height="6" rx="1"/>
@@ -882,7 +1068,16 @@
         <div class="text-xs text-(--text-secondary) mt-1 opacity-50">{$t('treeView.noDataHint')}</div>
       </div>
     {:else}
-      {#snippet renderNode(node: TreeNode, depth: number, isLast: boolean, parentLines: boolean[])}
+      <div
+        data-testid="tree-ready"
+        data-tree-build-version={completedTreeBuildVersion}
+        class="sr-only"
+      >Tree ready</div>
+      {#snippet renderNode(row: TreeRow)}
+        {@const node = row.node}
+        {@const depth = row.depth}
+        {@const isLast = row.isLast}
+        {@const parentLines = row.parentLines}
         {@const hasChild = hasChildren(node)}
         {@const isExpanded = expandedNodes.has(node.path) || queryExpandedNodes.has(node.path)}
         {@const isSelected = selectedPath === node.path}
@@ -1043,26 +1238,21 @@
           </div>
         </div>
 
-        {#if hasChild && isExpanded && node.children}
-          {#if depth === 0}
-            <!-- Root node children don't need parent vertical lines -->
-            {#each node.children as child, i}
-              {@render renderNode(child, depth + 1, isLastChild(node.children!, i), [])}
-            {/each}
-          {:else}
-            <!-- Non-root node children need parent vertical lines -->
-            {@const newParentLines = [...parentLines, !isLast]}
-            {#each node.children as child, i}
-              {@render renderNode(child, depth + 1, isLastChild(node.children!, i), newParentLines)}
-            {/each}
-          {/if}
-        {/if}
       {/snippet}
 
-      <div class="tree-list">
-        {#each treeNodes as node, i}
-          {@render renderNode(node, 0, isLastChild(treeNodes, i), [])}
-        {/each}
+      <div
+        class="tree-list tree-list-virtual"
+        style:height={`${virtualTreeWindow.totalRows * TREE_ROW_HEIGHT}px`}
+        data-visible-row-count={virtualTreeWindow.totalRows}
+      >
+        <div
+          class="tree-virtual-window"
+          style:transform={`translateY(${virtualTreeWindow.offset}px)`}
+        >
+          {#each virtualTreeWindow.rows as row (row.node.path)}
+            {@render renderNode(row)}
+          {/each}
+        </div>
       </div>
     {/if}
   </div>
@@ -1458,7 +1648,8 @@
   }
 
   .tree-edit-field {
-    flex-wrap: wrap;
+    position: relative;
+    flex-wrap: nowrap;
   }
 
   .tree-edit-input {
@@ -1478,9 +1669,19 @@
   }
 
   .tree-edit-error {
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    z-index: 10;
+    padding: 3px 6px;
+    border: 1px solid color-mix(in srgb, var(--error, #ef4444) 45%, var(--border));
+    border-radius: 4px;
+    background: var(--bg-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
     color: var(--error, #ef4444);
     font-size: 10px;
     white-space: nowrap;
+    pointer-events: none;
   }
 
   .tree-node-dragging {
@@ -1511,6 +1712,27 @@
   .tree-node-drop-inside .tree-node-content {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
+  :global(.tree-list-virtual) {
+    position: relative;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .tree-virtual-window {
+    position: absolute;
+    top: 0;
+    left: 6px;
+    width: max-content;
+    min-width: calc(100% - 6px);
+    will-change: transform;
+  }
+
+  :global(.tree-list-virtual .tree-node),
+  :global(.tree-list-virtual .tree-node-content) {
+    height: 22px;
+    min-height: 22px;
   }
 
 </style>

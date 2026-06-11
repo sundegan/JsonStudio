@@ -123,6 +123,8 @@ $RECYCLE.BIN/
 coverage/
 *.lcov
 .nyc_output/
+playwright-report/
+test-results/
 
 # ===========================
 # 临时文件

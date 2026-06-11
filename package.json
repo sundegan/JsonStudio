@@ -8,6 +8,8 @@
     "build": "vite build",
     "benchmark:source-model": "node benchmarks/sourceModelBenchmark.js",
     "benchmark:source-model:quick": "node benchmarks/sourceModelBenchmark.js --quick",
+    "test:e2e:performance": "playwright test e2e/large-json-performance.spec.js",
+    "test:e2e:performance:headed": "playwright test e2e/large-json-performance.spec.js --headed",
     "preview": "vite preview",
     "test": "node --test \"tests/**/*.test.js\"",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -46,6 +48,7 @@
   "devDependencies": {
     "@internationalized/date": "^3.10.1",
     "@lucide/svelte": "^0.561.0",
+    "@playwright/test": "^1.60.0",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
