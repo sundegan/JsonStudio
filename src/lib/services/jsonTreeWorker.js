@@ -1,14 +1,19 @@
 import { buildJsonTreeModel } from './jsonTreeModel.js';
+import { createPersistentWorker } from './persistentWorker.js';
 
 /**
  * @typedef {{
- *   worker: Worker
- *   reject: (reason?: unknown) => void
+ *   cancel: () => void
  * }} ActiveTask
  */
 
 /** @type {ActiveTask | null} */
 let activeTask = null;
+const treeWorker = createPersistentWorker(
+  () => new Worker(new URL('../workers/jsonTree.worker.js', import.meta.url), {
+    type: 'module',
+  }),
+);
 
 /**
  * @param {string} content
@@ -20,30 +25,20 @@ export function buildJsonTreeModelAsync(content) {
   }
 
   cancelJsonTreeBuild();
-  const worker = new Worker(new URL('../workers/jsonTree.worker.js', import.meta.url), {
-    type: 'module',
-  });
-
-  return new Promise((resolve, reject) => {
-    activeTask = { worker, reject };
-    worker.onmessage = (event) => {
-      if (activeTask?.worker === worker) activeTask = null;
-      worker.terminate();
-      if (event.data.ok) resolve(event.data.result);
-      else reject(new SyntaxError(event.data.error));
-    };
-    worker.onerror = (event) => {
-      if (activeTask?.worker === worker) activeTask = null;
-      worker.terminate();
-      reject(new Error(event.message || 'JSON tree worker failed'));
-    };
-    worker.postMessage(content);
-  });
+  const task = treeWorker.run({ content });
+  activeTask = task;
+  return task.promise
+    .catch((error) => {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      throw new SyntaxError(error instanceof Error ? error.message : String(error));
+    })
+    .finally(() => {
+      if (activeTask === task) activeTask = null;
+    });
 }
 
 export function cancelJsonTreeBuild() {
   const task = activeTask;
   activeTask = null;
-  task?.worker.terminate();
-  task?.reject(new DOMException('JSON tree build cancelled', 'AbortError'));
+  task?.cancel();
 }

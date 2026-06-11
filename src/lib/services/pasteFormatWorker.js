@@ -1,12 +1,18 @@
+import { createPersistentWorker } from './persistentWorker.js';
+
 /**
  * @typedef {{
- *   worker: Worker
- *   reject: (reason?: unknown) => void
+ *   cancel: () => void
  * }} ActiveTask
  */
 
 /** @type {ActiveTask | null} */
 let activeTask = null;
+const pasteFormatWorker = createPersistentWorker(
+  () => new Worker(new URL('../workers/pasteFormat.worker.js', import.meta.url), {
+    type: 'module',
+  }),
+);
 
 /**
  * @param {string} content
@@ -17,30 +23,15 @@ export function formatPastedJsonAsync(content, indent = 2) {
   if (typeof Worker === 'undefined') return Promise.resolve(null);
 
   cancelPasteFormat();
-  const worker = new Worker(new URL('../workers/pasteFormat.worker.js', import.meta.url), {
-    type: 'module',
-  });
-
-  return new Promise((resolve, reject) => {
-    activeTask = { worker, reject };
-    worker.onmessage = (event) => {
-      if (activeTask?.worker === worker) activeTask = null;
-      worker.terminate();
-      if (event.data.ok) resolve(event.data.result);
-      else reject(new Error(event.data.error));
-    };
-    worker.onerror = (event) => {
-      if (activeTask?.worker === worker) activeTask = null;
-      worker.terminate();
-      reject(new Error(event.message || 'Paste format worker failed'));
-    };
-    worker.postMessage({ content, indent });
+  const task = pasteFormatWorker.run({ content, indent });
+  activeTask = task;
+  return task.promise.finally(() => {
+    if (activeTask === task) activeTask = null;
   });
 }
 
 export function cancelPasteFormat() {
   const task = activeTask;
   activeTask = null;
-  task?.worker.terminate();
-  task?.reject(new DOMException('Paste formatting cancelled', 'AbortError'));
+  task?.cancel();
 }

@@ -199,8 +199,10 @@ test('log JSON detection runs in a cancellable worker after debounce', async () 
   assert.match(source, /extractLogJsonFragmentsAsync/);
   assert.match(source, /cancelLogJsonDetection\(\)/);
   assert.match(source, /setTimeout\(async \(\) =>/);
-  assert.match(workerClient, /new Worker\(/);
-  assert.match(workerClient, /AbortError/);
+  assert.match(workerClient, /createPersistentWorker\(/);
+  assert.match(workerClient, /logJsonWorker\.run\(\{ content, options \}\)/);
+  assert.match(workerClient, /task\?\.cancel\(\)/);
+  assert.match(workerClient, /new Worker\(new URL\('\.\.\/workers\/logJson\.worker\.js'/);
 });
 
 test('editor paste formatting runs outside the UI thread and discards stale results', async () => {
@@ -225,6 +227,8 @@ test('editor paste formatting runs outside the UI thread and discards stale resu
   assert.match(editorSource, /currentSourceTab\?\.content !== sourceValue/);
   assert.match(editorSource, /tabsStore\.updateTabContent\(tabId, normalized\)/);
   assert.match(editorSource, /function syncActiveTab[\s\S]*?cancelPasteFormat\(\)/);
-  assert.match(workerClient, /new Worker\(/);
-  assert.match(workerClient, /AbortError/);
+  assert.match(workerClient, /createPersistentWorker\(/);
+  assert.match(workerClient, /pasteFormatWorker\.run\(\{ content, indent \}\)/);
+  assert.match(workerClient, /task\?\.cancel\(\)/);
+  assert.match(workerClient, /new Worker\(new URL\('\.\.\/workers\/pasteFormat\.worker\.js'/);
 });
