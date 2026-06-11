@@ -22,14 +22,13 @@
   import { shortcutsStore } from '$lib/stores/shortcuts';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import AboutDialog from '$lib/components/AboutDialog.svelte';
+  import { MAX_LOG_JSON_INPUT_LENGTH } from '$lib/services/logJsonFragments.js';
   import {
-    extractLogJsonFragments,
-    getStandaloneEscapedJsonContent,
-    MAX_LOG_JSON_INPUT_LENGTH,
-  } from '$lib/services/logJsonFragments.js';
-  import { normalizePastedStandaloneJson } from '$lib/services/standaloneJsonPasteNormalize.js';
+    cancelLogJsonDetection,
+    extractLogJsonFragmentsAsync,
+  } from '$lib/services/logJsonWorker.js';
+  import { cancelPasteFormat, formatPastedJsonAsync } from '$lib/services/pasteFormatWorker.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
-  import { openClipboardContentInNewTab } from '$lib/services/clipboardTabs.js';
   import { clampPanelWidth, getDefaultPanelWidth, clampFolderWidth } from '$lib/services/panelResize.js';
   import { t } from '$lib/i18n';
 
@@ -54,7 +53,6 @@
   let toastMsg = $state('');
   let toastType = $state<'success' | 'error' | 'info'>('success');
   let statsTimer: ReturnType<typeof setTimeout> | null = null;
-  let pasteFormatTimer: ReturnType<typeof setTimeout> | null = null;
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let logJsonTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor = $state<MonacoEditor | null>(null);
@@ -68,7 +66,6 @@
   let logJsonFragments = $state<LogJsonFragment[]>([]);
   let selectedLogJsonFragmentIndex = $state(0);
   let isLogJsonPanelOpen = $state(false);
-  let isLogJsonTreeSuppressedPendingDetection = $state(false);
   let logJsonSource = $state('');
   // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
   // is saved here so it can be restored on exit. For standard JSON this stays empty,
@@ -134,7 +131,6 @@
         });
         tabsStore.openFile(normalizedContent, filePath, name);
         
-        quickDetectFormatAndSwitchLanguage(normalizedContent);  // Immediate language switch
         await updateStats(true);  // Show JSON5 toast if detected
         showToast(`Opened: ${name || 'file'}`);
       } catch (e) {
@@ -182,28 +178,20 @@
       
       // Listen for successfully formatted JSON
       unlistenFormatted = await listen<string>('clipboard-formatted', async (event) => {
-        const result = await openClipboardContentInNewTab(event.payload, {
-          tabsStore,
-          normalize: normalizeEditorPastedStandaloneJson,
-        });
+        tabsStore.addTab(event.payload);
         showToast('Clipboard content formatted');
         queueMicrotask(() => {
-          quickDetectFormatAndSwitchLanguage(result.content);
-          scheduleLogJsonDetection(result.content);
+          scheduleLogJsonDetection(event.payload);
           updateStats(true);
         });
       });
       
       // Listen for raw paste (when JSON is invalid)
       unlistenRaw = await listen<string>('clipboard-pasted-raw', async (event) => {
-        const result = await openClipboardContentInNewTab(event.payload, {
-          tabsStore,
-          normalize: normalizeEditorPastedStandaloneJson,
-        });
+        tabsStore.addTab(event.payload);
         showToast('Clipboard content pasted (invalid JSON)');
         queueMicrotask(() => {
-          quickDetectFormatAndSwitchLanguage(result.content);
-          scheduleLogJsonDetection(result.content);
+          scheduleLogJsonDetection(event.payload);
           updateStats(true);
         });
       });
@@ -353,6 +341,7 @@
     window.addEventListener('keydown', handleKeydown);
     
     return () => {
+      tabsStore.flushPersistence();
       workspaceResizeObserver?.disconnect();
       if (unlistenFormatted) unlistenFormatted();
       if (unlistenRaw) unlistenRaw();
@@ -361,6 +350,8 @@
       window.removeEventListener('keydown', handleKeydown);
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       if (logJsonTimer) clearTimeout(logJsonTimer);
+      cancelLogJsonDetection();
+      cancelPasteFormat();
       fileWatcherService.destroy();
       fileWatcherService.unwatchAll();
     };
@@ -377,7 +368,6 @@
   let prevActiveTabId = $state<string | null>(null);
   let prevActiveTabContent = $state<string>('');
   let isFirstSync = $state(true);
-  let suppressNextEditorChange = $state(false);
 
   function getActiveTabFromState(state: import('$lib/stores/tabs').TabsState) {
     return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0] || null;
@@ -387,19 +377,11 @@
     const currentTab = getActiveTabFromState(state);
     if (!currentTab) return;
 
+    cancelPasteFormat();
     content = currentTab.content;
     stats = currentTab.stats;
 
-    const editorValue = monacoEditor?.getValue();
-    if (editorValue !== undefined && editorValue !== currentTab.content) {
-      suppressNextEditorChange = true;
-      monacoEditor?.setValue(currentTab.content);
-      queueMicrotask(() => {
-        suppressNextEditorChange = false;
-      });
-    }
-    restoreEditorLanguage(currentTab.content, currentTab.stats);
-    scheduleLogJsonDetection(currentTab.content, { eager: true });
+    scheduleLogJsonDetection(currentTab.content);
   }
   
   // Handle file watching for active tab
@@ -443,6 +425,7 @@
       const newActiveTabContent = currentTab?.content || '';
       
       tabsState = newTabsState;
+      monacoEditor?.retainModels(newTabsState.tabs.map(tab => tab.id));
       
       // For the first sync, initialize prevActiveTabId and sync content
       if (isFirstSync) {
@@ -738,23 +721,11 @@
       clearTimeout(logJsonTimer);
       logJsonTimer = null;
     }
-    isLogJsonTreeSuppressedPendingDetection = false;
+    cancelLogJsonDetection();
     logJsonFragments = [];
     logJsonSource = '';
     selectedLogJsonFragmentIndex = 0;
     isLogJsonPanelOpen = false;
-  }
-
-  function hasMixedLogJsonContent(value: string) {
-    if (!value.trim() || value.length > MAX_LOG_JSON_INPUT_LENGTH || getStandaloneEscapedJsonContent(value)) {
-      return false;
-    }
-    // Fast-path probe used by tab switches: sample at most one candidate to decide
-    // whether we should immediately switch the UI into "log fragments" mode.
-    const fragments = extractLogJsonFragments(value, { indent: tabSize, maxFragments: 1 }) as LogJsonFragment[];
-    const isWholeDocumentJson =
-      fragments.length === 1 && fragments[0].raw.trim() === value.trim();
-    return fragments.length > 0 && !isWholeDocumentJson;
   }
 
   function applyLogJsonDetectionResult(value: string, fragments: LogJsonFragment[]) {
@@ -773,39 +744,27 @@
     logJsonSource = value;
     selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
     isLogJsonPanelOpen = true;
-    monacoEditor?.setLanguage('json5');
   }
 
-  function scheduleLogJsonDetection(value: string, options?: { eager?: boolean }) {
+  function scheduleLogJsonDetection(value: string) {
     if (logJsonTimer) clearTimeout(logJsonTimer);
+    cancelLogJsonDetection();
 
-    if (
-      !value.trim() ||
-      value.length > MAX_LOG_JSON_INPUT_LENGTH ||
-      getStandaloneEscapedJsonContent(value)
-    ) {
+    if (!value.trim() || value.length > MAX_LOG_JSON_INPUT_LENGTH) {
       resetLogJsonFragments();
       return;
     }
 
-    // Suppress tree view immediately so tab switches don't flash the tree pane
-    // before the debounced full extraction finishes.
-    isLogJsonTreeSuppressedPendingDetection = hasMixedLogJsonContent(value);
-    if (options?.eager) {
-      // Eager mode is used on tab switch to show/hide the bottom fragments panel
-      // instantly. Debounced detection still runs afterwards as the source of truth.
-      const eagerFragments = extractLogJsonFragments(value, { indent: tabSize }) as LogJsonFragment[];
-      applyLogJsonDetectionResult(value, eagerFragments);
-    }
-
-    logJsonTimer = setTimeout(() => {
-      if (content !== value) {
-        isLogJsonTreeSuppressedPendingDetection = false;
-        return;
+    logJsonTimer = setTimeout(async () => {
+      try {
+        const fragments = await extractLogJsonFragmentsAsync(value, {
+          indent: tabSize,
+        }) as LogJsonFragment[];
+        if (content === value) applyLogJsonDetectionResult(value, fragments);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (content === value) resetLogJsonFragments();
       }
-      const fragments = extractLogJsonFragments(value, { indent: tabSize }) as LogJsonFragment[];
-      isLogJsonTreeSuppressedPendingDetection = false;
-      applyLogJsonDetectionResult(value, fragments);
     }, 400);
   }
 
@@ -821,28 +780,6 @@
       console.error('Failed to copy log JSON fragment:', error);
       showToast($t('toast.logJsonCopyFailed'), 'error');
     }
-  }
-
-  function replaceActiveEditorContent(value: string) {
-    const currentTab = $activeTab;
-    content = value;
-    monacoEditor?.setValue(value);
-    if (currentTab) {
-      tabsStore.updateTabContent(currentTab.id, value);
-    }
-    scheduleLogJsonDetection(value);
-  }
-
-  async function normalizeEditorPastedStandaloneJson(sourceValue: string) {
-    const trimmed = sourceValue.trim();
-    if (!trimmed) return null;
-
-    const { formatJsonText } = await import('$lib/services/json5Format.js');
-    return await normalizePastedStandaloneJson(sourceValue, {
-      indent: tabSize,
-      formatJson: formatJsonText,
-      getStandaloneEscapedJsonContent,
-    });
   }
 
   function startTreeResize(event: PointerEvent) {
@@ -952,11 +889,6 @@
   function handleEditorChange(newValue: string) {
     const currentTab = $activeTab;
     if (!currentTab) return;
-    if (suppressNextEditorChange) {
-      suppressNextEditorChange = false;
-      return;
-    }
-    
     content = newValue;
     tabsStore.updateTabContent(currentTab.id, newValue);
 
@@ -972,11 +904,8 @@
       };
       tabsStore.updateTabStats(currentTab.id, stats);
       resetLogJsonFragments();
-      monacoEditor?.setLanguage('json');
       return;
     }
-    
-    quickDetectFormatAndSwitchLanguage(newValue);
     
     statsTimer = setTimeout(updateStats, 300);
     scheduleLogJsonDetection(newValue);
@@ -1010,95 +939,34 @@
     }
   }
 
-  // Paste auto-format: only format standard JSON. JSON5 content must stay
-  // untouched to preserve comments, Infinity, unquoted keys, and quote style.
-  function handleEditorPaste() {
-    if (pasteFormatTimer) clearTimeout(pasteFormatTimer);
-    pasteFormatTimer = setTimeout(async () => {
-      if (!content.trim()) {
+  async function handleEditorPaste() {
+    const sourceTab = $activeTab;
+    if (!sourceTab) return;
+    const tabId = sourceTab.id;
+    const sourceValue = content;
+    if (!sourceValue.trim()) return;
+
+    try {
+      const normalized = await formatPastedJsonAsync(sourceValue, tabSize);
+      if (!normalized || normalized === sourceValue) return;
+      const currentSourceTab = tabsState.tabs.find(tab => tab.id === tabId);
+      if (
+        $activeTab?.id !== tabId ||
+        currentSourceTab?.content !== sourceValue ||
+        content !== sourceValue ||
+        monacoEditor?.getValue() !== sourceValue
+      ) {
         return;
       }
-      const sourceValue = content;
-      try {
-        const normalized = await normalizeEditorPastedStandaloneJson(sourceValue);
-        if (normalized && monacoEditor?.getValue() === sourceValue) {
-          replaceActiveEditorContent(normalized);
-          await updateStats();
-          return;
-        }
-      } catch {
-      }
 
-      if (monacoEditor?.getValue() === sourceValue) {
-        await updateStats(true);
-      }
-    }, 100);
-  }
-
-  // Detect whether the editor content is JSON or JSON5 and switch Monaco's
-  // language mode accordingly. This is called on every content change so
-  // Monaco's built-in JSON validator does not flag valid JSON5 as errors.
-  //
-  // - JSON  → 'json' mode   (Monaco validation active — shows real errors)
-  // - JSON5 → 'json5' mode  (custom tokenizer, no validation — we rely on backend)
-  // - Invalid → 'json' mode (Monaco shows errors + our repair banner)
-  function restoreEditorLanguage(text: string, knownStats?: JsonStats | null) {
-    if (!text.trim()) {
-      monacoEditor?.setLanguage('json');
-      return;
-    }
-
-    if (knownStats?.format_type === 'JSON5') {
-      monacoEditor?.setLanguage('json5');
-      return;
-    }
-
-    if (knownStats?.format_type === 'JSON') {
-      monacoEditor?.setLanguage('json');
-      return;
-    }
-
-    const fragments = extractLogJsonFragments(text, { indent: tabSize, maxFragments: 1 }) as LogJsonFragment[];
-    const isWholeDocumentJson =
-      fragments.length === 1 && fragments[0].raw.trim() === text.trim();
-    if (fragments.length > 0 && !isWholeDocumentJson) {
-      monacoEditor?.setLanguage('json5');
-      return;
-    }
-
-    quickDetectFormatAndSwitchLanguage(text);
-  }
-
-  // Quickly detect format and switch language mode to prevent validation errors
-  async function quickDetectFormatAndSwitchLanguage(text: string) {
-    if (!text.trim()) {
-      monacoEditor?.setLanguage('json');  // Reset to JSON for empty content
-      return;
-    }
-    
-    try {
-      JSON.parse(text);
-      monacoEditor?.setLanguage('json');
-      return;
-    } catch {
-      // If standard JSON fails, check if it's valid JSON5
-      try {
-        const { getJsonStats } = await import('$lib/services/json');
-        const result = await getJsonStats(text);
-        if (content !== text) {
-          return;
-        }
-        
-        if (result.valid && result.format_type === 'JSON5') {
-          monacoEditor?.setLanguage('json5');
-        } else {
-          monacoEditor?.setLanguage('json');
-        }
-      } catch {
-        if (content !== text) {
-          return;
-        }
-        monacoEditor?.setLanguage('json');
+      content = normalized;
+      monacoEditor.setValue(normalized);
+      tabsStore.updateTabContent(tabId, normalized);
+      scheduleLogJsonDetection(normalized);
+      await updateStats();
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        console.error('Failed to format pasted JSON:', error);
       }
     }
   }
@@ -1107,22 +975,24 @@
     if (!content.trim()) return;
     const currentTab = $activeTab;
     if (!currentTab) return;
+    const tabId = currentTab.id;
+    const source = content;
     
     try {
-      stats = await getJsonStats(content);
-      tabsStore.updateTabStats(currentTab.id, stats);
+      const result = await getJsonStats(source);
+      const sourceTab = tabsState.tabs.find(tab => tab.id === tabId);
+      if (!sourceTab || sourceTab.content !== source) return;
+
+      tabsStore.updateTabStats(tabId, result);
+      if ($activeTab?.id !== tabId || content !== source) return;
+
+      stats = result;
       
       // Show toast when JSON5 format is detected (only if requested)
-      if (showJson5Toast && stats.format_type === 'JSON5') {
+      if (showJson5Toast && result.format_type === 'JSON5') {
         showToast($t('toast.json5Detected'), 'info');
       }
       
-      // Switch language mode based on format (confirmed by backend)
-      if (stats.format_type === 'JSON5') {
-        monacoEditor?.setLanguage('json5');
-      } else if (stats.format_type === 'JSON') {
-        monacoEditor?.setLanguage('json');
-      }
     } catch (e) {}
   }
 
@@ -1292,8 +1162,9 @@
               <MonacoEditor
                 bind:this={monacoEditor}
                 value={content}
+                modelKey={tabsState.activeTabId ?? ''}
                 theme={monacoTheme}
-                language="json"
+                language="json5"
                 fontSize={fontSize}
                 lineHeight={lineHeight}
                 tabSize={tabSize}
@@ -1322,7 +1193,7 @@
     </div>
 
     <!-- Unified Right Section & Toggler -->
-    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel && !isLogJsonTreeSuppressedPendingDetection}
+    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel}
       
       {#if showTreeView}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->

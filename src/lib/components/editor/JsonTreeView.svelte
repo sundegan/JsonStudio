@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { createEventDispatcher, tick } from 'svelte';
+  import { createEventDispatcher, onDestroy, tick } from 'svelte';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
-  import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
-  import { getJsonSourceValue, isJsonSourceNode } from '$lib/services/jsonSourceModel.js';
+  import { buildJsonTreeModelAsync, cancelJsonTreeBuild } from '$lib/services/jsonTreeWorker.js';
   import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
@@ -16,7 +15,7 @@
     type: 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
     path: string;
     parentType: 'object' | 'array';
-    siblingKeys: string[];
+    parentKeys: string[];
     children?: TreeNode[];
     startOffset: number;
     endOffset: number;
@@ -102,15 +101,35 @@
   let suppressNextTreeClick = $state(false);
   let treeNodeByPath = $state<Map<string, TreeNode>>(new Map());
   let duplicateKeysDialogOpen = $state(false);
+  const TREE_BUILD_DEBOUNCE_MS = 150;
+  let treeBuildTimer: ReturnType<typeof setTimeout> | null = null;
+  let treeBuildVersion = 0;
 
   // Build tree when content changes
   $effect(() => {
     if (content !== previousContent) {
       previousContent = content;
       treeEdit = null;
-      buildTree();
+      scheduleTreeBuild(content);
     }
   });
+
+  onDestroy(() => {
+    if (treeBuildTimer) clearTimeout(treeBuildTimer);
+    cancelJsonTreeBuild();
+  });
+
+  function scheduleTreeBuild(source: string) {
+    if (treeBuildTimer) clearTimeout(treeBuildTimer);
+    cancelJsonTreeBuild();
+    isLoading = false;
+    const version = ++treeBuildVersion;
+    treeBuildTimer = setTimeout(() => {
+      treeBuildTimer = null;
+      if (version !== treeBuildVersion || content !== source) return;
+      void buildTree(source, version);
+    }, TREE_BUILD_DEBOUNCE_MS);
+  }
 
   $effect(() => {
     const query = searchQuery.trim();
@@ -119,8 +138,8 @@
     void updateQueryMatches(queryMode, query, data, nodes);
   });
 
-  async function buildTree() {
-    if (!content.trim()) {
+  async function buildTree(source: string, version: number) {
+    if (!source.trim()) {
       treeNodes = [];
       treeNodeByPath = new Map();
       pendingMovedPath = null;
@@ -132,6 +151,7 @@
       queryError = '';
       queryMatchedRoot = false;
       isAllExpanded = false;
+      isLoading = false;
       return;
     }
 
@@ -139,20 +159,20 @@
     treeError = '';
 
     try {
-      const parsed = parseJsonDocument(content);
+      const parsed = await buildJsonTreeModelAsync(source);
+      if (version !== treeBuildVersion || content !== source) return;
 
-      rootData = parsed.data;
+      rootData = parsed.rootData;
       parsedPointers = parsed.pointers;
-      parsedDialect = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
-      const sourceModel = 'sourceModel' in parsed ? parsed.sourceModel : null;
-      hasDuplicateSourceKeys = Boolean(sourceModel?.hasDuplicateKeys);
-      const nodes = parseToTree(sourceModel ?? parsed.data, parsed.pointers, '');
+      parsedDialect = parsed.dialect;
+      hasDuplicateSourceKeys = parsed.hasDuplicateSourceKeys;
+      const nodes = parsed.nodes as TreeNode[];
       treeNodes = nodes;
-      treeNodeByPath = indexTreeNodes(nodes);
+      treeNodeByPath = parsed.nodeIndex as Map<string, TreeNode>;
       
       // Auto-expand first level
       if (nodes.length > 0) {
-        const nextExpanded = new Set(nodes.map(n => n.path));
+        const nextExpanded = new Set(nodes.map((node) => node.path));
         if (pendingMovedPath) {
           getAncestorPaths(pendingMovedPath).forEach((path) => nextExpanded.add(path));
           selectedPath = pendingMovedPath;
@@ -170,6 +190,8 @@
       }
       isAllExpanded = false;
     } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      if (version !== treeBuildVersion || content !== source) return;
       treeError = e instanceof Error ? e.message : 'Failed to parse JSON';
       treeNodes = [];
       treeNodeByPath = new Map();
@@ -180,125 +202,10 @@
       hasDuplicateSourceKeys = false;
       isAllExpanded = false;
     } finally {
-      isLoading = false;
-    }
-  }
-
-  function parseToTree(data: unknown, pointers: any, parentPath: string): TreeNode[] {
-    const nodes: TreeNode[] = [];
-
-    if (data === null) {
-      return [];
-    }
-
-    if (isJsonSourceNode(data)) {
-      if (data.kind === 'array') {
-        data.items.forEach((item, index) => {
-          const path = parentPath ? `${parentPath}/${index}` : `/${index}`;
-          const node: TreeNode = {
-            key: `[${index}]`,
-            value: item.value,
-            type: getValueType(item),
-            path,
-            parentType: 'array',
-            siblingKeys: [],
-            startOffset: item.start,
-            endOffset: item.end,
-          };
-
-          if (node.type === 'object' || node.type === 'array') {
-            node.children = parseToTree(item, pointers, path);
-          }
-
-          nodes.push(node);
-        });
-      } else if (data.kind === 'object') {
-        const keys = data.entries.map((entry) => entry.key);
-        data.entries.forEach((entry, entryIndex) => {
-          const path = childPathForSourceEntry(parentPath, entry.key, entry.occurrence ?? 0);
-          const node: TreeNode = {
-            key: entry.key,
-            value: entry.value.value,
-            type: getValueType(entry.value),
-            path,
-            parentType: 'object',
-            siblingKeys: keys.filter((_, index) => index !== entryIndex),
-            startOffset: entry.value.start,
-            endOffset: entry.value.end,
-          };
-
-          if (node.type === 'object' || node.type === 'array') {
-            node.children = parseToTree(entry.value, pointers, path);
-          }
-
-          nodes.push(node);
-        });
+      if (version === treeBuildVersion && content === source) {
+        isLoading = false;
       }
-
-      return nodes;
     }
-
-    if (Array.isArray(data)) {
-      data.forEach((item, index) => {
-        const path = parentPath ? `${parentPath}/${index}` : `/${index}`;
-        const pointerInfo = pointers[path];
-        
-        const node: TreeNode = {
-          key: `[${index}]`,
-          value: item,
-          type: getValueType(item),
-          path,
-          parentType: 'array',
-          siblingKeys: [],
-          startOffset: pointerInfo?.valueStart ?? 0,
-          endOffset: pointerInfo?.valueEnd ?? 0,
-        };
-
-        if (node.type === 'object' || node.type === 'array') {
-          node.children = parseToTree(item, pointers, path);
-        }
-
-        nodes.push(node);
-      });
-    } else if (typeof data === 'object' && data !== null) {
-      const entries = Object.entries(data);
-      const keys = entries.map(([key]) => key);
-      entries.forEach(([key, value]) => {
-        const path = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
-        const pointerInfo = pointers[path];
-
-        const node: TreeNode = {
-          key,
-          value,
-          type: getValueType(value),
-          path,
-          parentType: 'object',
-          siblingKeys: keys.filter((entry) => entry !== key),
-          startOffset: pointerInfo?.valueStart ?? 0,
-          endOffset: pointerInfo?.valueEnd ?? 0,
-        };
-
-        if (node.type === 'object' || node.type === 'array') {
-          node.children = parseToTree(value, pointers, path);
-        }
-
-        nodes.push(node);
-      });
-    }
-
-    return nodes;
-  }
-
-  function indexTreeNodes(nodes: TreeNode[]) {
-    const index = new Map<string, TreeNode>();
-    const visit = (items: TreeNode[]) => {
-      for (const item of items) {
-        index.set(item.path, item);
-        if (item.children) visit(item.children);
-      }
-    };
-    visit(nodes);
-    return index;
   }
 
   function createTreeKeyEditState(path: string): TreeEditState | null {
@@ -313,29 +220,9 @@
     };
   }
 
-  function encodePointerSegment(segment: string): string {
-    return segment.replace(/~/g, '~0').replace(/\//g, '~1');
-  }
-
-  function childPathForSourceEntry(parentPath: string, key: string, occurrence: number): string {
-    const basePath = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
-    return occurrence === 0 ? basePath : `${basePath}~${occurrence + 1}`;
-  }
-
   function getAncestorPaths(path: string): string[] {
     const segments = path.split('/').slice(1);
     return segments.slice(0, -1).map((_, index) => `/${segments.slice(0, index + 1).join('/')}`);
-  }
-
-  function getValueType(value: unknown): TreeNode['type'] {
-    value = getJsonSourceValue(value);
-    if (value === null) return 'null';
-    if (Array.isArray(value)) return 'array';
-    if (typeof value === 'object') return 'object';
-    if (typeof value === 'string') return 'string';
-    if (typeof value === 'number') return 'number';
-    if (typeof value === 'boolean') return 'boolean';
-    return 'string';
   }
 
   function formatValue(node: TreeNode): string {
@@ -622,7 +509,7 @@
     if (!treeEdit || treeEdit.path !== node.path) return;
 
     const result = treeEdit.kind === 'key'
-      ? createTreeKeyEdit(parsedPointers, node.path, treeEdit.input, node.siblingKeys)
+      ? createTreeKeyEdit(parsedPointers, node.path, treeEdit.input, node.parentKeys, node.key)
       : createGridValueEdit(
           content,
           parsedPointers,
