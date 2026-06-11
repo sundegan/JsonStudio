@@ -141,6 +141,38 @@ test('tree parsing runs in a cancellable worker instead of the Svelte UI compone
   assert.match(workerClient, /AbortError/);
 });
 
+test('tree rendering virtualizes expanded rows inside the scroll viewport', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /const TREE_ROW_HEIGHT = 22/);
+  assert.match(source, /const TREE_OVERSCAN_ROWS = 12/);
+  assert.match(source, /let treeNodes = \$state\.raw/);
+  assert.match(source, /function buildVisibleTreeIndex/);
+  assert.match(source, /new WeakMap<TreeNode\[\], Uint32Array>/);
+  assert.match(source, /function findSiblingIndex/);
+  assert.match(source, /function buildVirtualTreeWindow/);
+  assert.match(source, /virtualTreeWindow = \$derived/);
+  assert.match(source, /nodes\.slice\(startIndex, endIndex\)/);
+  assert.match(source, /if \(!hasChildren\(node\)\) return;/);
+  assert.match(source, /data-testid="tree-viewport"/);
+  assert.match(source, /class="tree-virtual-window"/);
+  assert.doesNotMatch(source, /tree-show-more/);
+});
+
+test('tree edit errors use an overlay without changing the virtual row height', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /\.tree-edit-error \{[\s\S]*position: absolute;/);
+  assert.match(source, /\.tree-edit-field \{[\s\S]*flex-wrap: nowrap;/);
+  assert.match(source, /\.tree-list-virtual \.tree-node-content\) \{[\s\S]*height: 22px;/);
+});
+
 test('tree view disables editing and drag with duplicate-key documents', () => {
   const source = readFileSync(
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),

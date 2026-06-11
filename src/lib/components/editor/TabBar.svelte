@@ -316,6 +316,7 @@
         aria-selected={tab.id === activeTabId}
         tabindex="0"
         data-tab-id={tab.id}
+        data-testid={`tab-${tab.id}`}
       >
         <!-- Left spacer to balance the right actions, ensuring perfect centering -->
         <div class="w-4 flex-shrink-0"></div>

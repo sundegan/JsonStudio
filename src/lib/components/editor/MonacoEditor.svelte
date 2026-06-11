@@ -134,7 +134,7 @@
   const MAX_CACHED_MODELS = 5;
   const modelsByKey = new Map<string, Monaco.editor.ITextModel>();
   let retainedModelKeys = new Set<string>();
-  let activeModelKey = '';
+  let activeModelKey = $state('');
   let isSwitchingModel = false;
   let externalSelectionDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
   let editorDomNode: HTMLElement | null = null;
@@ -332,6 +332,9 @@
       lineNumbers: lineNumbers ? 'on' : 'off',
       wordWrap,
       automaticLayout,
+      largeFileOptimizations: true,
+      maxTokenizationLineLength: 10_000,
+      stopRenderingLineAfter: 10_000,
       fontSize,
       lineHeight,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
@@ -546,7 +549,12 @@
   }
 </script>
 
-<div bind:this={container} class="w-full h-full min-h-[200px]"></div>
+<div
+  bind:this={container}
+  class="w-full h-full min-h-[200px]"
+  data-testid="json-editor"
+  data-active-model-key={activeModelKey}
+></div>
 
 <style>
   :global(.json-external-selection) {

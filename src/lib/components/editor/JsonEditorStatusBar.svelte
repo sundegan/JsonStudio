@@ -66,7 +66,9 @@
     {/if}
 
     <div class="w-px h-3.5 bg-(--divider-strong)"></div>
-    <span class="text-(--text-secondary)">{content ? content.split('\n').length : 0} {$t('status.lines')}</span>
+    <span class="text-(--text-secondary)" data-testid="editor-line-count">
+      {content ? content.split('\n').length : 0} {$t('status.lines')}
+    </span>
 
     {#if stats?.format_type}
       <div class="w-px h-3.5 bg-(--divider-strong)"></div>
