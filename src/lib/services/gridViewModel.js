@@ -91,7 +91,7 @@ export function buildGridRoot(value, path = '/', showHeader = true) {
         showHeader: false,
         columns: ['key', 'value'],
         rows: value.entries.map((entry) => {
-          const pathForValue = childPathForSourceEntry(path, entry.key, entry.occurrence);
+          const pathForValue = childPathForSourceEntry(path, entry.key, entry.occurrence ?? 0);
           return createRow(pathForValue, { [entry.key]: entry.value.value }, [
             createCell(entry.key, pathForValue),
             createCell(entry.value, pathForValue),
@@ -261,7 +261,7 @@ export function describeExpandableGridValue(label, value) {
  */
 function childPathForSourceEntry(parentPath, key, occurrence) {
   const basePath = childPath(parentPath, key);
-  return occurrence === 0 ? basePath : `${basePath}#${occurrence + 1}`;
+  return occurrence === 0 ? basePath : `${basePath}~${occurrence + 1}`;
 }
 
 /**

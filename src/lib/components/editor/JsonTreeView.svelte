@@ -215,7 +215,7 @@
       } else if (data.kind === 'object') {
         const keys = data.entries.map((entry) => entry.key);
         data.entries.forEach((entry, entryIndex) => {
-          const path = childPathForSourceEntry(parentPath, entry.key, entry.occurrence);
+          const path = childPathForSourceEntry(parentPath, entry.key, entry.occurrence ?? 0);
           const node: TreeNode = {
             key: entry.key,
             value: entry.value.value,
@@ -250,8 +250,8 @@
           path,
           parentType: 'array',
           siblingKeys: [],
-          startOffset: pointerInfo?.value?.pos ?? 0,
-          endOffset: pointerInfo?.valueEnd?.pos ?? 0,
+          startOffset: pointerInfo?.valueStart ?? 0,
+          endOffset: pointerInfo?.valueEnd ?? 0,
         };
 
         if (node.type === 'object' || node.type === 'array') {
@@ -274,8 +274,8 @@
           path,
           parentType: 'object',
           siblingKeys: keys.filter((entry) => entry !== key),
-          startOffset: pointerInfo?.value?.pos ?? 0,
-          endOffset: pointerInfo?.valueEnd?.pos ?? 0,
+          startOffset: pointerInfo?.valueStart ?? 0,
+          endOffset: pointerInfo?.valueEnd ?? 0,
         };
 
         if (node.type === 'object' || node.type === 'array') {
@@ -319,7 +319,7 @@
 
   function childPathForSourceEntry(parentPath: string, key: string, occurrence: number): string {
     const basePath = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
-    return occurrence === 0 ? basePath : `${basePath}#${occurrence + 1}`;
+    return occurrence === 0 ? basePath : `${basePath}~${occurrence + 1}`;
   }
 
   function getAncestorPaths(path: string): string[] {
