@@ -4,8 +4,10 @@
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
   import { parseJsonDocument } from '$lib/services/jsonDocumentParse.js';
-  import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable } from '$lib/services/treeEdit.js';
+  import { getJsonSourceValue, isJsonSourceNode } from '$lib/services/jsonSourceModel.js';
+  import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
 
   type TreeNode = {
@@ -74,6 +76,7 @@
   let previousContent = $state('');
   let parsedPointers = $state<Record<string, any>>({});
   let parsedDialect = $state<'JSON' | 'JSON5'>('JSON');
+  let hasDuplicateSourceKeys = $state(false);
   let rootData = $state<unknown>(null);
   let selectedPath = $state<string | null>(null);
   let searchQuery = $state('');
@@ -98,6 +101,7 @@
   let isPointerDragging = $state(false);
   let suppressNextTreeClick = $state(false);
   let treeNodeByPath = $state<Map<string, TreeNode>>(new Map());
+  let duplicateKeysDialogOpen = $state(false);
 
   // Build tree when content changes
   $effect(() => {
@@ -124,6 +128,7 @@
       treeError = '';
       rootData = null;
       parsedPointers = {};
+      hasDuplicateSourceKeys = false;
       queryError = '';
       queryMatchedRoot = false;
       isAllExpanded = false;
@@ -139,7 +144,9 @@
       rootData = parsed.data;
       parsedPointers = parsed.pointers;
       parsedDialect = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
-      const nodes = parseToTree(parsed.data, parsed.pointers, '');
+      const sourceModel = 'sourceModel' in parsed ? parsed.sourceModel : null;
+      hasDuplicateSourceKeys = Boolean(sourceModel?.hasDuplicateKeys);
+      const nodes = parseToTree(sourceModel ?? parsed.data, parsed.pointers, '');
       treeNodes = nodes;
       treeNodeByPath = indexTreeNodes(nodes);
       
@@ -170,6 +177,7 @@
       pendingEditKeyPath = null;
       rootData = null;
       parsedPointers = {};
+      hasDuplicateSourceKeys = false;
       isAllExpanded = false;
     } finally {
       isLoading = false;
@@ -181,6 +189,53 @@
 
     if (data === null) {
       return [];
+    }
+
+    if (isJsonSourceNode(data)) {
+      if (data.kind === 'array') {
+        data.items.forEach((item, index) => {
+          const path = parentPath ? `${parentPath}/${index}` : `/${index}`;
+          const node: TreeNode = {
+            key: `[${index}]`,
+            value: item.value,
+            type: getValueType(item),
+            path,
+            parentType: 'array',
+            siblingKeys: [],
+            startOffset: item.start,
+            endOffset: item.end,
+          };
+
+          if (node.type === 'object' || node.type === 'array') {
+            node.children = parseToTree(item, pointers, path);
+          }
+
+          nodes.push(node);
+        });
+      } else if (data.kind === 'object') {
+        const keys = data.entries.map((entry) => entry.key);
+        data.entries.forEach((entry, entryIndex) => {
+          const path = childPathForSourceEntry(parentPath, entry.key, entry.occurrence);
+          const node: TreeNode = {
+            key: entry.key,
+            value: entry.value.value,
+            type: getValueType(entry.value),
+            path,
+            parentType: 'object',
+            siblingKeys: keys.filter((_, index) => index !== entryIndex),
+            startOffset: entry.value.start,
+            endOffset: entry.value.end,
+          };
+
+          if (node.type === 'object' || node.type === 'array') {
+            node.children = parseToTree(entry.value, pointers, path);
+          }
+
+          nodes.push(node);
+        });
+      }
+
+      return nodes;
     }
 
     if (Array.isArray(data)) {
@@ -262,12 +317,18 @@
     return segment.replace(/~/g, '~0').replace(/\//g, '~1');
   }
 
+  function childPathForSourceEntry(parentPath: string, key: string, occurrence: number): string {
+    const basePath = parentPath ? `${parentPath}/${encodePointerSegment(key)}` : `/${encodePointerSegment(key)}`;
+    return occurrence === 0 ? basePath : `${basePath}#${occurrence + 1}`;
+  }
+
   function getAncestorPaths(path: string): string[] {
     const segments = path.split('/').slice(1);
     return segments.slice(0, -1).map((_, index) => `/${segments.slice(0, index + 1).join('/')}`);
   }
 
   function getValueType(value: unknown): TreeNode['type'] {
+    value = getJsonSourceValue(value);
     if (value === null) return 'null';
     if (Array.isArray(value)) return 'array';
     if (typeof value === 'object') return 'object';
@@ -354,11 +415,20 @@
   }
 
   function isTreeValueEditable(node: TreeNode) {
-    return node.type !== 'object' && node.type !== 'array';
+    return !hasDuplicateSourceKeys && node.type !== 'object' && node.type !== 'array';
+  }
+
+  function isTreeKeyEditable(node: TreeNode) {
+    return !hasDuplicateSourceKeys && isEditableTreeKey(node);
+  }
+
+  function canAttemptTreeKeyEdit(node: TreeNode) {
+    return isEditableTreeKey(node);
   }
 
   function isTreeDragEnabled() {
     if (parsedDialect !== 'JSON') return false;
+    if (hasDuplicateSourceKeys) return false;
     return !treeError && rootData !== null && searchQuery.trim() === '';
   }
 
@@ -383,6 +453,10 @@
 
   function showTreeDragError(errorKey: string) {
     dispatch('toast', { message: $t(errorKey) });
+  }
+
+  function showDuplicateKeysReadOnly() {
+    duplicateKeysDialogOpen = true;
   }
 
   function getTreePointerDropTarget(clientX: number, clientY: number) {
@@ -415,6 +489,10 @@
   }
 
   function moveTreeNode(sourcePath: string, targetPath: string, position: TreeDropPosition) {
+    if (hasDuplicateSourceKeys) {
+      showDuplicateKeysReadOnly();
+      return;
+    }
     if (!isTreeDragEnabled()) {
       showTreeDragError('treeView.dragJsonOnly');
       return;
@@ -463,7 +541,8 @@
 
     event.preventDefault();
     if (!isTreeDragEnabled()) {
-      showTreeDragError('treeView.dragJsonOnly');
+      if (hasDuplicateSourceKeys) showDuplicateKeysReadOnly();
+      else showTreeDragError('treeView.dragJsonOnly');
       clearTreeDragState();
       return;
     }
@@ -502,6 +581,11 @@
   }
 
   function beginTreeEdit(event: MouseEvent, node: TreeNode, kind: TreeEditState['kind']) {
+    if (hasDuplicateSourceKeys) {
+      event.stopPropagation();
+      showDuplicateKeysReadOnly();
+      return;
+    }
     if (kind === 'key' && !isTreeKeyEditable(node)) return;
     if (kind === 'value' && !isTreeValueEditable(node)) return;
     event.stopPropagation();
@@ -1007,9 +1091,10 @@
                   {/if}
                 </span>
               {:else}
-                {#if isTreeKeyEditable(node)}
+                {#if canAttemptTreeKeyEdit(node)}
                   <span
-                    class="tree-edit-target tree-edit-target--editable"
+                    class="tree-edit-target"
+                    class:tree-edit-target--editable={isTreeKeyEditable(node)}
                     ondblclick={(e) => beginTreeEdit(e, node, 'key')}
                     role="button"
                     tabindex="-1"
@@ -1095,6 +1180,16 @@
     {/if}
   </div>
 </div>
+
+<ConfirmDialog
+  bind:isOpen={duplicateKeysDialogOpen}
+  title={$t('treeView.duplicateKeysReadOnlyTitle')}
+  message={$t('treeView.duplicateKeysReadOnly')}
+  confirmText={$t('common.ok')}
+  showCancel={false}
+  onConfirm={() => { duplicateKeysDialogOpen = false; }}
+  onCancel={() => { duplicateKeysDialogOpen = false; }}
+/>
 
 <style>
   /* Query Toolbar */

@@ -553,34 +553,6 @@
     margin-top: 1px;
   }
 
-  /* ── Root Label ──────────────────────────────────────────────────── */
-  .root-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 10px 6px;
-    flex-shrink: 0;
-  }
-
-  .root-icon {
-    width: 12px;
-    height: 12px;
-    color: var(--accent);
-    flex-shrink: 0;
-    opacity: 0.7;
-  }
-
-  .root-name {
-    font-size: 10.5px;
-    font-weight: 700;
-    color: var(--text-tertiary);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   /* ── Tree Scroll ─────────────────────────────────────────────────── */
   .tree-scroll {
     flex: 1;
