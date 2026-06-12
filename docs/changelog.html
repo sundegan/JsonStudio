@@ -105,6 +105,47 @@
   <div class="changelog-container">
     <div class="timeline">
       
+      <!-- v1.3.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.3.0</span>
+          <span class="timeline-date">2026-06-13</span>
+        </div>
+        <div class="timeline-body">
+          <h3>Added</h3>
+          <ul>
+            <li><strong>Grid View</strong>: added a spreadsheet-like view for JSON arrays and objects, with inline editing, selection handling, export support, and editor-linked highlighting.</li>
+            <li><strong>Tree View editing</strong>: added structured editing for keys and values, drag-and-drop reordering, value-only copy actions, and safeguards for JSON that contains duplicate keys.</li>
+            <li><strong>Folder sidebar</strong>: added a sidebar for opening folders, browsing JSON/JSON5 files, creating untitled JSON files, and revealing files in the system file manager.</li>
+            <li><strong>Tab management</strong>: added draggable tabs, horizontal scrolling for crowded tab bars, and removed the previous tab count limit.</li>
+            <li><strong>App updates</strong>: added GitHub release update checks, in-app update notifications, macOS update menu entries, localized update actions, and resource links.</li>
+            <li><strong>Website changelog pages</strong>: added public English and Chinese changelog pages.</li>
+          </ul>
+          <h3>Improved</h3>
+          <ul>
+            <li><strong>Large JSON performance</strong>: made large-file tab switching and Tree/Grid interactions smoother with model reuse, persistent workers, virtual scrolling, and deferred editor loading.</li>
+            <li><strong>Editor architecture</strong>: refactored JSON source parsing, document models, Tree/Grid data models, and worker reuse to reduce duplicate parsing work and provide a stronger base for structured editing features.</li>
+            <li><strong>Duplicate-key handling</strong>: preserved duplicate keys during strict JSON formatting, showed duplicate keys in structured views, and blocked ambiguous structured edits when needed.</li>
+            <li><strong>Log JSON extraction</strong>: improved nested log payload extraction, folded extracted previews by default, and removed the automatic repair prompt from editor flows.</li>
+            <li><strong>File and desktop workflows</strong>: improved JSON/JSON5 file opening, save-dialog default names, restored window bounds, single-instance file opens, macOS edit shortcuts, clipboard paste, and custom about/settings dialogs.</li>
+            <li><strong>Website and page styling</strong>: refined the documentation website layout, changelog pages, tool pages, theme consistency, and responsive styling across English and Chinese pages.</li>
+            <li><strong>Release and packaging</strong>: improved signed updater artifacts, release version validation, macOS DMG layout, Windows icon quality, and Homebrew documentation.</li>
+          </ul>
+          <h3>Fixed</h3>
+          <ul>
+            <li><strong>Editor state</strong>: fixed stale statistics after restoring empty tabs and improved active-tab visibility.</li>
+            <li><strong>macOS behavior</strong>: restored common edit shortcuts, fixed clipboard paste, preserved default app menu items, and kept app metadata visible in about/update flows.</li>
+            <li><strong>Build stability</strong>: tightened release workflows, updater metadata packaging, build-test configuration, and platform artifact handling.</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.3.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            View Release
+          </a>
+        </div>
+      </div>
+
       <!-- v1.2.1 -->
       <div class="timeline-item">
         <div class="timeline-dot"></div>
