@@ -13,7 +13,7 @@ function createTab(overrides = {}) {
     id: 'tab-1',
     filePath: null,
     fileName: 'Untitled-1',
-    content: '',
+    contentVersion: 0,
     isModified: false,
     isPinned: false,
     ...overrides,
@@ -22,27 +22,28 @@ function createTab(overrides = {}) {
 
 test('reopening an unmodified file reuses and refreshes the existing tab', () => {
   const state = {
-    tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json', fileName: 'a.json', content: '{"old":true}' })],
+    tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json', fileName: 'a.json', contentVersion: 1 })],
     activeTabId: 'other-tab',
   };
 
-  const result = openFileInTabs(state, '{"new":true}', '/tmp/a.json', 'a.json');
+  const result = openFileInTabs(state, '/tmp/a.json', 'a.json');
 
   assert.equal(result.activeTabId, 'tab-1');
-  assert.equal(result.tabs[0].content, '{"new":true}');
+  assert.equal(result.tabs[0].contentVersion, 2);
+  assert.equal('content' in result.tabs[0], false);
   assert.equal(result.tabs.length, 1);
 });
 
 test('reopening a modified file activates the existing tab without discarding edits', () => {
   const state = {
-    tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json', content: '{"draft":true}', isModified: true })],
+    tabs: [createTab({ id: 'tab-1', filePath: '/tmp/a.json', contentVersion: 1, isModified: true })],
     activeTabId: 'other-tab',
   };
 
-  const result = openFileInTabs(state, '{"disk":true}', '/tmp/a.json', 'a.json');
+  const result = openFileInTabs(state, '/tmp/a.json', 'a.json');
 
   assert.equal(result.activeTabId, 'tab-1');
-  assert.equal(result.tabs[0].content, '{"draft":true}');
+  assert.equal(result.tabs[0].contentVersion, 1);
   assert.equal(result.tabs[0].isModified, true);
 });
 
@@ -52,7 +53,7 @@ test('opening a new file leaves creation to the tabs store', () => {
     activeTabId: 'tab-1',
   };
 
-  const result = openFileInTabs(state, '{}', '/tmp/new.json', 'new.json');
+  const result = openFileInTabs(state, '/tmp/new.json', 'new.json');
 
   assert.equal(result, state);
 });
@@ -178,8 +179,33 @@ test('async stats results are discarded after content or tab changes', async () 
 
   assert.match(source, /const tabId = currentTab\.id;/);
   assert.match(source, /const source = content;/);
-  assert.match(source, /sourceTab\.content !== source/);
+  assert.match(source, /getDocumentContent\(tabId\) !== source/);
   assert.match(source, /\$activeTab\?\.id !== tabId \|\| content !== source/);
+});
+
+test('tab sync treats an in-memory empty document as loaded content', async () => {
+  const editorSource = await readFile(
+    new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(editorSource, /hasDocumentContent\(tabId\)/);
+  assert.match(editorSource, /hasDocumentContent\(tabId\)[\s\S]*?\? getDocumentContent\(tabId\)[\s\S]*?: await loadDocumentContent\(tabId\)/);
+});
+
+test('editor flushes pending document persistence when the page is hidden or unloaded', async () => {
+  const editorSource = await readFile(
+    new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(editorSource, /const flushPendingTabPersistence = \(\) => \{/);
+  assert.match(editorSource, /tabsStore\.flushPersistence\(\)/);
+  assert.match(editorSource, /document\.visibilityState === 'hidden'/);
+  assert.match(editorSource, /window\.addEventListener\('pagehide', flushPendingTabPersistence\)/);
+  assert.match(editorSource, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
+  assert.match(editorSource, /window\.removeEventListener\('pagehide', flushPendingTabPersistence\)/);
+  assert.match(editorSource, /document\.removeEventListener\('visibilitychange', handleVisibilityChange\)/);
 });
 
 test('large clipboard events do not repeat JSON formatting on the UI thread', async () => {
@@ -233,7 +259,7 @@ test('editor paste formatting runs outside the UI thread and discards stale resu
   assert.match(editorSource, /const tabId = sourceTab\.id/);
   assert.match(editorSource, /formatPastedJsonAsync\(sourceValue, tabSize\)/);
   assert.match(editorSource, /\$activeTab\?\.id !== tabId/);
-  assert.match(editorSource, /currentSourceTab\?\.content !== sourceValue/);
+  assert.match(editorSource, /getDocumentContent\(tabId\) !== sourceValue/);
   assert.match(editorSource, /tabsStore\.updateTabContent\(tabId, normalized\)/);
   assert.match(editorSource, /function syncActiveTab[\s\S]*?cancelPasteFormat\(\)/);
   assert.match(workerClient, /createPersistentWorker\(/);
