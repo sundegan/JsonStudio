@@ -166,7 +166,7 @@ test('tree rendering virtualizes expanded rows inside the scroll viewport', () =
     'utf8',
   );
 
-  assert.match(source, /const TREE_ROW_HEIGHT = 22/);
+  assert.match(source, /const TREE_ROW_HEIGHT = 26/);
   assert.match(source, /const TREE_OVERSCAN_ROWS = 20/);
   assert.match(source, /--tree-row-height: \$\{TREE_ROW_HEIGHT\}px/);
   assert.match(source, /let treeNodes = \$state\.raw/);
@@ -201,18 +201,19 @@ test('tree edit errors use an overlay without changing the virtual row height', 
   assert.match(source, /\.tree-edit-field \{[\s\S]*flex-wrap: nowrap;/);
   assert.match(source, /\.tree-virtual-list \.tree-node-content \{[\s\S]*height: var\(--tree-row-height\);/);
   assert.doesNotMatch(globalStyles, /\.tree-list \{/);
-  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*min-height: var\(--tree-row-height\);/);
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*min-height: 26px;/);
 });
 
-test('tree text uses integer typography to avoid blurry rendering on 1x displays', () => {
+test('tree text keeps release-style spacing with integer typography for 1x displays', () => {
   const globalStyles = readFileSync(
     new URL('../src/app.css', import.meta.url),
     'utf8',
   );
 
   assert.match(globalStyles, /\.json-tree-content \{[\s\S]*font-size: 13px;[\s\S]*line-height: 18px;/);
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*gap: 6px;[\s\S]*padding: 4px 12px 4px 0;[\s\S]*min-height: 26px;/);
   assert.match(globalStyles, /\.tree-key \{[\s\S]*line-height: 18px;/);
-  assert.match(globalStyles, /\.tree-value \{[\s\S]*font-size: 13px;[\s\S]*font-weight: 500;[\s\S]*line-height: 18px;/);
+  assert.match(globalStyles, /\.tree-value \{[\s\S]*font-size: 12px;[\s\S]*font-weight: 500;[\s\S]*line-height: 18px;/);
   assert.match(globalStyles, /\.tree-child-count \{[\s\S]*font-size: 11px;[\s\S]*line-height: 18px;/);
   assert.match(globalStyles, /\.tree-type-icon \{[\s\S]*font-size: 11px;/);
   assert.match(globalStyles, /\.tree-type-object \{[\s\S]*font-size: 10px;/);
