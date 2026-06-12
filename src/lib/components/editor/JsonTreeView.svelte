@@ -125,7 +125,7 @@
   let treeNodeByPath = $state.raw<Map<string, TreeNode>>(new Map());
   let duplicateKeysDialogOpen = $state(false);
   const TREE_BUILD_DEBOUNCE_MS = 100;
-  const TREE_ROW_HEIGHT = 22;
+  const TREE_ROW_HEIGHT = 26;
   const TREE_OVERSCAN_ROWS = 20;
   let treeBuildTimer: ReturnType<typeof setTimeout> | null = null;
   let treeBuildFrame: number | null = null;
