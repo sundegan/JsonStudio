@@ -17,6 +17,7 @@
   import JsonEditorToast from './JsonEditorToast.svelte';
   import LogJsonFragmentsPanel from './LogJsonFragmentsPanel.svelte';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
+  import AppUpdateNotification from '$lib/components/AppUpdateNotification.svelte';
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
@@ -1441,6 +1442,7 @@
   {/if}
 
   <!-- Settings panel -->
+  <AppUpdateNotification />
   <SettingsPanel bind:this={settingsPanel} />
   <AboutDialog />
 

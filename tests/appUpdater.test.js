@@ -65,6 +65,25 @@ test('installs update and marks the app ready to restart', async () => {
   assert.equal(state.messageKey, 'settings.updateReadyToRestart');
 });
 
+test('keeps update metadata when install fails so the UI can retry', async () => {
+  const update = {
+    version: '1.2.2',
+    downloadAndInstall: async () => {
+      throw new Error('download failed');
+    },
+  };
+
+  const state = await installAppUpdate(
+    { ...createInitialUpdaterState('1.2.1'), status: 'available', update },
+    { relaunch: async () => {} }
+  );
+
+  assert.equal(state.status, 'error');
+  assert.equal(state.messageKey, 'settings.updateFailed');
+  assert.equal(state.update, update);
+  assert.equal(state.error, 'download failed');
+});
+
 test('captures updater errors without discarding the current version', async () => {
   const state = await checkForAppUpdate(createInitialUpdaterState('1.2.1'), {
     check: async () => {

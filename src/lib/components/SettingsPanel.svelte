@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getVersion } from '@tauri-apps/api/app';
   import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
   import { check } from '@tauri-apps/plugin-updater';
@@ -8,11 +7,15 @@
   import { shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import {
     checkInstallAndNotifyAppUpdate,
-    checkForAppUpdate,
     createInitialUpdaterState,
-    installAppUpdate,
-    restartAfterAppUpdate,
   } from '$lib/services/appUpdater';
+  import {
+    appUpdateStore,
+    checkAppUpdates,
+    initAppUpdater,
+    installAvailableAppUpdate,
+    restartInstalledAppUpdate,
+  } from '$lib/stores/appUpdateStore';
   import { t, availableLocales, localeNames, type Locale } from '$lib/i18n';
   import ShortcutRecorder from './ShortcutRecorder.svelte';
 
@@ -57,21 +60,17 @@
     return () => unsubscribe();
   });
 
+  $effect(() => {
+    const unsubscribe = appUpdateStore.subscribe(state => {
+      updaterState = state;
+    });
+    return () => unsubscribe();
+  });
+
   onMount(() => {
     let unlistenCheckForUpdate: (() => void) | null = null;
 
-    getVersion()
-      .then(version => {
-        updaterState = { ...updaterState, currentVersion: version };
-      })
-      .catch(error => {
-        updaterState = {
-          ...updaterState,
-          status: 'error',
-          messageKey: 'settings.updateFailed',
-          error: error instanceof Error ? error.message : String(error),
-        };
-      });
+    void initAppUpdater();
 
     listen('check-for-update', () => {
       void handleMenuCheckForUpdate();
@@ -142,13 +141,7 @@
   }
 
   async function handleCheckForUpdate() {
-    updaterState = {
-      ...updaterState,
-      status: 'checking',
-      messageKey: 'settings.updateChecking',
-      error: null,
-    };
-    updaterState = await checkForAppUpdate(updaterState, { check });
+    await checkAppUpdates({ showErrors: true });
   }
 
   async function handleMenuCheckForUpdate() {
@@ -168,26 +161,11 @@
   }
 
   async function handleInstallUpdate() {
-    updaterState = {
-      ...updaterState,
-      status: 'installing',
-      messageKey: 'settings.updateInstalling',
-      error: null,
-    };
-    updaterState = await installAppUpdate(updaterState);
+    await installAvailableAppUpdate();
   }
 
   async function handleRestartAfterUpdate() {
-    try {
-      await restartAfterAppUpdate({ relaunch: () => invoke('restart_app') });
-    } catch (error) {
-      updaterState = {
-        ...updaterState,
-        status: 'error',
-        messageKey: 'settings.updateFailed',
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    await restartInstalledAppUpdate();
   }
 
   function isUpdaterBusy() {
@@ -491,11 +469,18 @@
                 <div class="settings-item-label">
                   <span class="settings-item-name">{$t('settings.autoUpdate')}</span>
                   <span class="settings-hint">
-                    {$t(updaterState.messageKey)}
+                    {#if updaterState.status === 'available'}
+                      {$t('updates.availablePrompt')}
+                    {:else}
+                      {$t(updaterState.messageKey)}
+                    {/if}
                     {#if updaterState.update?.version}
                       <span class="settings-inline-version">{updaterState.update.version}</span>
                     {/if}
                   </span>
+                  {#if updaterState.status === 'ready-to-restart'}
+                    <span class="settings-success">{$t('updates.restartReassurance')}</span>
+                  {/if}
                   {#if updaterState.error}
                     <span class="settings-error">{updaterState.error}</span>
                   {/if}
@@ -1092,6 +1077,12 @@
     font-size: 12px;
     line-height: 1.5;
     color: #ef4444;
+  }
+
+  .settings-success {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--success);
   }
 
   /* Shortcut group label */
