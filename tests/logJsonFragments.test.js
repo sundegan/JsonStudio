@@ -1,9 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   extractLogJsonFragments,
   getStandaloneEscapedJsonContent,
 } from '../src/lib/services/logJsonFragments.js';
+
+test('log fragment preview keeps more JSON levels expanded by default', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/LogJsonFragmentsPanel.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /const DEFAULT_LOG_JSON_FOLD_LEVEL = 5;/);
+  assert.match(source, /editor\.foldLevel\$\{DEFAULT_LOG_JSON_FOLD_LEVEL\}/);
+});
 
 test('extracts a complete JSON document as one fragment', () => {
   const fragments = extractLogJsonFragments('{"id":1,"ok":true}');

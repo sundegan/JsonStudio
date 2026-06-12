@@ -46,6 +46,7 @@
   const MAX_LIST_WIDTH = 420;
   const MIN_PANEL_HEIGHT = 160;
   const MAX_PANEL_HEIGHT = 520;
+  const DEFAULT_LOG_JSON_FOLD_LEVEL = 5;
   let stopResizeListeners: (() => void) | null = null;
   let pendingFoldTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -132,7 +133,7 @@
     if (pendingFoldTimer) clearTimeout(pendingFoldTimer);
     pendingFoldTimer = setTimeout(() => {
       pendingFoldTimer = null;
-      resultEditor?.getAction('editor.foldLevel3')?.run();
+      resultEditor?.getAction(`editor.foldLevel${DEFAULT_LOG_JSON_FOLD_LEVEL}`)?.run();
       resultEditor?.setScrollTop(0);
       resultEditor?.setScrollLeft(0);
     }, 0);
