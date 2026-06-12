@@ -15,6 +15,10 @@ jobs:
   build-tauri:
     permissions:
       contents: read
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
     strategy:
       fail-fast: false
       matrix:
