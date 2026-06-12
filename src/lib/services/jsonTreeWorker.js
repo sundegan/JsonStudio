@@ -1,44 +1,43 @@
-import { buildJsonTreeModel } from './jsonTreeModel.js';
+import { createJsonDocumentModelCache } from './jsonDocumentModel.js';
 import { createPersistentWorker } from './persistentWorker.js';
 
-/**
- * @typedef {{
- *   cancel: () => void
- * }} ActiveTask
- */
-
-/** @type {ActiveTask | null} */
-let activeTask = null;
 const treeWorker = createPersistentWorker(
   () => new Worker(new URL('../workers/jsonTree.worker.js', import.meta.url), {
     type: 'module',
   }),
 );
+const localDocuments = createJsonDocumentModelCache();
+let taskQueue = Promise.resolve();
 
 /**
+ * @param {'parse' | 'build-tree'} operation
+ * @param {string} cacheKey
  * @param {string} content
- * @returns {Promise<ReturnType<typeof buildJsonTreeModel>>}
  */
-export function buildJsonTreeModelAsync(content) {
+function runDocumentTask(operation, cacheKey, content) {
   if (typeof Worker === 'undefined') {
-    return Promise.resolve(buildJsonTreeModel(content));
+    return Promise.resolve().then(() => (
+      operation === 'parse'
+        ? localDocuments.parse(cacheKey, content)
+        : localDocuments.buildTree(cacheKey, content)
+    ));
   }
 
-  cancelJsonTreeBuild();
-  const task = treeWorker.run({ content });
-  activeTask = task;
-  return task.promise
+  const run = () => treeWorker.run({ operation, cacheKey, content }).promise
     .catch((error) => {
-      if (error instanceof DOMException && error.name === 'AbortError') throw error;
       throw new SyntaxError(error instanceof Error ? error.message : String(error));
-    })
-    .finally(() => {
-      if (activeTask === task) activeTask = null;
     });
+  const result = taskQueue.then(run, run);
+  taskQueue = result.catch(() => {});
+  return result;
 }
 
-export function cancelJsonTreeBuild() {
-  const task = activeTask;
-  activeTask = null;
-  task?.cancel();
+/** @param {string} cacheKey @param {string} content */
+export function parseJsonDocumentAsync(cacheKey, content) {
+  return runDocumentTask('parse', cacheKey, content);
+}
+
+/** @param {string} cacheKey @param {string} content */
+export function buildJsonTreeModelAsync(cacheKey, content) {
+  return runDocumentTask('build-tree', cacheKey, content);
 }

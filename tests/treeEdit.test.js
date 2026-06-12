@@ -90,7 +90,7 @@ test('tree view exposes key and primitive value edit writeback on double click',
   assert.match(source, /createTreeKeyEdit/);
   assert.match(source, /createGridValueEdit/);
   assert.match(source, /replaceRangeByOffsets/);
-  assert.match(source, /if \(content !== previousContent\) \{[\s\S]*treeEdit = null;[\s\S]*scheduleTreeBuild\(content\);/);
+  assert.match(source, /content !== previousContent \|\| tabId !== previousTabId[\s\S]*treeEdit = null;[\s\S]*scheduleTreeBuild\(tabId, content\);/);
   assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'key'\)\}/);
   assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'value'\)\}/);
   assert.doesNotMatch(source, /tree-edit-button/);
@@ -122,7 +122,7 @@ test('tree nodes share parent keys instead of copying sibling keys per node', ()
   assert.equal('siblingKeys' in result.nodes[0], false);
 });
 
-test('tree parsing runs in a cancellable worker instead of the Svelte UI component', () => {
+test('document parsing and lazy Tree projection run in one persistent worker', () => {
   const source = readFileSync(
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
     'utf8',
@@ -131,19 +131,27 @@ test('tree parsing runs in a cancellable worker instead of the Svelte UI compone
     new URL('../src/lib/services/jsonTreeWorker.js', import.meta.url),
     'utf8',
   );
+  const modelCache = readFileSync(
+    new URL('../src/lib/services/jsonTreeModelCache.js', import.meta.url),
+    'utf8',
+  );
   const persistentWorker = readFileSync(
     new URL('../src/lib/services/persistentWorker.js', import.meta.url),
     'utf8',
   );
 
-  assert.match(source, /buildJsonTreeModelAsync/);
-  assert.match(source, /cancelJsonTreeBuild\(\)/);
+  assert.match(source, /getJsonTreeModelAsync/);
+  assert.match(source, /getCachedJsonTreeModel/);
   assert.match(source, /isLoading = false;[\s\S]*const version = \+\+treeBuildVersion/);
+  assert.match(source, /requestAnimationFrame\(\(\) => \{[\s\S]*TREE_BUILD_DEBOUNCE_MS/);
   assert.match(source, /if \(!source\.trim\(\)\) \{[\s\S]*isLoading = false;/);
   assert.doesNotMatch(source, /parseJsonDocument/);
+  assert.match(modelCache, /getJsonDocumentStatsAsync/);
+  assert.match(modelCache, /buildJsonTreeModelAsync\(tabId, content\)/);
+  assert.match(modelCache, /MAX_TREE_MODEL_CACHE_SIZE = 5/);
   assert.match(workerClient, /createPersistentWorker\(/);
-  assert.match(workerClient, /treeWorker\.run\(\{ content \}\)/);
-  assert.match(workerClient, /task\?\.cancel\(\)/);
+  assert.match(workerClient, /treeWorker\.run\(\{ operation, cacheKey, content \}\)/);
+  assert.match(workerClient, /taskQueue\.then\(run, run\)/);
   assert.match(workerClient, /throw new SyntaxError/);
   assert.match(workerClient, /new Worker\(new URL\('\.\.\/workers\/jsonTree\.worker\.js'/);
   assert.match(persistentWorker, /if \(worker\) return worker/);

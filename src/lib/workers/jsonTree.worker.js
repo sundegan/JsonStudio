@@ -1,10 +1,24 @@
-import { buildJsonTreeModel } from '../services/jsonTreeModel.js';
+import { createJsonDocumentModelCache } from '../services/jsonDocumentModel.js';
 
-/** @param {MessageEvent<{ id: number, payload: { content: string } }>} event */
+const documents = createJsonDocumentModelCache();
+
+/**
+ * @param {MessageEvent<{
+ *   id: number
+ *   payload: {
+ *     operation: 'parse' | 'build-tree'
+ *     cacheKey: string
+ *     content: string
+ *   }
+ * }>} event
+ */
 self.onmessage = (event) => {
   const { id, payload } = event.data;
   try {
-    self.postMessage({ id, ok: true, result: buildJsonTreeModel(payload.content) });
+    const result = payload.operation === 'parse'
+      ? documents.parse(payload.cacheKey, payload.content)
+      : documents.buildTree(payload.cacheKey, payload.content);
+    self.postMessage({ id, ok: true, result });
   } catch (error) {
     self.postMessage({
       id,

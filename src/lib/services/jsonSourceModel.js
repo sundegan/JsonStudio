@@ -60,15 +60,29 @@ export function parseJsonSourceModel(content, options = {}) {
  * @param {{
  *   dialect?: 'JSON' | 'JSON5' | 'AUTO';
  *   retainSourceModel?: boolean;
+ *   buildPointers?: boolean;
  * }} [options]
  */
 export function parseJsonSourceDocument(content, options = {}) {
   const parsed = parseSourceModel(content, options.dialect ?? 'JSON');
   const sourceModel = parsed.sourceModel;
+  /** @type {'JSON' | 'JSON5'} */
+  const formatType = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
   const document = {
     data: sourceModel.value,
-    pointers: buildJsonSourcePointers(sourceModel),
+    pointers: options.buildPointers === false
+      ? Object.create(null)
+      : buildJsonSourcePointers(sourceModel),
+    pointersBuilt: options.buildPointers !== false,
     dialect: parsed.dialect,
+    stats: {
+      valid: true,
+      key_count: parsed.keyCount,
+      depth: parsed.maxDepth,
+      byte_size: utf8ByteLength(content),
+      format_type: formatType,
+      error_info: null,
+    },
   };
   if (options.retainSourceModel !== false || sourceModel.hasDuplicateKeys) {
     return { ...document, sourceModel };
@@ -90,6 +104,8 @@ function parseSourceModel(content, dialect) {
   return {
     sourceModel,
     dialect: parser.detectedDialect(),
+    keyCount: parser.keyCount,
+    maxDepth: parser.maxDepth,
   };
 }
 
@@ -130,6 +146,9 @@ class JsonSourceParser {
     this.index = 0;
     this.dialect = dialect;
     this.usesJson5Syntax = dialect === 'JSON5';
+    this.keyCount = 0;
+    this.depth = 0;
+    this.maxDepth = 0;
   }
 
   /** @returns {JsonSourceNode} */
@@ -156,6 +175,7 @@ class JsonSourceParser {
 
   /** @returns {JsonSourceObjectNode} */
   parseObject() {
+    this.enterContainer();
     const start = this.index;
     this.index += 1;
     /** @type {JsonSourceObjectEntry[]} */
@@ -168,7 +188,8 @@ class JsonSourceParser {
 
     this.skipTrivia();
     if (this.consume('}')) {
-      return markSourceNode({
+      /** @type {JsonSourceObjectNode} */
+      const node = markSourceNode({
         kind: 'object',
         value: objectValue,
         entries,
@@ -176,11 +197,14 @@ class JsonSourceParser {
         end: this.index,
         hasDuplicateKeys,
       });
+      this.leaveContainer();
+      return node;
     }
 
     while (true) {
       this.skipTrivia();
       const keyToken = this.parsePropertyName();
+      this.keyCount += 1;
       const key = keyToken.value;
       this.skipTrivia();
       if (!this.consume(':')) this.fail('Expected ":" after object key');
@@ -216,7 +240,8 @@ class JsonSourceParser {
       }
     }
 
-    return markSourceNode({
+    /** @type {JsonSourceObjectNode} */
+    const node = markSourceNode({
       kind: 'object',
       value: objectValue,
       entries,
@@ -224,10 +249,13 @@ class JsonSourceParser {
       end: this.index,
       hasDuplicateKeys,
     });
+    this.leaveContainer();
+    return node;
   }
 
   /** @returns {JsonSourceArrayNode} */
   parseArray() {
+    this.enterContainer();
     const start = this.index;
     this.index += 1;
     /** @type {JsonSourceNode[]} */
@@ -238,7 +266,8 @@ class JsonSourceParser {
 
     this.skipTrivia();
     if (this.consume(']')) {
-      return markSourceNode({
+      /** @type {JsonSourceArrayNode} */
+      const node = markSourceNode({
         kind: 'array',
         value: arrayValue,
         items,
@@ -246,6 +275,8 @@ class JsonSourceParser {
         end: this.index,
         hasDuplicateKeys,
       });
+      this.leaveContainer();
+      return node;
     }
 
     while (true) {
@@ -265,7 +296,8 @@ class JsonSourceParser {
       }
     }
 
-    return markSourceNode({
+    /** @type {JsonSourceArrayNode} */
+    const node = markSourceNode({
       kind: 'array',
       value: arrayValue,
       items,
@@ -273,6 +305,17 @@ class JsonSourceParser {
       end: this.index,
       hasDuplicateKeys,
     });
+    this.leaveContainer();
+    return node;
+  }
+
+  enterContainer() {
+    this.depth += 1;
+    this.maxDepth = Math.max(this.maxDepth, this.depth);
+  }
+
+  leaveContainer() {
+    this.depth -= 1;
   }
 
   /** @returns {JsonSourceScalarNode} */
@@ -576,6 +619,30 @@ function setObjectValue(objectValue, key, value) {
     return;
   }
   objectValue[key] = value;
+}
+
+/** @param {string} value */
+export function utf8ByteLength(value) {
+  let bytes = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code < 0x80) {
+      bytes += 1;
+    } else if (code < 0x800) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff && index + 1 < value.length) {
+      const next = value.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        bytes += 4;
+        index += 1;
+      } else {
+        bytes += 3;
+      }
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
 }
 
 /**

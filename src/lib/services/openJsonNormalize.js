@@ -1,15 +1,8 @@
 /**
  * @typedef {{
- *   valid: boolean;
- *   format_type: string;
- * }} OpenedJsonStats
- */
-
-/**
- * @typedef {{
  *   indent?: number;
  *   formatJson: (value: string, indent?: number) => Promise<string>;
- *   getJsonStats: (value: string) => Promise<OpenedJsonStats>;
+ *   detectDialect: (value: string) => Promise<'JSON' | 'JSON5' | ''>;
  *   formatJson5: (value: string, indent?: number) => Promise<string>;
  * }} NormalizeOpenedJsonOptions
  */
@@ -28,14 +21,11 @@ export async function normalizeOpenedJson(sourceValue, options) {
 
   const indent = options.indent ?? 2;
   try {
-    JSON.parse(sourceValue);
-    return await options.formatJson(sourceValue, indent);
-  } catch {
-  }
-
-  try {
-    const stats = await options.getJsonStats(sourceValue);
-    if (stats.valid && stats.format_type === 'JSON5') {
+    const dialect = await options.detectDialect(sourceValue);
+    if (dialect === 'JSON') {
+      return await options.formatJson(sourceValue, indent);
+    }
+    if (dialect === 'JSON5') {
       return await options.formatJson5(sourceValue, indent);
     }
   } catch {

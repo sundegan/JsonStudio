@@ -34,20 +34,6 @@ export async function minifyJson(content: string): Promise<string> {
 }
 
 /**
- * Validate JSON and return detailed error location
- */
-export async function validateJson(content: string): Promise<ValidationResult> {
-  return await invoke<ValidationResult>('json_validate', { content });
-}
-
-/**
- * Get JSON statistics
- */
-export async function getJsonStats(content: string): Promise<JsonStats> {
-  return await invoke<JsonStats>('json_stats', { content });
-}
-
-/**
  * Escape string (convert string to JSON string format)
  */
 export async function escapeString(content: string): Promise<string> {
