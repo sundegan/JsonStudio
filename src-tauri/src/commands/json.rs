@@ -6,30 +6,9 @@
 //   3. json5 crate with sanitized input – handles Infinity / NaN which cannot be
 //      represented in serde_json::Value (they are replaced with null before parsing)
 //
-// This chain is used consistently across format, minify, validate, and stats.
+// This chain is used consistently across format, minify, and validate.
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-/// Validation result
-#[derive(Serialize, Deserialize)]
-pub struct ValidationResult {
-    pub valid: bool,           // Whether JSON is valid
-    pub error_message: Option<String>,  // Error message
-    pub error_line: Option<usize>,      // Error line number (1-based)
-    pub error_column: Option<usize>,    // Error column number (1-based)
-}
-
-/// JSON statistics
-#[derive(Serialize, Deserialize)]
-pub struct JsonStats {
-    pub valid: bool,           // Whether JSON is valid
-    pub key_count: usize,      // Number of keys
-    pub depth: usize,          // Maximum nesting depth
-    pub byte_size: usize,      // Byte size
-    pub format_type: String,   // Format type: "JSON" or "JSON5"
-    pub error_info: Option<ValidationResult>,  // Error info (if invalid)
-}
 
 /// Format JSON string (supports JSON5)
 #[tauri::command]
@@ -50,104 +29,7 @@ pub fn json_format(content: &str, indent: Option<usize>) -> Result<String, Strin
 #[tauri::command]
 pub fn json_minify(content: &str) -> Result<String, String> {
     let value: Value = parse_to_value(content)?;
-    serde_json::to_string(&value)
-        .map_err(|e| format!("JSON minification error: {}", e))
-}
-
-/// Validate JSON and return detailed error location (supports JSON5)
-#[tauri::command]
-pub fn json_validate(content: &str) -> ValidationResult {
-    let ok_result = ValidationResult {
-        valid: true,
-        error_message: None,
-        error_line: None,
-        error_column: None,
-    };
-
-    match serde_json::from_str::<Value>(content) {
-        Ok(_) => ok_result,
-        Err(json_err) => {
-            if json5::from_str::<Value>(content).is_ok() {
-                return ok_result;
-            }
-            // Sanitize special values (Infinity → null) and retry
-            let sanitized = sanitize_json5_special_values(content);
-            if json5::from_str::<Value>(&sanitized).is_ok() {
-                return ok_result;
-            }
-            ValidationResult {
-                valid: false,
-                error_message: Some(format_error_description(&json_err)),
-                error_line: Some(json_err.line()),
-                error_column: Some(json_err.column()),
-            }
-        }
-    }
-}
-
-/// Get JSON statistics (supports JSON5)
-#[tauri::command]
-pub fn json_stats(content: &str) -> JsonStats {
-    let byte_size = content.len();
-
-    // 1. Try standard JSON
-    if let Ok(value) = serde_json::from_str::<Value>(content) {
-        let key_count = count_keys(&value);
-        let depth = calculate_depth(&value);
-        return JsonStats {
-            valid: true,
-            key_count,
-            depth,
-            byte_size,
-            format_type: "JSON".to_string(),
-            error_info: None,
-        };
-    }
-
-    // 2. Try JSON5 directly
-    if let Ok(value) = json5::from_str::<Value>(content) {
-        let key_count = count_keys(&value);
-        let depth = calculate_depth(&value);
-        return JsonStats {
-            valid: true,
-            key_count,
-            depth,
-            byte_size,
-            format_type: "JSON5".to_string(),
-            error_info: None,
-        };
-    }
-
-    // 3. Sanitize special values (Infinity → null) and retry as JSON5
-    let sanitized = sanitize_json5_special_values(content);
-    if let Ok(value) = json5::from_str::<Value>(&sanitized) {
-        let key_count = count_keys(&value);
-        let depth = calculate_depth(&value);
-        return JsonStats {
-            valid: true,
-            key_count,
-            depth,
-            byte_size,
-            format_type: "JSON5".to_string(),
-            error_info: None,
-        };
-    }
-
-    // 4. All failed — use the original JSON error for diagnostics
-    let json_err = serde_json::from_str::<Value>(content).unwrap_err();
-    JsonStats {
-        valid: false,
-        key_count: 0,
-        depth: 0,
-        byte_size,
-        format_type: "".to_string(),
-        error_info: Some(ValidationResult {
-            valid: false,
-            error_message: Some(format_error_description(&json_err)),
-            error_line: Some(json_err.line()),
-            error_column: Some(json_err.column()),
-        }),
-    }
+    serde_json::to_string(&value).map_err(|e| format!("JSON minification error: {}", e))
 }
 
 /// Escape string (convert string to JSON string format)
@@ -179,8 +61,7 @@ fn parse_to_value(content: &str) -> Result<Value, String> {
         return Ok(v);
     }
     let sanitized = sanitize_json5_special_values(content);
-    json5::from_str::<Value>(&sanitized)
-        .map_err(|e| format!("JSON/JSON5 parsing error: {}", e))
+    json5::from_str::<Value>(&sanitized).map_err(|e| format!("JSON/JSON5 parsing error: {}", e))
 }
 
 /// Replace JSON5 special numeric literals (Infinity, -Infinity, +Infinity, NaN)
@@ -293,32 +174,6 @@ fn format_error_description(e: &serde_json::Error) -> String {
         msg[..pos].to_string()
     } else {
         msg
-    }
-}
-
-fn count_keys(value: &Value) -> usize {
-    match value {
-        Value::Object(map) => {
-            let mut count = map.len();
-            for v in map.values() {
-                count += count_keys(v);
-            }
-            count
-        }
-        Value::Array(arr) => arr.iter().map(count_keys).sum(),
-        _ => 0,
-    }
-}
-
-fn calculate_depth(value: &Value) -> usize {
-    match value {
-        Value::Object(map) => {
-            1 + map.values().map(calculate_depth).max().unwrap_or(0)
-        }
-        Value::Array(arr) => {
-            1 + arr.iter().map(calculate_depth).max().unwrap_or(0)
-        }
-        _ => 0,
     }
 }
 

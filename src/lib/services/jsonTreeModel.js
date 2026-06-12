@@ -27,20 +27,39 @@ import { getJsonSourceValue, isJsonSourceNode } from './jsonSourceModel.js';
  *   hasDuplicateSourceKeys: boolean
  *   nodes: TreeNode[]
  *   nodeIndex: Map<string, TreeNode>
+ *   stats: {
+ *     valid: boolean
+ *     key_count: number
+ *     depth: number
+ *     byte_size: number
+ *     format_type: 'JSON' | 'JSON5'
+ *     error_info: null
+ *   }
  * }}
  */
 export function buildJsonTreeModel(content) {
   const parsed = parseJsonDocument(content);
+  return buildJsonTreeModelFromDocument(parsed);
+}
+
+/**
+ * Derive Tree View data from a document that has already been parsed.
+ * @param {ReturnType<typeof parseJsonDocument>} parsed
+ */
+export function buildJsonTreeModelFromDocument(parsed) {
   const sourceModel = 'sourceModel' in parsed ? parsed.sourceModel : null;
   const nodes = parseToTree(sourceModel ?? parsed.data, parsed.pointers, '');
+  /** @type {'JSON' | 'JSON5'} */
+  const dialect = parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON';
 
   return {
     rootData: parsed.data,
     pointers: parsed.pointers,
-    dialect: parsed.dialect === 'JSON5' ? 'JSON5' : 'JSON',
+    dialect,
     hasDuplicateSourceKeys: Boolean(sourceModel?.hasDuplicateKeys),
     nodes,
     nodeIndex: indexTreeNodes(nodes),
+    stats: parsed.stats,
   };
 }
 

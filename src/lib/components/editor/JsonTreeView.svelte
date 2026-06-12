@@ -3,7 +3,10 @@
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
-  import { buildJsonTreeModelAsync, cancelJsonTreeBuild } from '$lib/services/jsonTreeWorker.js';
+  import {
+    getCachedJsonTreeModel,
+    getJsonTreeModelAsync,
+  } from '$lib/services/jsonTreeModelCache.js';
   import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
@@ -53,9 +56,10 @@
     result: string;
   };
 
-  let { content, editor } = $props<{
+  let { content, editor, tabId } = $props<{
     content: string;
     editor: MonacoEditor | null;
+    tabId: string;
   }>();
 
   const QUERY_DOCS_URL: Record<QueryMode, string> = {
@@ -91,6 +95,7 @@
   let treeError = $state('');
   let isLoading = $state(false);
   let previousContent = $state('');
+  let previousTabId = $state('');
   let parsedPointers = $state.raw<Record<string, any>>({});
   let parsedDialect = $state<'JSON' | 'JSON5'>('JSON');
   let hasDuplicateSourceKeys = $state(false);
@@ -119,10 +124,11 @@
   let suppressNextTreeClick = $state(false);
   let treeNodeByPath = $state.raw<Map<string, TreeNode>>(new Map());
   let duplicateKeysDialogOpen = $state(false);
-  const TREE_BUILD_DEBOUNCE_MS = 150;
+  const TREE_BUILD_DEBOUNCE_MS = 100;
   const TREE_ROW_HEIGHT = 22;
   const TREE_OVERSCAN_ROWS = 20;
   let treeBuildTimer: ReturnType<typeof setTimeout> | null = null;
+  let treeBuildFrame: number | null = null;
   let treeBuildVersion = 0;
   let completedTreeBuildVersion = $state(0);
   let treeScrollTop = $state(0);
@@ -142,30 +148,44 @@
     treeViewportHeight,
   ));
 
-  // Build tree when content changes
+  // Build tree when the active document changes.
   $effect(() => {
-    if (content !== previousContent) {
+    if (content !== previousContent || tabId !== previousTabId) {
       previousContent = content;
+      previousTabId = tabId;
       treeEdit = null;
-      scheduleTreeBuild(content);
+      scheduleTreeBuild(tabId, content);
     }
   });
 
   onDestroy(() => {
     if (treeBuildTimer) clearTimeout(treeBuildTimer);
-    cancelJsonTreeBuild();
+    if (treeBuildFrame !== null) cancelAnimationFrame(treeBuildFrame);
   });
 
-  function scheduleTreeBuild(source: string) {
+  function scheduleTreeBuild(sourceTabId: string, source: string) {
     if (treeBuildTimer) clearTimeout(treeBuildTimer);
-    cancelJsonTreeBuild();
+    if (treeBuildFrame !== null) cancelAnimationFrame(treeBuildFrame);
     isLoading = false;
     const version = ++treeBuildVersion;
-    treeBuildTimer = setTimeout(() => {
-      treeBuildTimer = null;
-      if (version !== treeBuildVersion || content !== source) return;
-      void buildTree(source, version);
-    }, TREE_BUILD_DEBOUNCE_MS);
+    const cached = getCachedJsonTreeModel(sourceTabId, source);
+    if (cached) {
+      applyTreeModel(cached, version);
+      return;
+    }
+
+    treeBuildFrame = requestAnimationFrame(() => {
+      treeBuildFrame = null;
+      treeBuildTimer = setTimeout(() => {
+        treeBuildTimer = null;
+        if (
+          version !== treeBuildVersion ||
+          tabId !== sourceTabId ||
+          content !== source
+        ) return;
+        void buildTree(sourceTabId, source, version);
+      }, TREE_BUILD_DEBOUNCE_MS);
+    });
   }
 
   $effect(() => {
@@ -175,7 +195,7 @@
     void updateQueryMatches(queryMode, query, data, nodes);
   });
 
-  async function buildTree(source: string, version: number) {
+  async function buildTree(sourceTabId: string, source: string, version: number) {
     if (!source.trim()) {
       treeNodes = [];
       treeNodeByPath = new Map();
@@ -198,40 +218,13 @@
     treeError = '';
 
     try {
-      const parsed = await buildJsonTreeModelAsync(source);
-      if (version !== treeBuildVersion || content !== source) return;
-
-      rootData = parsed.rootData;
-      parsedPointers = parsed.pointers;
-      parsedDialect = parsed.dialect;
-      hasDuplicateSourceKeys = parsed.hasDuplicateSourceKeys;
-      const nodes = parsed.nodes as TreeNode[];
-      treeNodes = nodes;
-      treeNodeByPath = parsed.nodeIndex as Map<string, TreeNode>;
-      resetTreeScroll();
-      
-      // Auto-expand first level
-      if (nodes.length > 0) {
-        const nextExpanded = new Set(
-          nodes.filter((node) => hasChildren(node)).map((node) => node.path),
-        );
-        if (pendingMovedPath) {
-          getAncestorPaths(pendingMovedPath).forEach((path) => nextExpanded.add(path));
-          selectedPath = pendingMovedPath;
-          pendingMovedPath = null;
-        }
-        if (pendingEditKeyPath) {
-          treeEdit = createTreeKeyEditState(pendingEditKeyPath);
-          pendingEditKeyPath = null;
-          tick().then(() => {
-            treeEditInput?.focus();
-            treeEditInput?.select();
-          });
-        }
-        expandedNodes = nextExpanded;
-      }
-      isAllExpanded = false;
-      completedTreeBuildVersion = version;
+      const parsed = await getJsonTreeModelAsync(sourceTabId, source);
+      if (
+        version !== treeBuildVersion ||
+        tabId !== sourceTabId ||
+        content !== source
+      ) return;
+      applyTreeModel(parsed, version);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
       if (version !== treeBuildVersion || content !== source) return;
@@ -247,10 +240,49 @@
       resetTreeScroll();
       completedTreeBuildVersion = version;
     } finally {
-      if (version === treeBuildVersion && content === source) {
+      if (
+        version === treeBuildVersion &&
+        tabId === sourceTabId &&
+        content === source
+      ) {
         isLoading = false;
       }
     }
+  }
+
+  function applyTreeModel(
+    parsed: Awaited<ReturnType<typeof getJsonTreeModelAsync>>,
+    version: number,
+  ) {
+    rootData = parsed.rootData;
+    parsedPointers = parsed.pointers;
+    parsedDialect = parsed.dialect;
+    hasDuplicateSourceKeys = parsed.hasDuplicateSourceKeys;
+    const nodes = parsed.nodes as TreeNode[];
+    treeNodes = nodes;
+    treeNodeByPath = parsed.nodeIndex as Map<string, TreeNode>;
+    resetTreeScroll();
+
+    const nextExpanded = new Set(
+      nodes.filter((node) => hasChildren(node)).map((node) => node.path),
+    );
+    if (pendingMovedPath) {
+      getAncestorPaths(pendingMovedPath).forEach((path) => nextExpanded.add(path));
+      selectedPath = pendingMovedPath;
+      pendingMovedPath = null;
+    }
+    if (pendingEditKeyPath) {
+      treeEdit = createTreeKeyEditState(pendingEditKeyPath);
+      pendingEditKeyPath = null;
+      tick().then(() => {
+        treeEditInput?.focus();
+        treeEditInput?.select();
+      });
+    }
+    expandedNodes = nextExpanded;
+    isAllExpanded = false;
+    isLoading = false;
+    completedTreeBuildVersion = version;
   }
 
   function createTreeKeyEditState(path: string): TreeEditState | null {

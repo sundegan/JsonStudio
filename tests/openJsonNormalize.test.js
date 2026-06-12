@@ -8,10 +8,10 @@ function createOptions() {
     async formatJson(value, indent) {
       return JSON.stringify(JSON.parse(value), null, indent);
     },
-    async getJsonStats(value) {
-      return value.includes('// user')
-        ? { valid: true, format_type: 'JSON5' }
-        : { valid: false, format_type: '' };
+    async detectDialect(value) {
+      if (value.includes('// user')) return 'JSON5';
+      JSON.parse(value);
+      return 'JSON';
     },
     async formatJson5(value) {
       return `json5:${value}`;

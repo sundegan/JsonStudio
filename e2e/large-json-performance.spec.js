@@ -9,6 +9,8 @@ const LIMITS = {
   tabSettledMedianMs: Number(process.env.JSON_STUDIO_E2E_TAB_SETTLED_MEDIAN_MS || 650),
   tabSettledWorstMs: Number(process.env.JSON_STUDIO_E2E_TAB_SETTLED_WORST_MS || 800),
   tabSwitchMaxEventLoopGapMs: Number(process.env.JSON_STUDIO_E2E_TAB_GAP_MS || 250),
+  coldTabSwitchMs: Number(process.env.JSON_STUDIO_E2E_COLD_TAB_SWITCH_MS || 500),
+  coldTabSettledMs: Number(process.env.JSON_STUDIO_E2E_COLD_TAB_SETTLED_MS || 1_500),
   treeScrollMedianMs: Number(process.env.JSON_STUDIO_E2E_TREE_SCROLL_MEDIAN_MS || 100),
   treeScrollWorstMs: Number(process.env.JSON_STUDIO_E2E_TREE_SCROLL_WORST_MS || 200),
   treeScrollMaxEventLoopGapMs: Number(process.env.JSON_STUDIO_E2E_TREE_SCROLL_GAP_MS || 150),
@@ -76,19 +78,9 @@ async function installBrowserHarness(page) {
       convertFileSrc(path) {
         return path;
       },
-      async invoke(command, args) {
+      async invoke(command) {
         if (command === 'get_pending_files') return [];
         if (command === 'plugin:event|listen') return ++callbackId;
-        if (command === 'json_stats') {
-          return {
-            valid: true,
-            key_count: 0,
-            depth: 0,
-            byte_size: new TextEncoder().encode(args?.content || '').length,
-            format_type: 'JSON',
-            error_info: null,
-          };
-        }
         return null;
       },
     };
@@ -280,9 +272,31 @@ test.describe('large JSON UI performance', () => {
     await waitForActiveModel(page, 'large-a');
     await expect(page.getByTestId('tree-ready')).toBeAttached();
     let treeVersion = await readTreeBuildVersion(page);
+    await resetGaps(page);
+    const coldStartedAt = performance.now();
     await page.getByTestId('tab-large-b').click();
     await waitForActiveModel(page, 'large-b');
+    const coldSwitchMs = performance.now() - coldStartedAt;
     await waitForTreeBuildAfter(page, treeVersion);
+    const coldSettledMs = performance.now() - coldStartedAt;
+    const coldMaxGapMs = await readMaxGap(page);
+
+    console.table([{
+      scenario: 'Cold Large Tab Switch',
+      switch: `${coldSwitchMs.toFixed(1)} ms`,
+      settled: `${coldSettledMs.toFixed(1)} ms`,
+      maxUiGap: `${coldMaxGapMs.toFixed(1)} ms`,
+      result: coldSwitchMs <= LIMITS.coldTabSwitchMs &&
+        coldSettledMs <= LIMITS.coldTabSettledMs &&
+        coldMaxGapMs <= LIMITS.tabSwitchMaxEventLoopGapMs
+        ? 'PASS'
+        : 'FAIL',
+    }]);
+
+    expect(coldSwitchMs).toBeLessThanOrEqual(LIMITS.coldTabSwitchMs);
+    expect(coldSettledMs).toBeLessThanOrEqual(LIMITS.coldTabSettledMs);
+    expect(coldMaxGapMs).toBeLessThanOrEqual(LIMITS.tabSwitchMaxEventLoopGapMs);
+
     treeVersion = await readTreeBuildVersion(page);
     await page.getByTestId('tab-large-a').click();
     await waitForActiveModel(page, 'large-a');

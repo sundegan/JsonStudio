@@ -11,12 +11,14 @@
     editor,
     activeTabPath,
     activeTabName,
+    activeTabId,
     onToast,
   } = $props<{
     content: string;
     editor: MonacoEditor | null;
     activeTabPath: string | null;
     activeTabName: string | null;
+    activeTabId: string;
     onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   }>();
 
@@ -71,6 +73,7 @@
       <JsonTreeView
         {content}
         {editor}
+        tabId={activeTabId}
         on:toast={(e) => onToast(e.detail.message)}
       />
     </div>

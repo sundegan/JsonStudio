@@ -11,9 +11,7 @@ use commands::file::{
     save_file_dialog, open_folder_dialog, read_json_dir, create_untitled_json, show_in_folder,
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
-use commands::json::{
-    json_escape, json_format, json_minify, json_stats, json_unescape, json_validate,
-};
+use commands::json::{json_escape, json_format, json_minify, json_unescape};
 use commands::shortcuts::{format_clipboard_and_show, show_main_window, update_shortcut};
 use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
@@ -399,8 +397,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             json_format,
             json_minify,
-            json_validate,
-            json_stats,
             json_escape,
             json_unescape,
             set_window_theme,

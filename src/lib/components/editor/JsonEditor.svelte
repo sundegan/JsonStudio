@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getJsonStats, type JsonStats } from '$lib/services/json';
+  import { formatJson, type JsonStats } from '$lib/services/json';
   import { readFile, getFileName } from '$lib/services/file';
   import { tabsStore, activeTab } from '$lib/stores/tabs';
   import { fileWatcherService } from '$lib/services/fileWatcher';
@@ -29,6 +29,10 @@
   } from '$lib/services/logJsonWorker.js';
   import { cancelPasteFormat, formatPastedJsonAsync } from '$lib/services/pasteFormatWorker.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
+  import {
+    detectJsonDialectAsync,
+    getJsonDocumentStatsAsync,
+  } from '$lib/services/jsonTreeModelCache.js';
   import { clampPanelWidth, getDefaultPanelWidth, clampFolderWidth } from '$lib/services/panelResize.js';
   import { t } from '$lib/i18n';
 
@@ -126,7 +130,7 @@
         const normalizedContent = await normalizeOpenedJson(fileContent, {
           indent: settings.tabSize,
           formatJson: formatJsonText,
-          getJsonStats,
+          detectDialect: (value) => detectJsonDialectAsync(`open:${filePath}`, value),
           formatJson5,
         });
         tabsStore.openFile(normalizedContent, filePath, name);
@@ -877,7 +881,9 @@
     }
 
     try {
-      const result = await getJsonStats(value);
+      const result = await getJsonDocumentStatsAsync(`diff:${side}`, value) as JsonStats;
+      const currentValue = side === 'left' ? diffOriginal : diffModified;
+      if (currentValue !== value) return;
       if (side === 'left') {
         diffLeftStats = result;
       } else {
@@ -979,7 +985,7 @@
     const source = content;
     
     try {
-      const result = await getJsonStats(source);
+      const result = await getJsonDocumentStatsAsync(tabId, source) as JsonStats;
       const sourceTab = tabsState.tabs.find(tab => tab.id === tabId);
       if (!sourceTab || sourceTab.content !== source) return;
 
@@ -1006,7 +1012,6 @@
       try {
         originalJson5Content = content;
         
-        const { formatJson } = await import('$lib/services/json');
         const converted = await formatJson(content, tabSize);
         content = converted;
         monacoEditor?.setValue(converted);
@@ -1230,6 +1235,7 @@
             editor={monacoEditor}
             activeTabPath={$activeTab?.filePath ?? null}
             activeTabName={$activeTab?.fileName ?? null}
+            activeTabId={$activeTab?.id ?? ''}
             onToast={showToast}
           />
         </div>

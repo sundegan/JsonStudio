@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { escapeString, unescapeString } from '$lib/services/json';
+  import { escapeString, minifyJson, unescapeString } from '$lib/services/json';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, saveBinaryFileDialog, getFileName } from '$lib/services/file';
   import { exportJsonAsImage, pngBase64ToBytes } from '$lib/services/exportImage';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
@@ -7,6 +7,10 @@
   import { settingsStore } from '$lib/stores/settings';
   import { getSaveFileName } from '$lib/stores/untitledTabs.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
+  import {
+    detectJsonDialectAsync,
+    getJsonDocumentStatsAsync,
+  } from '$lib/services/jsonTreeModelCache.js';
   import { t } from '$lib/i18n';
   import type { EditorTheme } from '$lib/config/monacoThemes';
   import type MonacoEditor from './MonacoEditor.svelte';
@@ -231,9 +235,8 @@
     isProcessing = true;
 
     try {
-      const { getJsonStats } = await import('$lib/services/json');
       const { formatJson5, formatJsonText } = await import('$lib/services/json5Format.js');
-      const stats = await getJsonStats(content);
+      const stats = await getJsonDocumentStatsAsync(activeTab?.id ?? 'toolbar', content);
       const formatted = stats.valid && stats.format_type === 'JSON5'
         ? await formatJson5(content, tabSize)
         : await formatJsonText(content, tabSize);
@@ -257,7 +260,6 @@
     try {
       let minified = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        const { minifyJson } = await import('$lib/services/json');
         minified = await minifyJson(content);
       } else {
         minified = editor?.minify() || '';
@@ -342,7 +344,6 @@
     try {
       let minified = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        const { minifyJson } = await import('$lib/services/json');
         minified = await minifyJson(content);
       } else {
         minified = editor?.minify() || '';
@@ -381,14 +382,11 @@
       if (result) {
         const [path, fileContent] = result;
         const name = await getFileName(path);
-        const [{ getJsonStats }, { formatJson5, formatJsonText }] = await Promise.all([
-          import('$lib/services/json'),
-          import('$lib/services/json5Format.js'),
-        ]);
+        const { formatJson5, formatJsonText } = await import('$lib/services/json5Format.js');
         const normalizedContent = await normalizeOpenedJson(fileContent, {
           indent: tabSize,
           formatJson: formatJsonText,
-          getJsonStats,
+          detectDialect: (value) => detectJsonDialectAsync(`open:${path}`, value),
           formatJson5,
         });
 
