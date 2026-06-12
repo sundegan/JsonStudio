@@ -122,7 +122,6 @@
     <div class="update-actions">
       {#if updaterState.status === 'available'}
         <button class="update-primary-btn" type="button" onclick={handleInstallUpdate}>
-          <Download size={14} strokeWidth={2.4} />
           <span>{$t('updates.updateNow')}</span>
         </button>
       {:else if updaterState.status === 'ready-to-restart'}

@@ -47,6 +47,7 @@ test('update UI reassures users before restart and shares auto-check state with 
   assert.match(notification, /updates\.availablePrompt/);
   assert.match(notification, /updates\.restartReassurance/);
   assert.match(notification, /updates\.updateNow/);
+  assert.doesNotMatch(notification, /<Download size=\{14\}/);
   assert.match(notification, /updaterState\.status !== 'available'/);
   assert.doesNotMatch(notification, /updates\.availableTitle/);
   assert.doesNotMatch(notification, /update-version/);
