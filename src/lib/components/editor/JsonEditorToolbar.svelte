@@ -3,6 +3,7 @@
   import { openFileDialog, saveFile as writeFile, saveFileDialog, saveBinaryFileDialog, getFileName } from '$lib/services/file';
   import { exportJsonAsImage, pngBase64ToBytes } from '$lib/services/exportImage';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
+  import { getDocumentContent } from '$lib/stores/documentStore';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import { settingsStore } from '$lib/stores/settings';
   import { getSaveFileName } from '$lib/stores/untitledTabs.js';
@@ -419,7 +420,7 @@
       if (activeTab.filePath) {
         // Save to existing file.
         await writeFile(activeTab.filePath, currentContent);
-        if (activeTab.content === currentContent) {
+        if (getDocumentContent(activeTab.id) === currentContent) {
           tabsStore.updateTabModified(activeTab.id, false);
         }
         if (!isAutoSave) {

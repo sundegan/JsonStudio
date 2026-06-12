@@ -20,3 +20,10 @@ test('file operations group does not render export image as a standalone toolbar
   assert.ok(fileOperationsGroup, 'file operations group should be present');
   assert.doesNotMatch(fileOperationsGroup, /<button class="toolbar-btn" onclick=\{handleExportImage\}/);
 });
+
+test('save only clears modified state when document content is unchanged after write', () => {
+  const saveBody = toolbarSource.match(/async function handleSaveFile[\s\S]*?\n  \}/)?.[0] || '';
+
+  assert.match(saveBody, /getDocumentContent\(activeTab\.id\) === currentContent/);
+  assert.match(saveBody, /tabsStore\.updateTabModified\(activeTab\.id, false\)/);
+});

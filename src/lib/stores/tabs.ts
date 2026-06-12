@@ -4,15 +4,22 @@ import { fileWatcherService } from '$lib/services/fileWatcher';
 import { FIRST_UNTITLED_NAME, getNextUntitledName } from './untitledTabs.js';
 import { openFileInTabs } from './tabOpen.js';
 import { moveTabToInsertionIndex } from './tabOrder.js';
+import {
+  clearDocumentContents,
+  flushDocumentPersistence,
+  getDocumentContent,
+  removeDocumentContent,
+  setDocumentContent,
+} from './documentStore';
 
 export interface Tab {
   id: string;                    // Unique identifier
   filePath: string | null;       // File path
   fileName: string | null;       // File name
-  content: string;               // Editor content
   isModified: boolean;           // Modified flag
   stats: JsonStats;              // JSON statistics
   isPinned: boolean;             // Pinned tab flag
+  contentVersion: number;        // Incremented when document content changes
 }
 
 export interface TabsState {
@@ -21,7 +28,6 @@ export interface TabsState {
 }
 
 const STORAGE_KEY = 'jsonstudio_tabs_state';
-const MAX_PERSISTED_CONTENT_SIZE = 1024 * 1024; // 1MB per tab
 const PERSIST_DEBOUNCE_MS = 500;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingPersistState: TabsState | null = null;
@@ -38,10 +44,6 @@ function createEmptyStats(): JsonStats {
   };
 }
 
-function getStatsForPersistedContent(content: string, stats: JsonStats | undefined): JsonStats {
-  return content.trim() ? (stats ?? createEmptyStats()) : createEmptyStats();
-}
-
 // Generate unique ID
 function generateId(): string {
   return `tab_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -54,27 +56,18 @@ export function createNewTab(
   fileName: string | null = FIRST_UNTITLED_NAME,
   isPinned: boolean = false
 ): Tab {
-  return {
+  const tab = {
     id: generateId(),
     filePath,
     fileName,
-    content,
     isModified: false,
     stats: createEmptyStats(),
     isPinned,
+    contentVersion: content ? 1 : 0,
   };
+  setDocumentContent(tab.id, content);
+  return tab;
 }
-
-// Create default state with proper activeTabId
-function createDefaultState(): TabsState {
-  const firstTab = createNewTab();
-  return {
-    tabs: [firstTab],
-    activeTabId: firstTab.id,
-  };
-}
-
-const defaultState: TabsState = createDefaultState();
 
 // Load state from localStorage
 function loadState(): TabsState {
@@ -85,15 +78,20 @@ function loadState(): TabsState {
       const sanitizedTabs: Tab[] = parsed.tabs.reduce<Tab[]>((result, tab) => {
         const filePath = tab.filePath ?? null;
         const fileName = tab.fileName ?? (filePath ? null : getNextUntitledName(result));
-        const content = tab.content ?? '';
+        const legacyContent = typeof (tab as any).content === 'string'
+          ? (tab as any).content
+          : '';
+        if (legacyContent) {
+          setDocumentContent(tab.id, legacyContent);
+        }
         result.push({
-          ...tab,
+          id: tab.id,
           filePath,
           fileName,
-          content,
-          stats: getStatsForPersistedContent(content, tab.stats),
+          stats: tab.stats ?? createEmptyStats(),
           isModified: false,
           isPinned: tab.isPinned ?? false,
+          contentVersion: tab.contentVersion ?? (legacyContent ? 1 : 0),
         });
         return result;
       }, []);
@@ -132,18 +130,8 @@ function saveState(state: TabsState) {
   }
   pendingPersistState = null;
   try {
-    // Limit what we save to avoid localStorage quota issues
-    // localStorage typically has 5-10MB limit, so 1MB per tab is a safe limit.
-    
     const toSave: TabsState = {
-      tabs: state.tabs.map(tab => {
-        const content = tab.content.length > MAX_PERSISTED_CONTENT_SIZE ? '' : tab.content;
-        return {
-          ...tab,
-          content,
-          stats: getStatsForPersistedContent(content, tab.stats),
-        };
-      }),
+      tabs: state.tabs.map(tab => ({ ...tab })),
       activeTabId: state.activeTabId,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -164,6 +152,7 @@ function scheduleSaveState(state: TabsState) {
 }
 
 function flushPendingPersistence() {
+  flushDocumentPersistence();
   const pending = pendingPersistState;
   if (pending) saveState(pending);
 }
@@ -195,8 +184,12 @@ function createTabsStore() {
     // Open file: reuse empty tab if possible, otherwise create new tab
     openFile: (content: string, filePath: string, fileName: string | null) => {
       update(state => {
-        const existingState = openFileInTabs(state, content, filePath, fileName);
+        const existingState = openFileInTabs(state, filePath, fileName);
         if (existingState !== state) {
+          const existingTab = existingState.tabs.find(tab => tab.filePath === filePath);
+          if (existingTab && !existingTab.isModified) {
+            setDocumentContent(existingTab.id, content);
+          }
           saveState(existingState);
           return existingState;
         }
@@ -204,12 +197,13 @@ function createTabsStore() {
         const currentTab = state.tabs.find(t => t.id === state.activeTabId);
         
         // If current tab is empty and unmodified, reuse it
-        if (currentTab && !currentTab.content && !currentTab.filePath && !currentTab.isModified) {
+        if (currentTab && !getDocumentContent(currentTab.id) && !currentTab.filePath && !currentTab.isModified) {
+          setDocumentContent(currentTab.id, content);
           const newState = {
             ...state,
             tabs: state.tabs.map(tab =>
               tab.id === currentTab.id
-                ? { ...tab, content, filePath, fileName, isModified: false }
+                ? { ...tab, filePath, fileName, isModified: false, contentVersion: tab.contentVersion + 1 }
                 : tab
             ),
           };
@@ -235,6 +229,7 @@ function createTabsStore() {
         if (tabIndex === -1) return state;
         
         const newTabs = state.tabs.filter(t => t.id !== tabId);
+        removeDocumentContent(tabId);
         
         // Update active tab if removed tab was active
         let newActiveId = state.activeTabId;
@@ -279,12 +274,17 @@ function createTabsStore() {
     
     // Update tab content
     updateTabContent: (tabId: string, content: string, markModified: boolean = true) => {
+      setDocumentContent(tabId, content);
       update(state => {
         const newState = {
           ...state,
           tabs: state.tabs.map(tab => 
             tab.id === tabId 
-              ? { ...tab, content, isModified: (tab.filePath && markModified) ? true : tab.isModified }
+              ? {
+                  ...tab,
+                  contentVersion: tab.contentVersion + 1,
+                  isModified: (tab.filePath && markModified) ? true : tab.isModified,
+                }
               : tab
           ),
         };
@@ -362,6 +362,12 @@ function createTabsStore() {
           return state;
         }
         const keepTabs = state.tabs.filter(tab => tab.id === tabId || tab.isPinned);
+        const keepTabIds = new Set(keepTabs.map(tab => tab.id));
+        for (const tab of state.tabs) {
+          if (!keepTabIds.has(tab.id)) {
+            removeDocumentContent(tab.id);
+          }
+        }
         const newState: TabsState = {
           tabs: keepTabs,
           activeTabId: keepTabs.find(tab => tab.id === tabId)?.id || keepTabs[0].id,
@@ -410,6 +416,7 @@ function createTabsStore() {
     
     // Close all tabs
     closeAllTabs: () => {
+      clearDocumentContents();
       const newTab = createNewTab();
       const newState: TabsState = {
         tabs: [newTab],
@@ -421,6 +428,7 @@ function createTabsStore() {
     
     // Reset store
     reset: () => {
+      clearDocumentContents();
       const newTab = createNewTab();
       const newState: TabsState = {
         tabs: [newTab],

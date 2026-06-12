@@ -20,6 +20,7 @@
   import { type EditorTheme } from '$lib/config/monacoThemes';
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
+  import { getDocumentContent, hasDocumentContent, loadDocumentContent } from '$lib/stores/documentStore';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import AboutDialog from '$lib/components/AboutDialog.svelte';
   import { MAX_LOG_JSON_INPUT_LENGTH } from '$lib/services/logJsonFragments.js';
@@ -44,6 +45,7 @@
     formatted: string;
     kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Repaired JSON';
   };
+  type TabWithContent = import('$lib/stores/tabs').Tab & { content: string };
 
   let content = $state('');
   let lineCount = $state(0);
@@ -353,16 +355,29 @@
       }
     };
     
+    const flushPendingTabPersistence = () => {
+      tabsStore.flushPersistence();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushPendingTabPersistence();
+      }
+    };
+
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('pagehide', flushPendingTabPersistence);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      tabsStore.flushPersistence();
+      flushPendingTabPersistence();
       workspaceResizeObserver?.disconnect();
       if (unlistenFormatted) unlistenFormatted();
       if (unlistenRaw) unlistenRaw();
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('pagehide', flushPendingTabPersistence);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       if (logJsonTimer) clearTimeout(logJsonTimer);
       cancelLogJsonDetection();
@@ -427,7 +442,7 @@
     }
   }
 
-  function applyRightPanelTab(tab: import('$lib/stores/tabs').Tab) {
+  function applyRightPanelTab(tab: TabWithContent) {
     rightPanelContent = tab.content;
     rightPanelActiveTabId = tab.id;
     rightPanelActiveTabPath = tab.filePath ?? null;
@@ -435,7 +450,7 @@
   }
 
   function scheduleRightPanelTabSync(
-    tab: import('$lib/stores/tabs').Tab,
+    tab: TabWithContent,
     deferUntilEditorPaint: boolean,
   ) {
     if (rightPanelSyncFrame !== null) {
@@ -458,7 +473,7 @@
     });
   }
 
-  function schedulePostSwitchWork(tab: import('$lib/stores/tabs').Tab, deferUntilEditorPaint: boolean) {
+  function schedulePostSwitchWork(tab: TabWithContent, deferUntilEditorPaint: boolean) {
     if (postSwitchWorkFrame !== null) {
       cancelAnimationFrame(postSwitchWorkFrame);
       postSwitchWorkFrame = null;
@@ -484,23 +499,30 @@
     });
   }
 
-  function syncActiveTab(
+  async function syncActiveTab(
     state: import('$lib/stores/tabs').TabsState,
     options: { deferSideEffects?: boolean } = {},
   ) {
     const currentTab = getActiveTabFromState(state);
     if (!currentTab) return;
+    const tabId = currentTab.id;
+    const version = currentTab.contentVersion;
+    const loadedContent = hasDocumentContent(tabId)
+      ? getDocumentContent(tabId)
+      : await loadDocumentContent(tabId);
+    const latestTab = getActiveTabFromState(tabsState);
+    if (latestTab?.id !== tabId || latestTab.contentVersion !== version) return;
 
     cancelPasteFormat();
-    setContentState(currentTab.content, {
+    setContentState(loadedContent, {
       deferLineCount: options.deferSideEffects ?? false,
     });
     stats = currentTab.stats;
-    if (isCurrentLogJsonContent(logJsonSource) && logJsonSource !== currentTab.content) {
+    if (isCurrentLogJsonContent(logJsonSource) && logJsonSource !== loadedContent) {
       resetLogJsonFragments();
     }
-    scheduleRightPanelTabSync(currentTab, options.deferSideEffects ?? false);
-    schedulePostSwitchWork(currentTab, options.deferSideEffects ?? false);
+    scheduleRightPanelTabSync({ ...currentTab, content: loadedContent }, options.deferSideEffects ?? false);
+    schedulePostSwitchWork({ ...currentTab, content: loadedContent }, options.deferSideEffects ?? false);
   }
   
   // Handle file watching for active tab
@@ -511,6 +533,7 @@
       await fileWatcherService.watchFile(tab.filePath, async (changedPath) => {
         const currentTab = tabsState.tabs.find(t => t.id === tab.id);
         if (!currentTab) return;
+        const currentContent = getDocumentContent(currentTab.id);
 
         // File was modified externally
         if (currentTab.isModified) {
@@ -520,7 +543,7 @@
           // Auto reload if not modified
           try {
             const newContent = await readFile(changedPath);
-            if (newContent !== currentTab.content) {
+            if (newContent !== currentContent) {
               tabsStore.updateTabContent(currentTab.id, newContent, false);
               await updateStats();
               showToast(`File "${currentTab.fileName}" reloaded`, 'success');
@@ -541,7 +564,7 @@
       const oldActiveTabId = prevActiveTabId;
       const newActiveTabId = newTabsState.activeTabId;
       const currentTab = getActiveTabFromState(newTabsState);
-      const newActiveTabContent = currentTab?.content || '';
+      const newActiveTabVersion = currentTab?.contentVersion ?? 0;
       
       tabsState = newTabsState;
       monacoEditor?.retainModels(newTabsState.tabs.map(tab => tab.id));
@@ -550,8 +573,8 @@
       if (isFirstSync) {
         isFirstSync = false;
         prevActiveTabId = newActiveTabId;
-        prevActiveTabContent = newActiveTabContent;
-        syncActiveTab(newTabsState);
+        prevActiveTabContent = String(newActiveTabVersion);
+        void syncActiveTab(newTabsState);
         setupFileWatching(currentTab);
         return;
       }
@@ -560,13 +583,12 @@
       // 1. Switching tabs (activeTabId changed)
       // 2. Current tab's content changed externally (e.g., file opened into empty tab)
       const tabSwitched = oldActiveTabId !== newActiveTabId;
-      const contentChangedExternally = prevActiveTabContent !== newActiveTabContent && 
-                                       newActiveTabContent !== content;
+      const contentChangedExternally = prevActiveTabContent !== String(newActiveTabVersion);
       
       if (tabSwitched || contentChangedExternally) {
         prevActiveTabId = newActiveTabId;
-        prevActiveTabContent = newActiveTabContent;
-        syncActiveTab(newTabsState, {
+        prevActiveTabContent = String(newActiveTabVersion);
+        void syncActiveTab(newTabsState, {
           deferSideEffects: tabSwitched,
         });
         
@@ -660,9 +682,10 @@
       
       const currentTab = $activeTab;
       if (currentTab) {
-        setContentState(currentTab.content, { syncRightPanel: true });
+        const currentContent = getDocumentContent(currentTab.id);
+        setContentState(currentContent, { syncRightPanel: true });
         stats = currentTab.stats;
-        monacoEditor?.setValue(currentTab.content);
+        monacoEditor?.setValue(currentContent);
       }
       return;
     }
@@ -716,9 +739,10 @@
       } else {
         const currentTab = $activeTab;
         if (currentTab) {
-          setContentState(currentTab.content, { syncRightPanel: true });
+          const currentContent = getDocumentContent(currentTab.id);
+          setContentState(currentContent, { syncRightPanel: true });
           stats = currentTab.stats;
-          monacoEditor?.setValue(currentTab.content);
+          monacoEditor?.setValue(currentContent);
         }
       }
       
@@ -757,9 +781,10 @@
       } else {
         const currentTab = $activeTab;
         if (currentTab) {
-          setContentState(currentTab.content, { syncRightPanel: true });
+          const currentContent = getDocumentContent(currentTab.id);
+          setContentState(currentContent, { syncRightPanel: true });
           stats = currentTab.stats;
-          monacoEditor?.setValue(currentTab.content);
+          monacoEditor?.setValue(currentContent);
         }
       }
       
@@ -798,9 +823,10 @@
       } else {
         const currentTab = $activeTab;
         if (currentTab) {
-          setContentState(currentTab.content, { syncRightPanel: true });
+          const currentContent = getDocumentContent(currentTab.id);
+          setContentState(currentContent, { syncRightPanel: true });
           stats = currentTab.stats;
-          monacoEditor?.setValue(currentTab.content);
+          monacoEditor?.setValue(currentContent);
         }
       }
       
@@ -1081,7 +1107,8 @@
       const currentSourceTab = tabsState.tabs.find(tab => tab.id === tabId);
       if (
         $activeTab?.id !== tabId ||
-        currentSourceTab?.content !== sourceValue ||
+        !currentSourceTab ||
+        getDocumentContent(tabId) !== sourceValue ||
         content !== sourceValue ||
         monacoEditor?.getValue() !== sourceValue
       ) {
@@ -1110,7 +1137,7 @@
     try {
       const result = await getJsonDocumentStatsAsync(tabId, source) as JsonStats;
       const sourceTab = tabsState.tabs.find(tab => tab.id === tabId);
-      if (!sourceTab || sourceTab.content !== source) return;
+      if (!sourceTab || getDocumentContent(tabId) !== source) return;
 
       tabsStore.updateTabStats(tabId, result);
       if ($activeTab?.id !== tabId || content !== source) return;
