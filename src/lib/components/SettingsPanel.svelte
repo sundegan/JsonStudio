@@ -16,7 +16,9 @@
     installAvailableAppUpdate,
     restartInstalledAppUpdate,
   } from '$lib/stores/appUpdateStore';
+  import { formatAppVersion } from '$lib/services/appMetadata.js';
   import { t, availableLocales, localeNames, type Locale } from '$lib/i18n';
+  import AppResourceLinks from './AppResourceLinks.svelte';
   import ShortcutRecorder from './ShortcutRecorder.svelte';
 
   type SettingsTab = 'appearance' | 'editor' | 'shortcuts' | 'application';
@@ -459,9 +461,13 @@
               <div class="settings-item-row">
                 <div class="settings-item-label">
                   <span class="settings-item-name">{$t('settings.currentVersion')}</span>
-                  <span class="settings-hint">{updaterState.currentVersion || $t('settings.versionUnknown')}</span>
+                  <span class="settings-hint">{formatAppVersion(updaterState.currentVersion, $t('settings.versionUnknown'))}</span>
                 </div>
               </div>
+            </div>
+
+            <div class="settings-item settings-resource-item">
+              <AppResourceLinks />
             </div>
 
             <div class="settings-item">
@@ -475,7 +481,7 @@
                       {$t(updaterState.messageKey)}
                     {/if}
                     {#if updaterState.update?.version}
-                      <span class="settings-inline-version">{updaterState.update.version}</span>
+                      <span class="settings-inline-version">{formatAppVersion(updaterState.update.version)}</span>
                     {/if}
                   </span>
                   {#if updaterState.status === 'ready-to-restart'}
@@ -1013,6 +1019,11 @@
 
   .settings-update-row {
     align-items: flex-start;
+  }
+
+  .settings-resource-item {
+    padding-top: 14px;
+    padding-bottom: 14px;
   }
 
   .settings-update-actions {

@@ -72,6 +72,19 @@ test('app update notification delays automatic checks and can be dismissed when 
   assert.match(notification, /if \(isBusy\) return;/);
 });
 
+test('app update notification keeps the desktop prompt compact', () => {
+  const notification = readFileSync(
+    new URL('../src/lib/components/AppUpdateNotification.svelte', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(notification, /width: min\(350px, calc\(100vw - 28px\)\);/);
+  assert.match(notification, /padding: 9px 10px;/);
+  assert.match(notification, /\.update-message \{[\s\S]*white-space: nowrap;/);
+  assert.match(notification, /\.update-primary-btn,[\s\S]*height: 28px;/);
+  assert.match(notification, /@media \(max-width: 520px\) \{[\s\S]*\.update-message \{[\s\S]*white-space: normal;/);
+});
+
 test('app update mock is dev-only and can be enabled locally', () => {
   const store = readFileSync(
     new URL('../src/lib/stores/appUpdateStore.ts', import.meta.url),

@@ -33,7 +33,9 @@ export default {
   'about.close': 'Close about dialog',
   'about.tagline': 'A fast, modern desktop JSON app built for daily development.',
   'about.version': 'Version',
-  'about.github': 'GitHub',
+  'appLinks.website': 'Website',
+  'appLinks.github': 'GitHub',
+  'appLinks.changelog': 'Changelog',
 
   // Settings panel
   'settings.title': 'Settings',

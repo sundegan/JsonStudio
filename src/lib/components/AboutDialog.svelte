@@ -2,11 +2,9 @@
   import { onMount } from 'svelte';
   import { getVersion } from '@tauri-apps/api/app';
   import { listen } from '@tauri-apps/api/event';
-  import { openUrl } from '@tauri-apps/plugin-opener';
   import { t } from '$lib/i18n';
-
-  const githubUrl = 'https://github.com/sundegan/JsonStudio';
-  const githubLabel = 'sundegan/JsonStudio';
+  import { formatAppVersion } from '$lib/services/appMetadata.js';
+  import AppResourceLinks from './AppResourceLinks.svelte';
 
   let isOpen = $state(false);
   let version = $state('');
@@ -53,9 +51,6 @@
     }
   }
 
-  async function openGithub() {
-    await openUrl('https://github.com/sundegan/JsonStudio');
-  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -84,15 +79,12 @@
       <div class="about-meta">
         <div class="about-row">
           <span>{$t('about.version')}</span>
-          <strong>{version || $t('settings.versionUnknown')}</strong>
+          <strong>{formatAppVersion(version, $t('settings.versionUnknown'))}</strong>
         </div>
-        <button class="about-link" type="button" onclick={openGithub}>
-          <span>{$t('about.github')}</span>
-          <strong title={githubUrl}>{githubLabel}</strong>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 17 17 7M9 7h8v8" />
-          </svg>
-        </button>
+      </div>
+
+      <div class="about-resources">
+        <AppResourceLinks />
       </div>
 
       <p class="about-footer">Copyright © 2025 Json Studio</p>
@@ -190,8 +182,7 @@
     margin-top: 26px;
   }
 
-  .about-row,
-  .about-link {
+  .about-row {
     min-height: 46px;
     display: flex;
     align-items: center;
@@ -203,15 +194,13 @@
     background: var(--bg-secondary);
   }
 
-  .about-row span,
-  .about-link span {
+  .about-row span {
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 700;
   }
 
-  .about-row strong,
-  .about-link strong {
+  .about-row strong {
     min-width: 0;
     color: var(--text-primary);
     font-size: 13px;
@@ -219,38 +208,8 @@
     line-height: 1.35;
   }
 
-  .about-link {
-    width: 100%;
-    color: inherit;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.16s ease;
-  }
-
-  .about-link:hover {
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
-    background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
-  }
-
-  .about-link strong {
-    flex: 1;
-    color: var(--accent);
-    overflow: hidden;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .about-link svg {
-    width: 16px;
-    height: 16px;
-    flex: 0 0 auto;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    color: var(--accent);
+  .about-resources {
+    margin-top: 12px;
   }
 
   .about-footer {

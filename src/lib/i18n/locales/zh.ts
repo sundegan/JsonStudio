@@ -33,7 +33,9 @@ export default {
   'about.close': '关闭关于窗口',
   'about.tagline': '为日常开发打造的快速、现代桌面 JSON 应用',
   'about.version': '版本',
-  'about.github': 'GitHub',
+  'appLinks.website': '官方网站',
+  'appLinks.github': 'GitHub',
+  'appLinks.changelog': '更新日志',
 
   // Settings panel
   'settings.title': '设置',
