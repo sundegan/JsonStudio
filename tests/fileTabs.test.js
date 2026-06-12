@@ -172,6 +172,14 @@ test('monaco tab switches can defer value sync while attaching the next model', 
   assert.match(editorSource, /deferValueSync=\{isEditorModelPending\}/);
 });
 
+test('main editor keeps a draggable vertical scrollbar target visible', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /scrollbar: \{[\s\S]*vertical: 'visible'/);
+  assert.match(source, /scrollbar: \{[\s\S]*verticalScrollbarSize: 14/);
+  assert.match(source, /scrollbar: \{[\s\S]*horizontalScrollbarSize: 12/);
+});
+
 test('editor ignores changes while the active tab and Monaco model are out of sync', async () => {
   const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
 

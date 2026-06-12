@@ -1323,7 +1323,7 @@
       >
         <div
           class="tree-virtual-window"
-          style:transform={`translateY(${virtualTreeWindow.offset}px)`}
+          style:top={`${virtualTreeWindow.offset}px`}
         >
           {#each virtualTreeWindow.rows as row (row.node.path)}
             {@render renderRow(row)}
@@ -1802,7 +1802,6 @@
     left: 6px;
     width: max-content;
     min-width: calc(100% - 6px);
-    will-change: transform;
   }
 
   .tree-virtual-list .tree-node,
