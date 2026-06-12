@@ -164,6 +164,15 @@ test('main editor uses one lightweight tokenizer for JSON and JSON5', async () =
   assert.doesNotMatch(source, /setLanguage\(/);
 });
 
+test('right panel receives deferred tab switches and live content edits', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /rightPanelContent = tab\.content/);
+  assert.match(source, /deferSideEffects: tabSwitched/);
+  assert.match(source, /setContentState\(newValue, \{ syncRightPanel: true \}\)/);
+  assert.match(source, /content=\{rightPanelContent\}/);
+});
+
 test('async stats results are discarded after content or tab changes', async () => {
   const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
 

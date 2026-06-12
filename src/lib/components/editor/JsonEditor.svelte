@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { formatJson, type JsonStats } from '$lib/services/json';
   import { readFile, getFileName } from '$lib/services/file';
   import { tabsStore, activeTab } from '$lib/stores/tabs';
@@ -46,6 +46,7 @@
   };
 
   let content = $state('');
+  let lineCount = $state(0);
   let stats = $state<JsonStats>({
     valid: false,
     key_count: 0,
@@ -101,6 +102,16 @@
   let folderViewWidth = $state(220);
   let isResizingFolderView = $state(false);
   let mainWorkspaceEl: HTMLDivElement | null = null;
+  let rightPanelContent = $state('');
+  let rightPanelActiveTabId = $state('');
+  let rightPanelActiveTabPath = $state<string | null>(null);
+  let rightPanelActiveTabName = $state<string | null>(null);
+  let rightPanelSyncFrame: number | null = null;
+  let rightPanelSyncVersion = 0;
+  let postSwitchWorkFrame: number | null = null;
+  let postSwitchWorkVersion = 0;
+  let lineCountFrame: number | null = null;
+  let lineCountVersion = 0;
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -377,15 +388,119 @@
     return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0] || null;
   }
 
-  function syncActiveTab(state: import('$lib/stores/tabs').TabsState) {
+  function countLines(value: string) {
+    if (!value) return 0;
+    let count = 1;
+    for (let index = 0; index < value.length; index += 1) {
+      if (value.charCodeAt(index) === 10) count += 1;
+    }
+    return count;
+  }
+
+  function setContentState(value: string, options: {
+    deferLineCount?: boolean;
+    syncRightPanel?: boolean;
+  } = {}) {
+    content = value;
+    if (lineCountFrame !== null) {
+      cancelAnimationFrame(lineCountFrame);
+      lineCountFrame = null;
+    }
+    const version = ++lineCountVersion;
+    if (options.deferLineCount) {
+      lineCountFrame = requestAnimationFrame(() => {
+        lineCountFrame = requestAnimationFrame(() => {
+          lineCountFrame = null;
+          if (version !== lineCountVersion || content !== value) return;
+          lineCount = countLines(value);
+        });
+      });
+      return;
+    }
+    lineCount = countLines(value);
+
+    if (options.syncRightPanel) {
+      const currentTab = $activeTab;
+      if (currentTab) {
+        scheduleRightPanelTabSync({ ...currentTab, content: value }, false);
+      }
+    }
+  }
+
+  function applyRightPanelTab(tab: import('$lib/stores/tabs').Tab) {
+    rightPanelContent = tab.content;
+    rightPanelActiveTabId = tab.id;
+    rightPanelActiveTabPath = tab.filePath ?? null;
+    rightPanelActiveTabName = tab.fileName ?? null;
+  }
+
+  function scheduleRightPanelTabSync(
+    tab: import('$lib/stores/tabs').Tab,
+    deferUntilEditorPaint: boolean,
+  ) {
+    if (rightPanelSyncFrame !== null) {
+      cancelAnimationFrame(rightPanelSyncFrame);
+      rightPanelSyncFrame = null;
+    }
+    const version = ++rightPanelSyncVersion;
+
+    if (!deferUntilEditorPaint) {
+      applyRightPanelTab(tab);
+      return;
+    }
+
+    rightPanelSyncFrame = requestAnimationFrame(() => {
+      rightPanelSyncFrame = requestAnimationFrame(() => {
+        rightPanelSyncFrame = null;
+        if (version !== rightPanelSyncVersion) return;
+        applyRightPanelTab(tab);
+      });
+    });
+  }
+
+  function schedulePostSwitchWork(tab: import('$lib/stores/tabs').Tab, deferUntilEditorPaint: boolean) {
+    if (postSwitchWorkFrame !== null) {
+      cancelAnimationFrame(postSwitchWorkFrame);
+      postSwitchWorkFrame = null;
+    }
+    const version = ++postSwitchWorkVersion;
+
+    const run = () => {
+      if (version !== postSwitchWorkVersion) return;
+      if ($activeTab?.id !== tab.id || content !== tab.content) return;
+      scheduleLogJsonDetection(tab.content);
+    };
+
+    if (!deferUntilEditorPaint) {
+      run();
+      return;
+    }
+
+    postSwitchWorkFrame = requestAnimationFrame(() => {
+      postSwitchWorkFrame = requestAnimationFrame(() => {
+        postSwitchWorkFrame = null;
+        run();
+      });
+    });
+  }
+
+  function syncActiveTab(
+    state: import('$lib/stores/tabs').TabsState,
+    options: { deferSideEffects?: boolean } = {},
+  ) {
     const currentTab = getActiveTabFromState(state);
     if (!currentTab) return;
 
     cancelPasteFormat();
-    content = currentTab.content;
+    setContentState(currentTab.content, {
+      deferLineCount: options.deferSideEffects ?? false,
+    });
     stats = currentTab.stats;
-
-    scheduleLogJsonDetection(currentTab.content);
+    if (isCurrentLogJsonContent(logJsonSource) && logJsonSource !== currentTab.content) {
+      resetLogJsonFragments();
+    }
+    scheduleRightPanelTabSync(currentTab, options.deferSideEffects ?? false);
+    schedulePostSwitchWork(currentTab, options.deferSideEffects ?? false);
   }
   
   // Handle file watching for active tab
@@ -451,7 +566,9 @@
       if (tabSwitched || contentChangedExternally) {
         prevActiveTabId = newActiveTabId;
         prevActiveTabContent = newActiveTabContent;
-        syncActiveTab(newTabsState);
+        syncActiveTab(newTabsState, {
+          deferSideEffects: tabSwitched,
+        });
         
         // Setup file watching for new active tab
         if (tabSwitched) {
@@ -470,6 +587,12 @@
   let showFolderView = $derived(settings.showFolderView);
   let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && logJsonFragments.length > 0);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
+
+  onDestroy(() => {
+    if (rightPanelSyncFrame !== null) cancelAnimationFrame(rightPanelSyncFrame);
+    if (postSwitchWorkFrame !== null) cancelAnimationFrame(postSwitchWorkFrame);
+    if (lineCountFrame !== null) cancelAnimationFrame(lineCountFrame);
+  });
   $effect(() => {
     if (!showTreeView) {
       isResizingTreeView = false;
@@ -537,7 +660,7 @@
       
       const currentTab = $activeTab;
       if (currentTab) {
-        content = currentTab.content;
+        setContentState(currentTab.content, { syncRightPanel: true });
         stats = currentTab.stats;
         monacoEditor?.setValue(currentTab.content);
       }
@@ -582,7 +705,7 @@
       isConvertMode = false;
       
       if (originalJson5Content) {
-        content = originalJson5Content;
+        setContentState(originalJson5Content, { syncRightPanel: true });
         monacoEditor?.setValue(originalJson5Content);
         const currentTab = $activeTab;
         if (currentTab) {
@@ -593,7 +716,7 @@
       } else {
         const currentTab = $activeTab;
         if (currentTab) {
-          content = currentTab.content;
+          setContentState(currentTab.content, { syncRightPanel: true });
           stats = currentTab.stats;
           monacoEditor?.setValue(currentTab.content);
         }
@@ -623,7 +746,7 @@
       isCodegenMode = false;
       
       if (originalJson5Content) {
-        content = originalJson5Content;
+        setContentState(originalJson5Content, { syncRightPanel: true });
         monacoEditor?.setValue(originalJson5Content);
         const currentTab = $activeTab;
         if (currentTab) {
@@ -634,7 +757,7 @@
       } else {
         const currentTab = $activeTab;
         if (currentTab) {
-          content = currentTab.content;
+          setContentState(currentTab.content, { syncRightPanel: true });
           stats = currentTab.stats;
           monacoEditor?.setValue(currentTab.content);
         }
@@ -664,7 +787,7 @@
       isSchemaMode = false;
       
       if (originalJson5Content) {
-        content = originalJson5Content;
+        setContentState(originalJson5Content, { syncRightPanel: true });
         monacoEditor?.setValue(originalJson5Content);
         const currentTab = $activeTab;
         if (currentTab) {
@@ -675,7 +798,7 @@
       } else {
         const currentTab = $activeTab;
         if (currentTab) {
-          content = currentTab.content;
+          setContentState(currentTab.content, { syncRightPanel: true });
           stats = currentTab.stats;
           monacoEditor?.setValue(currentTab.content);
         }
@@ -895,7 +1018,7 @@
   function handleEditorChange(newValue: string) {
     const currentTab = $activeTab;
     if (!currentTab) return;
-    content = newValue;
+    setContentState(newValue, { syncRightPanel: true });
     tabsStore.updateTabContent(currentTab.id, newValue);
 
     if (statsTimer) clearTimeout(statsTimer);
@@ -929,7 +1052,7 @@
 
   function handleToolbarContentChange(newValue: string) {
     const currentTab = $activeTab;
-    content = newValue;
+    setContentState(newValue, { syncRightPanel: true });
     if (!currentTab) return;
     tabsStore.updateTabContent(currentTab.id, newValue);
     scheduleLogJsonDetection(newValue);
@@ -965,7 +1088,7 @@
         return;
       }
 
-      content = normalized;
+      setContentState(normalized, { syncRightPanel: true });
       monacoEditor.setValue(normalized);
       tabsStore.updateTabContent(tabId, normalized);
       scheduleLogJsonDetection(normalized);
@@ -1013,7 +1136,7 @@
         originalJson5Content = content;
         
         const converted = await formatJson(content, tabSize);
-        content = converted;
+        setContentState(converted, { syncRightPanel: true });
         monacoEditor?.setValue(converted);
         
         const currentTab = $activeTab;
@@ -1231,11 +1354,11 @@
       {#if showTreeView}
         <div class="json-tree-container" style={`width: ${treeViewWidth}px;`}>
           <RightViewPanel
-            content={content}
+            content={rightPanelContent}
             editor={monacoEditor}
-            activeTabPath={$activeTab?.filePath ?? null}
-            activeTabName={$activeTab?.fileName ?? null}
-            activeTabId={$activeTab?.id ?? ''}
+            activeTabPath={rightPanelActiveTabPath}
+            activeTabName={rightPanelActiveTabName}
+            activeTabId={rightPanelActiveTabId}
             onToast={showToast}
           />
         </div>
@@ -1253,7 +1376,7 @@
       diffModified={diffModified}
       activeTab={$activeTab}
       stats={stats}
-      content={content}
+      lineCount={lineCount}
     />
   {/if}
 
