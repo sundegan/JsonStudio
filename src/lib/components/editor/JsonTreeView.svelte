@@ -688,6 +688,43 @@
     clearTreeDragState();
   }
 
+  function getTreeEditKindFromEvent(
+    event: MouseEvent,
+    node: TreeNode,
+  ): TreeEditState['kind'] | null {
+    const target = event.target as HTMLElement | null;
+    if (!target || target.closest('button,input,textarea,select')) return null;
+
+    const explicitTarget = target.closest('[data-tree-edit-kind]') as HTMLElement | null;
+    const explicitKind = explicitTarget?.dataset.treeEditKind;
+    if (explicitKind === 'key' || explicitKind === 'value') return explicitKind;
+
+    const row = event.currentTarget as HTMLElement | null;
+    const keyTarget = row?.querySelector('[data-tree-edit-kind="key"]') as HTMLElement | null;
+    const valueTarget = row?.querySelector('[data-tree-edit-kind="value"]') as HTMLElement | null;
+    const keyDistance = getHorizontalDistanceFromElement(event.clientX, keyTarget);
+    const valueDistance = getHorizontalDistanceFromElement(event.clientX, valueTarget);
+
+    if (keyDistance < valueDistance && canAttemptTreeKeyEdit(node)) return 'key';
+    if (valueDistance < Number.POSITIVE_INFINITY && isTreeValueEditable(node)) return 'value';
+    if (isTreeValueEditable(node)) return 'value';
+    if (canAttemptTreeKeyEdit(node)) return 'key';
+    return null;
+  }
+
+  function getHorizontalDistanceFromElement(clientX: number, element: HTMLElement | null) {
+    if (!element) return Number.POSITIVE_INFINITY;
+    const rect = element.getBoundingClientRect();
+    if (clientX >= rect.left && clientX <= rect.right) return 0;
+    return Math.min(Math.abs(clientX - rect.left), Math.abs(clientX - rect.right));
+  }
+
+  function handleTreeNodeDoubleClick(event: MouseEvent, node: TreeNode) {
+    const kind = getTreeEditKindFromEvent(event, node);
+    if (!kind) return;
+    beginTreeEdit(event, node, kind);
+  }
+
   function beginTreeEdit(event: MouseEvent, node: TreeNode, kind: TreeEditState['kind']) {
     if (hasDuplicateSourceKeys) {
       event.stopPropagation();
@@ -1136,6 +1173,7 @@
             class="tree-node-content"
             data-tree-path={node.path}
             onclick={(e) => handleTreeNodeClick(e, node)}
+            ondblclick={(e) => handleTreeNodeDoubleClick(e, node)}
             onkeydown={(e) => handleNodeKeydown(e, node)}
             onpointerdown={(e) => handleTreePointerDown(e, node)}
             onpointermove={handleTreePointerMove}
@@ -1215,7 +1253,7 @@
                   <span
                     class="tree-edit-target"
                     class:tree-edit-target--editable={isTreeKeyEditable(node)}
-                    ondblclick={(e) => beginTreeEdit(e, node, 'key')}
+                    data-tree-edit-kind="key"
                     role="button"
                     tabindex="-1"
                     aria-label="Edit key"
@@ -1248,7 +1286,7 @@
                   <span
                     class="tree-edit-target"
                     class:tree-edit-target--editable={isTreeValueEditable(node)}
-                    ondblclick={(e) => beginTreeEdit(e, node, 'value')}
+                    data-tree-edit-kind="value"
                     role="button"
                     tabindex="-1"
                     aria-label="Edit value"

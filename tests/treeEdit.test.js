@@ -91,8 +91,10 @@ test('tree view exposes key and primitive value edit writeback on double click',
   assert.match(source, /createGridValueEdit/);
   assert.match(source, /replaceRangeByOffsets/);
   assert.match(source, /content !== previousContent \|\| tabId !== previousTabId[\s\S]*treeEdit = null;[\s\S]*scheduleTreeBuild\(tabId, content\);/);
-  assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'key'\)\}/);
-  assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'value'\)\}/);
+  assert.match(source, /ondblclick=\{\(e\) => handleTreeNodeDoubleClick\(e, node\)\}/);
+  assert.match(source, /function getTreeEditKindFromEvent/);
+  assert.match(source, /data-tree-edit-kind="key"/);
+  assert.match(source, /data-tree-edit-kind="value"/);
   assert.doesNotMatch(source, /tree-edit-button/);
 });
 
@@ -221,7 +223,7 @@ test('tree view keeps key edit attempts reachable for duplicate-key readonly fee
 
   assert.match(source, /function canAttemptTreeKeyEdit/);
   assert.match(source, /\{#if canAttemptTreeKeyEdit\(node\)\}/);
-  assert.match(source, /ondblclick=\{\(e\) => beginTreeEdit\(e, node, 'key'\)\}/);
+  assert.match(source, /if \(canAttemptTreeKeyEdit\(node\)\) return 'key';/);
   assert.match(source, /bind:isOpen=\{duplicateKeysDialogOpen\}/);
 });
 

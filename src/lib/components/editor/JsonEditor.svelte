@@ -1473,20 +1473,25 @@
     justify-content: center;
   }
 
-  /* Only add the invisible hover area when closed */
-  .json-view-toggler-zone.is-closed::before {
+  /* Keep the panel toggle discoverable without requiring pixel-perfect splitter hover. */
+  .json-view-toggler-zone::before {
     content: '';
     position: absolute;
     top: 0;
     bottom: 0;
-    left: -10px;
-    right: -10px;
+    left: -18px;
+    right: -4px;
     z-index: 1; /* For hover detection area */
+  }
+
+  .json-view-toggler-zone.left::before {
+    left: -4px;
+    right: -18px;
   }
 
   .json-view-toggle-btn {
     position: absolute;
-    left: -7px;
+    left: 1px;
     width: 14px;
     height: 56px;
     background: var(--bg-secondary);
@@ -1506,7 +1511,7 @@
   /* Left-side specific toggler styling */
   .json-view-toggler-zone.left .json-view-toggle-btn {
     left: auto;
-    right: -7px;
+    right: 1px;
   }
 
   /* Trigger hover from the resizer or the zone */
