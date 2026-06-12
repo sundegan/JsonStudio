@@ -34,6 +34,7 @@ test('macOS app menu exposes check update and emits frontend event', () => {
 
 test('custom about dialog listens for menu event and shows app metadata', () => {
   const aboutDialog = readFileSync(new URL('../src/lib/components/AboutDialog.svelte', import.meta.url), 'utf8');
+  const appResourceLinks = readFileSync(new URL('../src/lib/components/AppResourceLinks.svelte', import.meta.url), 'utf8');
   const jsonEditor = readFileSync(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
 
   assert.match(jsonEditor, /import AboutDialog from '\$lib\/components\/AboutDialog\.svelte';/);
@@ -41,11 +42,11 @@ test('custom about dialog listens for menu event and shows app metadata', () => 
   assert.match(aboutDialog, /listen\('show-about'/);
   assert.match(aboutDialog, /getVersion\(\)/);
   assert.match(aboutDialog, /src="\/app-icon\.png"/);
-  assert.match(aboutDialog, /const githubLabel = 'sundegan\/JsonStudio';/);
-  assert.match(aboutDialog, /<strong title=\{githubUrl\}>\{githubLabel\}<\/strong>/);
-  assert.match(aboutDialog, /openUrl\('https:\/\/github\.com\/sundegan\/JsonStudio'\)/);
-  assert.match(aboutDialog, /text-overflow: ellipsis;/);
-  assert.match(aboutDialog, /white-space: nowrap;/);
+  assert.match(aboutDialog, /formatAppVersion\(version, \$t\('settings\.versionUnknown'\)\)/);
+  assert.match(aboutDialog, /<AppResourceLinks \/>/);
+  assert.match(appResourceLinks, /Globe2/);
+  assert.match(appResourceLinks, /Github/);
+  assert.match(appResourceLinks, /ExternalLink/);
   assert.doesNotMatch(aboutDialog, /short_version|Version \\{version\\} \\(\\{version\\}\\)/);
 });
 
@@ -84,6 +85,24 @@ test('settings panel groups categories into tabs', () => {
   assert.match(settingsPanel, /scrollbar-gutter: stable;/);
   assert.match(settingsPanel, /\.settings-body::-webkit-scrollbar/);
   assert.match(settingsPanel, /@media \(max-width: 760px\)/);
+});
+
+test('about and application settings share official resource links and v-prefixed versions', () => {
+  const settingsPanel = readFileSync(
+    new URL('../src/lib/components/SettingsPanel.svelte', import.meta.url),
+    'utf8'
+  );
+  const metadata = readFileSync(
+    new URL('../src/lib/services/appMetadata.js', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(settingsPanel, /<AppResourceLinks \/>/);
+  assert.match(settingsPanel, /formatAppVersion\(updaterState\.currentVersion/);
+  assert.match(settingsPanel, /formatAppVersion\(updaterState\.update\.version\)/);
+  assert.match(metadata, /APP_WEBSITE_URL = 'https:\/\/jsonstudio\.js\.org\/'/);
+  assert.match(metadata, /APP_GITHUB_URL = 'https:\/\/github\.com\/sundegan\/JsonStudio'/);
+  assert.match(metadata, /APP_CHANGELOG_URL = 'https:\/\/jsonstudio\.js\.org\/changelog'/);
 });
 
 test('settings store syncs macOS menu language with app language', () => {

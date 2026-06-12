@@ -152,12 +152,12 @@
     bottom: 34px;
     z-index: 70;
     display: grid;
-    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
-    width: min(380px, calc(100vw - 28px));
-    padding: 12px;
-    padding-right: 36px;
+    gap: 8px;
+    width: min(350px, calc(100vw - 28px));
+    padding: 9px 10px;
+    padding-right: 32px;
     color: var(--text-primary);
     background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
     border: 1px solid var(--border);
@@ -172,8 +172,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
@@ -206,11 +206,15 @@
   .update-message,
   .update-reassurance,
   .update-error {
-    margin-top: 2px;
-    font-size: 12px;
-    line-height: 17px;
+    margin-top: 1px;
+    font-size: 11px;
+    line-height: 15px;
     color: var(--text-secondary);
     overflow-wrap: anywhere;
+  }
+
+  .update-message {
+    white-space: nowrap;
   }
 
   .update-error {
@@ -240,10 +244,10 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    height: 30px;
-    padding: 0 9px;
+    height: 28px;
+    padding: 0 8px;
     border-radius: 7px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 650;
     white-space: nowrap;
     transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
@@ -270,8 +274,8 @@
 
   .update-close-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 7px;
+    right: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -316,8 +320,12 @@
     .update-notification {
       right: 14px;
       bottom: 32px;
-      grid-template-columns: 32px minmax(0, 1fr);
-      padding-right: 34px;
+      grid-template-columns: 28px minmax(0, 1fr);
+      padding-right: 32px;
+    }
+
+    .update-message {
+      white-space: normal;
     }
 
     .update-actions {
