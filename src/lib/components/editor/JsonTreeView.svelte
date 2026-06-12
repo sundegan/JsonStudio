@@ -167,6 +167,7 @@
     if (treeBuildTimer) clearTimeout(treeBuildTimer);
     if (treeBuildFrame !== null) cancelAnimationFrame(treeBuildFrame);
     isLoading = false;
+    treeError = '';
     const version = ++treeBuildVersion;
     const cached = getCachedJsonTreeModel(sourceTabId, source);
     if (cached) {
@@ -227,7 +228,11 @@
       applyTreeModel(parsed, version);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
-      if (version !== treeBuildVersion || content !== source) return;
+      if (
+        version !== treeBuildVersion ||
+        tabId !== sourceTabId ||
+        content !== source
+      ) return;
       treeError = e instanceof Error ? e.message : 'Failed to parse JSON';
       treeNodes = [];
       treeNodeByPath = new Map();
@@ -254,6 +259,7 @@
     parsed: Awaited<ReturnType<typeof getJsonTreeModelAsync>>,
     version: number,
   ) {
+    treeError = '';
     rootData = parsed.rootData;
     parsedPointers = parsed.pointers;
     parsedDialect = parsed.dialect;

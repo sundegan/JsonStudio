@@ -324,6 +324,15 @@ test.describe('large JSON UI performance', () => {
         stats: emptyStats(),
         isPinned: false,
       },
+      {
+        id: 'invalid-json',
+        filePath: null,
+        fileName: 'Invalid JSON',
+        content: '{"invalid":',
+        isModified: false,
+        stats: emptyStats(),
+        isPinned: false,
+      },
     ];
     const coldSwitchDurations = [];
     const coldSettledDurations = [];
@@ -375,6 +384,15 @@ test.describe('large JSON UI performance', () => {
       switchRoundMedians.push(median(roundSwitchDurations));
       settledRoundMedians.push(median(roundSettledDurations));
       warmMaxGaps.push(await readMaxGap(page));
+
+      await page.getByTestId('tab-invalid-json').click();
+      await waitForActiveModel(page, 'invalid-json');
+      await expect(page.getByTestId('tree-error')).toBeAttached();
+
+      await page.getByTestId('tab-large-a').click();
+      await waitForActiveModel(page, 'large-a');
+      await expect(page.getByTestId('tree-ready')).toBeAttached();
+      await expect(page.getByTestId('tree-error')).not.toBeAttached();
     }
 
     const coldSwitchMedianMs = median(coldSwitchDurations);
