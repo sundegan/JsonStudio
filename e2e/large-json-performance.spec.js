@@ -1,4 +1,18 @@
 import { expect, test } from '@playwright/test';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+
+const configuredRounds = Number.parseInt(
+  process.env.JSON_STUDIO_E2E_ROUNDS || '3',
+  10,
+);
+const PERFORMANCE_ROUNDS = Number.isFinite(configuredRounds)
+  ? Math.max(1, configuredRounds)
+  : 3;
+const BASELINE_OUTPUT = resolve(
+  process.env.JSON_STUDIO_E2E_BASELINE_OUTPUT ||
+    'test-results/large-json-performance-baseline.json',
+);
 
 const LIMITS = {
   pasteFormatMs: Number(process.env.JSON_STUDIO_E2E_PASTE_MS || 5_000),
@@ -18,6 +32,7 @@ const LIMITS = {
 
 const TAB_STATE_KEY = 'jsonstudio_tabs_state';
 const SETTINGS_KEY = 'app-settings';
+const baselineResults = [];
 
 function createLargeJson(recordCount = 3_000) {
   return JSON.stringify(Array.from({ length: recordCount }, (_, index) => ({
@@ -49,6 +64,10 @@ function emptyStats() {
 function percentile(values, ratio) {
   const sorted = [...values].sort((left, right) => left - right);
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * ratio))];
+}
+
+function median(values) {
+  return percentile(values, 0.5);
 }
 
 async function installBrowserHarness(page) {
@@ -116,8 +135,9 @@ async function installBrowserHarness(page) {
   });
 }
 
-async function setCommonState(page, tabs, activeTabId, options = {}) {
-  await page.addInitScript(({ tabs, activeTabId, tabStateKey, settingsKey, showTreeView }) => {
+async function loadCommonState(page, tabs, activeTabId, options = {}) {
+  await page.goto('/');
+  await page.evaluate(({ tabs, activeTabId, tabStateKey, settingsKey, showTreeView }) => {
     localStorage.setItem(tabStateKey, JSON.stringify({ tabs, activeTabId }));
     localStorage.setItem(settingsKey, JSON.stringify({
       language: 'en',
@@ -133,6 +153,7 @@ async function setCommonState(page, tabs, activeTabId, options = {}) {
     settingsKey: SETTINGS_KEY,
     showTreeView: options.showTreeView ?? true,
   });
+  await page.reload();
 }
 
 async function readMaxGap(page) {
@@ -168,15 +189,31 @@ async function waitForTreeBuildAfter(page, previousVersion) {
 }
 
 test.describe('large JSON UI performance', () => {
+  test.afterAll(async () => {
+    await mkdir(dirname(BASELINE_OUTPUT), { recursive: true });
+    await writeFile(BASELINE_OUTPUT, `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      commit: process.env.GITHUB_SHA || process.env.CI_COMMIT_SHA || null,
+      rounds: PERFORMANCE_ROUNDS,
+      limits: LIMITS,
+      scenarios: baselineResults,
+    }, null, 2)}\n`);
+    console.log(`Performance baseline: ${BASELINE_OUTPUT}`);
+  });
+
   test.beforeEach(async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await installBrowserHarness(page);
   });
 
   test('formats a 1 MiB paste without freezing the UI', async ({ page }) => {
+    test.setTimeout(45_000 * PERFORMANCE_ROUNDS);
     const largeJson = createLargeJson();
     const formattedLineCount = 3_000 * 6 + 3;
-    await setCommonState(page, [{
+    const tabs = [{
       id: 'paste-target',
       filePath: null,
       fileName: 'Paste Target',
@@ -184,65 +221,88 @@ test.describe('large JSON UI performance', () => {
       isModified: false,
       stats: emptyStats(),
       isPinned: false,
-    }], 'paste-target');
+    }];
+    const formatDurations = [];
+    const settledDurations = [];
+    const maxGaps = [];
 
-    await page.goto('/');
-    const editorSurface = page.locator('[data-testid="json-editor"] .view-lines');
-    await expect(editorSurface).toBeVisible();
-    await editorSurface.click();
-    const previousTreeVersion = await readTreeBuildVersion(page);
-    await resetGaps(page);
+    for (let round = 0; round < PERFORMANCE_ROUNDS; round += 1) {
+      await loadCommonState(page, tabs, 'paste-target');
+      const editorSurface = page.locator('[data-testid="json-editor"] .view-lines');
+      await expect(editorSurface).toBeVisible();
+      await editorSurface.click();
+      const previousTreeVersion = await readTreeBuildVersion(page);
+      await resetGaps(page);
 
-    const startedAt = Date.now();
-    await page.evaluate((value) => {
-      const clipboard = new DataTransfer();
-      clipboard.setData('text/plain', value);
-      document.activeElement?.dispatchEvent(new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        clipboardData: clipboard,
-      }));
-    }, largeJson);
-    await expect(page.getByTestId('editor-line-count')).toContainText(
-      `${formattedLineCount} lines`,
-      { timeout: LIMITS.pasteFormatMs },
-    );
-    const formatMs = Date.now() - startedAt;
-    await waitForTreeBuildAfter(page, previousTreeVersion);
-    const settledMs = Date.now() - startedAt;
-    const maxGapMs = await readMaxGap(page);
+      const startedAt = performance.now();
+      await page.evaluate((value) => {
+        const clipboard = new DataTransfer();
+        clipboard.setData('text/plain', value);
+        document.activeElement?.dispatchEvent(new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: clipboard,
+        }));
+      }, largeJson);
+      await expect(page.getByTestId('editor-line-count')).toContainText(
+        `${formattedLineCount} lines`,
+        { timeout: LIMITS.pasteFormatMs },
+      );
+      formatDurations.push(performance.now() - startedAt);
+      await waitForTreeBuildAfter(page, previousTreeVersion);
+      settledDurations.push(performance.now() - startedAt);
+      maxGaps.push(await readMaxGap(page));
+
+      await expect(page.getByTestId('tree-ready')).toBeAttached();
+      const treeViewport = page.getByTestId('tree-viewport');
+      expect(await treeViewport.locator('[data-tree-path]').count()).toBeLessThan(100);
+      await treeViewport.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+        element.dispatchEvent(new Event('scroll'));
+      });
+      await expect(treeViewport.locator('[data-tree-path="/2999/payload"]')).toBeVisible();
+      expect(await treeViewport.locator('[data-tree-path]').count()).toBeLessThan(100);
+    }
+
+    const formatMedianMs = median(formatDurations);
+    const settledMedianMs = median(settledDurations);
+    const maxGapMs = Math.max(...maxGaps);
+    const passed = formatMedianMs <= LIMITS.pasteFormatMs &&
+      settledMedianMs <= LIMITS.pasteSettledMs &&
+      maxGapMs <= LIMITS.pasteMaxEventLoopGapMs;
 
     console.table([{
       scenario: 'Large JSON Paste',
+      rounds: PERFORMANCE_ROUNDS,
       input: `${(Buffer.byteLength(largeJson) / 1024 / 1024).toFixed(2)} MiB`,
-      lines: formattedLineCount,
-      format: `${formatMs} ms`,
-      settled: `${settledMs} ms`,
+      formatMedian: `${formatMedianMs.toFixed(1)} ms`,
+      settledMedian: `${settledMedianMs.toFixed(1)} ms`,
       maxUiGap: `${maxGapMs.toFixed(1)} ms`,
-      result: formatMs <= LIMITS.pasteFormatMs &&
-        settledMs <= LIMITS.pasteSettledMs &&
-        maxGapMs <= LIMITS.pasteMaxEventLoopGapMs
-        ? 'PASS'
-        : 'FAIL',
+      result: passed ? 'PASS' : 'FAIL',
     }]);
 
-    expect(formatMs).toBeLessThanOrEqual(LIMITS.pasteFormatMs);
-    expect(settledMs).toBeLessThanOrEqual(LIMITS.pasteSettledMs);
-    expect(maxGapMs).toBeLessThanOrEqual(LIMITS.pasteMaxEventLoopGapMs);
-    await expect(page.getByTestId('tree-ready')).toBeAttached();
-
-    const treeViewport = page.getByTestId('tree-viewport');
-    const initialRenderedRows = await treeViewport.locator('[data-tree-path]').count();
-    expect(initialRenderedRows).toBeLessThan(100);
-    await treeViewport.evaluate((element) => {
-      element.scrollTop = element.scrollHeight;
-      element.dispatchEvent(new Event('scroll'));
+    baselineResults.push({
+      scenario: 'Large JSON Paste',
+      samples: {
+        formatMs: formatDurations,
+        settledMs: settledDurations,
+        maxUiGapMs: maxGaps,
+      },
+      median: {
+        formatMs: formatMedianMs,
+        settledMs: settledMedianMs,
+      },
+      worst: { maxUiGapMs: maxGapMs },
+      passed,
     });
-    await expect(treeViewport.locator('[data-tree-path="/2999/payload"]')).toBeVisible();
-    expect(await treeViewport.locator('[data-tree-path]').count()).toBeLessThan(100);
+
+    expect(formatMedianMs).toBeLessThanOrEqual(LIMITS.pasteFormatMs);
+    expect(settledMedianMs).toBeLessThanOrEqual(LIMITS.pasteSettledMs);
+    expect(maxGapMs).toBeLessThanOrEqual(LIMITS.pasteMaxEventLoopGapMs);
   });
 
   test('switches repeatedly between cached large JSON tabs without freezing', async ({ page }) => {
+    test.setTimeout(45_000 * PERFORMANCE_ROUNDS);
     const largeA = JSON.stringify({ marker: 'LARGE_A', records: JSON.parse(createLargeJson()) }, null, 2);
     const largeB = JSON.stringify({ marker: 'LARGE_B', records: JSON.parse(createLargeJson()) }, null, 2);
     const tabs = [
@@ -265,80 +325,136 @@ test.describe('large JSON UI performance', () => {
         isPinned: false,
       },
     ];
-    await setCommonState(page, tabs, 'large-a', {
-      showTreeView: process.env.JSON_STUDIO_E2E_TREE !== 'false',
-    });
-    await page.goto('/');
-    await waitForActiveModel(page, 'large-a');
-    await expect(page.getByTestId('tree-ready')).toBeAttached();
-    let treeVersion = await readTreeBuildVersion(page);
-    await resetGaps(page);
-    const coldStartedAt = performance.now();
-    await page.getByTestId('tab-large-b').click();
-    await waitForActiveModel(page, 'large-b');
-    const coldSwitchMs = performance.now() - coldStartedAt;
-    await waitForTreeBuildAfter(page, treeVersion);
-    const coldSettledMs = performance.now() - coldStartedAt;
-    const coldMaxGapMs = await readMaxGap(page);
+    const coldSwitchDurations = [];
+    const coldSettledDurations = [];
+    const coldMaxGaps = [];
+    const switchRoundMedians = [];
+    const settledRoundMedians = [];
+    const switchDurations = [];
+    const settledDurations = [];
+    const warmMaxGaps = [];
+
+    for (let round = 0; round < PERFORMANCE_ROUNDS; round += 1) {
+      await loadCommonState(page, tabs, 'large-a', {
+        showTreeView: process.env.JSON_STUDIO_E2E_TREE !== 'false',
+      });
+      await waitForActiveModel(page, 'large-a');
+      await expect(page.getByTestId('tree-ready')).toBeAttached();
+      let treeVersion = await readTreeBuildVersion(page);
+      await resetGaps(page);
+      const coldStartedAt = performance.now();
+      await page.getByTestId('tab-large-b').click();
+      await waitForActiveModel(page, 'large-b');
+      coldSwitchDurations.push(performance.now() - coldStartedAt);
+      await waitForTreeBuildAfter(page, treeVersion);
+      coldSettledDurations.push(performance.now() - coldStartedAt);
+      coldMaxGaps.push(await readMaxGap(page));
+
+      treeVersion = await readTreeBuildVersion(page);
+      await page.getByTestId('tab-large-a').click();
+      await waitForActiveModel(page, 'large-a');
+      await waitForTreeBuildAfter(page, treeVersion);
+
+      await resetGaps(page);
+      const roundSwitchDurations = [];
+      const roundSettledDurations = [];
+      for (let index = 0; index < 6; index += 1) {
+        const targetId = index % 2 === 0 ? 'large-b' : 'large-a';
+        treeVersion = await readTreeBuildVersion(page);
+        const startedAt = performance.now();
+        await page.getByTestId(`tab-${targetId}`).click();
+        await waitForActiveModel(page, targetId);
+        const switchMs = performance.now() - startedAt;
+        roundSwitchDurations.push(switchMs);
+        switchDurations.push(switchMs);
+        await waitForTreeBuildAfter(page, treeVersion);
+        const settledMs = performance.now() - startedAt;
+        roundSettledDurations.push(settledMs);
+        settledDurations.push(settledMs);
+      }
+      switchRoundMedians.push(median(roundSwitchDurations));
+      settledRoundMedians.push(median(roundSettledDurations));
+      warmMaxGaps.push(await readMaxGap(page));
+    }
+
+    const coldSwitchMedianMs = median(coldSwitchDurations);
+    const coldSettledMedianMs = median(coldSettledDurations);
+    const coldMaxGapMs = Math.max(...coldMaxGaps);
+    const coldPassed = coldSwitchMedianMs <= LIMITS.coldTabSwitchMs &&
+      coldSettledMedianMs <= LIMITS.coldTabSettledMs &&
+      coldMaxGapMs <= LIMITS.tabSwitchMaxEventLoopGapMs;
+    const switchMedianMs = median(switchRoundMedians);
+    const switchWorstMs = Math.max(...switchDurations);
+    const settledMedianMs = median(settledRoundMedians);
+    const settledWorstMs = Math.max(...settledDurations);
+    const maxGapMs = Math.max(...warmMaxGaps);
+    const warmPassed = switchMedianMs <= LIMITS.tabSwitchMedianMs &&
+      switchWorstMs <= LIMITS.tabSwitchWorstMs &&
+      settledMedianMs <= LIMITS.tabSettledMedianMs &&
+      settledWorstMs <= LIMITS.tabSettledWorstMs &&
+      maxGapMs <= LIMITS.tabSwitchMaxEventLoopGapMs;
 
     console.table([{
       scenario: 'Cold Large Tab Switch',
-      switch: `${coldSwitchMs.toFixed(1)} ms`,
-      settled: `${coldSettledMs.toFixed(1)} ms`,
+      rounds: PERFORMANCE_ROUNDS,
+      switchMedian: `${coldSwitchMedianMs.toFixed(1)} ms`,
+      settledMedian: `${coldSettledMedianMs.toFixed(1)} ms`,
       maxUiGap: `${coldMaxGapMs.toFixed(1)} ms`,
-      result: coldSwitchMs <= LIMITS.coldTabSwitchMs &&
-        coldSettledMs <= LIMITS.coldTabSettledMs &&
-        coldMaxGapMs <= LIMITS.tabSwitchMaxEventLoopGapMs
-        ? 'PASS'
-        : 'FAIL',
+      result: coldPassed ? 'PASS' : 'FAIL',
     }]);
-
-    expect(coldSwitchMs).toBeLessThanOrEqual(LIMITS.coldTabSwitchMs);
-    expect(coldSettledMs).toBeLessThanOrEqual(LIMITS.coldTabSettledMs);
-    expect(coldMaxGapMs).toBeLessThanOrEqual(LIMITS.tabSwitchMaxEventLoopGapMs);
-
-    treeVersion = await readTreeBuildVersion(page);
-    await page.getByTestId('tab-large-a').click();
-    await waitForActiveModel(page, 'large-a');
-    await waitForTreeBuildAfter(page, treeVersion);
-
-    await resetGaps(page);
-    const switchDurations = [];
-    const settledDurations = [];
-    for (let index = 0; index < 6; index += 1) {
-      const targetId = index % 2 === 0 ? 'large-b' : 'large-a';
-      treeVersion = await readTreeBuildVersion(page);
-      const startedAt = performance.now();
-      await page.getByTestId(`tab-${targetId}`).click();
-      await waitForActiveModel(page, targetId);
-      switchDurations.push(performance.now() - startedAt);
-      await waitForTreeBuildAfter(page, treeVersion);
-      settledDurations.push(performance.now() - startedAt);
-    }
-
-    const switchMedianMs = percentile(switchDurations, 0.5);
-    const switchWorstMs = Math.max(...switchDurations);
-    const settledMedianMs = percentile(settledDurations, 0.5);
-    const settledWorstMs = Math.max(...settledDurations);
-    const maxGapMs = await readMaxGap(page);
 
     console.table([{
       scenario: 'Large Tab Switch',
-      iterations: switchDurations.length,
+      rounds: PERFORMANCE_ROUNDS,
+      samples: switchDurations.length,
       switchMedian: `${switchMedianMs.toFixed(1)} ms`,
       switchWorst: `${switchWorstMs.toFixed(1)} ms`,
       settledMedian: `${settledMedianMs.toFixed(1)} ms`,
       settledWorst: `${settledWorstMs.toFixed(1)} ms`,
       maxUiGap: `${maxGapMs.toFixed(1)} ms`,
-      result: switchMedianMs <= LIMITS.tabSwitchMedianMs &&
-        switchWorstMs <= LIMITS.tabSwitchWorstMs &&
-        settledMedianMs <= LIMITS.tabSettledMedianMs &&
-        settledWorstMs <= LIMITS.tabSettledWorstMs &&
-        maxGapMs <= LIMITS.tabSwitchMaxEventLoopGapMs
-        ? 'PASS'
-        : 'FAIL',
+      result: warmPassed ? 'PASS' : 'FAIL',
     }]);
 
+    baselineResults.push(
+      {
+        scenario: 'Cold Large Tab Switch',
+        samples: {
+          switchMs: coldSwitchDurations,
+          settledMs: coldSettledDurations,
+          maxUiGapMs: coldMaxGaps,
+        },
+        median: {
+          switchMs: coldSwitchMedianMs,
+          settledMs: coldSettledMedianMs,
+        },
+        worst: { maxUiGapMs: coldMaxGapMs },
+        passed: coldPassed,
+      },
+      {
+        scenario: 'Large Tab Switch',
+        samples: {
+          roundSwitchMedianMs: switchRoundMedians,
+          roundSettledMedianMs: settledRoundMedians,
+          switchMs: switchDurations,
+          settledMs: settledDurations,
+          maxUiGapMs: warmMaxGaps,
+        },
+        median: {
+          switchMs: switchMedianMs,
+          settledMs: settledMedianMs,
+        },
+        worst: {
+          switchMs: switchWorstMs,
+          settledMs: settledWorstMs,
+          maxUiGapMs: maxGapMs,
+        },
+        passed: warmPassed,
+      },
+    );
+
+    expect(coldSwitchMedianMs).toBeLessThanOrEqual(LIMITS.coldTabSwitchMs);
+    expect(coldSettledMedianMs).toBeLessThanOrEqual(LIMITS.coldTabSettledMs);
+    expect(coldMaxGapMs).toBeLessThanOrEqual(LIMITS.tabSwitchMaxEventLoopGapMs);
     expect(switchMedianMs).toBeLessThanOrEqual(LIMITS.tabSwitchMedianMs);
     expect(switchWorstMs).toBeLessThanOrEqual(LIMITS.tabSwitchWorstMs);
     expect(settledMedianMs).toBeLessThanOrEqual(LIMITS.tabSettledMedianMs);
@@ -347,9 +463,9 @@ test.describe('large JSON UI performance', () => {
   });
 
   test('scrolls a 100K-record virtual tree without scanning every row', async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(90_000 * PERFORMANCE_ROUNDS);
     const largeJson = createLargeTreeJson();
-    await setCommonState(page, [{
+    const tabs = [{
       id: 'tree-scroll',
       filePath: null,
       fileName: 'Tree Scroll',
@@ -357,47 +473,74 @@ test.describe('large JSON UI performance', () => {
       isModified: false,
       stats: emptyStats(),
       isPinned: false,
-    }], 'tree-scroll');
-
-    await page.goto('/');
-    await expect(page.getByTestId('tree-ready')).toBeAttached({ timeout: 30_000 });
-    const treeViewport = page.getByTestId('tree-viewport');
-    const renderedRows = treeViewport.locator('[data-tree-path]');
-    expect(await renderedRows.count()).toBeLessThan(100);
-    await resetGaps(page);
-
+    }];
+    const roundMedians = [];
     const scrollDurations = [];
-    for (let index = 0; index < 24; index += 1) {
-      const ratio = ((index * 7) % 24) / 23;
-      const startedAt = performance.now();
-      await treeViewport.evaluate((element, nextRatio) => {
-        element.scrollTop = (element.scrollHeight - element.clientHeight) * nextRatio;
-        element.dispatchEvent(new Event('scroll'));
-      }, ratio);
-      await page.evaluate(() => new Promise((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(resolve));
-      }));
-      scrollDurations.push(performance.now() - startedAt);
+    const maxGaps = [];
+    let renderedRowCount = 0;
+
+    for (let round = 0; round < PERFORMANCE_ROUNDS; round += 1) {
+      await loadCommonState(page, tabs, 'tree-scroll');
+      await expect(page.getByTestId('tree-ready')).toBeAttached({ timeout: 30_000 });
+      const treeViewport = page.getByTestId('tree-viewport');
+      const renderedRows = treeViewport.locator('[data-tree-path]');
       expect(await renderedRows.count()).toBeLessThan(100);
+      await resetGaps(page);
+
+      const roundDurations = [];
+      for (let index = 0; index < 24; index += 1) {
+        const ratio = ((index * 7) % 24) / 23;
+        const startedAt = performance.now();
+        await treeViewport.evaluate((element, nextRatio) => {
+          element.scrollTop = (element.scrollHeight - element.clientHeight) * nextRatio;
+          element.dispatchEvent(new Event('scroll'));
+        }, ratio);
+        await page.evaluate(() => new Promise((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        }));
+        const duration = performance.now() - startedAt;
+        roundDurations.push(duration);
+        scrollDurations.push(duration);
+        expect(await renderedRows.count()).toBeLessThan(100);
+      }
+      roundMedians.push(median(roundDurations));
+      maxGaps.push(await readMaxGap(page));
+      renderedRowCount = await renderedRows.count();
     }
 
-    const medianMs = percentile(scrollDurations, 0.5);
+    const medianMs = median(roundMedians);
     const worstMs = Math.max(...scrollDurations);
-    const maxGapMs = await readMaxGap(page);
+    const maxGapMs = Math.max(...maxGaps);
+    const passed = medianMs <= LIMITS.treeScrollMedianMs &&
+      worstMs <= LIMITS.treeScrollWorstMs &&
+      maxGapMs <= LIMITS.treeScrollMaxEventLoopGapMs;
 
     console.table([{
       scenario: '100K Tree Scroll',
-      iterations: scrollDurations.length,
+      rounds: PERFORMANCE_ROUNDS,
+      samples: scrollDurations.length,
       median: `${medianMs.toFixed(1)} ms`,
       worst: `${worstMs.toFixed(1)} ms`,
       maxUiGap: `${maxGapMs.toFixed(1)} ms`,
-      renderedRows: await renderedRows.count(),
-      result: medianMs <= LIMITS.treeScrollMedianMs &&
-        worstMs <= LIMITS.treeScrollWorstMs &&
-        maxGapMs <= LIMITS.treeScrollMaxEventLoopGapMs
-        ? 'PASS'
-        : 'FAIL',
+      renderedRows: renderedRowCount,
+      result: passed ? 'PASS' : 'FAIL',
     }]);
+
+    baselineResults.push({
+      scenario: '100K Tree Scroll',
+      samples: {
+        roundMedianMs: roundMedians,
+        scrollMs: scrollDurations,
+        maxUiGapMs: maxGaps,
+      },
+      median: { scrollMs: medianMs },
+      worst: {
+        scrollMs: worstMs,
+        maxUiGapMs: maxGapMs,
+      },
+      renderedRows: renderedRowCount,
+      passed,
+    });
 
     expect(medianMs).toBeLessThanOrEqual(LIMITS.treeScrollMedianMs);
     expect(worstMs).toBeLessThanOrEqual(LIMITS.treeScrollWorstMs);
