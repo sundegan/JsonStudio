@@ -2,6 +2,30 @@
 
 All notable changes to this project are documented here.
 
+## [1.3.0] - 2026-06-13
+
+### Added
+- **Grid View**: added a spreadsheet-like view for JSON arrays and objects, with inline editing, selection handling, export support, and editor-linked highlighting.
+- **Tree View editing**: added structured editing for keys and values, drag-and-drop reordering, value-only copy actions, and safeguards for JSON that contains duplicate keys.
+- **Folder sidebar**: added a sidebar for opening folders, browsing JSON/JSON5 files, creating untitled JSON files, and revealing files in the system file manager.
+- **Tab management**: added draggable tabs, horizontal scrolling for crowded tab bars, and removed the previous tab count limit.
+- **App updates**: added GitHub release update checks, in-app update notifications, macOS update menu entries, localized update actions, and resource links.
+- **Website changelog pages**: added public English and Chinese changelog pages.
+
+### Improved
+- **Large JSON performance**: made large-file tab switching and Tree/Grid interactions smoother with model reuse, persistent workers, virtual scrolling, and deferred editor loading.
+- **Editor architecture**: refactored JSON source parsing, document models, Tree/Grid data models, and worker reuse to reduce duplicate parsing work and provide a stronger base for structured editing features.
+- **Duplicate-key handling**: preserved duplicate keys during strict JSON formatting, showed duplicate keys in structured views, and blocked ambiguous structured edits when needed.
+- **Log JSON extraction**: improved nested log payload extraction, folded extracted previews by default, and removed the automatic repair prompt from editor flows.
+- **File and desktop workflows**: improved JSON/JSON5 file opening, save-dialog default names, restored window bounds, single-instance file opens, macOS edit shortcuts, clipboard paste, and custom about/settings dialogs.
+- **Website and page styling**: refined the documentation website layout, changelog pages, tool pages, theme consistency, and responsive styling across English and Chinese pages.
+- **Release and packaging**: improved signed updater artifacts, release version validation, macOS DMG layout, Windows icon quality, and Homebrew documentation.
+
+### Fixed
+- **Editor state**: fixed stale statistics after restoring empty tabs and improved active-tab visibility.
+- **macOS behavior**: restored common edit shortcuts, fixed clipboard paste, preserved default app menu items, and kept app metadata visible in about/update flows.
+- **Build stability**: tightened release workflows, updater metadata packaging, build-test configuration, and platform artifact handling.
+
 ## [1.2.1] - 2026-05-14
 
 ### Added

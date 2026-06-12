@@ -105,6 +105,47 @@
   <div class="changelog-container">
     <div class="timeline">
       
+      <!-- v1.3.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.3.0</span>
+          <span class="timeline-date">2026-06-13</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>Grid View</strong>：新增类似表格的 JSON 数组/对象视图，支持内联编辑、选择状态、导出，以及与编辑器联动高亮。</li>
+            <li><strong>Tree View 编辑</strong>：新增键和值的结构化编辑、拖拽排序、仅复制值等操作，并为包含重复 key 的 JSON 加入保护。</li>
+            <li><strong>文件夹侧栏</strong>：新增文件夹打开与浏览能力，可查看 JSON/JSON5 文件、新建未命名 JSON 文件，并在系统文件管理器中定位文件。</li>
+            <li><strong>标签页管理</strong>：新增标签页拖拽排序、拥挤标签栏横向滚动，并取消原有标签页数量限制。</li>
+            <li><strong>应用更新</strong>：新增 GitHub Release 更新检查、应用内更新通知、macOS 更新菜单入口、本地化更新操作，以及应用资源链接。</li>
+            <li><strong>官网更新日志页面</strong>：新增中英文官网更新日志页面。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>大型 JSON 性能</strong>：通过模型复用、持久化 worker、虚拟滚动和延迟加载，提升大文件标签切换与 Tree/Grid 交互流畅度。</li>
+            <li><strong>编辑器架构</strong>：重构 JSON source 解析、document model、Tree/Grid 数据模型和 worker 复用机制，减少重复解析，并为结构化编辑能力提供更稳定的基础。</li>
+            <li><strong>重复 key 处理</strong>：严格 JSON 格式化时保留重复 key，在结构化视图中展示重复 key，并在结果存在歧义时阻止不安全编辑。</li>
+            <li><strong>日志 JSON 提取</strong>：优化嵌套日志 payload 提取，默认折叠提取结果预览，并移除编辑器流程中的自动修复提示。</li>
+            <li><strong>文件与桌面端流程</strong>：改进 JSON/JSON5 文件打开、保存对话框默认文件名、窗口位置恢复、单实例打开文件、macOS 编辑快捷键、剪贴板粘贴，以及自定义关于/设置对话框。</li>
+            <li><strong>官网与页面样式</strong>：优化文档官网布局、更新日志页面、工具页面、主题一致性，以及中英文页面的响应式样式。</li>
+            <li><strong>发布与打包</strong>：改进签名更新产物、发布版本校验、macOS DMG 布局、Windows 图标清晰度和 Homebrew 文档。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li><strong>编辑器状态</strong>：修复恢复空标签页后的旧统计信息，并改进活动标签页可见性。</li>
+            <li><strong>macOS 行为</strong>：恢复常用编辑快捷键，修复剪贴板粘贴，保留默认应用菜单项，并保持关于/更新流程中的应用元数据可见。</li>
+            <li><strong>构建稳定性</strong>：完善发布工作流、更新器元数据打包、构建测试配置和多平台产物处理。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.3.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v1.3.0
+          </a>
+        </div>
+      </div>
+
       <!-- v1.2.1 -->
       <div class="timeline-item">
         <div class="timeline-dot"></div>
