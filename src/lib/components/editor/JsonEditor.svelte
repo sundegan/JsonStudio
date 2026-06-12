@@ -114,6 +114,10 @@
   let postSwitchWorkVersion = 0;
   let lineCountFrame: number | null = null;
   let lineCountVersion = 0;
+  let editorModelKey = $state('');
+  let isEditorModelPending = $state(false);
+  let editorModelSwitchTimer: ReturnType<typeof setTimeout> | null = null;
+  let editorModelSwitchVersion = 0;
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -499,6 +503,29 @@
     });
   }
 
+  function attachEditorModel(tabId: string, deferModelAttach: boolean) {
+    editorModelSwitchVersion += 1;
+    const version = editorModelSwitchVersion;
+    if (editorModelSwitchTimer !== null) {
+      clearTimeout(editorModelSwitchTimer);
+      editorModelSwitchTimer = null;
+    }
+
+    if (!deferModelAttach) {
+      editorModelKey = tabId;
+      isEditorModelPending = false;
+      return;
+    }
+
+    isEditorModelPending = true;
+    editorModelSwitchTimer = setTimeout(() => {
+      editorModelSwitchTimer = null;
+      if (version !== editorModelSwitchVersion || tabsState.activeTabId !== tabId) return;
+      editorModelKey = tabId;
+      isEditorModelPending = false;
+    }, 0);
+  }
+
   async function syncActiveTab(
     state: import('$lib/stores/tabs').TabsState,
     options: { deferSideEffects?: boolean } = {},
@@ -517,6 +544,7 @@
     setContentState(loadedContent, {
       deferLineCount: options.deferSideEffects ?? false,
     });
+    attachEditorModel(tabId, options.deferSideEffects ?? false);
     stats = currentTab.stats;
     if (isCurrentLogJsonContent(logJsonSource) && logJsonSource !== loadedContent) {
       resetLogJsonFragments();
@@ -614,6 +642,7 @@
     if (rightPanelSyncFrame !== null) cancelAnimationFrame(rightPanelSyncFrame);
     if (postSwitchWorkFrame !== null) cancelAnimationFrame(postSwitchWorkFrame);
     if (lineCountFrame !== null) cancelAnimationFrame(lineCountFrame);
+    if (editorModelSwitchTimer !== null) clearTimeout(editorModelSwitchTimer);
   });
   $effect(() => {
     if (!showTreeView) {
@@ -1044,6 +1073,7 @@
   function handleEditorChange(newValue: string) {
     const currentTab = $activeTab;
     if (!currentTab) return;
+    if (isEditorModelPending || editorModelKey !== currentTab.id) return;
     setContentState(newValue, { syncRightPanel: true });
     tabsStore.updateTabContent(currentTab.id, newValue);
 
@@ -1097,6 +1127,7 @@
   async function handleEditorPaste() {
     const sourceTab = $activeTab;
     if (!sourceTab) return;
+    if (isEditorModelPending || editorModelKey !== sourceTab.id) return;
     const tabId = sourceTab.id;
     const sourceValue = content;
     if (!sourceValue.trim()) return;
@@ -1317,9 +1348,11 @@
               <MonacoEditor
                 bind:this={monacoEditor}
                 value={content}
-                modelKey={tabsState.activeTabId ?? ''}
+                modelKey={editorModelKey}
                 theme={monacoTheme}
                 language="json5"
+                readOnly={isEditorModelPending}
+                deferValueSync={isEditorModelPending}
                 fontSize={fontSize}
                 lineHeight={lineHeight}
                 tabSize={tabSize}

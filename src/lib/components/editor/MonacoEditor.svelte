@@ -22,6 +22,7 @@
     fontSize = 13,
     lineHeight = 20,
     tabSize = 2,
+    deferValueSync = false,
     onChange = (value: string) => {},
     onPaste = (_event?: unknown) => {},
   }: {
@@ -38,6 +39,7 @@
     fontSize?: number;
     lineHeight?: number;
     tabSize?: number;
+    deferValueSync?: boolean;
     onChange?: (value: string) => void;
     onPaste?: (event?: unknown) => void;
   } = $props();
@@ -165,6 +167,8 @@
       switchToModel(nextModelKey, value, language);
       return;
     }
+
+    if (deferValueSync) return;
 
     // If change triggered by internal edit, don't update editor
     if (isInternalChange) {
