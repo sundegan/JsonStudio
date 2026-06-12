@@ -255,6 +255,13 @@ class JsonSourceParser {
 
   /** @returns {JsonSourceArrayNode} */
   parseArray() {
+    const chain = this.tryParseSingleItemArrayChain();
+    if (chain) return chain;
+    return this.parseArrayRecursive();
+  }
+
+  /** @returns {JsonSourceArrayNode} */
+  parseArrayRecursive() {
     this.enterContainer();
     const start = this.index;
     this.index += 1;
@@ -307,6 +314,53 @@ class JsonSourceParser {
     });
     this.leaveContainer();
     return node;
+  }
+
+  /** @returns {JsonSourceArrayNode | null} */
+  tryParseSingleItemArrayChain() {
+    const savedIndex = this.index;
+    const savedDepth = this.depth;
+    const savedMaxDepth = this.maxDepth;
+    const savedKeyCount = this.keyCount;
+    const savedUsesJson5Syntax = this.usesJson5Syntax;
+
+    try {
+      /** @type {number[]} */
+      const starts = [];
+      do {
+        this.enterContainer();
+        starts.push(this.index);
+        this.index += 1;
+        this.skipTrivia();
+      } while (this.peek() === '[');
+
+      const child = this.parseValue();
+      /** @type {JsonSourceNode} */
+      let node = child;
+
+      for (let index = starts.length - 1; index >= 0; index -= 1) {
+        this.skipTrivia();
+        if (!this.consume(']')) this.fail('Expected "]" after array item');
+        node = markSourceNode({
+          kind: 'array',
+          value: [node.value],
+          items: [node],
+          start: starts[index],
+          end: this.index,
+          hasDuplicateKeys: Boolean(node.hasDuplicateKeys),
+        });
+        this.leaveContainer();
+      }
+
+      return /** @type {JsonSourceArrayNode} */ (node);
+    } catch (error) {
+      this.index = savedIndex;
+      this.depth = savedDepth;
+      this.maxDepth = savedMaxDepth;
+      this.keyCount = savedKeyCount;
+      this.usesJson5Syntax = savedUsesJson5Syntax;
+      return null;
+    }
   }
 
   enterContainer() {
