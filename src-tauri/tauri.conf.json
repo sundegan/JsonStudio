@@ -65,7 +65,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNDMEU0NzQzM0VGMjUwQjcKUldTM1VQSStRMGNPUE9OY0tzbWdSMEMrUnVrRTUrdmo1b2FkN0lqVWRhMkN5clVqWDRBaVh3Y2sK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI4NjBCRUM4RTY4ODAwQUIKUldTckFJam15TDVnS0x2cnZScEFna0kwUytmTmlVdFFoY3JlaEx5Umo4UkZJcFdEQ05LVWZDOEIK",
       "endpoints": [
         "https://github.com/sundegan/JsonStudio/releases/latest/download/latest.json"
       ],
