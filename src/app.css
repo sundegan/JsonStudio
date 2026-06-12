@@ -326,6 +326,9 @@ body {
   overflow-x: auto;
   font-family: 'JetBrains Mono', 'Monaco', 'Menlo', monospace;
   font-size: 13px;
+  line-height: 18px;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
 }
 
 .json-tree-empty {
@@ -477,7 +480,7 @@ body {
   align-items: center;
   justify-content: center;
   height: 18px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
   flex-shrink: 0;
@@ -485,19 +488,13 @@ body {
   border-radius: 4px;
   padding: 1px 4px;
   letter-spacing: 0;
-  opacity: 0.78;
-}
-
-.tree-node:hover .tree-type-icon,
-.tree-node-selected .tree-type-icon {
-  opacity: 0.92;
 }
 
 .tree-type-object {
   width: 28px;
   color: var(--json-object);
   background: var(--json-object-bg);
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -505,7 +502,7 @@ body {
   width: 28px;
   color: var(--json-array);
   background: var(--json-array-bg);
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -529,16 +526,16 @@ body {
 
 .tree-type-null {
   width: 29px;
-  color: var(--json-null);
+  color: color-mix(in srgb, var(--json-null) 86%, var(--text-secondary));
   background: var(--json-null-bg);
   font-size: 11px;
-  opacity: 0.7;
 }
 
 /* Key name styling */
 .tree-key {
   font-weight: 600;
   color: color-mix(in srgb, var(--text-primary) 94%, white 6%);
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -549,12 +546,14 @@ body {
   flex: 1;
   overflow: visible;
   white-space: nowrap;
+  line-height: 18px;
 }
 
 .tree-colon {
   color: var(--text-tertiary);
   margin: 0 1px;
   flex-shrink: 0;
+  line-height: 18px;
 }
 
 /* Value display with type-specific colors */
@@ -562,8 +561,9 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  font-weight: 560;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
   margin-left: 3px;
 }
 
@@ -580,23 +580,21 @@ body {
 }
 
 .tree-value-null {
-  color: var(--json-null);
-  opacity: 0.85;
+  color: color-mix(in srgb, var(--json-null) 88%, var(--text-secondary));
 }
 
 .tree-child-count {
-  color: var(--json-count);
-  font-size: 9.5px;
+  color: color-mix(in srgb, var(--json-count) 68%, var(--text-secondary));
+  font-size: 11px;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: 18px;
   margin-left: 3px;
-  opacity: 0.56;
   font-variant-numeric: tabular-nums;
 }
 
 .tree-node:hover .tree-child-count,
 .tree-node-selected .tree-child-count {
-  opacity: 0.78;
+  color: var(--json-count);
 }
 
 .tree-node:hover .tree-line-vertical,

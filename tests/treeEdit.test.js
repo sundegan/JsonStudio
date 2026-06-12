@@ -180,6 +180,9 @@ test('tree rendering virtualizes expanded rows inside the scroll viewport', () =
   assert.match(source, /data-testid="tree-viewport"/);
   assert.match(source, /class="tree-virtual-list"/);
   assert.match(source, /class="tree-virtual-window"/);
+  assert.match(source, /style:top=\{`\$\{virtualTreeWindow\.offset\}px`\}/);
+  assert.doesNotMatch(source, /style:transform=\{`translateY\(\$\{virtualTreeWindow\.offset\}px\)`\}/);
+  assert.doesNotMatch(source, /\.tree-virtual-window \{[\s\S]*will-change: transform;/);
   assert.doesNotMatch(source, /class="tree-list tree-list-virtual"/);
   assert.doesNotMatch(source, /tree-show-more/);
 });
@@ -199,6 +202,22 @@ test('tree edit errors use an overlay without changing the virtual row height', 
   assert.match(source, /\.tree-virtual-list \.tree-node-content \{[\s\S]*height: var\(--tree-row-height\);/);
   assert.doesNotMatch(globalStyles, /\.tree-list \{/);
   assert.match(globalStyles, /\.tree-node-content \{[\s\S]*min-height: var\(--tree-row-height\);/);
+});
+
+test('tree text uses integer typography to avoid blurry rendering on 1x displays', () => {
+  const globalStyles = readFileSync(
+    new URL('../src/app.css', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(globalStyles, /\.json-tree-content \{[\s\S]*font-size: 13px;[\s\S]*line-height: 18px;/);
+  assert.match(globalStyles, /\.tree-key \{[\s\S]*line-height: 18px;/);
+  assert.match(globalStyles, /\.tree-value \{[\s\S]*font-size: 13px;[\s\S]*font-weight: 500;[\s\S]*line-height: 18px;/);
+  assert.match(globalStyles, /\.tree-child-count \{[\s\S]*font-size: 11px;[\s\S]*line-height: 18px;/);
+  assert.match(globalStyles, /\.tree-type-icon \{[\s\S]*font-size: 11px;/);
+  assert.match(globalStyles, /\.tree-type-object \{[\s\S]*font-size: 10px;/);
+  assert.match(globalStyles, /\.tree-type-array \{[\s\S]*font-size: 10px;/);
+  assert.doesNotMatch(globalStyles, /\.tree-[\w-]+ \{[\s\S]*font-weight: 560;/);
 });
 
 test('tree view disables editing and drag with duplicate-key documents', () => {
