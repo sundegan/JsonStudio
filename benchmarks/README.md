@@ -55,3 +55,28 @@ Use `--json` when machine-readable output is needed:
 ```sh
 node benchmarks/sourceModelBenchmark.js --json
 ```
+
+## UI Performance Baseline
+
+Run the large JSON UI performance gate:
+
+```sh
+pnpm test:e2e:performance
+```
+
+The UI gate runs each scenario three times by default. It records each round,
+uses the median round result as the regression baseline, and still gates the
+worst interaction latency and maximum UI event-loop gap where applicable.
+
+The machine-readable baseline is written to:
+
+```text
+test-results/large-json-performance-baseline.json
+```
+
+Change the number of rounds or output path when needed:
+
+```sh
+JSON_STUDIO_E2E_ROUNDS=5 pnpm test:e2e:performance
+JSON_STUDIO_E2E_BASELINE_OUTPUT=/tmp/jsonstudio-e2e-baseline.json pnpm test:e2e:performance
+```
