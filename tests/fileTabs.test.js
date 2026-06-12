@@ -157,6 +157,28 @@ test('editor keeps a Monaco model per tab and disposes closed tab models', async
   assert.match(source, /model\.dispose\(\)/);
 });
 
+test('monaco tab switches can defer value sync while attaching the next model', async () => {
+  const monacoSource = await readFile(new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url), 'utf8');
+  const editorSource = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(monacoSource, /deferValueSync = false/);
+  assert.match(monacoSource, /if \(deferValueSync\) return;/);
+  assert.match(editorSource, /let editorModelKey = \$state\(''\)/);
+  assert.match(editorSource, /let isEditorModelPending = \$state\(false\)/);
+  assert.match(editorSource, /function attachEditorModel\(tabId: string, deferModelAttach: boolean\)/);
+  assert.match(editorSource, /setTimeout\(\(\) => \{/);
+  assert.match(editorSource, /modelKey=\{editorModelKey\}/);
+  assert.match(editorSource, /readOnly=\{isEditorModelPending\}/);
+  assert.match(editorSource, /deferValueSync=\{isEditorModelPending\}/);
+});
+
+test('editor ignores changes while the active tab and Monaco model are out of sync', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /if \(isEditorModelPending \|\| editorModelKey !== currentTab\.id\) return;/);
+  assert.match(source, /if \(isEditorModelPending \|\| editorModelKey !== sourceTab\.id\) return;/);
+});
+
 test('main editor uses one lightweight tokenizer for JSON and JSON5', async () => {
   const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
 
