@@ -487,22 +487,22 @@
                 </div>
 
                 <div class="settings-update-actions">
-                  <button
-                    class="settings-secondary-btn"
-                    onclick={handleCheckForUpdate}
-                    disabled={isUpdaterBusy()}
-                    type="button"
-                  >
-                    {updaterState.status === 'checking' ? $t('settings.updateCheckingButton') : $t('settings.checkUpdate')}
-                  </button>
-
                   {#if updaterState.status === 'available'}
                     <button
                       class="settings-primary-btn"
                       onclick={handleInstallUpdate}
                       type="button"
                     >
-                      {$t('settings.installUpdate')}
+                      {$t('updates.updateNow')}
+                    </button>
+                  {:else}
+                    <button
+                      class="settings-secondary-btn"
+                      onclick={handleCheckForUpdate}
+                      disabled={isUpdaterBusy()}
+                      type="button"
+                    >
+                      {updaterState.status === 'checking' ? $t('settings.updateCheckingButton') : $t('settings.checkUpdate')}
                     </button>
                   {/if}
 

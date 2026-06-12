@@ -1,10 +1,11 @@
-.PHONY: help dev build check test fmt lint clean install
+.PHONY: help dev dev-mock-update build check test fmt lint clean install
 
 # Default target: show help
 help:
 	@echo "Tauri desktop app development commands"
 	@echo ""
-	@echo "  make dev          - Development mode (build and run frontend + backend)"
+	@echo "  make dev             - Development mode (build and run frontend + backend)"
+	@echo "  make dev-mock-update - Development mode with mocked app update"
 	@echo "  make build        - Build application (frontend + backend)"
 	@echo "  make check        - Type check (frontend + backend)"
 	@echo "  make test         - Run tests"
@@ -16,6 +17,9 @@ help:
 # Development mode (frontend + backend)
 dev:
 	pnpm tauri dev
+
+dev-mock-update:
+	VITE_MOCK_APP_UPDATE=1 pnpm tauri dev
 
 # Build application (frontend + backend)
 build:
@@ -50,4 +54,3 @@ clean:
 install:
 	pnpm install
 	cd src-tauri && cargo fetch
-
