@@ -28,7 +28,7 @@ test('app update notification checks, installs, and restarts through Tauri updat
   assert.match(store, /installAppUpdate/);
   assert.match(store, /restartAfterAppUpdate/);
   assert.match(store, /invoke\('restart_app'\)/);
-  assert.match(component, /settings\.installUpdate/);
+  assert.match(component, /updates\.updateNow/);
   assert.match(component, /settings\.restartApp/);
 });
 
@@ -46,9 +46,14 @@ test('update UI reassures users before restart and shares auto-check state with 
 
   assert.match(notification, /updates\.availablePrompt/);
   assert.match(notification, /updates\.restartReassurance/);
+  assert.match(notification, /updates\.updateNow/);
+  assert.match(notification, /updaterState\.status !== 'available'/);
+  assert.doesNotMatch(notification, /updates\.availableTitle/);
+  assert.doesNotMatch(notification, /update-version/);
   assert.match(settingsPanel, /appUpdateStore\.subscribe/);
   assert.match(settingsPanel, /updates\.availablePrompt/);
   assert.match(settingsPanel, /updates\.restartReassurance/);
+  assert.match(settingsPanel, /updaterState\.status === 'available'[\s\S]*updates\.updateNow[\s\S]*\{:else\}[\s\S]*settings\.checkUpdate/);
   assert.match(zh, /当前打开的内容会保留，可放心重启。/);
   assert.match(en, /Your open content will be preserved\. It is safe to restart\./);
 });
@@ -64,4 +69,25 @@ test('app update notification delays automatic checks and can be dismissed when 
   assert.match(notification, /onclick=\{dismiss\}/);
   assert.match(notification, /\{#if !isBusy && hasAction\}/);
   assert.match(notification, /if \(isBusy\) return;/);
+});
+
+test('app update mock is dev-only and can be enabled locally', () => {
+  const store = readFileSync(
+    new URL('../src/lib/stores/appUpdateStore.ts', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(store, /isMockAppUpdateEnabled/);
+  assert.match(store, /import\.meta\.env\.DEV/);
+  assert.match(store, /VITE_MOCK_APP_UPDATE/);
+  assert.match(store, /mockUpdate/);
+  assert.match(store, /mock-app-update/);
+  assert.match(store, /9\.9\.9-dev/);
+});
+
+test('makefile exposes a dev target for mocked app updates', () => {
+  const makefile = readFileSync(new URL('../Makefile', import.meta.url), 'utf8');
+
+  assert.match(makefile, /dev-mock-update:/);
+  assert.match(makefile, /VITE_MOCK_APP_UPDATE=1 pnpm tauri dev/);
 });

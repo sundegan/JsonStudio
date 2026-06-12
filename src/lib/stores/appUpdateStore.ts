@@ -36,6 +36,24 @@ export async function checkAppUpdates(options: { showErrors?: boolean } = {}) {
     error: null,
   }));
 
+  if (isMockAppUpdateEnabled()) {
+    const nextState: AppUpdaterState = {
+      ...get(appUpdateState),
+      status: 'available',
+      update: {
+        version: '9.9.9-dev',
+        body: 'Local mock update for testing the in-app update notification.',
+        downloadAndInstall: async () => {
+          await new Promise(resolve => setTimeout(resolve, 900));
+        },
+      },
+      messageKey: 'settings.updateAvailable',
+      error: null,
+    };
+    appUpdateState.set(nextState);
+    return nextState;
+  }
+
   try {
     const { check } = await import('@tauri-apps/plugin-updater');
     const nextState = await checkForAppUpdate(get(appUpdateState), { check });
@@ -52,6 +70,14 @@ export async function checkAppUpdates(options: { showErrors?: boolean } = {}) {
     appUpdateState.set(nextState);
     return nextState;
   }
+}
+
+function isMockAppUpdateEnabled() {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+  if (import.meta.env.VITE_MOCK_APP_UPDATE === '1') return true;
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get('mockUpdate') === '1' || window.localStorage.getItem('mock-app-update') === '1';
 }
 
 export async function installAvailableAppUpdate() {

@@ -93,25 +93,22 @@
     </div>
 
     <div class="update-copy">
-      <div class="update-title">
-        {#if updaterState.status === 'available'}
-          {$t('updates.availableTitle')}
-        {:else if updaterState.status === 'installing'}
-          {$t('updates.installingTitle')}
-        {:else if updaterState.status === 'ready-to-restart'}
-          {$t('updates.readyTitle')}
-        {:else}
-          {$t('updates.failedTitle')}
-        {/if}
-      </div>
+      {#if updaterState.status !== 'available'}
+        <div class="update-title">
+          {#if updaterState.status === 'installing'}
+            {$t('updates.installingTitle')}
+          {:else if updaterState.status === 'ready-to-restart'}
+            {$t('updates.readyTitle')}
+          {:else}
+            {$t('updates.failedTitle')}
+          {/if}
+        </div>
+      {/if}
       <div class="update-message">
         {#if updaterState.status === 'available'}
           {$t('updates.availablePrompt')}
         {:else}
           {$t(updaterState.messageKey)}
-        {/if}
-        {#if updaterState.update?.version}
-          <span class="update-version">v{updaterState.update.version}</span>
         {/if}
       </div>
       {#if updaterState.status === 'ready-to-restart'}
@@ -126,7 +123,7 @@
       {#if updaterState.status === 'available'}
         <button class="update-primary-btn" type="button" onclick={handleInstallUpdate}>
           <Download size={14} strokeWidth={2.4} />
-          <span>{$t('settings.installUpdate')}</span>
+          <span>{$t('updates.updateNow')}</span>
         </button>
       {:else if updaterState.status === 'ready-to-restart'}
         <button class="update-primary-btn" type="button" onclick={handleRestartAfterUpdate}>
@@ -159,7 +156,7 @@
     grid-template-columns: 32px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
-    width: min(420px, calc(100vw - 28px));
+    width: min(380px, calc(100vw - 28px));
     padding: 12px;
     padding-right: 36px;
     color: var(--text-primary);
@@ -225,12 +222,6 @@
     color: var(--success);
   }
 
-  .update-version {
-    margin-left: 6px;
-    color: var(--accent);
-    font-weight: 700;
-  }
-
   .update-actions {
     display: flex;
     align-items: center;
@@ -249,12 +240,12 @@
   .update-secondary-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     height: 30px;
-    padding: 0 10px;
+    padding: 0 9px;
     border-radius: 7px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 650;
     white-space: nowrap;
     transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   }
