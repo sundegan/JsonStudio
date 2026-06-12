@@ -11,7 +11,7 @@
     diffModified,
     activeTab,
     stats,
-    content
+    lineCount
   } = $props<{
     isDiffMode: boolean;
     diffLineCount: number;
@@ -21,7 +21,7 @@
     diffModified: string;
     activeTab: Tab | null;
     stats: import('$lib/services/json').JsonStats;
-    content: string;
+    lineCount: number;
   }>();
 
   function formatBytes(bytes: number): string {
@@ -67,7 +67,7 @@
 
     <div class="w-px h-3.5 bg-(--divider-strong)"></div>
     <span class="text-(--text-secondary)" data-testid="editor-line-count">
-      {content ? content.split('\n').length : 0} {$t('status.lines')}
+      {lineCount} {$t('status.lines')}
     </span>
 
     {#if stats?.format_type}
