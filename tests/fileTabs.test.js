@@ -238,17 +238,20 @@ test('editor flushes pending document persistence when the page is hidden or unl
   assert.match(editorSource, /document\.removeEventListener\('visibilitychange', handleVisibilityChange\)/);
 });
 
-test('large clipboard events do not repeat JSON formatting on the UI thread', async () => {
+test('global clipboard formatting runs in the paste worker before opening a tab', async () => {
   const source = await readFile(
     new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url),
     'utf8',
   );
 
-  const formattedHandler = source.match(
-    /unlistenFormatted = await listen<string>\('clipboard-formatted'[\s\S]*?\n      \}\);/,
+  const clipboardHandler = source.match(
+    /unlistenClipboardContent = await listen<string>\('clipboard-content'[\s\S]*?\n      \}\);/,
   )?.[0] || '';
-  assert.match(formattedHandler, /tabsStore\.addTab\(event\.payload\)/);
-  assert.doesNotMatch(formattedHandler, /normalize|formatJsonText|openClipboardContentInNewTab/);
+  assert.match(clipboardHandler, /openClipboardContent\(event\.payload\)/);
+  assert.match(source, /formatPastedJsonAsync\(value, tabSize\)/);
+  assert.match(source, /if \(error instanceof DOMException && error\.name === 'AbortError'\) return;/);
+  assert.match(source, /tabsStore\.addTab\(nextContent\)/);
+  assert.doesNotMatch(clipboardHandler, /formatJsonText|normalizePastedStandaloneJson/);
 });
 
 test('log JSON detection runs in a cancellable worker after debounce', async () => {

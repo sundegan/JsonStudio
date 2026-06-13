@@ -6,9 +6,11 @@ const FORMATTED_CLIPBOARD = `{
   "name": "JsonStudio",
   "enabled": true
 }`;
+const ESCAPED_JSON_ARRAY_CLIPBOARD =
+  '"[{\\"id\\":101,\\"name\\":\\"Alice\\",\\"role\\":\\"Developer\\",\\"active\\":true},{\\"id\\":102,\\"name\\":\\"James\\",\\"role\\":\\"Designer\\",\\"active\\":false}]"';
 
-async function installTauriShortcutHarness(page) {
-  await page.addInitScript(({ tabStateKey, settingsKey, formattedClipboard }) => {
+async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CLIPBOARD) {
+  await page.addInitScript(({ tabStateKey, settingsKey, clipboardPayload }) => {
     localStorage.setItem(tabStateKey, JSON.stringify({
       tabs: [{
         id: 'initial-tab',
@@ -103,13 +105,13 @@ async function installTauriShortcutHarness(page) {
         event.shiftKey &&
         event.key.toLowerCase() === 'v'
       ) {
-        emit('clipboard-formatted', formattedClipboard);
+        emit('clipboard-content', clipboardPayload);
       }
     });
   }, {
     tabStateKey: TAB_STATE_KEY,
     settingsKey: SETTINGS_KEY,
-    formattedClipboard: FORMATTED_CLIPBOARD,
+    clipboardPayload: clipboardContent,
   });
 }
 
@@ -118,7 +120,7 @@ test('Ctrl+Shift+V formats clipboard content into exactly one new tab', async ({
   await page.goto('/');
 
   await expect.poll(() => page.evaluate(
-    () => window.__jsonStudioShortcutHarness.listenerCount('clipboard-formatted'),
+    () => window.__jsonStudioShortcutHarness.listenerCount('clipboard-content'),
   )).toBe(1);
   await expect(page.locator('.tab-button')).toHaveCount(1);
 
@@ -130,11 +132,33 @@ test('Ctrl+Shift+V formats clipboard content into exactly one new tab', async ({
   await page.keyboard.up(commandKey);
 
   await expect(page.locator('.tab-button')).toHaveCount(2);
-  await expect(page.getByTestId('editor-line-count')).toContainText('4 lines');
+  await expect(page.getByTestId('editor-line-count')).toContainText('5 lines');
   await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText(
     '"name": "JsonStudio"',
   );
 
   await page.waitForTimeout(200);
   await expect(page.locator('.tab-button')).toHaveCount(2);
+});
+
+test('Ctrl+Shift+V unescapes and formats escaped JSON arrays from clipboard', async ({ page }) => {
+  await installTauriShortcutHarness(page, ESCAPED_JSON_ARRAY_CLIPBOARD);
+  await page.goto('/');
+
+  await expect.poll(() => page.evaluate(
+    () => window.__jsonStudioShortcutHarness.listenerCount('clipboard-content'),
+  )).toBe(1);
+
+  const commandKey = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.down(commandKey);
+  await page.keyboard.down('Shift');
+  await page.keyboard.press('v');
+  await page.keyboard.up('Shift');
+  await page.keyboard.up(commandKey);
+
+  await expect(page.locator('.tab-button')).toHaveCount(2);
+  await expect(page.getByTestId('editor-line-count')).toContainText('15 lines');
+  await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText('"id": 101');
+  await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText('"name": "Alice"');
+  await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText('"active": false');
 });

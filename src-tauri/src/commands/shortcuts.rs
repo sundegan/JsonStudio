@@ -136,24 +136,9 @@ pub async fn format_clipboard_and_show(app: AppHandle) -> Result<(), String> {
 
     ensure_window_in_front(&window)?;
 
-    // Try to parse and format JSON
-    match serde_json::from_str::<serde_json::Value>(&clipboard_text) {
-        Ok(parsed) => {
-            // Valid JSON - format it
-            let formatted = serde_json::to_string_pretty(&parsed)
-                .map_err(|e| format!("Failed to format JSON: {}", e))?;
-
-            window
-                .emit("clipboard-formatted", formatted)
-                .map_err(|e| e.to_string())?;
-        }
-        Err(_) => {
-            // Invalid JSON - paste as is, let user see and fix it
-            window
-                .emit("clipboard-pasted-raw", clipboard_text)
-                .map_err(|e| e.to_string())?;
-        }
-    }
+    window
+        .emit("clipboard-content", clipboard_text)
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }
