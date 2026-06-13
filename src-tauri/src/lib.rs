@@ -12,14 +12,17 @@ use commands::file::{
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
 use commands::json::{json_escape, json_format, json_minify, json_unescape};
-use commands::shortcuts::{format_clipboard_and_show, show_main_window, update_shortcut};
+use commands::shortcuts::{
+    format_clipboard_and_show, register_global_shortcut, show_main_window, update_shortcut,
+    GlobalShortcutRegistry, DEFAULT_FORMAT_CLIPBOARD_SHORTCUT, DEFAULT_SHOW_APP_SHORTCUT,
+    FORMAT_CLIPBOARD_SHORTCUT_ID, SHOW_APP_SHORTCUT_ID,
+};
 use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
 use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
-use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 const WINDOW_SCREEN_MARGIN: u32 = 48;
 const DEFAULT_WINDOW_LOGICAL_WIDTH: u32 = 1400;
@@ -330,6 +333,7 @@ pub fn run() {
 
     let app = builder
         .manage(FileWatcherState::new())
+        .manage(GlobalShortcutRegistry::default())
         .setup(|app| {
             let app_handle = app.handle().clone();
             schedule_main_window_bounds_clamp(&app_handle);
@@ -354,29 +358,19 @@ pub fn run() {
             }
 
             // Register global shortcut: show app
-            let show_app_handle = app_handle.clone();
-            if let Err(error) = app.global_shortcut().on_shortcut(
-                "CommandOrControl+Shift+J",
-                move |_app, _shortcut, _event| {
-                    let handle = show_app_handle.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let _ = show_main_window(handle).await;
-                    });
-                },
+            if let Err(error) = register_global_shortcut(
+                &app_handle,
+                SHOW_APP_SHORTCUT_ID,
+                DEFAULT_SHOW_APP_SHORTCUT,
             ) {
                 eprintln!("Failed to register show app shortcut: {}", error);
             }
 
             // Register global shortcut: format clipboard
-            let format_handle = app_handle.clone();
-            if let Err(error) = app.global_shortcut().on_shortcut(
-                "CommandOrControl+Shift+V",
-                move |_app, _shortcut, _event| {
-                    let handle = format_handle.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let _ = format_clipboard_and_show(handle).await;
-                    });
-                },
+            if let Err(error) = register_global_shortcut(
+                &app_handle,
+                FORMAT_CLIPBOARD_SHORTCUT_ID,
+                DEFAULT_FORMAT_CLIPBOARD_SHORTCUT,
             ) {
                 eprintln!("Failed to register format clipboard shortcut: {}", error);
             }
