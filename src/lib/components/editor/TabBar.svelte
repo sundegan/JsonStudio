@@ -184,6 +184,9 @@
       event.preventDefault();
       event.stopPropagation();
       suppressNextClick = true;
+      window.setTimeout(() => {
+        suppressNextClick = false;
+      }, 0);
 
       const fromIndex = tabs.findIndex((tab: Tab) => tab.id === start.tabId);
       if (fromIndex !== -1 && dragInsertionIndex !== null) {
