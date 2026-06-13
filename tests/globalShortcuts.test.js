@@ -19,6 +19,21 @@ test('global shortcut handlers only run for key press events', async () => {
   assert.match(libSource, /register_global_shortcut/);
 });
 
+test('format clipboard shortcut delegates JSON normalization to the frontend worker', async () => {
+  const source = await readFile(
+    new URL('../src-tauri/src/commands/shortcuts.rs', import.meta.url),
+    'utf8',
+  );
+  const handler = source.match(
+    /pub async fn format_clipboard_and_show[\s\S]*?\n}\n\nfn ensure_window_in_front/,
+  )?.[0] || '';
+
+  assert.match(handler, /\.emit\("clipboard-content", clipboard_text\)/);
+  assert.doesNotMatch(handler, /serde_json::from_str/);
+  assert.doesNotMatch(handler, /serde_json::to_string_pretty/);
+  assert.doesNotMatch(handler, /clipboard-formatted|clipboard-pasted-raw/);
+});
+
 test('shortcut updates unregister the current binding and restore it on failure', async () => {
   const source = await readFile(
     new URL('../src-tauri/src/commands/shortcuts.rs', import.meta.url),

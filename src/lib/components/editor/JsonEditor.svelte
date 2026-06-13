@@ -190,32 +190,15 @@
     fileWatcherService.init();
     
     // Listen to clipboard formatting events
-    let unlistenFormatted: (() => void) | null = null;
-    let unlistenRaw: (() => void) | null = null;
+    let unlistenClipboardContent: (() => void) | null = null;
     let unlistenFileDrop: (() => void) | null = null;
     let unlistenOpenFile: (() => void) | null = null;
     
     (async () => {
       const { listen } = await import('@tauri-apps/api/event');
       
-      // Listen for successfully formatted JSON
-      unlistenFormatted = await listen<string>('clipboard-formatted', async (event) => {
-        tabsStore.addTab(event.payload);
-        showToast('Clipboard content formatted');
-        queueMicrotask(() => {
-          scheduleLogJsonDetection(event.payload);
-          updateStats(true);
-        });
-      });
-      
-      // Listen for raw paste (when JSON is invalid)
-      unlistenRaw = await listen<string>('clipboard-pasted-raw', async (event) => {
-        tabsStore.addTab(event.payload);
-        showToast('Clipboard content pasted (invalid JSON)');
-        queueMicrotask(() => {
-          scheduleLogJsonDetection(event.payload);
-          updateStats(true);
-        });
+      unlistenClipboardContent = await listen<string>('clipboard-content', async (event) => {
+        await openClipboardContent(event.payload);
       });
 
       // Listen for file drop events
@@ -376,8 +359,7 @@
     return () => {
       flushPendingTabPersistence();
       workspaceResizeObserver?.disconnect();
-      if (unlistenFormatted) unlistenFormatted();
-      if (unlistenRaw) unlistenRaw();
+      if (unlistenClipboardContent) unlistenClipboardContent();
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
       window.removeEventListener('keydown', handleKeydown);
@@ -897,6 +879,27 @@
   function showToast(msg: string, type: 'success' | 'error' | 'info' = 'success') {
     toastMsg = msg;
     toastType = type;
+  }
+
+  async function openClipboardContent(value: string) {
+    let normalized: string | null = null;
+    try {
+      normalized = await formatPastedJsonAsync(value, tabSize);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      console.error('Failed to format clipboard content:', error);
+    }
+    const nextContent = normalized || value;
+
+    tabsStore.addTab(nextContent);
+    showToast(
+      normalized ? $t('toast.clipboardFormatted') : $t('toast.clipboardPastedRaw'),
+      normalized ? 'success' : 'info',
+    );
+    queueMicrotask(() => {
+      scheduleLogJsonDetection(nextContent);
+      updateStats(true);
+    });
   }
 
   function resetLogJsonFragments() {
