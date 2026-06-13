@@ -24,6 +24,9 @@ All notable changes to this project are documented here.
 ### Fixed
 - **Editor state**: fixed stale statistics after restoring empty tabs and improved active-tab visibility.
 - **macOS behavior**: restored common edit shortcuts, fixed clipboard paste, preserved default app menu items, and kept app metadata visible in about/update flows.
+- **Global shortcuts**: prevented configured shortcuts from firing multiple times and improved shortcut update consistency.
+- **Log JSON detection**: kept standalone escaped JSON documents in the normal editor flow instead of treating them as mixed log content.
+- **Tab interactions**: preserved reliable tab switching after drag-and-drop reordering.
 - **Build stability**: tightened release workflows, updater metadata packaging, build-test configuration, and platform artifact handling.
 
 ## [1.2.1] - 2026-05-14
