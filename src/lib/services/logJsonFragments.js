@@ -20,12 +20,25 @@ export const MAX_LOG_JSON_FRAGMENTS = 20;
  * @returns {LogJsonFragment[]}
  */
 export function extractLogJsonFragments(content, options = {}) {
+  return extractLogJsonFragmentsInternal(content, options, true);
+}
+
+/**
+ * @param {string} content
+ * @param {{ indent?: number, maxInputLength?: number, maxFragments?: number }} options
+ * @param {boolean} excludeStandaloneEscapedJson
+ * @returns {LogJsonFragment[]}
+ */
+function extractLogJsonFragmentsInternal(content, options, excludeStandaloneEscapedJson) {
   const indent = options.indent ?? 2;
   const maxInputLength = options.maxInputLength ?? MAX_LOG_JSON_INPUT_LENGTH;
   const maxFragments = options.maxFragments ?? MAX_LOG_JSON_FRAGMENTS;
   const maxCandidates = maxFragments * 10;
 
   if (!content.trim() || content.length > maxInputLength) {
+    return [];
+  }
+  if (excludeStandaloneEscapedJson && getStandaloneEscapedJsonContent(content)) {
     return [];
   }
 
@@ -72,13 +85,18 @@ export function extractLogJsonFragments(content, options = {}) {
  * @returns {string | null}
  */
 export function getStandaloneEscapedJsonContent(content) {
+  const trimmed = content.trim();
+  if (trimmed[0] !== '"' || trimmed.at(-1) !== '"') {
+    return null;
+  }
+
   try {
-    const parsed = JSON.parse(content.trim());
+    const parsed = JSON.parse(trimmed);
     if (typeof parsed !== 'string' || !parsed.trim()) {
       return null;
     }
 
-    const fragments = extractLogJsonFragments(parsed);
+    const fragments = extractLogJsonFragmentsInternal(parsed, {}, false);
     if (fragments.length === 1 && fragments[0].raw.trim() === parsed.trim()) {
       return parsed;
     }

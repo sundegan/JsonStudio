@@ -192,6 +192,14 @@ test('detects a standalone escaped JSON document', () => {
   assert.equal(value, '{"userId":123,"event":"login"}');
 });
 
+test('does not extract a standalone escaped JSON document as mixed log content', () => {
+  const fragments = extractLogJsonFragments(
+    '"{\\"people\\":[{\\"name\\":\\"Alice\\",\\"age\\":20}],\\"meta\\":{\\"count\\":1}}"',
+  );
+
+  assert.deepEqual(fragments, []);
+});
+
 test('does not treat mixed log escaped JSON as standalone content', () => {
   const value = getStandaloneEscapedJsonContent('payload="{\\"userId\\":123}"');
 
