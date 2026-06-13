@@ -132,22 +132,47 @@ const defaultShortcuts: ShortcutsSettings = {
 };
 
 const STORAGE_KEY = 'jsonstudio_shortcuts';
+let globalShortcutUpdateQueue: Promise<void> = Promise.resolve();
 
 function getDefaultShortcuts(): ShortcutsSettings {
   return JSON.parse(JSON.stringify(defaultShortcuts));
 }
 
+function invokeGlobalShortcutUpdate(id: string, key: string): Promise<void> {
+  const operation = globalShortcutUpdateQueue.then(async () => {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('update_shortcut', { id, key });
+  });
+  globalShortcutUpdateQueue = operation.catch(() => {});
+  return operation;
+}
+
 function createShortcutsStore() {
   const { subscribe, set, update } = writable<ShortcutsSettings>(getDefaultShortcuts());
+
+  function updateStoredShortcut(id: string, key: string): void {
+    update(state => {
+      const newState = { ...state };
+      for (const shortcutKey in newState) {
+        const k = shortcutKey as keyof ShortcutsSettings;
+        if (newState[k].id === id) {
+          newState[k] = { ...newState[k], currentKey: key };
+          break;
+        }
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      return newState;
+    });
+  }
 
   return {
     subscribe,
     init: () => {
       const stored = localStorage.getItem(STORAGE_KEY);
+      let current = getDefaultShortcuts();
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          const current = getDefaultShortcuts();
           for (const key in current) {
             const k = key as keyof ShortcutsSettings;
             if (parsed[k] && parsed[k].currentKey) {
@@ -158,77 +183,61 @@ function createShortcutsStore() {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
         } catch (e) {
           console.error('Failed to parse shortcuts settings:', e);
-          set(getDefaultShortcuts());
+          current = getDefaultShortcuts();
+          set(current);
         }
       }
+
+      void syncGlobalShortcuts(current);
     },
     updateShortcut: async (id: string, key: string) => {
-      let isGlobal = false;
-      update(state => {
-        const newState = { ...state };
-        for (const shortcutKey in newState) {
-          const k = shortcutKey as keyof ShortcutsSettings;
-          if (newState[k].id === id) {
-            newState[k] = { ...newState[k], currentKey: key };
-            isGlobal = !!newState[k].isGlobal;
-          }
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        return newState;
-      });
+      const shortcut = Object.values(get({ subscribe })).find(item => item.id === id);
+      if (!shortcut) return;
 
-      if (isGlobal) {
+      if (shortcut.isGlobal) {
         try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          await invoke('update_shortcut', { id, key });
+          await invokeGlobalShortcutUpdate(id, key);
         } catch (error) {
           console.error('Failed to update shortcut:', error);
+          return;
         }
       }
+
+      updateStoredShortcut(id, key);
     },
     resetShortcut: async (id: string) => {
-      let isGlobal = false;
-      let defaultKey = '';
-      update(state => {
-        const newState = { ...state };
-        for (const shortcutKey in newState) {
-          const k = shortcutKey as keyof ShortcutsSettings;
-          if (newState[k].id === id) {
-            newState[k] = { ...newState[k], currentKey: newState[k].defaultKey };
-            isGlobal = !!newState[k].isGlobal;
-            defaultKey = newState[k].defaultKey;
-          }
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        return newState;
-      });
+      const shortcut = Object.values(get({ subscribe })).find(item => item.id === id);
+      if (!shortcut) return;
 
-      if (isGlobal && defaultKey) {
+      if (shortcut.isGlobal) {
         try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          await invoke('update_shortcut', { id, key: defaultKey });
+          await invokeGlobalShortcutUpdate(id, shortcut.defaultKey);
         } catch (error) {
           console.error('Failed to reset global shortcut:', error);
+          return;
         }
       }
+
+      updateStoredShortcut(id, shortcut.defaultKey);
     },
     reset: async () => {
-      const freshDefaults = getDefaultShortcuts();
-      set(freshDefaults);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(freshDefaults));
-      
-      // Update all global shortcuts to their defaults in the backend
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        for (const key in freshDefaults) {
-          const shortcut = freshDefaults[key as keyof ShortcutsSettings];
-          if (shortcut.isGlobal) {
-            await invoke('update_shortcut', { id: shortcut.id, key: shortcut.defaultKey });
+      const nextState = getDefaultShortcuts();
+
+      for (const key in nextState) {
+        const k = key as keyof ShortcutsSettings;
+        const shortcut = nextState[k];
+        if (shortcut.isGlobal) {
+          try {
+            await invokeGlobalShortcutUpdate(shortcut.id, shortcut.defaultKey);
+          } catch (error) {
+            nextState[k].currentKey = get({ subscribe })[k].currentKey;
+            console.error(`Failed to reset global shortcut ${shortcut.id}:`, error);
           }
         }
-      } catch (error) {
-        console.error('Failed to reset all global shortcuts:', error);
       }
+
+      set(nextState);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
     },
     matchShortcut(e: KeyboardEvent): string | null {
       const state = get({ subscribe });
@@ -245,6 +254,19 @@ function createShortcutsStore() {
       return null;
     },
   };
+}
+
+async function syncGlobalShortcuts(shortcuts: ShortcutsSettings): Promise<void> {
+  for (const key in shortcuts) {
+    const shortcut = shortcuts[key as keyof ShortcutsSettings];
+    if (shortcut.isGlobal) {
+      try {
+        await invokeGlobalShortcutUpdate(shortcut.id, shortcut.currentKey);
+      } catch (error) {
+        console.error(`Failed to initialize global shortcut ${shortcut.id}:`, error);
+      }
+    }
+  }
 }
 
 function matchKey(shortcutKey: string, e: KeyboardEvent, cmdOrCtrl: boolean): boolean {
