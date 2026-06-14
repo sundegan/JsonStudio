@@ -1,6 +1,4 @@
 // Window-related commands
-// 抑制 objc crate 宏中的 unexpected_cfgs 警告（来自第三方库）
-#![allow(unexpected_cfgs)]
 
 fn window_background_color(is_dark: bool) -> tauri::window::Color {
     if is_dark {

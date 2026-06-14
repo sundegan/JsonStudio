@@ -96,6 +96,12 @@ test('tree view exposes key and primitive value edit writeback on double click',
   assert.match(source, /data-tree-edit-kind="key"/);
   assert.match(source, /data-tree-edit-kind="value"/);
   assert.doesNotMatch(source, /tree-edit-button/);
+  const pointerDownBody = source.match(
+    /function handleTreePointerDown[\s\S]*?\n  \}/,
+  )?.[0] ?? '';
+  assert.doesNotMatch(pointerDownBody, /treeEdit = null/);
+  assert.match(source, /const preserveViewState = renderedTabId === sourceTabId/);
+  assert.match(source, /\[\.\.\.expandedNodes\]\.filter/);
 });
 
 test('tree model builds JSON5 nodes, source ranges, and path index outside the component', () => {
