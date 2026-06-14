@@ -96,6 +96,7 @@
   let isLoading = $state(false);
   let previousContent = $state('');
   let previousTabId = $state('');
+  let renderedTabId = '';
   let parsedPointers = $state.raw<Record<string, any>>({});
   let parsedDialect = $state<'JSON' | 'JSON5'>('JSON');
   let hasDuplicateSourceKeys = $state(false);
@@ -171,7 +172,7 @@
     const version = ++treeBuildVersion;
     const cached = getCachedJsonTreeModel(sourceTabId, source);
     if (cached) {
-      applyTreeModel(cached, version);
+      applyTreeModel(cached, version, sourceTabId);
       return;
     }
 
@@ -225,7 +226,7 @@
         tabId !== sourceTabId ||
         content !== source
       ) return;
-      applyTreeModel(parsed, version);
+      applyTreeModel(parsed, version, sourceTabId);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
       if (
@@ -258,7 +259,11 @@
   function applyTreeModel(
     parsed: Awaited<ReturnType<typeof getJsonTreeModelAsync>>,
     version: number,
+    sourceTabId: string,
   ) {
+    const preserveViewState = renderedTabId === sourceTabId;
+    const preservedScrollTop = treeContentElement?.scrollTop ?? treeScrollTop;
+    const wasAllExpanded = isAllExpanded;
     treeError = '';
     rootData = parsed.rootData;
     parsedPointers = parsed.pointers;
@@ -267,11 +272,15 @@
     const nodes = parsed.nodes as TreeNode[];
     treeNodes = nodes;
     treeNodeByPath = parsed.nodeIndex as Map<string, TreeNode>;
-    resetTreeScroll();
 
-    const nextExpanded = new Set(
-      nodes.filter((node) => hasChildren(node)).map((node) => node.path),
-    );
+    const nextExpanded = preserveViewState
+      ? new Set(
+          [...expandedNodes].filter((path) => {
+            const node = treeNodeByPath.get(path);
+            return node ? hasChildren(node) : false;
+          }),
+        )
+      : new Set(nodes.filter((node) => hasChildren(node)).map((node) => node.path));
     if (pendingMovedPath) {
       getAncestorPaths(pendingMovedPath).forEach((path) => nextExpanded.add(path));
       selectedPath = pendingMovedPath;
@@ -286,7 +295,27 @@
       });
     }
     expandedNodes = nextExpanded;
-    isAllExpanded = false;
+    if (preserveViewState && wasAllExpanded) {
+      const expandableNodes = [...treeNodeByPath.values()].filter((node) => hasChildren(node));
+      isAllExpanded = expandableNodes.length > 0
+        && expandableNodes.every((node) => nextExpanded.has(node.path));
+    } else {
+      isAllExpanded = false;
+    }
+    renderedTabId = sourceTabId;
+    if (preserveViewState) {
+      tick().then(() => {
+        if (tabId !== sourceTabId || renderedTabId !== sourceTabId) return;
+        if (!treeContentElement) {
+          treeScrollTop = preservedScrollTop;
+          return;
+        }
+        treeContentElement.scrollTop = preservedScrollTop;
+        treeScrollTop = treeContentElement.scrollTop;
+      });
+    } else {
+      resetTreeScroll();
+    }
     isLoading = false;
     completedTreeBuildVersion = version;
   }
@@ -633,7 +662,6 @@
     const target = event.target as HTMLElement;
     if (target.closest('button, input, select, textarea')) return;
 
-    treeEdit = null;
     draggedPath = node.path;
     pointerDragStart = { path: node.path, x: event.clientX, y: event.clientY };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);

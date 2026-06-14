@@ -16,10 +16,10 @@ help:
 
 # Development mode (frontend + backend)
 dev:
-	pnpm tauri dev
+	pnpm tauri dev --config src-tauri/tauri.dev.conf.json
 
 dev-mock-update:
-	VITE_MOCK_APP_UPDATE=1 pnpm tauri dev
+	VITE_MOCK_APP_UPDATE=1 pnpm tauri dev --config src-tauri/tauri.dev.conf.json
 
 # Build application (frontend + backend)
 build:

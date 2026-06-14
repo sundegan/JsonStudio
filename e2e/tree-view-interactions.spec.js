@@ -7,7 +7,10 @@ const DOCUMENT = `{
   "second": "two",
   "profile": {
     "name": "Alice",
-    "age": 20
+    "age": 20,
+    "preferences": {
+      "theme": "dark"
+    }
   }
 }`;
 
@@ -85,7 +88,7 @@ async function openTreeDocument(page) {
   await installTauriHarness(page);
   await page.goto('/');
   await expect(page.getByTestId('tree-ready')).toBeAttached();
-  await expect(page.getByTestId('editor-line-count')).toContainText('8 lines');
+  await expect(page.getByTestId('editor-line-count')).toContainText('11 lines');
 }
 
 function treeRow(page, path) {
@@ -122,6 +125,32 @@ test('double click edits a primitive value and writes it back to the editor', as
   await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText(
     '"name": "Bob"',
   );
+});
+
+test('clicking another Tree row commits the edit and preserves expanded nodes', async ({ page }) => {
+  const preferencesRow = treeRow(page, '/profile/preferences');
+  await preferencesRow.locator('.tree-toggle-btn').click();
+  await expect(preferencesRow.locator('.tree-toggle-btn')).toHaveAttribute(
+    'aria-label',
+    'Collapse preferences',
+  );
+
+  const themeRow = treeRow(page, '/profile/preferences/theme');
+  await themeRow.locator('[data-tree-edit-kind="value"]').dblclick();
+  const input = themeRow.locator('.tree-edit-input');
+  await expect(input).toBeFocused();
+  await input.fill('light');
+
+  await treeRow(page, '/profile/age').locator('.tree-type-icon').click();
+
+  await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText(
+    '"theme": "light"',
+  );
+  await expect(preferencesRow.locator('.tree-toggle-btn')).toHaveAttribute(
+    'aria-label',
+    'Collapse preferences',
+  );
+  await expect(treeRow(page, '/profile/preferences/theme').locator('.tree-value')).toHaveText('light');
 });
 
 test('dragging a Tree node reorders the JSON document', async ({ page }) => {
