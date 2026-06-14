@@ -14,8 +14,8 @@ function emptyStats() {
   };
 }
 
-export async function installTauriEditorHarness(page, content = '') {
-  await page.addInitScript(({ tabStateKey, settingsKey, initialContent, stats }) => {
+export async function installTauriEditorHarness(page, content = '', options = {}) {
+  await page.addInitScript(({ tabStateKey, settingsKey, initialContent, stats, showTreeView }) => {
     localStorage.setItem(tabStateKey, JSON.stringify({
       tabs: [{
         id: 'editor-test-tab',
@@ -31,7 +31,7 @@ export async function installTauriEditorHarness(page, content = '') {
     }));
     localStorage.setItem(settingsKey, JSON.stringify({
       language: 'en',
-      showTreeView: false,
+      showTreeView,
       showFolderView: false,
       autoSave: false,
       isDarkMode: false,
@@ -75,6 +75,7 @@ export async function installTauriEditorHarness(page, content = '') {
     settingsKey: SETTINGS_KEY,
     initialContent: content,
     stats: emptyStats(),
+    showTreeView: options.showTreeView ?? false,
   });
 }
 
