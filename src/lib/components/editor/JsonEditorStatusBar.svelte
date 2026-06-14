@@ -11,7 +11,8 @@
     diffModified,
     activeTab,
     stats,
-    lineCount
+    lineCount,
+    isMixedMode
   } = $props<{
     isDiffMode: boolean;
     diffLineCount: number;
@@ -22,6 +23,7 @@
     activeTab: Tab | null;
     stats: import('$lib/services/json').JsonStats;
     lineCount: number;
+    isMixedMode: boolean;
   }>();
 
   function formatBytes(bytes: number): string {
@@ -70,10 +72,13 @@
       {lineCount} {$t('status.lines')}
     </span>
 
-    {#if stats?.format_type}
+    {#if isMixedMode || stats?.format_type}
       <div class="w-px h-3.5 bg-(--divider-strong)"></div>
-      <span style="color: {stats.format_type === 'JSON5' ? '#8b5cf6' : '#10b981'}; font-weight: 600;">
-        {stats.format_type}
+      <span
+        data-testid="editor-format-type"
+        style="color: {isMixedMode ? '#f59e0b' : stats.format_type === 'JSON5' ? '#8b5cf6' : '#10b981'}; font-weight: 600;"
+      >
+        {isMixedMode ? 'Mixed' : stats.format_type}
       </span>
     {/if}
 

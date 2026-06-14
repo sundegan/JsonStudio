@@ -46,6 +46,10 @@
     formatted: string;
     kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Repaired JSON';
   };
+  type LogJsonDetectionState = {
+    source: string;
+    fragments: LogJsonFragment[];
+  };
   type TabWithContent = import('$lib/stores/tabs').Tab & { content: string };
 
   let content = $state('');
@@ -74,7 +78,9 @@
   let logJsonFragments = $state<LogJsonFragment[]>([]);
   let selectedLogJsonFragmentIndex = $state(0);
   let isLogJsonPanelOpen = $state(false);
+  let isLogJsonDetectionPending = $state(false);
   let logJsonSource = $state('');
+  const logJsonStateByTab = new Map<string, LogJsonDetectionState>();
   // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
   // is saved here so it can be restored on exit. For standard JSON this stays empty,
   // meaning sub-page edits persist back to the main editor.
@@ -470,7 +476,7 @@
     const run = () => {
       if (version !== postSwitchWorkVersion) return;
       if ($activeTab?.id !== tab.id || content !== tab.content) return;
-      scheduleLogJsonDetection(tab.content);
+      scheduleLogJsonDetection(tab.content, { tabId: tab.id, delay: 0 });
     };
 
     if (!deferUntilEditorPaint) {
@@ -511,7 +517,10 @@
 
   async function syncActiveTab(
     state: import('$lib/stores/tabs').TabsState,
-    options: { deferSideEffects?: boolean } = {},
+    options: {
+      deferSideEffects?: boolean;
+      hideTreeWhileDetecting?: boolean;
+    } = {},
   ) {
     const currentTab = getActiveTabFromState(state);
     if (!currentTab) return;
@@ -529,11 +538,13 @@
     });
     attachEditorModel(tabId, options.deferSideEffects ?? false);
     stats = currentTab.stats;
-    if (isCurrentLogJsonContent(logJsonSource) && logJsonSource !== loadedContent) {
-      resetLogJsonFragments();
-    }
+    const needsLogJsonDetection = prepareLogJsonState(currentTab, loadedContent, {
+      hideTreeWhileDetecting: options.hideTreeWhileDetecting ?? true,
+    });
     scheduleRightPanelTabSync({ ...currentTab, content: loadedContent }, options.deferSideEffects ?? false);
-    schedulePostSwitchWork({ ...currentTab, content: loadedContent }, options.deferSideEffects ?? false);
+    if (needsLogJsonDetection) {
+      schedulePostSwitchWork({ ...currentTab, content: loadedContent }, options.deferSideEffects ?? false);
+    }
   }
   
   // Handle file watching for active tab
@@ -578,6 +589,11 @@
       const newActiveTabVersion = currentTab?.contentVersion ?? 0;
       
       tabsState = newTabsState;
+      for (const tabId of logJsonStateByTab.keys()) {
+        if (!newTabsState.tabs.some(tab => tab.id === tabId)) {
+          logJsonStateByTab.delete(tabId);
+        }
+      }
       monacoEditor?.retainModels(newTabsState.tabs.map(tab => tab.id));
       
       // For the first sync, initialize prevActiveTabId and sync content
@@ -597,10 +613,14 @@
       const contentChangedExternally = prevActiveTabContent !== String(newActiveTabVersion);
       
       if (tabSwitched || contentChangedExternally) {
+        const activeContentAlreadyApplied = currentTab
+          ? getDocumentContent(currentTab.id) === content
+          : false;
         prevActiveTabId = newActiveTabId;
         prevActiveTabContent = String(newActiveTabVersion);
         void syncActiveTab(newTabsState, {
           deferSideEffects: tabSwitched,
+          hideTreeWhileDetecting: tabSwitched || !activeContentAlreadyApplied,
         });
         
         // Setup file watching for new active tab
@@ -618,7 +638,9 @@
   let tabSize = $derived(settings.tabSize);
   let showTreeView = $derived(settings.showTreeView);
   let showFolderView = $derived(settings.showFolderView);
-  let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && logJsonFragments.length > 0);
+  let isMixedLogContent = $derived(logJsonSource === content && logJsonFragments.length > 0);
+  let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && isMixedLogContent);
+  let usesLogJsonLayout = $derived(hasLogJsonFragmentsPanel || isLogJsonDetectionPending);
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
 
   onDestroy(() => {
@@ -902,41 +924,92 @@
     });
   }
 
-  function resetLogJsonFragments() {
-    if (logJsonTimer) {
-      clearTimeout(logJsonTimer);
-      logJsonTimer = null;
-    }
-    cancelLogJsonDetection();
+  function clearActiveLogJsonState() {
     logJsonFragments = [];
     logJsonSource = '';
     selectedLogJsonFragmentIndex = 0;
     isLogJsonPanelOpen = false;
   }
 
-  function applyLogJsonDetectionResult(value: string, fragments: LogJsonFragment[]) {
+  function resetLogJsonFragments() {
+    if (logJsonTimer) {
+      clearTimeout(logJsonTimer);
+      logJsonTimer = null;
+    }
+    cancelLogJsonDetection();
+    clearActiveLogJsonState();
+    isLogJsonDetectionPending = false;
+  }
+
+  function prepareLogJsonState(
+    tab: import('$lib/stores/tabs').Tab,
+    value: string,
+    options: { hideTreeWhileDetecting: boolean },
+  ) {
+    if (logJsonTimer) {
+      clearTimeout(logJsonTimer);
+      logJsonTimer = null;
+    }
+    cancelLogJsonDetection();
+
+    const cached = logJsonStateByTab.get(tab.id);
+    if (cached?.source === value) {
+      applyLogJsonDetectionResult(tab.id, value, cached.fragments, false);
+      return false;
+    }
+
+    const wasMixedLogContent = logJsonFragments.length > 0;
+    clearActiveLogJsonState();
+    if (tab.stats.valid && !cached) {
+      logJsonStateByTab.set(tab.id, { source: value, fragments: [] });
+      isLogJsonDetectionPending = false;
+      return false;
+    }
+    const needsDetection = Boolean(
+      value.trim() &&
+      value.length <= MAX_LOG_JSON_INPUT_LENGTH &&
+      (!tab.stats.valid || Boolean(cached)),
+    );
+    isLogJsonDetectionPending =
+      needsDetection && (options.hideTreeWhileDetecting || wasMixedLogContent);
+    return needsDetection;
+  }
+
+  function applyLogJsonDetectionResult(
+    tabId: string,
+    value: string,
+    fragments: LogJsonFragment[],
+    updateCache = true,
+  ) {
     const isWholeDocumentJson =
       fragments.length === 1 && fragments[0].raw.trim() === value.trim();
+    const mixedFragments = isWholeDocumentJson ? [] : fragments;
 
-    if (fragments.length === 0 || isWholeDocumentJson) {
-      logJsonFragments = [];
-      logJsonSource = '';
-      selectedLogJsonFragmentIndex = 0;
-      isLogJsonPanelOpen = false;
+    if (updateCache) {
+      logJsonStateByTab.set(tabId, { source: value, fragments: mixedFragments });
+    }
+    isLogJsonDetectionPending = false;
+
+    if (mixedFragments.length === 0) {
+      clearActiveLogJsonState();
       return;
     }
 
-    logJsonFragments = fragments;
+    logJsonFragments = mixedFragments;
     logJsonSource = value;
-    selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, fragments.length - 1);
+    selectedLogJsonFragmentIndex = Math.min(selectedLogJsonFragmentIndex, mixedFragments.length - 1);
     isLogJsonPanelOpen = true;
   }
 
-  function scheduleLogJsonDetection(value: string) {
+  function scheduleLogJsonDetection(
+    value: string,
+    options: { tabId?: string; delay?: number } = {},
+  ) {
     if (logJsonTimer) clearTimeout(logJsonTimer);
     cancelLogJsonDetection();
+    const tabId = options.tabId ?? $activeTab?.id;
 
-    if (!value.trim() || value.length > MAX_LOG_JSON_INPUT_LENGTH) {
+    if (!tabId || !value.trim() || value.length > MAX_LOG_JSON_INPUT_LENGTH) {
       resetLogJsonFragments();
       return;
     }
@@ -946,16 +1019,14 @@
         const fragments = await extractLogJsonFragmentsAsync(value, {
           indent: tabSize,
         }) as LogJsonFragment[];
-        if (content === value) applyLogJsonDetectionResult(value, fragments);
+        if ($activeTab?.id === tabId && content === value) {
+          applyLogJsonDetectionResult(tabId, value, fragments);
+        }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
-        if (content === value) resetLogJsonFragments();
+        if ($activeTab?.id === tabId && content === value) resetLogJsonFragments();
       }
-    }, 400);
-  }
-
-  function isCurrentLogJsonContent(text: string) {
-    return logJsonSource === text && logJsonFragments.length > 0;
+    }, options.delay ?? 400);
   }
 
   async function copyLogJsonFragment(value: string) {
@@ -1250,7 +1321,7 @@
     class="json-main-workspace"
     class:resizing-tree-view={isResizingTreeView || isResizingFolderView}
   >
-    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel}
+    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !usesLogJsonLayout}
       <!-- Folder Sidebar Area -->
       {#if showFolderView}
         <div class="json-folder-container" style={`width: ${folderViewWidth}px;`}>
@@ -1385,7 +1456,7 @@
     </div>
 
     <!-- Unified Right Section & Toggler -->
-    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !hasLogJsonFragmentsPanel}
+    {#if !isDiffMode && !isConvertMode && !isCodegenMode && !isSchemaMode && !usesLogJsonLayout}
       
       {#if showTreeView}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -1441,6 +1512,7 @@
       activeTab={$activeTab}
       stats={stats}
       lineCount={lineCount}
+      isMixedMode={isMixedLogContent}
     />
   {/if}
 
