@@ -146,11 +146,17 @@ a:hover{opacity:.85}
 .stat-label{font-size:14px;color:var(--text3);margin-top:6px;font-weight:500; font-family: 'Inter', sans-serif;}
 
 /* ── Screenshots ── */
-.screenshots{padding:20px 24px 80px}
+.screenshots{padding:0 24px 72px}
 .screenshots-inner{max-width:var(--max-w);margin:0 auto; perspective: 1000px;}
+.demo-header{text-align:center;margin:0 auto 32px;max-width:760px}
+.demo-header h2{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.2;margin-bottom:14px}
+.demo-header h2 .gold{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.demo-header p{color:var(--text2);font-size:17px;line-height:1.7}
 .screenshot-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;align-items:center;justify-content:center; box-shadow: 0 30px 80px rgba(0,0,0,0.4); transform: rotateX(2deg) scale(0.98); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);}
 .screenshot-box:hover { transform: rotateX(0deg) scale(1); }
-.screenshot-box img{width:100%;height:auto;display:block;}
+.screenshot-box img{width:100%;height:auto;aspect-ratio:3272/2072;object-fit:contain;display:block;}
+.screenshot-box video{width:100%;height:auto;display:block;background:#09090d}
+.feature-page-screenshot{width:min(100% - 48px,960px);margin:0 auto}
 
 /* ── Positioning ── */
 .positioning{padding:40px 24px 80px}
@@ -195,7 +201,7 @@ a:hover{opacity:.85}
 .showcase-text ul{list-style:none;display:flex;flex-direction:column;gap:10px}
 .showcase-text li{display:flex;align-items:flex-start;gap:12px;color:var(--text2);font-size:15px}
 .showcase-text li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:1px; background: var(--accent-glow); width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px;}
-.showcase-visual{background:var(--bg2);border:1px solid var(--border);border-radius:20px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow: 0 20px 60px rgba(0,0,0,0.3); transition: transform 0.5s ease;}
+.showcase-visual{background:var(--bg2);border:1px solid var(--border);border-radius:20px;aspect-ratio:3272/2072;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow: 0 20px 60px rgba(0,0,0,0.3); transition: transform 0.5s ease;}
 .showcase-visual:hover {transform: scale(1.02) translateY(-4px);}
 
 /* ── Content (For Subpages) ── */
@@ -257,6 +263,9 @@ a:hover{opacity:.85}
 .workflow-step p{color:var(--text2);font-size:13px;line-height:1.5}
 
 .showcase-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;
   cursor: zoom-in;
   transition: transform 0.3s ease;
 }

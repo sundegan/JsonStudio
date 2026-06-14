@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON 树视图与 Grid 网格视图编辑器 | JsonStudio</title>
+  <meta name="description" content="使用 JsonStudio 树视图与 Grid 网格视图可视化查看和编辑 JSON。支持双击编辑、拖拽节点、嵌套数据查询，以及像表格一样编辑数组。">
+  <meta name="keywords" content="JSON 树视图, JSON Grid 视图, JSON 树编辑器, JSON 表格编辑器, 可视化 JSON 编辑器, JSON 拖拽编辑">
+  <meta name="author" content="sundegan">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="canonical" href="https://jsonstudio.js.org/zh/json-tree-grid-view">
+  <link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-tree-grid-view">
+  <link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-tree-grid-view">
+  <link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-tree-grid-view">
+  <meta property="og:title" content="JSON 树视图与 Grid 网格视图编辑器 | JsonStudio">
+  <meta property="og:description" content="在同步的树视图和 Grid 网格视图中双击、拖拽、查询和编辑 JSON。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jsonstudio.js.org/zh/json-tree-grid-view">
+  <meta property="og:image" content="https://jsonstudio.js.org/images_zh/tree_view_dark.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/site.webmanifest">
+  <script>
+    (() => {
+      let savedTheme = null;
+      try { savedTheme = localStorage.getItem('jsonstudio-site-theme'); } catch { }
+      const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+    })();
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "JsonStudio 树视图与 Grid 网格视图",
+    "description": "支持树视图双击编辑、拖拽重排、Grid 网格编辑和源码同步的可视化 JSON 编辑器。",
+    "url": "https://jsonstudio.js.org/zh/json-tree-grid-view",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Windows, Linux",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <link rel="stylesheet" href="../global.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/zh/" class="nav-brand"><img src="../icon.png" alt="JsonStudio">JsonStudio</a>
+      <div class="nav-right">
+        <a href="/zh/#features" class="nav-link">功能</a>
+        <a href="/zh/json-formatter" class="nav-link">格式化</a>
+        <a href="/zh/changelog" class="nav-link">更新日志</a>
+        <a href="/json-tree-grid-view" class="lang-btn" hreflang="en" lang="en">English</a>
+        <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">GitHub</a>
+        <button class="theme-btn" type="button" id="theme-toggle" aria-label="切换到浅色主题" title="切换到浅色主题">
+          <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="breadcrumb">
+    <div class="breadcrumb-list">
+      <a href="/zh/">首页</a><span class="breadcrumb-separator">/</span><span>树视图与 Grid 网格视图</span>
+    </div>
+  </div>
+
+  <section class="hero">
+    <span class="hero-badge">可视化 JSON 编辑</span>
+    <h1>在<span class="gold">树视图与 Grid 网格视图</span>中编辑 JSON</h1>
+    <p class="hero-sub">浏览嵌套结构、双击直接编辑、拖拽调整节点，或切换到类似电子表格的 Grid 网格视图处理 JSON 数组。</p>
+    <div class="hero-actions">
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary"><span>下载 JsonStudio</span></a>
+      <a href="/zh/#features" class="btn-outline"><span>查看全部功能</span></a>
+    </div>
+  </section>
+
+  <div class="screenshot-box feature-page-screenshot">
+    <video autoplay muted loop playsinline controls preload="metadata" poster="../images_zh/tree_view_dark.png"
+      aria-label="JsonStudio 树视图与 Grid 网格视图编辑演示">
+      <source src="../media/jsonstudio-demo.mp4" type="video/mp4">
+      当前浏览器不支持嵌入视频。
+    </video>
+  </div>
+
+  <section class="section">
+    <div class="content">
+      <h2>不只是只读的 JSON 查看器</h2>
+      <p>JsonStudio 将源码编辑器、树视图和 Grid 网格视图连接在一起。根据当前任务选择最合适的呈现方式，修改后可以继续处理同一份 JSON，无需在多个工具之间来回复制。</p>
+
+      <h2>树视图编辑</h2>
+      <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon c1">✎</div><h3>双击直接编辑</h3><p>双击 key 或 value 即可修改，无需在源码中逐行寻找。</p></div>
+        <div class="feature-card"><div class="feature-icon c2">↕</div><h3>拖拽调整结构</h3><p>可视化调整支持的节点顺序和位置，并保持 JSON 数据有效。</p></div>
+        <div class="feature-card"><div class="feature-icon c3">⌘</div><h3>复制路径或值</h3><p>快速复制节点路径或内容，方便调试、文档和接口开发。</p></div>
+        <div class="feature-card"><div class="feature-icon c4">⌕</div><h3>查询嵌套数据</h3><p>使用 JMESPath 或 JSONPath 查询，并高亮匹配节点及祖先路径。</p></div>
+      </div>
+
+      <h2>Grid 网格视图编辑</h2>
+      <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon c2">▦</div><h3>表格化布局</h3><p>将对象数组转换成清晰的行和列，快速浏览结构化记录。</p></div>
+        <div class="feature-card"><div class="feature-icon c1">✎</div><h3>直接编辑单元格</h3><p>在表格中直接修改值，无需手动查找对应的 JSON 属性。</p></div>
+        <div class="feature-card"><div class="feature-icon c3">⇄</div><h3>多视图同步</h3><p>Grid 视图中的修改会与树视图和源码编辑器保持同步。</p></div>
+        <div class="feature-card"><div class="feature-icon c4">◎</div><h3>更清晰的数据审查</h3><p>横向比较多条记录，更容易发现缺失、不一致或错误数据。</p></div>
+      </div>
+
+      <h2>什么时候使用哪种视图？</h2>
+      <ul>
+        <li><strong>树视图：</strong>适合深层嵌套对象、混合数组、路径查看和结构调整。</li>
+        <li><strong>Grid 网格视图：</strong>适合用户、订单、事件、接口记录等结构相似的对象数组。</li>
+        <li><strong>源码编辑器：</strong>适合批量文本编辑、格式化、折叠和精确语法操作。</li>
+      </ul>
+
+      <h2>典型操作流程</h2>
+      <ol>
+        <li>在 JsonStudio 中粘贴或打开 JSON。</li>
+        <li>打开<strong>树视图</strong>检查嵌套结构，并编辑具体的 key 或 value。</li>
+        <li>需要调整结构或顺序时，拖拽支持的树节点。</li>
+        <li>根数据是记录数组时，切换到 <strong>Grid 网格视图</strong>。</li>
+        <li>编辑单元格，然后返回源码编辑器继续处理，同步修改会完整保留。</li>
+      </ol>
+
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>用符合数据结构的方式编辑 JSON</h2>
+    <p>下载 JsonStudio，在源码、树视图和 Grid 网格视图之间自由切换。</p>
+    <div class="hero-actions"><a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary"><span>立即下载</span></a></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 JsonStudio · MIT 许可证</div>
+      <div class="footer-links"><a href="/zh/">首页</a><a href="/zh/json-formatter">格式化</a><a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a></div>
+    </div>
+  </footer>
+
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const storageKey = 'jsonstudio-site-theme';
+    function applyTheme(theme) {
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      try { localStorage.setItem(storageKey, nextTheme); } catch { }
+      document.querySelectorAll('img[data-dark-src][data-light-src]').forEach(img => {
+        img.src = nextTheme === 'light' ? img.dataset.lightSrc : img.dataset.darkSrc;
+      });
+      const label = nextTheme === 'light' ? '切换到深色主题' : '切换到浅色主题';
+      themeToggle?.setAttribute('aria-label', label);
+      themeToggle?.setAttribute('title', label);
+    }
+    applyTheme(document.documentElement.dataset.theme);
+    themeToggle?.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'));
+  </script>
+</body>
+</html>

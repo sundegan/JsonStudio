@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Tree View & Grid View Editor | JsonStudio</title>
+  <meta name="description" content="Explore and edit JSON visually with JsonStudio Tree View and Grid View. Double-click values, drag and drop nodes, query nested data, and edit arrays like a spreadsheet.">
+  <meta name="keywords" content="JSON tree view, JSON grid view, JSON tree editor, JSON table editor, visual JSON editor, editable JSON tree, JSON drag and drop, JSON spreadsheet">
+  <meta name="author" content="sundegan">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="canonical" href="https://jsonstudio.js.org/json-tree-grid-view">
+  <link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-tree-grid-view">
+  <link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-tree-grid-view">
+  <link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-tree-grid-view">
+  <meta property="og:title" content="JSON Tree View & Grid View Editor | JsonStudio">
+  <meta property="og:description" content="Double-click, drag, query, and edit JSON visually in synchronized Tree and Grid views.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jsonstudio.js.org/json-tree-grid-view">
+  <meta property="og:image" content="https://jsonstudio.js.org/images_en/tree_view_dark.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/icon.png" type="image/png" sizes="256x256">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/site.webmanifest">
+  <script>
+    (() => {
+      let savedTheme = null;
+      try { savedTheme = localStorage.getItem('jsonstudio-site-theme'); } catch { }
+      const systemTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = savedTheme || systemTheme || 'dark';
+    })();
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "JsonStudio Tree View and Grid View",
+    "description": "A visual JSON editor with editable Tree View, drag-and-drop reordering, spreadsheet-style Grid View, and synchronized source editing.",
+    "url": "https://jsonstudio.js.org/json-tree-grid-view",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Windows, Linux",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <link rel="stylesheet" href="global.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand"><img src="icon.png" alt="JsonStudio">JsonStudio</a>
+      <div class="nav-right">
+        <a href="/#features" class="nav-link">Features</a>
+        <a href="/json-formatter" class="nav-link">Formatter</a>
+        <a href="/changelog" class="nav-link">Changelog</a>
+        <a href="/zh/json-tree-grid-view" class="lang-btn" hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a href="https://github.com/sundegan/JsonStudio" target="_blank" class="nav-github">GitHub</a>
+        <button class="theme-btn" type="button" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
+          <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3z"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="breadcrumb">
+    <div class="breadcrumb-list">
+      <a href="/">Home</a><span class="breadcrumb-separator">/</span><span>Tree View & Grid View</span>
+    </div>
+  </div>
+
+  <section class="hero">
+    <span class="hero-badge">VISUAL JSON EDITING</span>
+    <h1>Edit JSON in <span class="gold">Tree View & Grid View</span></h1>
+    <p class="hero-sub">Navigate nested structures, double-click to edit, drag nodes to reorganize data, or switch to a spreadsheet-style Grid View for JSON arrays.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary"><span>Download JsonStudio</span></a>
+      <a href="/#features" class="btn-outline"><span>View All Features</span></a>
+    </div>
+  </section>
+
+  <div class="screenshot-box feature-page-screenshot">
+    <video autoplay muted loop playsinline controls preload="metadata" poster="images_en/tree_view_dark.png"
+      aria-label="JsonStudio demo showing Tree View and Grid View editing">
+      <source src="media/jsonstudio-demo.mp4" type="video/mp4">
+      Your browser does not support embedded video.
+    </video>
+  </div>
+
+  <section class="section">
+    <div class="content">
+      <h2>More Than a Read-Only JSON Viewer</h2>
+      <p>JsonStudio keeps the source editor, Tree View, and Grid View connected. Choose the representation that fits the task, make a change, and continue working with the same JSON data without copying it between separate tools.</p>
+
+      <h2>Tree View Editing</h2>
+      <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon c1">✎</div><h3>Double-click to Edit</h3><p>Edit keys and values directly in the tree without hunting through source lines.</p></div>
+        <div class="feature-card"><div class="feature-icon c2">↕</div><h3>Drag and Drop</h3><p>Reorder and reorganize supported nodes visually while preserving valid JSON.</p></div>
+        <div class="feature-card"><div class="feature-icon c3">⌘</div><h3>Copy Path or Value</h3><p>Copy a node path or value for debugging, documentation, and API work.</p></div>
+        <div class="feature-card"><div class="feature-icon c4">⌕</div><h3>Query Nested Data</h3><p>Use JMESPath or JSONPath and highlight matching nodes with their ancestor paths.</p></div>
+      </div>
+
+      <h2>Grid View Editing</h2>
+      <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon c2">▦</div><h3>Spreadsheet-style Layout</h3><p>Turn arrays of objects into rows and columns that are easy to scan.</p></div>
+        <div class="feature-card"><div class="feature-icon c1">✎</div><h3>Edit Cells Directly</h3><p>Update values in place without manually locating each property in JSON source.</p></div>
+        <div class="feature-card"><div class="feature-icon c3">⇄</div><h3>Synchronized Views</h3><p>Changes made in Grid View stay synchronized with Tree View and the source editor.</p></div>
+        <div class="feature-card"><div class="feature-icon c4">◎</div><h3>Clear Data Review</h3><p>Compare records across columns to spot missing, inconsistent, or incorrect values.</p></div>
+      </div>
+
+      <h2>When to Use Each View</h2>
+      <ul>
+        <li><strong>Tree View:</strong> best for deeply nested objects, mixed arrays, paths, and structural changes.</li>
+        <li><strong>Grid View:</strong> best for arrays of similar objects such as users, orders, events, or API records.</li>
+        <li><strong>Source Editor:</strong> best for bulk text edits, formatting, folding, and precise syntax work.</li>
+      </ul>
+
+      <h2>Typical Workflow</h2>
+      <ol>
+        <li>Paste or open JSON in JsonStudio.</li>
+        <li>Open <strong>Tree View</strong> to inspect nested structure and edit individual values.</li>
+        <li>Drag supported nodes when the structure or ordering needs adjustment.</li>
+        <li>Switch to <strong>Grid View</strong> when the root data is an array of records.</li>
+        <li>Edit cells and return to the source editor with all changes synchronized.</li>
+      </ol>
+
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Edit JSON the Way the Data Makes Sense</h2>
+    <p>Download JsonStudio and move freely between source, Tree View, and Grid View.</p>
+    <div class="hero-actions"><a href="https://github.com/sundegan/JsonStudio/releases" target="_blank" class="btn-primary"><span>Download Now</span></a></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">&copy; 2026 JsonStudio · MIT License</div>
+      <div class="footer-links"><a href="/">Home</a><a href="/json-formatter">Formatter</a><a href="https://github.com/sundegan/JsonStudio" target="_blank">GitHub</a></div>
+    </div>
+  </footer>
+
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const storageKey = 'jsonstudio-site-theme';
+    function applyTheme(theme) {
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      try { localStorage.setItem(storageKey, nextTheme); } catch { }
+      document.querySelectorAll('img[data-dark-src][data-light-src]').forEach(img => {
+        img.src = nextTheme === 'light' ? img.dataset.lightSrc : img.dataset.darkSrc;
+      });
+      const label = nextTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+      themeToggle?.setAttribute('aria-label', label);
+      themeToggle?.setAttribute('title', label);
+    }
+    applyTheme(document.documentElement.dataset.theme);
+    themeToggle?.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'));
+  </script>
+</body>
+</html>

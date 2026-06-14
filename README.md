@@ -11,7 +11,7 @@ Prettify, inspect, compare, convert, validate, and extract JSON from real-world 
 **[jsonstudio.js.org](https://jsonstudio.js.org/)** · **[Download](https://github.com/sundegan/JsonStudio/releases)**
 
 <p align="center">
-  <a href="https://jsonstudio.js.org/">
+  <a href="https://jsonstudio.js.org/#screenshots">
     <img src="https://img.shields.io/badge/Website-f5c542?style=flat-square&logo=googlechrome&logoColor=white" alt="Website">
   </a>
   <a href="https://github.com/sundegan/JsonStudio/releases">
@@ -29,9 +29,13 @@ Prettify, inspect, compare, convert, validate, and extract JSON from real-world 
 
 ## Preview
 
-![Dark Theme](docs/images_en/app_home_page_dark_mode.png)
+<p align="center">
+  <a href="https://jsonstudio.js.org/">
+    <img src="docs/media/jsonstudio-demo.gif" width="900" alt="JsonStudio demo showing clipboard formatting, Tree View editing and drag-and-drop, Grid View editing, and log JSON extraction">
+  </a>
+</p>
 
-![Light Theme](docs/images_en/app_home_page_light_mode.png)
+<p align="center"><sub>Format clipboard JSON, edit and reorganize data in Tree View, edit arrays in Grid View, and extract JSON from logs.</sub></p>
 
 ## What Makes It Different
 
@@ -40,7 +44,8 @@ JsonStudio is built for JSON in real development work: API requests and response
 - **Local-first desktop app**: no network required, no browser required, no ads, a polished UI, shortcut support, and no more jumping between a pile of web tabs.
 - **Smarter formatting**: supports standard JSON, JSON-like/JSON5 input, escaped JSON strings, JSON with trailing commas, JSON with unquoted keys, automatic repair attempts for problematic JSON data, and paste auto-formatting.
 - **Log-like text and JSON mixed content formatting**: keeps the original log unchanged, extracts JSON fragments automatically, and displays structured results separately for easier log data inspection.
-- **Better reading and review**: tree view, JMESPath/JSONPath query, real-time statistics, and JSON diff make complex JSON data easier to understand.
+- **Visual editing, not just viewing**: double-click to edit values and drag nodes to reorganize data in Tree View, or use Grid View to inspect and edit arrays like a spreadsheet.
+- **Better reading and review**: JMESPath/JSONPath query, real-time statistics, and JSON diff make complex JSON data easier to understand.
 - **Details that fit daily use**: preserves original object key order by default, keeps JSON editing operations undoable, and reuses existing tabs when reopening files.
 - **Developer tools**: prettify, minify, escape, unescape, minify + escape, fold, unfold, JSON Schema generation/validation, JSON <-> YAML/XML/TOML/CSV conversion, and typed code generation.
 - **Smooth file workflow**: multi-tabs, auto-numbered Untitled tabs, reused tabs for reopened files, unsaved-change prompts, optional auto-save, drag-and-drop JSON opening, and direct opening by double-clicking JSON files.
@@ -49,7 +54,7 @@ JsonStudio is built for JSON in real development work: API requests and response
 
 ### Edit & View
 
-![Editor](docs/images_en/editor.png)
+![Editor](docs/images_en/app_home_page_light_mode.png)
 
 Built on Monaco Editor, JsonStudio provides a top-tier JSON prettify and viewing experience with syntax highlighting, code folding, find/replace, bracket coloring, light/dark mode, and 10+ themes.
 
@@ -59,11 +64,11 @@ Built on Monaco Editor, JsonStudio provides a top-tier JSON prettify and viewing
 
 JsonStudio handles standard JSON, JSON5-like input, escaped JSON strings, trailing commas, unquoted keys, and mixed log text with embedded JSON fragments. It keeps original text intact while extracting structured JSON results for review.
 
-### Tree View & Search
+### Tree View & Grid View Editing
 
 ![Tree View](docs/images_en/tree_view.png)
 
-Use the tree view to navigate nested data, copy paths or values, and query with JMESPath or JSONPath when a payload is too large to scan manually.
+Double-click keys and values to edit them directly in Tree View, then drag and drop nodes to reorganize nested JSON visually. Switch to Grid View to inspect and edit array data like a spreadsheet. Tree View, Grid View, and the source editor stay synchronized, while JMESPath and JSONPath queries help locate data quickly.
 
 ### Compare, Convert, Generate
 
@@ -89,7 +94,8 @@ Generate JSON Schema from data, validate JSON against a schema, and inspect deta
 | Keeps sensitive JSON on your machine | Risky | 100% local |
 | Handles JSON, JSON5-like input, escaped JSON, and repairable fragments | Partial | Built in |
 | Extracts JSON from log-like mixed text | Rare | Yes |
-| Tree view with JMESPath/JSONPath query | Partial | Yes |
+| Editable Tree View with drag-and-drop, plus editable Grid View | Rare | Built in |
+| JMESPath/JSONPath query | Partial | Yes |
 | Multi-tab workflow with unsaved prompts and optional auto-save | No | Yes |
 | Native shortcuts, format clipboard, always-on-top window | No | Yes |
 | Diff, convert, schema validation, and code generation in one app | Fragmented | Unified |
