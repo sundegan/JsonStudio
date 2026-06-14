@@ -35,6 +35,24 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-formatter"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-formatter"/>
   </url>
+
+  <!-- JSON Tree View & Grid View -->
+  <url>
+    <loc>https://jsonstudio.js.org/json-tree-grid-view</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-tree-grid-view"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-tree-grid-view"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-tree-grid-view"/>
+  </url>
+  <url>
+    <loc>https://jsonstudio.js.org/zh/json-tree-grid-view</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://jsonstudio.js.org/json-tree-grid-view"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jsonstudio.js.org/zh/json-tree-grid-view"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://jsonstudio.js.org/json-tree-grid-view"/>
+  </url>
   
   <!-- JSON Diff -->
   <url>

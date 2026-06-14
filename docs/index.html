@@ -108,6 +108,8 @@
     "JSON Schema generation and validation",
     "Code generation for TypeScript, Go, Python, Java, and Rust",
     "JSON viewer with tree structure",
+    "Double-click editing and drag-and-drop reordering in Tree View",
+    "Spreadsheet-style viewing and editing in Grid View",
     "JMESPath and JSONPath query support",
     "JSON5 parsing and formatting",
     "Log-like text JSON fragment extraction",
@@ -200,6 +202,24 @@
     </div>
   </section>
 
+  <!-- Product Demo -->
+  <section class="screenshots" id="screenshots">
+    <div class="screenshots-inner">
+      <div class="demo-header">
+        <h2>A Quick Look at <span class="gold">JsonStudio</span></h2>
+        <p>A short tour of a few everyday JSON workflows.</p>
+      </div>
+      <div class="screenshot-box">
+        <video autoplay muted loop playsinline controls preload="metadata"
+          poster="images_en/app_home_page_dark_mode.png"
+          aria-label="JsonStudio demo showing clipboard formatting, Tree View editing and drag-and-drop, Grid View editing, and log JSON extraction">
+          <source src="media/jsonstudio-demo.mp4" type="video/mp4">
+          Your browser does not support embedded video.
+        </video>
+      </div>
+    </div>
+  </section>
+
   <!-- Stats -->
   <section class="stats">
     <div class="stats-grid">
@@ -245,9 +265,9 @@
           fragments, and paste auto-formatting.</p>
       </div>
       <div class="positioning-card c-blue">
-        <h3>Review complex data</h3>
-        <p>Tree view, JMESPath/JSONPath query, real-time statistics, and side-by-side diff make large payloads easier to
-          read and verify.</p>
+        <h3>Explore and edit visually</h3>
+        <p>Double-click values and drag nodes in Tree View, or switch to Grid View to inspect and edit array data like a
+          spreadsheet.</p>
       </div>
       <div class="positioning-card c-purple">
         <h3>Daily file workflow</h3>
@@ -258,17 +278,6 @@
         <h3>Developer toolbox</h3>
         <p>Prettify, minify, escape, unescape, minify + escape, fold/unfold, Schema generation/validation, format
           conversion, and typed code generation.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Screenshots -->
-  <section class="screenshots" id="screenshots">
-    <div class="screenshots-inner">
-      <div class="screenshot-box">
-        <img id="main-screenshot" class="theme-image" src="images_en/app_home_page_dark_mode.png"
-          data-dark-src="images_en/app_home_page_dark_mode.png" data-light-src="images_en/app_home_page_light_mode.png"
-          alt="JsonStudio Screenshot" style="width:100%; height:100%; object-fit:cover;">
       </div>
     </div>
   </section>
@@ -300,29 +309,34 @@
           <p style="margin-top:16px"><a href="/json-formatter" style="color:var(--accent);text-decoration:none">Learn
               more →</a></p>
         </div>
-        <div class="showcase-visual"><img class="theme-image" src="images_en/editor_dark.png"
-            data-dark-src="images_en/editor_dark.png" data-light-src="images_en/editor.png" alt="JSON Editor"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+        <div class="showcase-visual"><img class="theme-image" src="images_en/app_home_page_dark_mode.png"
+            data-dark-src="images_en/app_home_page_dark_mode.png"
+            data-light-src="images_en/app_home_page_light_mode.png" alt="JSON Editor"
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
-      <!-- 2. Tree & Query -->
+      <!-- 2. Tree, Grid & Query -->
       <div class="showcase-row">
         <div class="showcase-text">
-          <span class="showcase-badge blue">NAVIGATE</span>
-          <h3>Tree View, JMESPath & JSONPath Query</h3>
-          <p>Visualize complex JSON/JSON5 structures as an interactive tree. Navigate, search, and query with ease.</p>
+          <span class="showcase-badge blue">VISUAL EDITING</span>
+          <h3>Edit in Tree View & Grid View</h3>
+          <p>Move beyond read-only inspection. Edit values and reorganize nested structures in Tree View, then switch
+            to Grid View for a spreadsheet-style view of array data.</p>
           <ul>
-            <li>Collapsible tree with type-colored icons</li>
+            <li>Double-click keys and values to edit them directly in Tree View</li>
+            <li>Drag and drop tree nodes to reorganize JSON visually</li>
+            <li>View and edit array data in a familiar spreadsheet-style Grid View</li>
+            <li>Keep Tree, Grid, and source editor changes synchronized</li>
             <li>Click any node to jump to its position in the editor</li>
             <li>Copy path and value with one click</li>
             <li>Switch between JMESPath and JSONPath query modes</li>
-            <li>Real-time match highlighting with automatic ancestor expansion</li>
-            <li>Resizable panel width for comfortable viewing</li>
           </ul>
+          <p style="margin-top:16px"><a href="/json-tree-grid-view"
+              style="color:var(--accent);text-decoration:none">Explore Tree & Grid View →</a></p>
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/tree_view_dark.png"
             data-dark-src="images_en/tree_view_dark.png" data-light-src="images_en/tree_view.png" alt="JSON Tree View"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 3. Log JSON extraction -->
@@ -341,7 +355,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/log_fragment_dark.png"
             data-dark-src="images_en/log_fragment_dark.png" data-light-src="images_en/log_fragment.png"
-            alt="Log JSON extraction" style="width:100%; height:100%; object-fit:cover;"></div>
+            alt="Log JSON extraction" style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 4. Convert -->
@@ -361,7 +375,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/convert_dark.png"
             data-dark-src="images_en/convert_dark.png" data-light-src="images_en/convert.png" alt="JSON Converter"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 5. Code Gen -->
@@ -381,7 +395,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/code_gen_dark.png"
             data-dark-src="images_en/code_gen_dark.png" data-light-src="images_en/code_gen.png" alt="Code Generation"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 6. JSON Schema -->
@@ -401,7 +415,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/json_schema_dark.png"
             data-dark-src="images_en/json_schema_dark.png" data-light-src="images_en/json_schema.png" alt="JSON Schema"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 7. Efficiency & Shortcuts -->
@@ -423,7 +437,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/settings_dark.png"
             data-dark-src="images_en/settings_dark.png" data-light-src="images_en/settings.png"
-            alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:cover;"></div>
+            alt="Settings & Shortcuts" style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 8. Diff & More Tools -->
@@ -445,7 +459,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="images_en/json_diff_dark.png"
             data-dark-src="images_en/json_diff_dark.png" data-light-src="images_en/json_diff.png" alt="JSON Diff"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
     </div>
   </section>
@@ -645,7 +659,7 @@
             <td class="check highlight">✓</td>
           </tr>
           <tr>
-            <td>Tree View & JMESPath / JSONPath Query</td>
+            <td>Editable Tree View & Grid View, with drag-and-drop</td>
             <td class="cross">✗</td>
             <td class="check highlight">✓</td>
           </tr>
@@ -736,6 +750,8 @@
     <div class="resource-grid">
       <a href="/json-formatter" class="resource-card"><strong>JSON Formatter</strong><span>Format, validate, and repair
           JSON/JSON5</span></a>
+      <a href="/json-tree-grid-view" class="resource-card"><strong>Tree View & Grid View</strong><span>Edit, drag,
+          query, and review JSON visually</span></a>
       <a href="/json-diff" class="resource-card"><strong>JSON Diff Tool</strong><span>Compare JSON files and API
           responses side by side</span></a>
       <a href="/json-converter" class="resource-card"><strong>JSON Converter</strong><span>Convert between YAML, XML,

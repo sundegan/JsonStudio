@@ -105,6 +105,8 @@
     "JSON Schema 生成与验证",
     "代码生成（TypeScript、Go、Python、Java、Rust）",
     "JSON 树形查看器",
+    "树视图双击编辑与拖拽重排",
+    "Grid 网格视图查看与编辑",
     "JMESPath 与 JSONPath 查询支持",
     "JSON5 解析与格式化",
     "日志混合文本 JSON 片段提取",
@@ -194,6 +196,24 @@
     </div>
   </section>
 
+  <!-- Product Demo -->
+  <section class="screenshots" id="screenshots">
+    <div class="screenshots-inner">
+      <div class="demo-header">
+        <h2>快速了解 <span class="gold">JsonStudio</span></h2>
+        <p>通过一段简短演示，了解部分日常 JSON 工作流。</p>
+      </div>
+      <div class="screenshot-box">
+        <video autoplay muted loop playsinline controls preload="metadata"
+          poster="../images_zh/app_home_page_dark_mode.png"
+          aria-label="JsonStudio 演示：剪贴板格式化、树视图编辑与拖拽、Grid 网格视图编辑和日志 JSON 提取">
+          <source src="../media/jsonstudio-demo.mp4" type="video/mp4">
+          当前浏览器不支持嵌入视频。
+        </video>
+      </div>
+    </div>
+  </section>
+
   <!-- Stats -->
   <section class="stats">
     <div class="stats-grid">
@@ -236,8 +256,8 @@
         <p>从容应对严格的 JSON、类 JSON5 语法、转义字符串、尾逗号、无引号键以及可修复的残缺片段，并支持粘贴时自动格式化。</p>
       </div>
       <div class="positioning-card c-blue">
-        <h3>查看复杂数据</h3>
-        <p>借助树状视图、JMESPath/JSONPath 查询、实时统计与并排 Diff 功能，让庞大复杂的 JSON 数据清晰易读、验证无忧。</p>
+        <h3>可视化查看与编辑</h3>
+        <p>在树视图中双击编辑值、拖拽调整节点结构，或切换到 Grid 网格视图，像操作表格一样查看和编辑数组数据。</p>
       </div>
       <div class="positioning-card c-purple">
         <h3>顺畅的文件工作流</h3>
@@ -246,18 +266,6 @@
       <div class="positioning-card c-pink">
         <h3>全能开发者工具箱</h3>
         <p>内置美化、压缩、转义、反转义、折叠/展开、Schema 生成与校验、格式转换以及强类型代码生成等常用功能。</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Screenshots -->
-  <section class="screenshots" id="screenshots">
-    <div class="screenshots-inner">
-      <div class="screenshot-box">
-        <img id="main-screenshot" class="theme-image" src="../images_zh/app_home_page_dark_mode.png"
-          data-dark-src="../images_zh/app_home_page_dark_mode.png"
-          data-light-src="../images_zh/app_home_page_light_mode.png" alt="JsonStudio 截图"
-          style="width:100%; height:100%; object-fit:cover;">
       </div>
     </div>
   </section>
@@ -287,29 +295,33 @@
           <p style="margin-top:16px"><a href="/zh/json-formatter" style="color:var(--accent);text-decoration:none">了解更多
               →</a></p>
         </div>
-        <div class="showcase-visual"><img class="theme-image" src="../images_zh/editor_dark.png"
-            data-dark-src="../images_zh/editor_dark.png" data-light-src="../images_zh/editor.png" alt="JSON 编辑器"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+        <div class="showcase-visual"><img class="theme-image" src="../images_zh/app_home_page_dark_mode.png"
+            data-dark-src="../images_zh/app_home_page_dark_mode.png"
+            data-light-src="../images_zh/app_home_page_light_mode.png" alt="JSON 编辑器"
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
-      <!-- 2. Tree & Query -->
+      <!-- 2. Tree, Grid & Query -->
       <div class="showcase-row">
         <div class="showcase-text">
-          <span class="showcase-badge blue">导航</span>
-          <h3>树状视图、JMESPath 与 JSONPath 查询</h3>
-          <p>将复杂的 JSON/JSON5 结构可视化为交互式树形图，轻松导航、搜索和查询。</p>
+          <span class="showcase-badge blue">可视化编辑</span>
+          <h3>树视图与 Grid 网格视图编辑</h3>
+          <p>不只是查看 JSON：在树视图中直接编辑并调整嵌套结构，再切换到 Grid 网格视图，以熟悉的表格方式处理数组数据。</p>
           <ul>
-            <li>可折叠树结构，节点按类型着色</li>
+            <li>双击 key 或 value，直接在树视图中编辑</li>
+            <li>拖拽树节点，可视化调整 JSON 数据结构与顺序</li>
+            <li>在 Grid 网格视图中像表格一样查看和编辑数组数据</li>
+            <li>树视图、Grid 视图与源码编辑器保持同步</li>
             <li>点击节点跳转到编辑器对应位置</li>
             <li>一键复制路径和值</li>
             <li>支持 JMESPath 与 JSONPath 查询模式切换</li>
-            <li>实时高亮匹配节点，并自动展开祖先路径</li>
-            <li>面板宽度可调节，舒适查看</li>
           </ul>
+          <p style="margin-top:16px"><a href="/zh/json-tree-grid-view"
+              style="color:var(--accent);text-decoration:none">了解树视图与 Grid 视图 →</a></p>
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/tree_view_dark.png"
             data-dark-src="../images_zh/tree_view_dark.png" data-light-src="../images_zh/tree_view.png" alt="JSON 树视图"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 3. Log JSON extraction -->
@@ -327,7 +339,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/log_fragment_dark.png"
             data-dark-src="../images_zh/log_fragment_dark.png" data-light-src="../images_zh/log_fragment.png"
-            alt="日志 JSON 提取" style="width:100%; height:100%; object-fit:cover;"></div>
+            alt="日志 JSON 提取" style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 4. Convert -->
@@ -347,7 +359,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/convert_dark.png"
             data-dark-src="../images_zh/convert_dark.png" data-light-src="../images_zh/convert.png" alt="JSON 转换"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 5. Code Gen -->
@@ -367,7 +379,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/code_gen_dark.png"
             data-dark-src="../images_zh/code_gen_dark.png" data-light-src="../images_zh/code_gen.png" alt="代码生成"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 6. JSON Schema -->
@@ -386,7 +398,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/json_schema_dark.png"
             data-dark-src="../images_zh/json_schema_dark.png" data-light-src="../images_zh/json_schema.png"
-            alt="JSON Schema" style="width:100%; height:100%; object-fit:cover;"></div>
+            alt="JSON Schema" style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 7. Efficiency & Shortcuts -->
@@ -407,7 +419,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/settings_dark.png"
             data-dark-src="../images_zh/settings_dark.png" data-light-src="../images_zh/settings.png" alt="设置与快捷键"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
 
       <!-- 8. Diff & More Tools -->
@@ -429,7 +441,7 @@
         </div>
         <div class="showcase-visual"><img class="theme-image" src="../images_zh/json_diff_dark.png"
             data-dark-src="../images_zh/json_diff_dark.png" data-light-src="../images_zh/json_diff.png" alt="JSON 对比"
-            style="width:100%; height:100%; object-fit:cover;"></div>
+            style="width:100%; height:100%; object-fit:contain;"></div>
       </div>
     </div>
   </section>
@@ -628,7 +640,7 @@
             <td class="check highlight">✓</td>
           </tr>
           <tr>
-            <td>树视图与 JMESPath / JSONPath 查询</td>
+            <td>可编辑、可拖拽的树视图与可编辑 Grid 网格视图</td>
             <td class="cross">✗</td>
             <td class="check highlight">✓</td>
           </tr>
@@ -719,6 +731,8 @@
     <div class="resource-grid">
       <a href="/zh/json-formatter" class="resource-card"><strong>JSON 格式化工具</strong><span>格式化、校验、修复
           JSON/JSON5</span></a>
+      <a href="/zh/json-tree-grid-view" class="resource-card"><strong>树视图与 Grid 网格视图</strong><span>可视化编辑、拖拽、查询和审查
+          JSON</span></a>
       <a href="/zh/json-diff" class="resource-card"><strong>JSON Diff 对比工具</strong><span>并排比较 JSON 文件和接口响应</span></a>
       <a href="/zh/json-converter" class="resource-card"><strong>JSON 转换工具</strong><span>在 YAML、XML、TOML、CSV
           间转换</span></a>
