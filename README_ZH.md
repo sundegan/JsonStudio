@@ -8,20 +8,17 @@
 
 美化、查看、对比、转换、校验，也能从真实日志里提取 JSON - 全部在本地桌面应用中完成。
 
-**[jsonstudio.js.org](https://jsonstudio.js.org/)** · **[下载安装](https://github.com/sundegan/JsonStudio/releases)**
+如果喜欢 JsonStudio，欢迎点个 Star [⭐](https://github.com/sundegan/JsonStudio)。
 
 <p align="center">
-  <a href="https://jsonstudio.js.org/">
-    <img src="https://img.shields.io/badge/官方网站-f5c542?style=flat-square&logo=googlechrome&logoColor=white" alt="Website">
-  </a>
   <a href="https://github.com/sundegan/JsonStudio/releases">
     <img src="https://img.shields.io/github/v/release/sundegan/JsonStudio?style=flat-square&color=10b981&label=最新版本&logo=github&logoColor=white" alt="Release">
   </a>
   <img src="https://img.shields.io/badge/平台-macOS%20%7C%20Windows%20%7C%20Linux-334155?style=flat-square&logo=apple&logoColor=white" alt="Platform">
-  <img src="https://img.shields.io/badge/隐私-100%25%20本地处理-166534?style=flat-square&logo=docsdotrs&logoColor=white" alt="Privacy">
+  <a href="https://jsonstudio.js.org/">
+    <img src="https://img.shields.io/badge/官方网站-f5c542?style=flat-square&logo=googlechrome&logoColor=white" alt="Website">
+  </a>
 </p>
-
-<sub>全能 JSON 工作台 · 本地优先的桌面应用</sub>
 
 </div>
 
@@ -82,6 +79,6 @@ brew install --cask sundegan/tap/json-studio
 
 <div align="center">
 
-如果 JsonStudio 对你的日常 JSON 工作有帮助，欢迎点个 Star 支持一下。
+如果 JsonStudio 对你的日常 JSON 工作有帮助，欢迎点个 Star ⭐ 支持一下。
 
 </div>
