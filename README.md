@@ -8,20 +8,17 @@
 
 Prettify, inspect, compare, convert, validate, and extract JSON from real-world logs - all locally in a native desktop app.
 
-**[jsonstudio.js.org](https://jsonstudio.js.org/)** · **[Download](https://github.com/sundegan/JsonStudio/releases)**
+If you like JsonStudio, please give it a star [⭐](https://github.com/sundegan/JsonStudio).
 
 <p align="center">
-  <a href="https://jsonstudio.js.org/#screenshots">
-    <img src="https://img.shields.io/badge/Website-f5c542?style=flat-square&logo=googlechrome&logoColor=white" alt="Website">
-  </a>
   <a href="https://github.com/sundegan/JsonStudio/releases">
     <img src="https://img.shields.io/github/v/release/sundegan/JsonStudio?style=flat-square&color=10b981&label=Release&logo=github&logoColor=white" alt="Release">
   </a>
   <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-334155?style=flat-square&logo=apple&logoColor=white" alt="Platform">
-  <img src="https://img.shields.io/badge/Privacy-100%25%20Local-166534?style=flat-square&logo=docsdotrs&logoColor=white" alt="Privacy">
+  <a href="https://jsonstudio.js.org/">
+    <img src="https://img.shields.io/badge/Website-f5c542?style=flat-square&logo=googlechrome&logoColor=white" alt="Website">
+  </a>
 </p>
-
-<sub>all-in-one JSON workspace · local-first desktop app</sub>
 
 </div>
 
@@ -82,6 +79,6 @@ Current macOS builds are not Apple Developer ID notarized, so the first launch m
 
 <div align="center">
 
-If JsonStudio helps your daily JSON work, a star would mean a lot.
+If JsonStudio helps your daily JSON work, a star ⭐ would mean a lot.
 
 </div>
