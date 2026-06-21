@@ -113,6 +113,8 @@
   let expandedNodes = $state<Set<string>>(new Set());
   let isAllExpanded = $state(false);
   let helpOpen = $state(false);
+  let helpButtonElement = $state<HTMLButtonElement | null>(null);
+  let helpPopoverPosition = $state({ top: 0, right: 0, maxHeight: 400 });
   let treeEdit = $state<TreeEditState | null>(null);
   let treeEditInput = $state<HTMLInputElement | null>(null);
   let draggedPath = $state<string | null>(null);
@@ -921,9 +923,40 @@
     helpOpen = false;
     queryModeMenuOpen = false;
   }
+
+  function updateHelpPopoverPosition() {
+    if (!helpButtonElement || typeof window === 'undefined') return;
+
+    const rect = helpButtonElement.getBoundingClientRect();
+    const top = rect.bottom + 8;
+    const popoverWidth = Math.min(380, window.innerWidth - 20);
+    const preferredRight = window.innerWidth - rect.right;
+    const maxRight = Math.max(10, window.innerWidth - popoverWidth - 10);
+    const availableHeight = Math.max(120, window.innerHeight - top - 12);
+    helpPopoverPosition = {
+      top,
+      right: Math.min(Math.max(10, preferredRight), maxRight),
+      maxHeight: Math.min(400, availableHeight),
+    };
+  }
+
+  async function toggleHelp(event: MouseEvent) {
+    event.stopPropagation();
+    helpOpen = !helpOpen;
+    queryModeMenuOpen = false;
+
+    if (helpOpen) {
+      updateHelpPopoverPosition();
+      await tick();
+      updateHelpPopoverPosition();
+    }
+  }
 </script>
 
-<svelte:window onclick={hideFloatingControls} />
+<svelte:window
+  onclick={hideFloatingControls}
+  onresize={() => helpOpen && updateHelpPopoverPosition()}
+/>
 
 <div class="json-tree-panel" style={`--tree-row-height: ${TREE_ROW_HEIGHT}px`}>
 
@@ -1014,7 +1047,8 @@
         <button
           class="json-tree-help-btn"
           class:is-active={helpOpen}
-          onclick={(e) => { e.stopPropagation(); helpOpen = !helpOpen; }}
+          bind:this={helpButtonElement}
+          onclick={toggleHelp}
           type="button"
           title={`${getQueryModeLabel(queryMode)} ${$t('treeView.syntaxGuide')}`}
           aria-expanded={helpOpen}
@@ -1032,6 +1066,7 @@
             role="dialog"
             aria-label={`${getQueryModeLabel(queryMode)} Help`}
             tabindex="-1"
+            style={`top: ${helpPopoverPosition.top}px; right: ${helpPopoverPosition.right}px; max-height: ${helpPopoverPosition.maxHeight}px;`}
             onclick={(e) => e.stopPropagation()}
             onkeydown={(e) => e.key === 'Escape' && hideHelp()}
           >
@@ -1595,12 +1630,9 @@
   }
 
   .json-tree-help-popover {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
+    position: fixed;
     width: 380px;
     max-width: calc(100vw - 20px);
-    max-height: 400px;
     padding: 0;
     border-radius: 8px;
     background: var(--bg-primary);
@@ -1609,7 +1641,7 @@
     color: var(--text-primary);
     font-size: 12px;
     overflow: hidden;
-    z-index: 2000;
+    z-index: 9000;
     display: flex;
     flex-direction: column;
   }
