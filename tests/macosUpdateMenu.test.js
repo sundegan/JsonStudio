@@ -113,3 +113,13 @@ test('settings store syncs macOS menu language with app language', () => {
   assert.match(settingsStore, /void syncAppMenuLanguage\(settings\.language\)/);
   assert.match(settingsStore, /void syncAppMenuLanguage\(value as Locale\)/);
 });
+
+test('settings store defaults language from system locale before saved settings', () => {
+  const settingsStore = readFileSync(new URL('../src/lib/stores/settings.ts', import.meta.url), 'utf8');
+
+  assert.match(settingsStore, /function getSystemLanguage\(\): Locale/);
+  assert.match(settingsStore, /navigator\.languages/);
+  assert.match(settingsStore, /language\.toLowerCase\(\)\.startsWith\('zh'\)/);
+  assert.match(settingsStore, /const fallbackSettings = getDefaultSettings\(\)/);
+  assert.match(settingsStore, /return \{ \.\.\.fallbackSettings, \.\.\.parsed \}/);
+});
