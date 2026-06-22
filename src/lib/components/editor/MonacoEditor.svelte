@@ -5,7 +5,6 @@
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { initMonaco } from '$lib/services/monaco';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
-  import { getJsonStringUrlAtColumn } from '$lib/services/editorLinks.js';
   
   // Props
   let {
@@ -140,6 +139,7 @@
   let isSwitchingModel = false;
   let externalSelectionDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
   let editorDomNode: HTMLElement | null = null;
+  let editorLinkOpenerDisposable: Monaco.IDisposable | null = null;
   let findWidgetHoverHandler: ((event: MouseEvent) => void) | null = null;
   
   // Flag: distinguish between internal edits and external updates
@@ -155,10 +155,10 @@
       await openUrl(url);
     } catch (error) {
       console.error('Failed to open editor link:', error);
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   }
-  
+
   // Watch value changes
   $effect(() => {
     const nextModelKey = modelKey;
@@ -304,6 +304,17 @@
     
     // Register custom themes (loaded from config file)
     registerMonacoThemes(monacoInstance);
+
+    editorLinkOpenerDisposable?.dispose();
+    editorLinkOpenerDisposable = monacoInstance.editor.registerLinkOpener({
+      async open(resource) {
+        const url = resource.toString(true);
+        if (!/^https?:\/\//i.test(url)) return false;
+
+        await openEditorUrl(url);
+        return true;
+      },
+    });
     
     // Configure JSON language features
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -383,23 +394,6 @@
       editor.onDidPaste((event) => {
         onPaste(event);
       });
-
-      editor.onMouseDown((event) => {
-        const browserEvent = event.event.browserEvent;
-        if (browserEvent.button !== 0 || (!browserEvent.metaKey && !browserEvent.ctrlKey)) return;
-
-        const position = event.target.position;
-        const model = editor?.getModel();
-        if (!position || !model) return;
-
-        const lineText = model.getLineContent(position.lineNumber);
-        const url = getJsonStringUrlAtColumn(lineText, position.column);
-        if (!url) return;
-
-        event.event.preventDefault();
-        event.event.stopPropagation();
-        void openEditorUrl(url);
-      });
     }
 
     editorDomNode = editor?.getDomNode() as HTMLElement | null;
@@ -416,6 +410,8 @@
   });
   
   onDestroy(() => {
+    editorLinkOpenerDisposable?.dispose();
+    editorLinkOpenerDisposable = null;
     if (editorDomNode && findWidgetHoverHandler) {
       editorDomNode.removeEventListener('mouseover', findWidgetHoverHandler, true);
     }
