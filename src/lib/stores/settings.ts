@@ -46,7 +46,7 @@ const defaultSettings: AppSettings = {
   isDarkMode: false,
   darkTheme: 'json-studio-dark',
   lightTheme: 'json-studio-light',
-  language: 'zh',
+  language: 'en',
   fontSize: 13,
   lineHeight: 20,
   tabSize: 2,
@@ -55,20 +55,39 @@ const defaultSettings: AppSettings = {
   autoSave: false,
 };
 
+function getSystemLanguage(): Locale {
+  if (typeof navigator === 'undefined') return defaultSettings.language;
+
+  const languages = [
+    ...Array.from(navigator.languages || []),
+    navigator.language,
+  ].filter(Boolean);
+
+  return languages.some(language => language.toLowerCase().startsWith('zh')) ? 'zh' : 'en';
+}
+
+function getDefaultSettings(): AppSettings {
+  return {
+    ...defaultSettings,
+    language: getSystemLanguage(),
+  };
+}
+
 // Load settings from localStorage
 function loadSettings(): AppSettings {
-  if (typeof window === 'undefined') return defaultSettings;
+  const fallbackSettings = getDefaultSettings();
+  if (typeof window === 'undefined') return fallbackSettings;
   
   try {
     const saved = localStorage.getItem('app-settings');
     if (saved) {
       const parsed = JSON.parse(saved);
-      return { ...defaultSettings, ...parsed };
+      return { ...fallbackSettings, ...parsed };
     }
   } catch (e) {
     console.error('Failed to load settings:', e);
   }
-  return defaultSettings;
+  return fallbackSettings;
 }
 
 // Save settings to localStorage
@@ -141,8 +160,11 @@ function createSettingsStore() {
     
     // Reset to default settings
     reset() {
-      set(defaultSettings);
-      saveSettings(defaultSettings);
+      const settings = getDefaultSettings();
+      set(settings);
+      locale.set(settings.language);
+      void syncAppMenuLanguage(settings.language);
+      saveSettings(settings);
     },
   };
 }
