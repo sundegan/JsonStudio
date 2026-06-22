@@ -1,12 +1,12 @@
 <script lang="ts">
   import { ExternalLink, Github, Globe2 } from '@lucide/svelte';
-  import { openUrl } from '@tauri-apps/plugin-opener';
   import { t } from '$lib/i18n';
   import {
     APP_CHANGELOG_URL,
     APP_GITHUB_URL,
     APP_WEBSITE_URL,
   } from '$lib/services/appMetadata.js';
+  import { openExternalUrl } from '$lib/services/externalLinks.js';
 
   const resources = [
     {
@@ -33,7 +33,7 @@
       class="app-resource-link"
       type="button"
       title={$t(resource.labelKey)}
-      onclick={() => openUrl(resource.url)}
+      onclick={() => openExternalUrl(resource.url)}
     >
       <resource.icon aria-hidden="true" />
       <span>{$t(resource.labelKey)}</span>

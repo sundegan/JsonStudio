@@ -15,7 +15,7 @@ function emptyStats() {
 }
 
 export async function installTauriEditorHarness(page, content = '', options = {}) {
-  await page.addInitScript(({ tabStateKey, settingsKey, initialContent, stats, showTreeView }) => {
+  await page.addInitScript(({ tabStateKey, settingsKey, initialContent, stats, showTreeView, isTauri }) => {
     localStorage.setItem(tabStateKey, JSON.stringify({
       tabs: [{
         id: 'editor-test-tab',
@@ -36,6 +36,9 @@ export async function installTauriEditorHarness(page, content = '', options = {}
       autoSave: false,
       isDarkMode: false,
     }));
+
+    window.isTauri = isTauri;
+    window.__JSON_STUDIO_OPENED_URLS__ = [];
 
     let callbackId = 0;
     const callbacks = new Map();
@@ -61,9 +64,13 @@ export async function installTauriEditorHarness(page, content = '', options = {}
       convertFileSrc(path) {
         return path;
       },
-      async invoke(command) {
+      async invoke(command, args) {
         if (command === 'get_pending_files') return [];
         if (command === 'plugin:event|listen') return ++callbackId;
+        if (command === 'plugin:opener|open_url') {
+          window.__JSON_STUDIO_OPENED_URLS__.push(args.url);
+          return null;
+        }
         return null;
       },
     };
@@ -76,6 +83,7 @@ export async function installTauriEditorHarness(page, content = '', options = {}
     initialContent: content,
     stats: emptyStats(),
     showTreeView: options.showTreeView ?? false,
+    isTauri: options.isTauri ?? false,
   });
 }
 
@@ -99,4 +107,8 @@ export async function pasteIntoEditor(page, value) {
       clipboardData: clipboard,
     }));
   }, value);
+}
+
+export async function getOpenedExternalUrls(page) {
+  return page.evaluate(() => window.__JSON_STUDIO_OPENED_URLS__ ?? []);
 }
