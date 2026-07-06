@@ -9,7 +9,7 @@
 html {
   height: 100%;
   width: 100%;
-  background-color: var(--bg-base);
+  background: transparent;
   overflow: hidden;
 }
 
@@ -19,7 +19,14 @@ body {
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: var(--bg-base);
+  background: transparent;
+  overflow: hidden;
+}
+
+#app-root {
+  width: 100%;
+  height: 100%;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -118,6 +125,307 @@ body {
 
 ::selection {
   background: var(--accent-glow);
+}
+
+/* App-drawn Tauri window chrome */
+.desktop-window-frame {
+  --window-radius: 10px;
+  --window-edge: rgb(0 0 0 / 28%);
+  --window-inner-highlight: rgb(255 255 255 / 22%);
+  --window-focus-ring: rgb(0 0 0 / 10%);
+  --titlebar-height: 38px;
+  --titlebar-bg: var(--bg-primary);
+  --titlebar-inactive-bg: var(--bg-secondary);
+  --titlebar-fg: var(--text-primary);
+  --titlebar-inactive-fg: var(--text-secondary);
+  --traffic-light-opacity: 1;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.light .desktop-window-frame {
+  --window-edge: rgb(0 0 0 / 20%);
+  --window-inner-highlight: rgb(255 255 255 / 58%);
+  --window-focus-ring: rgb(0 0 0 / 8%);
+}
+
+.desktop-window-frame.is-inactive {
+  --window-edge: rgb(0 0 0 / 12%);
+  --window-inner-highlight: rgb(255 255 255 / 14%);
+  --window-focus-ring: transparent;
+  --titlebar-fg: var(--titlebar-inactive-fg);
+  --titlebar-bg: var(--titlebar-inactive-bg);
+  --traffic-light-opacity: 0.55;
+}
+
+.app-window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-base);
+  background-clip: padding-box;
+}
+
+.desktop-window-frame-macos .app-window {
+  border: 1px solid var(--window-edge);
+  border-radius: var(--window-radius);
+  box-shadow:
+    0 0 0 1px var(--window-focus-ring),
+    inset 0 0 0 1px var(--window-inner-highlight);
+}
+
+.app-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-content > main {
+  height: 100%;
+  min-height: 0;
+}
+
+.titlebar {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 40vw) minmax(160px, 1fr);
+  flex: 0 0 var(--titlebar-height);
+  height: var(--titlebar-height);
+  color: var(--titlebar-fg);
+  background: var(--titlebar-bg);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.titlebar-windows,
+.titlebar-linux {
+  --titlebar-height: 40px;
+}
+
+.titlebar-left,
+.titlebar-center,
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.titlebar-left {
+  justify-content: flex-start;
+}
+
+.titlebar-center {
+  justify-content: center;
+}
+
+.titlebar-right {
+  justify-content: flex-end;
+}
+
+.titlebar-drag-fill {
+  align-self: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.window-controls.macos {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 12px;
+  padding-right: 10px;
+  opacity: var(--traffic-light-opacity);
+}
+
+.traffic {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  appearance: none;
+  cursor: default;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 16%);
+}
+
+.traffic.close {
+  background: #ff5f57;
+}
+
+.traffic.minimize {
+  background: #ffbd2e;
+}
+
+.traffic.maximize {
+  background: #28c840;
+}
+
+.traffic::before,
+.traffic::after {
+  position: absolute;
+  display: block;
+  content: "";
+  background: rgb(0 0 0 / 58%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.window-controls.macos:hover .traffic::before,
+.window-controls.macos:hover .traffic::after {
+  opacity: 1;
+}
+
+.traffic.close::before,
+.traffic.close::after {
+  top: 50%;
+  left: 50%;
+  width: 6.5px;
+  height: 1.3px;
+  border-radius: 999px;
+}
+
+.traffic.close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.traffic.close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.traffic.minimize::before {
+  top: 50%;
+  left: 50%;
+  width: 7.5px;
+  height: 1.5px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.traffic.maximize::before {
+  inset: 2px;
+  background: rgb(0 0 0 / 58%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 8 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 1.7H1.7v1.8M1.7 1.7l2 2M4.5 6.3h1.8V4.5M6.3 6.3l-2-2' fill='none' stroke='black' stroke-width='1.15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 8 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 1.7H1.7v1.8M1.7 1.7l2 2M4.5 6.3h1.8V4.5M6.3 6.3l-2-2' fill='none' stroke='black' stroke-width='1.15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.traffic.maximize::after {
+  display: none;
+}
+
+.traffic.maximize.is-expanded::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 8 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.7 1.7l2 2M3.7 2.1v1.6H2.1M6.3 6.3l-2-2M4.3 5.9V4.3h1.6' fill='none' stroke='black' stroke-width='1.15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 8 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.7 1.7l2 2M3.7 2.1v1.6H2.1M6.3 6.3l-2-2M4.3 5.9V4.3h1.6' fill='none' stroke='black' stroke-width='1.15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.window-controls.desktop {
+  display: inline-flex;
+  align-items: stretch;
+  height: 100%;
+}
+
+.caption {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  color: currentColor;
+  background: transparent;
+  cursor: default;
+}
+
+.caption::before,
+.caption::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  content: "";
+  background: currentColor;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.caption.minimize::before {
+  width: 11px;
+  height: 1px;
+}
+
+.caption.maximize::before {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.caption.maximize.is-expanded::before {
+  width: 11px;
+  height: 9px;
+  border: 1px solid currentColor;
+  box-shadow: -3px 3px 0 -1px var(--titlebar-bg), -3px 3px 0 0 currentColor;
+}
+
+.caption.close::before,
+.caption.close::after {
+  width: 12px;
+  height: 1px;
+}
+
+.caption.close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.caption.close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.window-controls.windows .caption {
+  width: 46px;
+  border-radius: 0;
+}
+
+.window-controls.windows .caption:hover {
+  background: var(--bg-hover);
+}
+
+.window-controls.windows .caption:active {
+  background: color-mix(in srgb, var(--bg-hover) 70%, var(--text-primary) 10%);
+}
+
+.window-controls.windows .caption.close:hover {
+  color: #fff;
+  background: #e81123;
+}
+
+.window-controls.windows .caption.close:active {
+  color: #fff;
+  background: #f1707a;
+}
+
+.window-controls.linux {
+  gap: 2px;
+  padding-inline: 6px;
+}
+
+.window-controls.linux .caption {
+  width: 36px;
+  border-radius: 6px;
+}
+
+.window-controls.linux .caption:hover {
+  background: var(--bg-hover);
+}
+
+.window-controls.linux .caption.close:hover {
+  color: #fff;
+  background: #c42b1c;
 }
 
 /* Monaco Diff Editor center divider - make it a thin line */

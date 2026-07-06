@@ -7,8 +7,8 @@ use commands::convert::{
 };
 use commands::export_image::export_json_image;
 use commands::file::{
-    get_file_name, is_json_file, open_file_dialog, read_file, save_binary_file_dialog, save_file,
-    save_file_dialog, open_folder_dialog, read_json_dir, create_untitled_json, show_in_folder,
+    create_untitled_json, get_file_name, is_json_file, open_file_dialog, open_folder_dialog,
+    read_file, read_json_dir, save_binary_file_dialog, save_file, save_file_dialog, show_in_folder,
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
 use commands::json::{json_escape, json_format, json_minify, json_unescape};
@@ -17,7 +17,9 @@ use commands::shortcuts::{
     GlobalShortcutRegistry, DEFAULT_FORMAT_CLIPBOARD_SHORTCUT, DEFAULT_SHOW_APP_SHORTCUT,
     FORMAT_CLIPBOARD_SHORTCUT_ID, SHOW_APP_SHORTCUT_ID,
 };
-use commands::window::{open_devtools, quit_app, restart_app, set_window_theme};
+#[cfg(target_os = "macos")]
+use commands::window::apply_macos_transparent_chrome;
+use commands::window::{desktop_platform, open_devtools, quit_app, restart_app, set_window_theme};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
@@ -340,20 +342,23 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let ns_window = window.ns_window().map_err(|error| error.to_string())?;
+                    apply_macos_transparent_chrome(ns_window);
+                }
+
                 set_macos_app_menu(&app_handle, "zh")?;
 
-                app.on_menu_event(|app_handle, event| {
-                    match event.id().0.as_str() {
-                        "show_about" => {
-                            focus_main_window(app_handle);
-                            let _ = app_handle.emit("show-about", ());
-                        }
-                        "check_for_update" => {
-                            focus_main_window(app_handle);
-                            let _ = app_handle.emit("check-for-update", ());
-                        }
-                        _ => {}
+                app.on_menu_event(|app_handle, event| match event.id().0.as_str() {
+                    "show_about" => {
+                        focus_main_window(app_handle);
+                        let _ = app_handle.emit("show-about", ());
                     }
+                    "check_for_update" => {
+                        focus_main_window(app_handle);
+                        let _ = app_handle.emit("check-for-update", ());
+                    }
+                    _ => {}
                 });
             }
 
@@ -394,6 +399,7 @@ pub fn run() {
             json_escape,
             json_unescape,
             set_window_theme,
+            desktop_platform,
             open_devtools,
             show_main_window,
             format_clipboard_and_show,

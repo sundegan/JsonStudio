@@ -1,14 +1,10 @@
 // Window-related commands
 
-fn window_background_color(is_dark: bool) -> tauri::window::Color {
-    if is_dark {
-        tauri::window::Color(18, 18, 18, 255)
-    } else {
-        tauri::window::Color(250, 250, 250, 255)
-    }
+fn transparent_window_background() -> tauri::window::Color {
+    tauri::window::Color(0, 0, 0, 0)
 }
 
-/// Set the native window theme so the title bar follows the app appearance.
+/// Set the native window theme while leaving custom chrome transparency intact.
 #[tauri::command]
 pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), String> {
     let theme = if is_dark {
@@ -18,13 +14,14 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
     };
     window.set_theme(Some(theme)).map_err(|e| e.to_string())?;
     window
-        .set_background_color(Some(window_background_color(is_dark)))
+        .set_background_color(Some(transparent_window_background()))
         .map_err(|e| e.to_string())?;
 
     #[cfg(target_os = "macos")]
     {
-        use cocoa::appkit::{NSColor, NSWindow};
-        use cocoa::base::{id, nil, NO};
+        apply_macos_transparent_chrome(window.ns_window().map_err(|e| e.to_string())?);
+
+        use cocoa::base::{id, nil};
         use cocoa::foundation::NSString;
         use objc::{msg_send, sel, sel_impl};
 
@@ -43,20 +40,32 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
             let appearance_class = objc::class!(NSAppearance);
             let appearance: id = msg_send![appearance_class, appearanceNamed: appearance_name];
             let _: () = msg_send![ns_window, setAppearance: appearance];
-
-            let (red, green, blue) = if is_dark {
-                (18.0 / 255.0, 18.0 / 255.0, 18.0 / 255.0)
-            } else {
-                (250.0 / 255.0, 250.0 / 255.0, 250.0 / 255.0)
-            };
-            let background =
-                NSColor::colorWithSRGBRed_green_blue_alpha_(nil, red, green, blue, 1.0);
-            ns_window.setTitlebarAppearsTransparent_(NO);
-            ns_window.setBackgroundColor_(background);
         }
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+pub fn apply_macos_transparent_chrome(ns_window: *mut std::ffi::c_void) {
+    use cocoa::appkit::{NSColor, NSWindow};
+    use cocoa::base::{id, nil, NO};
+    use objc::{msg_send, sel, sel_impl};
+
+    let ns_window = ns_window as id;
+
+    unsafe {
+        let background = NSColor::clearColor(nil);
+        ns_window.setOpaque_(NO);
+        ns_window.setBackgroundColor_(background);
+        let _: () = msg_send![ns_window, setHasShadow: NO];
+    }
+}
+
+/// Return the desktop OS as reported by Rust, for platform-specific custom chrome.
+#[tauri::command]
+pub fn desktop_platform() -> &'static str {
+    std::env::consts::OS
 }
 
 /// Quit the application
