@@ -9,6 +9,7 @@ use commands::export_image::export_json_image;
 use commands::file::{
     create_untitled_json, get_file_name, is_json_file, open_file_dialog, open_folder_dialog,
     read_file, read_json_dir, save_binary_file_dialog, save_file, save_file_dialog, show_in_folder,
+    JSON_FILE_EXTENSIONS,
 };
 use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWatcherState};
 use commands::json::{json_escape, json_format, json_minify, json_unescape};
@@ -62,7 +63,11 @@ fn resolve_json_file_arg(arg: &str, cwd: &Path) -> Option<String> {
     };
 
     let extension = path.extension().and_then(|ext| ext.to_str())?;
-    if !extension.eq_ignore_ascii_case("json") || !path.is_file() {
+    if !JSON_FILE_EXTENSIONS
+        .iter()
+        .any(|supported| extension.eq_ignore_ascii_case(supported))
+        || !path.is_file()
+    {
         return None;
     }
 
@@ -261,23 +266,42 @@ mod tests {
     }
 
     #[test]
-    fn collects_absolute_json_file_args_only() {
+    fn collects_absolute_supported_json_file_args_only() {
         let dir = test_dir();
-        let json_path = dir.join("AAA.json");
+        let supported_paths = [
+            "AAA.json",
+            "config.JSON5",
+            "events.jsonl",
+            "stream.ndjson",
+            "settings.jsonc",
+            "map.geojson",
+            "shape.topojson",
+            "network.har",
+            "site.webmanifest",
+            "notebook.ipynb",
+            "scan.sarif",
+        ]
+        .map(|name| dir.join(name));
         let text_path = dir.join("notes.txt");
-        fs::write(&json_path, "{}").unwrap();
+        for path in &supported_paths {
+            fs::write(path, "{}").unwrap();
+        }
         fs::write(&text_path, "hello").unwrap();
 
-        let args = vec![
-            "JsonStudio.exe".to_string(),
-            "--flag".to_string(),
-            json_path.to_string_lossy().into_owned(),
-            text_path.to_string_lossy().into_owned(),
-        ];
+        let mut args = vec!["JsonStudio.exe".to_string(), "--flag".to_string()];
+        args.extend(
+            supported_paths
+                .iter()
+                .map(|path| path.to_string_lossy().into_owned()),
+        );
+        args.push(text_path.to_string_lossy().into_owned());
 
         assert_eq!(
             collect_json_file_args(&args, dir.to_str().unwrap()),
-            vec![json_path.to_string_lossy().into_owned()]
+            supported_paths
+                .iter()
+                .map(|path| path.to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
         );
     }
 

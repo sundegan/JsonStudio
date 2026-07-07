@@ -51,7 +51,17 @@
     "fileAssociations": [
       {
         "ext": [
-          "json"
+          "json",
+          "json5",
+          "jsonl",
+          "ndjson",
+          "jsonc",
+          "geojson",
+          "topojson",
+          "har",
+          "webmanifest",
+          "ipynb",
+          "sarif"
         ],
         "name": "JSON Document",
         "role": "Editor",

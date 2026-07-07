@@ -5,6 +5,20 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
+pub(crate) const JSON_FILE_EXTENSIONS: &[&str] = &[
+    "json",
+    "json5",
+    "jsonl",
+    "ndjson",
+    "jsonc",
+    "geojson",
+    "topojson",
+    "har",
+    "webmanifest",
+    "ipynb",
+    "sarif",
+];
+
 #[derive(Serialize, Deserialize)]
 pub struct FileNode {
     pub name: String,
@@ -18,7 +32,7 @@ pub struct FileNode {
 pub async fn open_file_dialog(app: AppHandle) -> Result<Option<(String, String)>, String> {
     let file_path = app.dialog()
         .file()
-        .add_filter("JSON Files", &["json"])
+        .add_filter("JSON Files", JSON_FILE_EXTENSIONS)
         .add_filter("All Files", &["*"])
         .blocking_pick_file();
 
@@ -52,7 +66,7 @@ pub async fn save_file_dialog(
 ) -> Result<Option<String>, String> {
     let file_path = app.dialog()
         .file()
-        .add_filter("JSON Files", &["json"])
+        .add_filter("JSON Files", JSON_FILE_EXTENSIONS)
         .add_filter("All Files", &["*"])
         .set_file_name(&default_file_name)
         .blocking_save_file();
@@ -111,8 +125,14 @@ pub fn is_json_file(path: String) -> bool {
     let path = PathBuf::from(path);
     path.extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| ext.eq_ignore_ascii_case("json"))
+        .map(is_supported_json_extension)
         .unwrap_or(false)
+}
+
+fn is_supported_json_extension(ext: &str) -> bool {
+    JSON_FILE_EXTENSIONS
+        .iter()
+        .any(|supported| ext.eq_ignore_ascii_case(supported))
 }
 
 /// Get file name from path
@@ -142,7 +162,7 @@ pub async fn open_folder_dialog(app: AppHandle) -> Result<Option<String>, String
     }
 }
 
-/// Read directory (shallow), filtering for .json and .json5, ignoring subdirectories.
+/// Read directory (shallow), filtering for supported JSON files, ignoring subdirectories.
 #[tauri::command]
 pub async fn read_json_dir(path: String) -> Result<Vec<FileNode>, String> {
     tokio::task::spawn_blocking(move || {
@@ -155,7 +175,7 @@ pub async fn read_json_dir(path: String) -> Result<Vec<FileNode>, String> {
                 if file_type.is_file() {
                     let path_buf = entry.path();
                     if let Some(ext) = path_buf.extension().and_then(|s| s.to_str()) {
-                        if ext.eq_ignore_ascii_case("json") || ext.eq_ignore_ascii_case("json5") {
+                        if is_supported_json_extension(ext) {
                             files.push(FileNode {
                                 name: entry.file_name().to_string_lossy().into_owned(),
                                 path: path_buf.to_string_lossy().into_owned(),
