@@ -19,7 +19,8 @@
         "minHeight": 640,
         "center": true,
         "decorations": false,
-        "transparent": true
+        "transparent": true,
+        "zoomHotkeysEnabled": false
       }
     ],
     "macOSPrivateApi": true,

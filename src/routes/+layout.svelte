@@ -76,7 +76,55 @@
       const { expanded } = (event as CustomEvent<{ expanded: boolean }>).detail;
       isWindowExpanded = expanded;
     };
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+    const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey) {
+        event.preventDefault();
+      }
+    };
+    const handleKeydown = (event: KeyboardEvent) => {
+      const isZoomKey =
+        event.key === '=' ||
+        event.key === '-' ||
+        event.key === '0' ||
+        event.key === '+' ||
+        event.code === 'Minus' ||
+        event.code === 'Equal' ||
+        event.code === 'Digit0' ||
+        event.code === 'NumpadAdd' ||
+        event.code === 'NumpadSubtract';
+
+      if ((event.ctrlKey || event.metaKey) && isZoomKey) {
+        event.preventDefault();
+      }
+    };
+    const handleGesture = (event: Event) => {
+      event.preventDefault();
+    };
+    const handleSelectStart = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const selectableTarget = target.closest([
+        '.monaco-editor',
+        'input',
+        'textarea',
+        '[contenteditable="true"]'
+      ].join(','));
+
+      if (!selectableTarget) {
+        event.preventDefault();
+      }
+    };
     window.addEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('gesturestart', handleGesture);
+    document.addEventListener('gesturechange', handleGesture);
+    document.addEventListener('selectstart', handleSelectStart);
 
     const unsubscribe = settingsStore.subscribe(settings => {
       applyTheme(settings.isDarkMode);
@@ -84,6 +132,12 @@
     return () => {
       unsubscribe();
       window.removeEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('gesturestart', handleGesture);
+      document.removeEventListener('gesturechange', handleGesture);
+      document.removeEventListener('selectstart', handleSelectStart);
       for (const unlisten of focusUnlisteners) unlisten();
     };
   });

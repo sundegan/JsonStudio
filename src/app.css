@@ -11,6 +11,8 @@ html {
   width: 100%;
   background: transparent;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 body {
@@ -21,6 +23,8 @@ body {
   padding: 0;
   background: transparent;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #app-root {
@@ -28,6 +32,8 @@ body {
   height: 100%;
   background: transparent;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .select-none {
@@ -125,6 +131,18 @@ body {
 
 ::selection {
   background: var(--accent-glow);
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+img,
+a {
+  -webkit-user-drag: none;
 }
 
 /* App-drawn Tauri window chrome */
