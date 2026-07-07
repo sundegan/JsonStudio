@@ -133,6 +133,10 @@ body {
   background: var(--accent-glow);
 }
 
+.jsonstudio-hidden-monaco-hover {
+  display: none !important;
+}
+
 input,
 textarea,
 [contenteditable="true"] {

@@ -138,17 +138,16 @@
   let activeModelKey = $state('');
   let isSwitchingModel = false;
   let externalSelectionDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
-  let editorDomNode: HTMLElement | null = null;
   let editorLinkOpenerDisposable: Monaco.IDisposable | null = null;
-  let findWidgetHoverHandler: ((event: MouseEvent) => void) | null = null;
+  let monacoHoverObserver: MutationObserver | null = null;
   
   // Flag: distinguish between internal edits and external updates
   let isInternalChange = false;
-  const findWidgetHoverSelectors = [
-    '.find-widget .button.codicon-widget-close',
-    '.find-widget .monaco-custom-toggle.codicon-find-selection',
-    '.find-widget .codicon-find-selection',
+  const findWidgetManagedHoverSelector = [
+    '.workbench-hover-container .monaco-hover',
+    '.context-view .monaco-hover',
   ].join(', ');
+  const findWidgetManagedHoverLabels = [/^Close(?:\s+\([^)]+\))?$/];
 
   async function openEditorUrl(url: string) {
     try {
@@ -157,6 +156,16 @@
       console.error('Failed to open editor link:', error);
       window.open(url, '_blank', 'noopener,noreferrer');
     }
+  }
+
+  function hideFindWidgetManagedHovers(root: ParentNode = document) {
+    root.querySelectorAll<HTMLElement>(findWidgetManagedHoverSelector).forEach((hover) => {
+      const label = hover.textContent?.trim() ?? '';
+      if (!findWidgetManagedHoverLabels.some((pattern) => pattern.test(label))) return;
+      hover.closest<HTMLElement>('.workbench-hover-container, .context-view')?.classList.add(
+        'jsonstudio-hidden-monaco-hover',
+      );
+    });
   }
 
   // Watch value changes
@@ -396,27 +405,21 @@
       });
     }
 
-    editorDomNode = editor?.getDomNode() as HTMLElement | null;
-    if (editorDomNode) {
-      findWidgetHoverHandler = (event: MouseEvent) => {
-        const target = event.target as HTMLElement | null;
-        if (!target) return;
-        if (target.closest(findWidgetHoverSelectors)) {
-          event.stopImmediatePropagation();
-        }
-      };
-      editorDomNode.addEventListener('mouseover', findWidgetHoverHandler, true);
-    }
+    hideFindWidgetManagedHovers();
+    monacoHoverObserver = new MutationObserver(() => {
+      hideFindWidgetManagedHovers();
+    });
+    monacoHoverObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   });
   
   onDestroy(() => {
     editorLinkOpenerDisposable?.dispose();
     editorLinkOpenerDisposable = null;
-    if (editorDomNode && findWidgetHoverHandler) {
-      editorDomNode.removeEventListener('mouseover', findWidgetHoverHandler, true);
-    }
-    findWidgetHoverHandler = null;
-    editorDomNode = null;
+    monacoHoverObserver?.disconnect();
+    monacoHoverObserver = null;
     externalSelectionDecorations?.clear();
     externalSelectionDecorations = null;
     editor?.dispose();
