@@ -18,8 +18,10 @@ test('tauri default window size fits common laptop screens', () => {
   );
   const mainWindow = config.app.windows[0];
 
-  assert.equal(mainWindow.width, 1400);
-  assert.equal(mainWindow.height, 900);
+  assert.equal(mainWindow.width, 1280);
+  assert.equal(mainWindow.height, 800);
+  assert.equal(mainWindow.minWidth, 960);
+  assert.equal(mainWindow.minHeight, 640);
   assert.ok(mainWindow.minWidth <= mainWindow.width);
   assert.ok(mainWindow.minHeight <= mainWindow.height);
 });

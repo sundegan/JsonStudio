@@ -14,7 +14,7 @@ test('export image is grouped inside the file operations dropdown', () => {
 
 test('file operations group does not render export image as a standalone toolbar button', () => {
   const fileOperationsGroup = toolbarSource.match(
-    /<!-- 1\. File operations -->([\s\S]*?)<div class="toolbar-divider"><\/div>/
+    /<!-- 1\. File operations -->([\s\S]*?)<div class="toolbar-divider"[^>]*><\/div>/
   )?.[1];
 
   assert.ok(fileOperationsGroup, 'file operations group should be present');

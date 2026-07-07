@@ -1288,32 +1288,29 @@
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
-  <!-- Toolbar -->
-  {#if !isConvertMode && !isCodegenMode && !isSchemaMode}
-    <JsonEditorToolbar
-      bind:this={toolbarRef}
-      isDiffMode={isDiffMode}
-      isConvertMode={isConvertMode}
-      isCodegenMode={isCodegenMode}
-      isSchemaMode={isSchemaMode}
-      content={content}
-      activeTab={$activeTab}
-      isDarkMode={isDarkMode}
-      isAlwaysOnTop={isAlwaysOnTop}
-      editor={monacoEditor}
-      tabSize={tabSize}
-      onToggleDiff={toggleDiffMode}
-      onToggleConvert={toggleConvertMode}
-      onToggleCodegen={toggleCodegenMode}
-      onToggleSchema={toggleSchemaMode}
-      onToggleTheme={toggleTheme}
-      onToggleAlwaysOnTop={toggleAlwaysOnTop}
-      onOpenSettings={openSettings}
-      onContentChange={handleToolbarContentChange}
-      onStatsUpdate={updateStats}
-      onToast={showToast}
-    />
-  {/if}
+  <JsonEditorToolbar
+    bind:this={toolbarRef}
+    isDiffMode={isDiffMode}
+    isConvertMode={isConvertMode}
+    isCodegenMode={isCodegenMode}
+    isSchemaMode={isSchemaMode}
+    content={content}
+    activeTab={$activeTab}
+    isDarkMode={isDarkMode}
+    isAlwaysOnTop={isAlwaysOnTop}
+    editor={monacoEditor}
+    tabSize={tabSize}
+    onToggleDiff={toggleDiffMode}
+    onToggleConvert={toggleConvertMode}
+    onToggleCodegen={toggleCodegenMode}
+    onToggleSchema={toggleSchemaMode}
+    onToggleTheme={toggleTheme}
+    onToggleAlwaysOnTop={toggleAlwaysOnTop}
+    onOpenSettings={openSettings}
+    onContentChange={handleToolbarContentChange}
+    onStatsUpdate={updateStats}
+    onToast={showToast}
+  />
   
   <!-- Main content area: Tab Bar + Editor + Tree View -->
   <div

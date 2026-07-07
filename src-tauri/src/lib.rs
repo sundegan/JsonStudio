@@ -24,11 +24,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
 use tauri::menu::{MenuBuilder, SubmenuBuilder};
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri::{Emitter, LogicalSize, Manager, PhysicalPosition, WebviewWindow};
 
 const WINDOW_SCREEN_MARGIN: u32 = 48;
-const DEFAULT_WINDOW_LOGICAL_WIDTH: u32 = 1400;
-const DEFAULT_WINDOW_LOGICAL_HEIGHT: u32 = 900;
+const DEFAULT_WINDOW_LOGICAL_WIDTH: u32 = 1280;
+const DEFAULT_WINDOW_LOGICAL_HEIGHT: u32 = 800;
+const MIN_WINDOW_LOGICAL_WIDTH: u32 = 960;
+const MIN_WINDOW_LOGICAL_HEIGHT: u32 = 640;
 const RESTORED_WINDOW_MAX_SCREEN_RATIO: f64 = 0.9;
 
 static PENDING_FILES: Mutex<Vec<String>> = Mutex::new(Vec::new());
@@ -94,27 +96,26 @@ fn clamp_axis(value: i32, min: i32, max: i32) -> i32 {
     value.max(min).min(max)
 }
 
-fn max_window_axis(work_area_axis: u32) -> u32 {
-    ((work_area_axis as f64 * RESTORED_WINDOW_MAX_SCREEN_RATIO).round() as u32)
-        .min(work_area_axis.saturating_sub(WINDOW_SCREEN_MARGIN))
-        .max(work_area_axis / 2)
-        .max(1)
+fn max_window_axis(work_area_axis: f64, min_axis: f64) -> f64 {
+    (work_area_axis * RESTORED_WINDOW_MAX_SCREEN_RATIO)
+        .round()
+        .min((work_area_axis - WINDOW_SCREEN_MARGIN as f64).max(min_axis))
+        .max(work_area_axis / 2.0)
+        .max(min_axis)
 }
 
 fn restored_window_axis(
-    current_axis: u32,
-    work_area_axis: u32,
-    scale_factor: f64,
-    default_logical_axis: u32,
-) -> u32 {
-    let max_axis = max_window_axis(work_area_axis);
-    if current_axis > work_area_axis.saturating_sub(WINDOW_SCREEN_MARGIN) {
-        return ((default_logical_axis as f64 * scale_factor).round() as u32)
-            .min(max_axis)
-            .max(1);
+    current_axis: f64,
+    work_area_axis: f64,
+    default_axis: f64,
+    min_axis: f64,
+) -> f64 {
+    let max_axis = max_window_axis(work_area_axis, min_axis);
+    if current_axis > work_area_axis - WINDOW_SCREEN_MARGIN as f64 {
+        return default_axis.min(max_axis).max(min_axis);
     }
 
-    current_axis.min(max_axis).max(1)
+    current_axis.min(max_axis).max(min_axis)
 }
 
 fn clamp_main_window_to_visible_area(window: &WebviewWindow) -> tauri::Result<()> {
@@ -135,23 +136,26 @@ fn clamp_main_window_to_visible_area(window: &WebviewWindow) -> tauri::Result<()
     let monitor_size = work_area.size;
     let scale_factor = monitor.scale_factor();
     let current_size = window.inner_size()?;
-    let clamped_size = PhysicalSize {
+    let current_logical_size = current_size.to_logical::<f64>(scale_factor);
+    let work_area_logical_size = monitor_size.to_logical::<f64>(scale_factor);
+    let clamped_logical_size = LogicalSize {
         width: restored_window_axis(
-            current_size.width,
-            monitor_size.width,
-            scale_factor,
-            DEFAULT_WINDOW_LOGICAL_WIDTH,
+            current_logical_size.width,
+            work_area_logical_size.width,
+            DEFAULT_WINDOW_LOGICAL_WIDTH as f64,
+            MIN_WINDOW_LOGICAL_WIDTH as f64,
         ),
         height: restored_window_axis(
-            current_size.height,
-            monitor_size.height,
-            scale_factor,
-            DEFAULT_WINDOW_LOGICAL_HEIGHT,
+            current_logical_size.height,
+            work_area_logical_size.height,
+            DEFAULT_WINDOW_LOGICAL_HEIGHT as f64,
+            MIN_WINDOW_LOGICAL_HEIGHT as f64,
         ),
     };
+    let clamped_size = clamped_logical_size.to_physical::<u32>(scale_factor);
 
     if clamped_size != current_size {
-        window.set_size(clamped_size)?;
+        window.set_size(clamped_logical_size)?;
     }
 
     let current_position = window.outer_position()?;
@@ -293,22 +297,41 @@ mod tests {
 
     #[test]
     fn max_window_axis_keeps_restored_windows_below_screen_width() {
-        assert_eq!(max_window_axis(3024), 2722);
+        assert_eq!(max_window_axis(1512.0, 960.0), 1361.0);
     }
 
     #[test]
     fn max_window_axis_handles_tiny_monitors() {
-        assert_eq!(max_window_axis(40), 20);
+        assert_eq!(max_window_axis(40.0, 1.0), 20.0);
     }
 
     #[test]
     fn restored_window_axis_uses_default_for_external_display_state() {
-        assert_eq!(restored_window_axis(3040, 3024, 2.0, 1400), 2722);
+        assert_eq!(
+            restored_window_axis(1520.0, 1512.0, 1280.0, 960.0),
+            1280.0
+        );
     }
 
     #[test]
     fn restored_window_axis_preserves_reasonable_user_size() {
-        assert_eq!(restored_window_axis(2200, 3024, 2.0, 1400), 2200);
+        assert_eq!(
+            restored_window_axis(1161.0, 1512.0, 1280.0, 960.0),
+            1161.0
+        );
+    }
+
+    #[test]
+    fn restored_window_axis_raises_tiny_saved_size_to_minimum() {
+        assert_eq!(
+            restored_window_axis(480.0, 1512.0, 1280.0, 960.0),
+            960.0
+        );
+    }
+
+    #[test]
+    fn restored_window_axis_caps_minimum_to_tiny_monitor() {
+        assert_eq!(restored_window_axis(1.0, 40.0, 1280.0, 1.0), 20.0);
     }
 }
 

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import TitleBar from '$lib/components/TitleBar.svelte';
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
   import '../app.css';
@@ -9,6 +8,7 @@
 
   let platform = $state<TitlebarPlatform>('macos');
   let isWindowInactive = $state(false);
+  let isWindowExpanded = $state(false);
 
   async function detectPlatform(): Promise<TitlebarPlatform> {
     try {
@@ -41,38 +41,56 @@
     }
   }
 
+  async function updateWindowFrameState(appWindow: import('@tauri-apps/api/window').Window) {
+    const [fullscreen, maximized] = await Promise.all([
+      appWindow.isFullscreen(),
+      appWindow.isMaximized(),
+    ]);
+    isWindowExpanded = fullscreen || maximized;
+  }
+
   onMount(() => {
     settingsStore.init();
     shortcutsStore.init();
+
     void detectPlatform().then((value) => {
       platform = value;
     });
     const focusUnlisteners: Array<() => void> = [];
     void (async () => {
       const { isTauri } = await import('@tauri-apps/api/core');
-      if (!isTauri()) return;
+      const runningInTauri = isTauri();
+      if (!runningInTauri) return;
 
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const appWindow = getCurrentWindow();
       isWindowInactive = !(await appWindow.isFocused());
-      const unlisten = await appWindow.onFocusChanged(({ payload: focused }) => {
+      await updateWindowFrameState(appWindow);
+
+      const unlistenFocus = await appWindow.onFocusChanged(({ payload: focused }) => {
         isWindowInactive = !focused;
       });
-      focusUnlisteners.push(unlisten);
+      focusUnlisteners.push(unlistenFocus);
     })();
+    const handleWindowExpandedChange = (event: Event) => {
+      const { expanded } = (event as CustomEvent<{ expanded: boolean }>).detail;
+      isWindowExpanded = expanded;
+    };
+    window.addEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
+
     const unsubscribe = settingsStore.subscribe(settings => {
       applyTheme(settings.isDarkMode);
     });
     return () => {
       unsubscribe();
+      window.removeEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
       for (const unlisten of focusUnlisteners) unlisten();
     };
   });
 </script>
 
-<div class={`desktop-window-frame desktop-window-frame-${platform} ${isWindowInactive ? 'is-inactive' : ''}`}>
+<div class={`desktop-window-frame desktop-window-frame-${platform} ${isWindowInactive ? 'is-inactive' : ''} ${isWindowExpanded ? 'is-expanded' : ''}`}>
   <div class="app-window">
-    <TitleBar {platform} />
     <div class="app-content">
       <slot />
     </div>

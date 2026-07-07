@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { escapeString, minifyJson, unescapeString } from '$lib/services/json';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, saveBinaryFileDialog, getFileName } from '$lib/services/file';
   import { exportJsonAsImage, pngBase64ToBytes } from '$lib/services/exportImage';
@@ -14,10 +15,17 @@
   } from '$lib/services/jsonTreeModelCache.js';
   import { t } from '$lib/i18n';
   import type { EditorTheme } from '$lib/config/monacoThemes';
+  import type { Window as TauriWindow } from '@tauri-apps/api/window';
   import type MonacoEditor from './MonacoEditor.svelte';
   import { folderStore } from '$lib/stores/folder';
 
+  type TitlebarPlatform = 'macos' | 'windows' | 'linux';
+
   let shortcuts = $state<ShortcutsSettings | null>(null);
+  let appWindow = $state<TauriWindow | null>(null);
+  let platform = $state<TitlebarPlatform>('macos');
+  let isWindowFullscreen = $state(false);
+  let isWindowExpanded = $state(false);
 
   $effect(() => {
     const unsubscribe = shortcutsStore.subscribe(s => { shortcuts = s; });
@@ -28,6 +36,121 @@
     if (!shortcuts) return '';
     return formatShortcutKey(shortcuts[key].currentKey);
   }
+
+  async function detectPlatform(): Promise<TitlebarPlatform> {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const desktopPlatform = await invoke<string>('desktop_platform');
+      if (desktopPlatform === 'macos') return 'macos';
+      if (desktopPlatform === 'windows') return 'windows';
+      if (desktopPlatform === 'linux') return 'linux';
+      console.warn('Unknown desktop platform:', desktopPlatform);
+    } catch (error) {
+      console.warn('Failed to detect desktop platform:', error);
+    }
+    return 'macos';
+  }
+
+  async function updateWindowState() {
+    if (!appWindow) return;
+    const [fullscreen, maximized] = await Promise.all([
+      appWindow.isFullscreen(),
+      appWindow.isMaximized(),
+    ]);
+    applyWindowState(fullscreen, maximized);
+  }
+
+  function applyWindowState(fullscreen: boolean, maximized: boolean) {
+    isWindowFullscreen = fullscreen;
+    isWindowExpanded = fullscreen || maximized;
+    window.dispatchEvent(new CustomEvent('jsonstudio-window-expanded-change', {
+      detail: { expanded: isWindowExpanded },
+    }));
+  }
+
+  function shouldStartWindowDrag(target: EventTarget | null) {
+    if (!(target instanceof Element)) return false;
+
+    if (target.closest('.toolbar-drag-spacer')) return true;
+
+    const interactiveTarget = target.closest([
+      'button',
+      'a',
+      'input',
+      'select',
+      'textarea',
+      '[role="button"]',
+      '.toolbar-open-dropdown',
+      '.toolbar-file-actions-dropdown'
+    ].join(','));
+
+    if (interactiveTarget) return false;
+
+    return Boolean(target.closest([
+      '.je-toolbar',
+      '.toolbar-actions-strip',
+      '.toolbar-group',
+      '.toolbar-divider',
+      '.toolbar-open-wrap',
+      '.toolbar-file-actions-wrap',
+      '.window-controls'
+    ].join(',')));
+  }
+
+  async function handleTitlebarMouseDown(event: MouseEvent) {
+    const canDragTarget = shouldStartWindowDrag(event.target);
+
+    if (!appWindow || event.button !== 0 || !canDragTarget) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.detail === 2) {
+      await togglePrimaryWindowExpansion();
+      return;
+    }
+
+    await appWindow.startDragging();
+  }
+
+  const closeWindow = () => appWindow?.close();
+  const minimizeWindow = () => appWindow?.minimize();
+
+  async function toggleMaximizeWindow() {
+    if (!appWindow) return;
+    await appWindow.toggleMaximize();
+    await updateWindowState();
+  }
+
+  async function toggleFullscreenWindow() {
+    if (!appWindow) return;
+    const nextFullscreen = !(await appWindow.isFullscreen());
+    await appWindow.setFullscreen(nextFullscreen);
+    if (nextFullscreen) {
+      applyWindowState(true, false);
+      return;
+    }
+    applyWindowState(false, await appWindow.isMaximized());
+  }
+
+  async function togglePrimaryWindowExpansion() {
+    if (platform === 'macos') {
+      await toggleFullscreenWindow();
+      return;
+    }
+    await toggleMaximizeWindow();
+  }
+
+  onMount(() => {
+    void (async () => {
+      const { isTauri } = await import('@tauri-apps/api/core');
+      if (!isTauri()) return;
+
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      appWindow = getCurrentWindow();
+      platform = await detectPlatform();
+      await updateWindowState();
+    })();
+  });
 
   const LARGE_FILE_THRESHOLD = 1024 * 1024;
 
@@ -468,154 +591,178 @@
   }
 </script>
 
-<div class="je-toolbar">
-  {#if isDiffMode}
-    <!-- Diff mode: only show exit button -->
-    <div class="toolbar-group">
-      <button class="toolbar-back-btn" onclick={onToggleDiff} title={$t('toolbar.exitDiff')}>
-        <svg class="toolbar-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5"/>
-          <path d="M12 19l-7-7 7-7"/>
-        </svg>
-      </button>
-    </div>
-  {:else}
-    <!-- 1. File operations -->
-    <div class="toolbar-group">
-      <button class="toolbar-btn" onclick={handleNewFile} title="{$t('toolbar.new')} ({shortcutLabel('newFile')})">
-        <svg class="toolbar-icon" style="color: #0ea5e9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
-        {$t('toolbar.new')}
-      </button>
-      <div class="toolbar-open-wrap" bind:this={openMenuEl}>
-        <button
-          class="toolbar-btn toolbar-open-btn"
-          onclick={() => toggleOpenMenu()}
-          title={$t('toolbar.open')}
-        >
-          <svg class="toolbar-icon" style="color: #eab308;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-          {$t('toolbar.open')}
-          <svg class="open-caret" class:rotated={showOpenMenu} viewBox="0 0 12 12" fill="currentColor">
-            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        {#if showOpenMenu}
-          <div
-            class="toolbar-open-dropdown"
-            style="top: {dropdownTop}px; left: {dropdownLeft}px;"
-          >
-            <button class="open-menu-item" onclick={handleOpenFileFromMenu}>
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M10 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L10 1.5z" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M10 1.5V5.5h4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>Open File</span>
-              <span class="open-menu-shortcut">{shortcutLabel('openFile')}</span>
-            </button>
-            <button class="open-menu-item" onclick={handleOpenFolder}>
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M1 4.5a1 1 0 011-1h3.586a1 1 0 01.707.293L7.707 5.5H13a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1v-8z" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>Open Folder</span>
-            </button>
-          </div>
-        {/if}
-      </div>
-      <div class="toolbar-file-actions-wrap" bind:this={fileActionsMenuEl}>
-        <button
-          class="toolbar-icon-btn"
-          class:is-active={showFileActionsMenu}
-          onclick={toggleFileActionsMenu}
-          title={$t('toolbar.exportImage')}
-          aria-label={$t('toolbar.exportImage')}
-        >
-          <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="5" cy="12" r="1.8"/>
-            <circle cx="12" cy="12" r="1.8"/>
-            <circle cx="19" cy="12" r="1.8"/>
-          </svg>
-        </button>
-        {#if showFileActionsMenu}
-          <div
-            class="toolbar-file-actions-dropdown"
-            style="top: {fileActionsDropdownTop}px; left: {fileActionsDropdownLeft}px;"
-          >
-            <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting}>
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="2" y="2" width="12" height="12" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="5.5" cy="5.5" r="1" />
-                <path d="M14 10.5l-3-3L3 14" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>{$t('toolbar.exportImage')}</span>
-            </button>
-          </div>
-        {/if}
-      </div>
-    </div>
-
-    <div class="toolbar-divider"></div>
-
-    <!-- 2. JSON transform -->
-    <div class="toolbar-group">
-      <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
-        <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
-          <path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
-        </svg>
-        {$t('toolbar.format')}
-      </button>
-      <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
-        <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M9 4l3 2 3-2"/><path d="M4 10h16M4 14h16"/><path d="M12 22v-4M9 20l3-2 3 2"/></svg>
-        {$t('toolbar.minify')}
-      </button>
-      <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing} title="{$t('toolbar.escape')} ({shortcutLabel('escape')})">
-        <svg class="toolbar-icon" style="color: #8b5cf6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
-        {$t('toolbar.escape')}
-      </button>
-      <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing} title="{$t('toolbar.unescape')} ({shortcutLabel('unescape')})">
-        <svg class="toolbar-icon" style="color: #6366f1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6"/></svg>
-        {$t('toolbar.unescape')}
-      </button>
-      <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing} title="{$t('toolbar.minifyEscape')} ({shortcutLabel('minifyEscape')})">
-        <svg class="toolbar-icon" style="color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
-        {$t('toolbar.minifyEscape')}
-      </button>
-      <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
-        <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
-        {$t('toolbar.foldAll')}
-      </button>
-      <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
-        <svg class="toolbar-icon" style="color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
-        {$t('toolbar.unfoldAll')}
-      </button>
-    </div>
-
-    <div class="toolbar-divider"></div>
-
-    <!-- 3. Diff, Convert & Codegen -->
-    <div class="toolbar-group">
-      <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} title={$t('toolbar.diff')}>
-        <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
-        {$t('toolbar.diff')}
-      </button>
-      <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isCodegenMode || isSchemaMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
-        <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 4 20 7 17 10"/><path d="M4 12v-1a3 3 0 0 1 3-3h13"/><polyline points="7 20 4 17 7 14"/><path d="M20 12v1a3 3 0 0 1-3 3H4"/></svg>
-        {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
-      </button>
-      <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isConvertMode || isSchemaMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
-        <svg class="toolbar-icon" style="color: #d946ef;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 1 12 7 18"/><polyline points="17 6 23 12 17 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
-        {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
-      </button>
-      <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isConvertMode || isCodegenMode} title={isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}>
-        <svg class="toolbar-icon" style="color: #f59e0b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3l9 4.5v5c0 4.7-3.8 9-9 10.5C6.8 21.5 3 17.2 3 12.5v-5L12 3z"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-        {isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}
-      </button>
+<div
+  class="je-toolbar"
+  role="toolbar"
+  tabindex="-1"
+  aria-label="JSON editor toolbar"
+  onmousedown={handleTitlebarMouseDown}
+>
+  {#if platform === 'macos'}
+    <div class="window-controls macos toolbar-window-controls" aria-label="Window controls">
+      <button class="traffic close" type="button" aria-label="Close" onclick={closeWindow}></button>
+      <button class="traffic minimize" type="button" aria-label="Minimize" onclick={minimizeWindow}></button>
+      <button
+        class={`traffic maximize ${isWindowExpanded ? 'is-expanded' : ''}`}
+        type="button"
+        aria-label={isWindowFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        onclick={toggleFullscreenWindow}
+      ></button>
     </div>
   {/if}
 
-  <div class="flex-1"></div>
+  <div class="toolbar-actions-strip">
+    {#if isDiffMode}
+      <!-- Diff mode: only show exit button -->
+      <div class="toolbar-group">
+        <button class="toolbar-back-btn" onclick={onToggleDiff} title={$t('toolbar.exitDiff')}>
+          <svg class="toolbar-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+      </div>
+    {:else}
+      <!-- 1. File operations -->
+      <div class="toolbar-group">
+        <button class="toolbar-btn" onclick={handleNewFile} title="{$t('toolbar.new')} ({shortcutLabel('newFile')})">
+          <svg class="toolbar-icon" style="color: #0ea5e9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
+          {$t('toolbar.new')}
+        </button>
+        <div class="toolbar-open-wrap" bind:this={openMenuEl}>
+          <button
+            class="toolbar-btn toolbar-open-btn"
+            onclick={() => toggleOpenMenu()}
+            title={$t('toolbar.open')}
+          >
+            <svg class="toolbar-icon" style="color: #eab308;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            {$t('toolbar.open')}
+            <svg class="open-caret" class:rotated={showOpenMenu} viewBox="0 0 12 12" fill="currentColor">
+              <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          {#if showOpenMenu}
+            <div
+              class="toolbar-open-dropdown"
+              style="top: {dropdownTop}px; left: {dropdownLeft}px;"
+            >
+              <button class="open-menu-item" onclick={handleOpenFileFromMenu}>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M10 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L10 1.5z" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M10 1.5V5.5h4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Open File</span>
+                <span class="open-menu-shortcut">{shortcutLabel('openFile')}</span>
+              </button>
+              <button class="open-menu-item" onclick={handleOpenFolder}>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1 4.5a1 1 0 011-1h3.586a1 1 0 01.707.293L7.707 5.5H13a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1v-8z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Open Folder</span>
+              </button>
+            </div>
+          {/if}
+        </div>
+        <div class="toolbar-file-actions-wrap" bind:this={fileActionsMenuEl}>
+          <button
+            class="toolbar-icon-btn"
+            class:is-active={showFileActionsMenu}
+            onclick={toggleFileActionsMenu}
+            title={$t('toolbar.exportImage')}
+            aria-label={$t('toolbar.exportImage')}
+          >
+            <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="12" r="1.8"/>
+              <circle cx="12" cy="12" r="1.8"/>
+              <circle cx="19" cy="12" r="1.8"/>
+            </svg>
+          </button>
+          {#if showFileActionsMenu}
+            <div
+              class="toolbar-file-actions-dropdown"
+              style="top: {fileActionsDropdownTop}px; left: {fileActionsDropdownLeft}px;"
+            >
+              <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting}>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="2" width="12" height="12" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="5.5" cy="5.5" r="1" />
+                  <path d="M14 10.5l-3-3L3 14" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{$t('toolbar.exportImage')}</span>
+              </button>
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 2. JSON transform -->
+      <div class="toolbar-group">
+        <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
+          <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
+            <path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
+          </svg>
+          {$t('toolbar.format')}
+        </button>
+        <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
+          <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M9 4l3 2 3-2"/><path d="M4 10h16M4 14h16"/><path d="M12 22v-4M9 20l3-2 3 2"/></svg>
+          {$t('toolbar.minify')}
+        </button>
+        <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing} title="{$t('toolbar.escape')} ({shortcutLabel('escape')})">
+          <svg class="toolbar-icon" style="color: #8b5cf6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+          {$t('toolbar.escape')}
+        </button>
+        <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing} title="{$t('toolbar.unescape')} ({shortcutLabel('unescape')})">
+          <svg class="toolbar-icon" style="color: #6366f1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6"/></svg>
+          {$t('toolbar.unescape')}
+        </button>
+        <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing} title="{$t('toolbar.minifyEscape')} ({shortcutLabel('minifyEscape')})">
+          <svg class="toolbar-icon" style="color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
+          {$t('toolbar.minifyEscape')}
+        </button>
+        <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
+          <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
+          {$t('toolbar.foldAll')}
+        </button>
+        <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
+          <svg class="toolbar-icon" style="color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
+          {$t('toolbar.unfoldAll')}
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 3. Diff, Convert & Codegen -->
+      <div class="toolbar-group">
+        <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} title={$t('toolbar.diff')}>
+          <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
+          {$t('toolbar.diff')}
+        </button>
+        <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isCodegenMode || isSchemaMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
+          <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 4 20 7 17 10"/><path d="M4 12v-1a3 3 0 0 1 3-3h13"/><polyline points="7 20 4 17 7 14"/><path d="M20 12v1a3 3 0 0 1-3 3H4"/></svg>
+          {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
+        </button>
+        <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isConvertMode || isSchemaMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
+          <svg class="toolbar-icon" style="color: #d946ef;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 1 12 7 18"/><polyline points="17 6 23 12 17 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
+          {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
+        </button>
+        <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isConvertMode || isCodegenMode} title={isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}>
+          <svg class="toolbar-icon" style="color: #f59e0b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l9 4.5v5c0 4.7-3.8 9-9 10.5C6.8 21.5 3 17.2 3 12.5v-5L12 3z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          {isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}
+        </button>
+      </div>
+    {/if}
+  </div>
+
+  <div
+    class="toolbar-drag-spacer"
+    aria-hidden="true"
+  ></div>
 
   <!-- 4. App controls (icon-only) -->
   <div class="toolbar-group">
@@ -655,6 +802,19 @@
       </svg>
     </button>
   </div>
+
+  {#if platform !== 'macos'}
+    <div class={`window-controls desktop ${platform} toolbar-window-controls`} aria-label="Window controls">
+      <button class="caption minimize" type="button" aria-label="Minimize" onclick={minimizeWindow}></button>
+      <button
+        class={`caption maximize ${isWindowExpanded ? 'is-expanded' : ''}`}
+        type="button"
+        aria-label={isWindowExpanded ? 'Restore' : 'Maximize'}
+        onclick={toggleMaximizeWindow}
+      ></button>
+      <button class="caption close" type="button" aria-label="Close" onclick={closeWindow}></button>
+    </div>
+  {/if}
 </div>
 
 <svelte:window onclick={handleWindowClick} />
@@ -664,29 +824,39 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 12px;
+    padding: 4px 10px 4px 8px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .je-toolbar * {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .je-toolbar .window-controls.macos {
+    padding-left: 2px;
+    padding-right: 8px;
+  }
+
+  .toolbar-actions-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    flex: 0 1 auto;
     overflow-x: auto;
     overflow-y: hidden;
+    scrollbar-width: none;
   }
-  
-  .je-toolbar::-webkit-scrollbar {
-    height: 4px;
-  }
-  
-  .je-toolbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .je-toolbar::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 2px;
-  }
-  
-  .je-toolbar::-webkit-scrollbar-thumb:hover {
-    background: var(--text-tertiary);
+
+  .toolbar-actions-strip::-webkit-scrollbar {
+    display: none;
   }
 
   .toolbar-group {
@@ -694,8 +864,8 @@
     align-items: center;
     gap: 4px;
     background: var(--bg-primary);
-    padding: 3px;
-    border-radius: 8px;
+    padding: 2px;
+    border-radius: 7px;
     border: 1px solid var(--border);
   }
 
@@ -703,7 +873,7 @@
     width: 1px;
     height: 16px;
     background: var(--border);
-    margin: 0 4px;
+    margin: 0 3px;
   }
 
   /* Open dropdown */
@@ -803,8 +973,8 @@
   }
 
   .toolbar-btn {
-    height: 28px;
-    padding: 0 10px;
+    height: 26px;
+    padding: 0 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -849,8 +1019,8 @@
   }
 
   .toolbar-icon-btn {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -884,12 +1054,25 @@
     flex-shrink: 0;
   }
 
+  .toolbar-drag-spacer {
+    align-self: stretch;
+    flex: 1 1 auto;
+    min-width: 48px;
+    min-height: 26px;
+    border-radius: 6px;
+    cursor: default;
+  }
+
+  .toolbar-window-controls {
+    flex: 0 0 auto;
+  }
+
   .toolbar-back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-primary);
