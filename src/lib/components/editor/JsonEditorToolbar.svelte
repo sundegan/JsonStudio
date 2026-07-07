@@ -141,6 +141,22 @@
   }
 
   onMount(() => {
+    const windowStateUnlisteners: Array<() => void> = [];
+    let disposed = false;
+    const addWindowStateUnlistener = (unlisten: () => void) => {
+      if (disposed) {
+        unlisten();
+        return;
+      }
+      windowStateUnlisteners.push(unlisten);
+    };
+    const syncWindowState = () => {
+      void updateWindowState();
+    };
+    const handleDocumentVisibilityChange = () => {
+      if (!document.hidden) syncWindowState();
+    };
+
     void (async () => {
       const { isTauri } = await import('@tauri-apps/api/core');
       if (!isTauri()) return;
@@ -149,7 +165,22 @@
       appWindow = getCurrentWindow();
       platform = await detectPlatform();
       await updateWindowState();
+
+      const unlistenFocus = await appWindow.onFocusChanged(({ payload: focused }) => {
+        if (focused) syncWindowState();
+      });
+      addWindowStateUnlistener(unlistenFocus);
     })();
+
+    window.addEventListener('focus', syncWindowState);
+    document.addEventListener('visibilitychange', handleDocumentVisibilityChange);
+
+    return () => {
+      disposed = true;
+      window.removeEventListener('focus', syncWindowState);
+      document.removeEventListener('visibilitychange', handleDocumentVisibilityChange);
+      for (const unlisten of windowStateUnlisteners) unlisten();
+    };
   });
 
   const LARGE_FILE_THRESHOLD = 1024 * 1024;
@@ -598,7 +629,7 @@
   aria-label="JSON editor toolbar"
   onmousedown={handleTitlebarMouseDown}
 >
-  {#if platform === 'macos'}
+  {#if platform === 'macos' && !isWindowFullscreen}
     <div class="window-controls macos toolbar-window-controls" aria-label="Window controls">
       <button class="traffic close" type="button" aria-label="Close" onclick={closeWindow}></button>
       <button class="traffic minimize" type="button" aria-label="Minimize" onclick={minimizeWindow}></button>

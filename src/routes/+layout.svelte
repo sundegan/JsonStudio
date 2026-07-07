@@ -3,6 +3,7 @@
   import { settingsStore } from '$lib/stores/settings';
   import { shortcutsStore } from '$lib/stores/shortcuts';
   import '../app.css';
+  import type { Window as TauriWindow } from '@tauri-apps/api/window';
 
   type TitlebarPlatform = 'macos' | 'windows' | 'linux';
 
@@ -41,7 +42,7 @@
     }
   }
 
-  async function updateWindowFrameState(appWindow: import('@tauri-apps/api/window').Window) {
+  async function updateWindowFrameState(appWindow: TauriWindow) {
     const [fullscreen, maximized] = await Promise.all([
       appWindow.isFullscreen(),
       appWindow.isMaximized(),
@@ -57,20 +58,37 @@
       platform = value;
     });
     const focusUnlisteners: Array<() => void> = [];
+    let disposed = false;
+    let appWindow: TauriWindow | null = null;
+    const addFocusUnlistener = (unlisten: () => void) => {
+      if (disposed) {
+        unlisten();
+        return;
+      }
+      focusUnlisteners.push(unlisten);
+    };
+    const syncWindowFrameState = () => {
+      if (!appWindow) return;
+      void updateWindowFrameState(appWindow);
+    };
+    const handleDocumentVisibilityChange = () => {
+      if (!document.hidden) syncWindowFrameState();
+    };
     void (async () => {
       const { isTauri } = await import('@tauri-apps/api/core');
       const runningInTauri = isTauri();
       if (!runningInTauri) return;
 
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const appWindow = getCurrentWindow();
+      appWindow = getCurrentWindow();
       isWindowInactive = !(await appWindow.isFocused());
       await updateWindowFrameState(appWindow);
 
       const unlistenFocus = await appWindow.onFocusChanged(({ payload: focused }) => {
         isWindowInactive = !focused;
+        if (focused) syncWindowFrameState();
       });
-      focusUnlisteners.push(unlistenFocus);
+      addFocusUnlistener(unlistenFocus);
     })();
     const handleWindowExpandedChange = (event: Event) => {
       const { expanded } = (event as CustomEvent<{ expanded: boolean }>).detail;
@@ -119,6 +137,8 @@
       }
     };
     window.addEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
+    window.addEventListener('focus', syncWindowFrameState);
+    document.addEventListener('visibilitychange', handleDocumentVisibilityChange);
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('wheel', handleWheel, { passive: false });
     document.addEventListener('keydown', handleKeydown);
@@ -130,8 +150,11 @@
       applyTheme(settings.isDarkMode);
     });
     return () => {
+      disposed = true;
       unsubscribe();
       window.removeEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
+      window.removeEventListener('focus', syncWindowFrameState);
+      document.removeEventListener('visibilitychange', handleDocumentVisibilityChange);
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('wheel', handleWheel);
       document.removeEventListener('keydown', handleKeydown);

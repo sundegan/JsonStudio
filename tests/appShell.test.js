@@ -81,3 +81,20 @@ test('app shell disables browser-style text selection for chrome UI', () => {
   assert.match(layoutSource, /document\.removeEventListener\('selectstart', handleSelectStart\);/);
   assert.doesNotMatch(appCssSource, /\.monaco-editor,\s*\.monaco-editor \*/);
 });
+
+test('app shell refreshes expanded window frame state without resize listeners', () => {
+  assert.match(
+    layoutSource,
+    /window\.addEventListener\('focus', syncWindowFrameState\);/
+  );
+  assert.match(
+    layoutSource,
+    /document\.addEventListener\('visibilitychange', handleDocumentVisibilityChange\);/
+  );
+  assert.match(
+    layoutSource,
+    /if \(focused\) syncWindowFrameState\(\);/
+  );
+  assert.doesNotMatch(layoutSource, /addEventListener\('pageshow'/);
+  assert.doesNotMatch(layoutSource, /appWindow\.onResized/);
+});

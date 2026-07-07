@@ -27,3 +27,16 @@ test('save only clears modified state when document content is unchanged after w
   assert.match(saveBody, /getDocumentContent\(activeTab\.id\) === currentContent/);
   assert.match(saveBody, /tabsStore\.updateTabModified\(activeTab\.id, false\)/);
 });
+
+test('macOS custom traffic lights are hidden while fullscreen', () => {
+  assert.match(
+    toolbarSource,
+    /\{#if platform === 'macos' && !isWindowFullscreen\}[\s\S]*class="window-controls macos toolbar-window-controls"/,
+  );
+  assert.match(toolbarSource, /applyWindowState\(true, false\)/);
+  assert.match(toolbarSource, /window\.addEventListener\('focus', syncWindowState\);/);
+  assert.match(toolbarSource, /document\.addEventListener\('visibilitychange', handleDocumentVisibilityChange\);/);
+  assert.match(toolbarSource, /if \(focused\) syncWindowState\(\);/);
+  assert.doesNotMatch(toolbarSource, /addEventListener\('pageshow'/);
+  assert.doesNotMatch(toolbarSource, /appWindow\.onResized/);
+});
