@@ -229,7 +229,13 @@ jobs:
               "$BUNDLE_DIR/nsis/Json Studio"*"_x64-setup.exe"
               "$BUNDLE_DIR/nsis/Json.Studio"*"_x64-setup.exe"
             )
+            PORTABLE_EXE_CANDIDATES=(
+              "$BUNDLE_DIR/../jsonstudio.exe"
+              "$BUNDLE_DIR/../Json Studio.exe"
+              "$BUNDLE_DIR/../Json.Studio.exe"
+            )
             UPDATER_FILE="$RELEASE_DIR/Json Studio_${VERSION_NO_V}_windows_${{ matrix.arch_suffix }}-setup.exe"
+            PORTABLE_ZIP="$RELEASE_DIR/Json Studio_${VERSION_NO_V}_windows_${{ matrix.arch_suffix }}-portable.zip"
 
             if [ ${#INSTALLER_CANDIDATES[@]} -eq 0 ]; then
               echo "Windows installer not found"
@@ -237,10 +243,40 @@ jobs:
               exit 1
             fi
 
+            PORTABLE_EXE=""
+            for candidate in "${PORTABLE_EXE_CANDIDATES[@]}"; do
+              if [ -f "$candidate" ]; then
+                PORTABLE_EXE="$candidate"
+                break
+              fi
+            done
+
+            if [ -z "$PORTABLE_EXE" ]; then
+              echo "Windows portable executable not found"
+              ls -la "$BUNDLE_DIR/../" || true
+              exit 1
+            fi
+
             ORIGINAL_INSTALLER="${INSTALLER_CANDIDATES[0]}"
             ORIGINAL_SIG="$ORIGINAL_INSTALLER.sig"
             cp "$ORIGINAL_INSTALLER" "$UPDATER_FILE"
             cp "$ORIGINAL_SIG" "$UPDATER_FILE.sig"
+
+            PORTABLE_TEMP_DIR="$(mktemp -d)"
+            PORTABLE_ROOT="$PORTABLE_TEMP_DIR/Json Studio"
+            mkdir -p "$PORTABLE_ROOT"
+            cp "$PORTABLE_EXE" "$PORTABLE_ROOT/Json Studio.exe"
+
+            PORTABLE_ROOT_WIN="$(cygpath -w "$PORTABLE_ROOT")"
+            PORTABLE_ZIP_WIN="$(cygpath -w "$PORTABLE_ZIP")"
+            export PORTABLE_ROOT_WIN PORTABLE_ZIP_WIN
+            powershell -NoProfile -Command "Compress-Archive -Path \$env:PORTABLE_ROOT_WIN -DestinationPath \$env:PORTABLE_ZIP_WIN -Force"
+            rm -rf "$PORTABLE_TEMP_DIR"
+
+            if [ ! -f "$PORTABLE_ZIP" ]; then
+              echo "Windows portable zip not created at $PORTABLE_ZIP"
+              exit 1
+            fi
           elif [ "${{ matrix.platform }}" == "ubuntu-22.04" ]; then
             shopt -s nullglob
             APPIMAGE_CANDIDATES=(
@@ -412,6 +448,8 @@ jobs:
             View changelog: https://github.com/${{ github.repository }}/CHANGELOG.md
 
             Auto-update metadata is published as `latest.json` for the Tauri updater.
+
+            Windows note: download the `windows_x64-portable.zip` package for a no-install version. Unzip it and run `Json Studio.exe` directly.
 
             macOS note: download the DMG for your Mac architecture, open it, then drag `Json Studio.app` into Applications. These builds are not Apple Developer ID notarized, so macOS may ask you to confirm the first launch via right-click Open or System Settings > Privacy & Security.
           draft: false

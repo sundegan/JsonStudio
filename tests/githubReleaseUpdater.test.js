@@ -37,3 +37,31 @@ test('release workflow signs updater bundles and publishes latest.json', () => {
   assert.match(workflow, /windows-x86_64/);
   assert.match(workflow, /softprops\/action-gh-release@v2\.6\.2/);
 });
+
+test('release workflow publishes a Windows portable zip without changing updater asset', () => {
+  const releaseWorkflow = readFileSync(
+    new URL('../.github/workflows/build-release.yml', import.meta.url),
+    'utf8'
+  );
+  const buildTestWorkflow = readFileSync(
+    new URL('../.github/workflows/build-test.yml', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(
+    releaseWorkflow,
+    /UPDATER_FILE="\$RELEASE_DIR\/Json Studio_\$\{VERSION_NO_V\}_windows_\$\{\{ matrix\.arch_suffix \}\}-setup\.exe"/
+  );
+  assert.match(
+    releaseWorkflow,
+    /PORTABLE_ZIP="\$RELEASE_DIR\/Json Studio_\$\{VERSION_NO_V\}_windows_\$\{\{ matrix\.arch_suffix \}\}-portable\.zip"/
+  );
+  assert.match(releaseWorkflow, /PORTABLE_EXE_CANDIDATES=\(/);
+  assert.match(releaseWorkflow, /for candidate in "\$\{PORTABLE_EXE_CANDIDATES\[@\]\}"; do/);
+  assert.match(releaseWorkflow, /if \[ -f "\$candidate" \]; then/);
+  assert.match(releaseWorkflow, /cp "\$PORTABLE_EXE" "\$PORTABLE_ROOT\/Json Studio\.exe"/);
+  assert.match(releaseWorkflow, /Compress-Archive -Path \\?\$env:PORTABLE_ROOT_WIN -DestinationPath \\?\$env:PORTABLE_ZIP_WIN -Force/);
+  assert.match(releaseWorkflow, /windows_x64-portable\.zip/);
+  assert.match(buildTestWorkflow, /PORTABLE_ZIP="\$BUNDLE_DIR\/Json Studio_\$\{VERSION\}_windows_\$\{\{ matrix\.arch_suffix \}\}-portable\.zip"/);
+  assert.match(buildTestWorkflow, /-name "\*\.zip"/);
+});
