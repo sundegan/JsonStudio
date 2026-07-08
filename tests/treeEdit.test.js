@@ -298,6 +298,23 @@ test('tree view query mode selector opens a custom menu below the control', () =
   assert.doesNotMatch(source, /<select[\s\S]*class="json-tree-mode-select"/);
 });
 
+test('tree view follows the main editor cursor position', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /editorRef\.onCursorPositionChange\(\(\{ position \}[^)]*\) => \{/);
+  assert.match(source, /syncTreeSelectionFromEditorPosition\(position\)/);
+  assert.match(source, /findTreeNodeForEditorOffset\(offset, treeNodes\)/);
+  assert.match(source, /if \(!node\) \{\s*selectedPath = null;\s*return;\s*\}/);
+  assert.match(source, /revealSelectedTreePath\(node\.path\)/);
+  assert.match(source, /getAncestorPaths\(path\)/);
+  assert.match(source, /scrollTreePathIntoView\(path, nextExpanded\)/);
+  assert.match(source, /findVisibleRowIndexForPath/);
+  assert.match(source, /void tick\(\)\.then\(syncTreeSelectionFromEditor\)/);
+});
+
 test('moves object fields before and after siblings', () => {
   const data = { a: 1, b: 2, c: 3 };
 

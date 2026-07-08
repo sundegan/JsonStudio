@@ -56,6 +56,11 @@
     result: string;
   };
 
+  type EditorPosition = {
+    lineNumber: number;
+    column: number;
+  };
+
   let { content, editor, tabId } = $props<{
     content: string;
     editor: MonacoEditor | null;
@@ -159,6 +164,20 @@
       treeEdit = null;
       scheduleTreeBuild(tabId, content);
     }
+  });
+
+  $effect(() => {
+    const editorRef = editor;
+    if (!editorRef) return;
+
+    const disposable = editorRef.onCursorPositionChange(({ position }: { position: EditorPosition }) => {
+      syncTreeSelectionFromEditorPosition(position);
+    });
+    void tick().then(syncTreeSelectionFromEditor);
+
+    return () => {
+      disposable.dispose();
+    };
   });
 
   onDestroy(() => {
@@ -320,6 +339,7 @@
     }
     isLoading = false;
     completedTreeBuildVersion = version;
+    void tick().then(syncTreeSelectionFromEditor);
   }
 
   function createTreeKeyEditState(path: string): TreeEditState | null {
@@ -502,6 +522,126 @@
     tick().then(() => {
       if (treeContentElement) treeScrollTop = treeContentElement.scrollTop;
     });
+  }
+
+  function containsEditorOffset(node: TreeNode, offset: number): boolean {
+    const endOffset = node.endOffset <= node.startOffset ? node.startOffset + 1 : node.endOffset;
+    return offset >= node.startOffset && offset <= endOffset;
+  }
+
+  function findTreeNodeForEditorOffset(offset: number, nodes: TreeNode[]): TreeNode | null {
+    for (const node of nodes) {
+      if (!containsEditorOffset(node, offset)) continue;
+
+      if (node.children) {
+        const childMatch = findTreeNodeForEditorOffset(offset, node.children);
+        if (childMatch) return childMatch;
+      }
+
+      return node;
+    }
+
+    return null;
+  }
+
+  function findVisibleRowIndexForPath(
+    path: string,
+    nodes: TreeNode[],
+    expanded: Set<string>,
+    queryExpanded: Set<string>,
+  ): number | null {
+    let rowIndex = 0;
+
+    function visit(siblings: TreeNode[]): number | null {
+      for (const node of siblings) {
+        if (node.path === path) return rowIndex;
+        rowIndex += 1;
+
+        if (
+          node.children
+          && (expanded.has(node.path) || queryExpanded.has(node.path))
+        ) {
+          const childIndex = visit(node.children);
+          if (childIndex !== null) return childIndex;
+        }
+      }
+
+      return null;
+    }
+
+    return visit(nodes);
+  }
+
+  function scrollTreePathIntoView(path: string, expanded: Set<string>) {
+    const rowIndex = findVisibleRowIndexForPath(
+      path,
+      treeNodes,
+      expanded,
+      queryExpandedNodes,
+    );
+    if (rowIndex === null) return;
+
+    tick().then(() => {
+      if (!treeContentElement || selectedPath !== path) return;
+
+      const rowTop = rowIndex * TREE_ROW_HEIGHT;
+      const rowBottom = rowTop + TREE_ROW_HEIGHT;
+      const viewportTop = treeContentElement.scrollTop;
+      const viewportBottom = viewportTop + treeContentElement.clientHeight;
+
+      if (rowTop >= viewportTop && rowBottom <= viewportBottom) {
+        treeScrollTop = treeContentElement.scrollTop;
+        return;
+      }
+
+      const centeredTop = rowTop - Math.max(0, Math.floor((treeContentElement.clientHeight - TREE_ROW_HEIGHT) / 2));
+      treeContentElement.scrollTop = Math.max(0, centeredTop);
+      treeScrollTop = treeContentElement.scrollTop;
+    });
+  }
+
+  function revealSelectedTreePath(path: string) {
+    selectedPath = path;
+
+    const nextExpanded = new Set(expandedNodes);
+    let expandedChanged = false;
+    for (const ancestorPath of getAncestorPaths(path)) {
+      const ancestorNode = treeNodeByPath.get(ancestorPath);
+      if (!ancestorNode || !hasChildren(ancestorNode) || nextExpanded.has(ancestorPath)) continue;
+      nextExpanded.add(ancestorPath);
+      expandedChanged = true;
+    }
+
+    if (expandedChanged) {
+      expandedNodes = nextExpanded;
+      isAllExpanded = false;
+    }
+
+    scrollTreePathIntoView(path, nextExpanded);
+  }
+
+  function syncTreeSelectionFromEditorPosition(position: EditorPosition) {
+    if (treeEdit || isPointerDragging || treeNodes.length === 0) return;
+
+    const editorInstance = editor?.getEditorInstance();
+    const model = editorInstance?.getModel();
+    if (!model) return;
+
+    const offset = model.getOffsetAt(position);
+    const node = findTreeNodeForEditorOffset(offset, treeNodes);
+    if (!node) {
+      selectedPath = null;
+      return;
+    }
+    if (node.path === selectedPath) return;
+
+    revealSelectedTreePath(node.path);
+  }
+
+  function syncTreeSelectionFromEditor() {
+    const position = editor?.getEditorInstance()?.getPosition();
+    if (!position) return;
+    syncTreeSelectionFromEditorPosition(position);
   }
 
   function toggleNode(node: TreeNode) {

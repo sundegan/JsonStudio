@@ -39,6 +39,33 @@ test('monaco find widget close hover is hidden without intercepting interactions
   assert.doesNotMatch(source, /addEventListener\('mouseover'/);
 });
 
+test('monaco editor exposes cursor position changes for side panels', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /editor\.onDidChangeCursorPosition/);
+  assert.match(source, /export function onCursorPositionChange/);
+  assert.match(source, /cursorPositionListeners\.add\(listener\)/);
+  assert.match(source, /ensureCursorPositionSubscription\(\);/);
+  assert.match(
+    source,
+    /if \(cursorPositionListeners\.size > 0\) \{\s*ensureCursorPositionSubscription\(\);\s*\}/,
+  );
+  assert.match(source, /cursorPositionDisposable\?\.dispose\(\)/);
+});
+
+test('monaco editor does not highlight every matching key as a selection', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/MonacoEditor.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /selectionHighlight:\s*false/);
+  assert.match(source, /occurrencesHighlight:\s*'off'/);
+});
+
 test('external link helper uses Tauri opener and browser fallback', () => {
   const source = readFileSync(
     new URL('../src/lib/services/externalLinks.js', import.meta.url),

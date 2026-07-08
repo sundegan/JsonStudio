@@ -139,6 +139,8 @@
   let isSwitchingModel = false;
   let externalSelectionDecorations: Monaco.editor.IEditorDecorationsCollection | null = null;
   let editorLinkOpenerDisposable: Monaco.IDisposable | null = null;
+  const cursorPositionListeners = new Set<(event: Monaco.editor.ICursorPositionChangedEvent) => void>();
+  let cursorPositionDisposable: Monaco.IDisposable | null = null;
   let monacoHoverObserver: MutationObserver | null = null;
   
   // Flag: distinguish between internal edits and external updates
@@ -165,6 +167,16 @@
       hover.closest<HTMLElement>('.workbench-hover-container, .context-view')?.classList.add(
         'jsonstudio-hidden-monaco-hover',
       );
+    });
+  }
+
+  function ensureCursorPositionSubscription() {
+    if (!editor || cursorPositionDisposable) return;
+
+    cursorPositionDisposable = editor.onDidChangeCursorPosition((event) => {
+      for (const listener of cursorPositionListeners) {
+        listener(event);
+      }
     });
   }
 
@@ -371,6 +383,8 @@
       padding: { top: 12, bottom: 12 },
       showFoldingControls: 'always',
       foldingStrategy: 'indentation',
+      selectionHighlight: false,
+      occurrencesHighlight: 'off',
       scrollbar: {
         vertical: 'visible',
         horizontal: 'auto',
@@ -403,6 +417,10 @@
       editor.onDidPaste((event) => {
         onPaste(event);
       });
+
+      if (cursorPositionListeners.size > 0) {
+        ensureCursorPositionSubscription();
+      }
     }
 
     hideFindWidgetManagedHovers();
@@ -418,6 +436,9 @@
   onDestroy(() => {
     editorLinkOpenerDisposable?.dispose();
     editorLinkOpenerDisposable = null;
+    cursorPositionDisposable?.dispose();
+    cursorPositionDisposable = null;
+    cursorPositionListeners.clear();
     monacoHoverObserver?.disconnect();
     monacoHoverObserver = null;
     externalSelectionDecorations?.clear();
@@ -526,6 +547,23 @@
   // Get editor instance
   export function getEditorInstance() {
     return editor;
+  }
+
+  export function onCursorPositionChange(
+    listener: (event: Monaco.editor.ICursorPositionChangedEvent) => void,
+  ): Monaco.IDisposable {
+    cursorPositionListeners.add(listener);
+    ensureCursorPositionSubscription();
+
+    return {
+      dispose() {
+        cursorPositionListeners.delete(listener);
+        if (cursorPositionListeners.size === 0) {
+          cursorPositionDisposable?.dispose();
+          cursorPositionDisposable = null;
+        }
+      },
+    };
   }
 
   export function setExternalSelectionHighlights(ranges: Monaco.Range[]) {
