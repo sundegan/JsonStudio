@@ -63,6 +63,53 @@ export function createTreeValueCopyText(content, pointers, path, value) {
 }
 
 /**
+ * @param {unknown} data
+ * @param {string} path
+ */
+export function createTreePathCopyText(data, path) {
+  const segments = splitPointer(path);
+  if (segments.length === 0) return '';
+
+  /** @type {any} */
+  let current = data;
+  let text = '';
+
+  for (const segment of segments) {
+    if (Array.isArray(current) && isArrayIndexSegment(segment)) {
+      text += `[${segment}]`;
+      current = current[Number(segment)];
+      continue;
+    }
+
+    text += formatObjectPathSegment(segment, text.length === 0);
+    current = current && typeof current === 'object'
+      ? current[segment]
+      : undefined;
+  }
+
+  return text;
+}
+
+/**
+ * @param {string} segment
+ */
+function isArrayIndexSegment(segment) {
+  return /^(0|[1-9]\d*)$/.test(segment);
+}
+
+/**
+ * @param {string} segment
+ * @param {boolean} isFirst
+ */
+function formatObjectPathSegment(segment, isFirst) {
+  if (/^[A-Za-z_$][\w$]*$/.test(segment)) {
+    return isFirst ? segment : `.${segment}`;
+  }
+
+  return `[${JSON.stringify(segment)}]`;
+}
+
+/**
  * @typedef {'before' | 'inside' | 'after'} TreeDropPosition
  * @typedef {{ data: unknown; sourcePath: string; targetPath: string; position: TreeDropPosition }} TreeMoveRequest
  * @typedef {{ ok: true; data: unknown; movedPath: string; editKey?: boolean } | { ok: false; error: string }} TreeMoveResult

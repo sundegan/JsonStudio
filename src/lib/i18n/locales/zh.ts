@@ -155,6 +155,8 @@ export default {
   'treeView.invalidJson': '无效的 JSON 格式',
   'treeView.noData': '暂无 JSON 数据',
   'treeView.noDataHint': '输入有效的 JSON 查看结构',
+  'treeView.copyPath': '复制路径',
+  'treeView.pathCopied': '已复制路径',
   'treeView.copyValue': '复制值',
   'treeView.valueCopied': '已复制值',
   'treeView.searchPlaceholder': 'JMESPath 查询...',

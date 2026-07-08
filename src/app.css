@@ -659,7 +659,7 @@ a {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px 4px 0;
+  padding: 4px 64px 4px 0;
   cursor: pointer;
   min-height: 26px;
 }
@@ -843,8 +843,7 @@ a {
 
 /* Value display with type-specific colors */
 .tree-value {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
   white-space: nowrap;
   font-size: 12px;
   font-weight: 500;
@@ -897,7 +896,29 @@ a {
   background: var(--tree-line-active);
 }
 
+.tree-node-actions {
+  position: sticky;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+  margin-left: auto;
+  background: linear-gradient(90deg, transparent, var(--bg-primary) 8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+
+.tree-node-actions-visible {
+  background: linear-gradient(90deg, transparent, var(--bg-secondary) 8px);
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .tree-copy-btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -909,12 +930,33 @@ a {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
-  opacity: 0;
-  margin-left: auto;
 }
 
-.tree-node:hover .tree-copy-btn {
+.tree-copy-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(50%) translateY(2px);
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 30;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.tree-copy-btn:hover::after,
+.tree-copy-btn:focus-visible::after {
   opacity: 1;
+  transform: translateX(50%) translateY(0);
 }
 
 .tree-copy-btn:hover {

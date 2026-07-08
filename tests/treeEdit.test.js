@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   createTreeDragMove,
+  createTreePathCopyText,
   createTreeValueCopyText,
   createTreeKeyEdit,
   isTreeKeyEditable,
@@ -81,6 +82,33 @@ test('creates tree copy text from the node value source range only', () => {
   ]`);
 });
 
+test('creates tree copy text for absolute node paths', () => {
+  const data = {
+    world_network: {
+      persistdata: {
+        worldTemperature: 12,
+        'daily.average': 18,
+      },
+    },
+    items: [
+      { name: 'first' },
+    ],
+  };
+
+  assert.equal(
+    createTreePathCopyText(data, '/world_network/persistdata/worldTemperature'),
+    'world_network.persistdata.worldTemperature',
+  );
+  assert.equal(
+    createTreePathCopyText(data, '/world_network/persistdata/daily.average'),
+    'world_network.persistdata["daily.average"]',
+  );
+  assert.equal(
+    createTreePathCopyText(data, '/items/0/name'),
+    'items[0].name',
+  );
+});
+
 test('tree view exposes key and primitive value edit writeback on double click', () => {
   const source = readFileSync(
     new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
@@ -102,6 +130,27 @@ test('tree view exposes key and primitive value edit writeback on double click',
   assert.doesNotMatch(pointerDownBody, /treeEdit = null/);
   assert.match(source, /const preserveViewState = renderedTabId === sourceTabId/);
   assert.match(source, /\[\.\.\.expandedNodes\]\.filter/);
+});
+
+test('tree view exposes separate copy path and copy value buttons', () => {
+  const source = readFileSync(
+    new URL('../src/lib/components/editor/JsonTreeView.svelte', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /createTreePathCopyText/);
+  assert.match(source, /let hoveredActionPath = \$state<string \| null>\(null\)/);
+  assert.match(source, /function handleTreeNodePointerEnter\(node: TreeNode\)/);
+  assert.match(source, /function handleTreeNodePointerLeave\(node: TreeNode\)/);
+  assert.match(source, /onpointerenter=\{\(\) => handleTreeNodePointerEnter\(node\)\}/);
+  assert.match(source, /onpointerleave=\{\(\) => handleTreeNodePointerLeave\(node\)\}/);
+  assert.match(source, /class:tree-node-actions-visible=\{isHovered\}/);
+  assert.match(source, /async function copyPath\(node: TreeNode\)/);
+  assert.match(source, /aria-label=\{\$t\('treeView.copyPath'\)\}/);
+  assert.match(source, /data-tooltip=\{\$t\('treeView.copyPath'\)\}/);
+  assert.match(source, /aria-label=\{\$t\('treeView.copyValue'\)\}/);
+  assert.match(source, /data-tooltip=\{\$t\('treeView.copyValue'\)\}/);
+  assert.match(source, /dispatch\('toast', \{ message: \$t\('treeView.pathCopied'\) \}\)/);
 });
 
 test('tree model builds JSON5 nodes, source ranges, and path index outside the component', () => {
@@ -217,7 +266,7 @@ test('tree text keeps release-style spacing with integer typography for 1x displ
   );
 
   assert.match(globalStyles, /\.json-tree-content \{[\s\S]*font-size: 13px;[\s\S]*line-height: 18px;/);
-  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*gap: 6px;[\s\S]*padding: 4px 12px 4px 0;[\s\S]*min-height: 26px;/);
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*gap: 6px;[\s\S]*padding: 4px 64px 4px 0;[\s\S]*min-height: 26px;/);
   assert.match(globalStyles, /\.tree-key \{[\s\S]*line-height: 18px;/);
   assert.match(globalStyles, /\.tree-value \{[\s\S]*font-size: 12px;[\s\S]*font-weight: 500;[\s\S]*line-height: 18px;/);
   assert.match(globalStyles, /\.tree-child-count \{[\s\S]*font-size: 11px;[\s\S]*line-height: 18px;/);
@@ -225,6 +274,25 @@ test('tree text keeps release-style spacing with integer typography for 1x displ
   assert.match(globalStyles, /\.tree-type-object \{[\s\S]*font-size: 10px;/);
   assert.match(globalStyles, /\.tree-type-array \{[\s\S]*font-size: 10px;/);
   assert.doesNotMatch(globalStyles, /\.tree-[\w-]+ \{[\s\S]*font-weight: 560;/);
+});
+
+test('tree copy actions float at the scrollport edge for the active row without truncating node text', () => {
+  const globalStyles = readFileSync(
+    new URL('../src/app.css', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*padding: 4px 64px 4px 0;/);
+  assert.match(globalStyles, /\.tree-key-value \{[\s\S]*overflow: visible;/);
+  assert.match(globalStyles, /\.tree-value \{[\s\S]*overflow: visible;/);
+  assert.doesNotMatch(globalStyles, /\.tree-key \{[\s\S]*text-overflow: ellipsis;/);
+  assert.doesNotMatch(globalStyles, /\.tree-value \{[\s\S]*text-overflow: ellipsis;/);
+  assert.match(globalStyles, /\.tree-node-actions \{[\s\S]*position: sticky;[\s\S]*right: 8px;/);
+  assert.match(globalStyles, /\.tree-node-actions \{[\s\S]*opacity: 0;[\s\S]*pointer-events: none;/);
+  assert.match(globalStyles, /\.tree-node-actions-visible \{[\s\S]*opacity: 1;[\s\S]*pointer-events: auto;/);
+  assert.doesNotMatch(globalStyles, /\.tree-node:hover \.tree-node-actions/);
+  assert.doesNotMatch(globalStyles, /\.tree-node-selected \.tree-node-actions/);
+  assert.doesNotMatch(globalStyles, /\.tree-node-content:focus-within \.tree-node-actions/);
 });
 
 test('tree view disables editing and drag with duplicate-key documents', () => {

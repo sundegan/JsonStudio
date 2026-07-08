@@ -155,6 +155,8 @@ export default {
   'treeView.invalidJson': 'Invalid JSON Format',
   'treeView.noData': 'No JSON Data',
   'treeView.noDataHint': 'Enter valid JSON to view structure',
+  'treeView.copyPath': 'Copy path',
+  'treeView.pathCopied': 'Path copied',
   'treeView.copyValue': 'Copy value',
   'treeView.valueCopied': 'Value copied',
   'treeView.searchPlaceholder': 'JMESPath Query...',

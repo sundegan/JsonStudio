@@ -7,7 +7,7 @@
     getCachedJsonTreeModel,
     getJsonTreeModelAsync,
   } from '$lib/services/jsonTreeModelCache.js';
-  import { createTreeDragMove, createTreeKeyEdit, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
+  import { createTreeDragMove, createTreeKeyEdit, createTreePathCopyText, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
@@ -107,6 +107,7 @@
   let hasDuplicateSourceKeys = $state(false);
   let rootData = $state.raw<unknown>(null);
   let selectedPath = $state<string | null>(null);
+  let hoveredActionPath = $state<string | null>(null);
   let searchQuery = $state('');
   let queryMode = $state<QueryMode>('jmespath');
   let queryModeMenuOpen = $state(false);
@@ -987,12 +988,31 @@
     resetTreeScroll();
   }
 
+  function handleTreeNodePointerEnter(node: TreeNode) {
+    hoveredActionPath = node.path;
+  }
+
+  function handleTreeNodePointerLeave(node: TreeNode) {
+    if (hoveredActionPath === node.path) {
+      hoveredActionPath = null;
+    }
+  }
+
   async function copyEntry(node: TreeNode) {
     const entryText = createTreeValueCopyText(content, parsedPointers, node.path, node.value);
 
     try {
       await navigator.clipboard.writeText(entryText);
       dispatch('toast', { message: $t('treeView.valueCopied') });
+    } catch (e) {}
+  }
+
+  async function copyPath(node: TreeNode) {
+    const pathText = createTreePathCopyText(rootData, node.path);
+
+    try {
+      await navigator.clipboard.writeText(pathText);
+      dispatch('toast', { message: $t('treeView.pathCopied') });
     } catch (e) {}
   }
 
@@ -1354,6 +1374,7 @@
         {@const isExpanded = expandedNodes.has(node.path) || queryExpandedNodes.has(node.path)}
         {@const isSelected = selectedPath === node.path}
         {@const isMatched = queryMatches.has(node.path)}
+        {@const isHovered = hoveredActionPath === node.path}
         {@const childCount = getChildCount(node)}
         {@const showValue = node.type !== 'object' && node.type !== 'array'}
         
@@ -1376,6 +1397,8 @@
             onpointermove={handleTreePointerMove}
             onpointerup={handleTreePointerUp}
             onpointercancel={handleTreePointerCancel}
+            onpointerenter={() => handleTreeNodePointerEnter(node)}
+            onpointerleave={() => handleTreeNodePointerLeave(node)}
             role="button"
             tabindex="0"
           >
@@ -1496,18 +1519,38 @@
               {/if}
             </div>
 
-            <!-- Copy Value Button -->
-            <button
-              class="tree-copy-btn"
-              onclick={(e) => { e.stopPropagation(); copyEntry(node); }}
-              title={$t('treeView.copyValue')}
-              type="button"
-            >
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-            </button>
+            <div class="tree-node-actions" class:tree-node-actions-visible={isHovered}>
+              <!-- Copy Path Button -->
+              <button
+                class="tree-copy-btn"
+                onclick={(e) => { e.stopPropagation(); copyPath(node); }}
+                aria-label={$t('treeView.copyPath')}
+                data-tooltip={$t('treeView.copyPath')}
+                type="button"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 5H6a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h2"></path>
+                  <path d="M16 5h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3a2 2 0 0 1-2 2h-2"></path>
+                  <path d="M8 12h8"></path>
+                  <circle cx="8" cy="12" r="1"></circle>
+                  <circle cx="16" cy="12" r="1"></circle>
+                </svg>
+              </button>
+
+              <!-- Copy Value Button -->
+              <button
+                class="tree-copy-btn"
+                onclick={(e) => { e.stopPropagation(); copyEntry(node); }}
+                aria-label={$t('treeView.copyValue')}
+                data-tooltip={$t('treeView.copyValue')}
+                type="button"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
