@@ -187,6 +187,21 @@ test('editor ignores changes while the active tab and Monaco model are out of sy
   assert.match(source, /if \(isEditorModelPending \|\| editorModelKey !== sourceTab\.id\) return;/);
 });
 
+test('macOS control window shortcuts are handled in the editor shell', async () => {
+  const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
+
+  assert.match(source, /const macControlOnly = isMac && e\.ctrlKey && !e\.metaKey && !e\.altKey && !e\.shiftKey;/);
+  assert.match(source, /if \(macControlOnly && e\.key\.toLowerCase\(\) === 'm'\)/);
+  assert.match(source, /await minimizeCurrentWindow\(\);/);
+  assert.match(source, /const \{ getCurrentWindow \} = await import\('@tauri-apps\/api\/window'\);/);
+  assert.match(source, /await getCurrentWindow\(\)\.minimize\(\);/);
+  assert.match(source, /if \(macControlOnly && e\.key\.toLowerCase\(\) === 'w'\)/);
+  assert.match(source, /await closeCurrentWindow\(\);/);
+  assert.match(source, /await getCurrentWindow\(\)\.close\(\);/);
+  assert.match(source, /window\.addEventListener\('keydown', handleKeydown, \{ capture: true \}\);/);
+  assert.match(source, /window\.removeEventListener\('keydown', handleKeydown, \{ capture: true \}\);/);
+});
+
 test('main editor uses one lightweight tokenizer for JSON and JSON5', async () => {
   const source = await readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8');
 

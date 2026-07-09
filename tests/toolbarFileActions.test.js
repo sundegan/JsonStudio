@@ -34,9 +34,18 @@ test('macOS custom traffic lights are hidden while fullscreen', () => {
     /\{#if platform === 'macos' && !isWindowFullscreen\}[\s\S]*class="window-controls macos toolbar-window-controls"/,
   );
   assert.match(toolbarSource, /applyWindowState\(true, false\)/);
+  assert.match(
+    toolbarSource,
+    /const maximized = platform === 'macos' \? false : await appWindow\.isMaximized\(\);/
+  );
+  assert.match(
+    toolbarSource,
+    /applyWindowState\(false, platform === 'macos' \? false : await appWindow\.isMaximized\(\)\);/
+  );
   assert.match(toolbarSource, /window\.addEventListener\('focus', syncWindowState\);/);
   assert.match(toolbarSource, /document\.addEventListener\('visibilitychange', handleDocumentVisibilityChange\);/);
   assert.match(toolbarSource, /if \(focused\) syncWindowState\(\);/);
   assert.doesNotMatch(toolbarSource, /addEventListener\('pageshow'/);
   assert.doesNotMatch(toolbarSource, /appWindow\.onResized/);
+  assert.doesNotMatch(toolbarSource, /Promise\.all\(\[\s*appWindow\.isFullscreen\(\),\s*appWindow\.isMaximized\(\),?\s*\]\)/);
 });

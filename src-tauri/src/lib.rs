@@ -24,7 +24,7 @@ use commands::window::{desktop_platform, open_devtools, quit_app, restart_app, s
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
-use tauri::menu::{MenuBuilder, SubmenuBuilder};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder, WINDOW_SUBMENU_ID};
 use tauri::{Emitter, LogicalSize, Manager, PhysicalPosition, WebviewWindow};
 
 const WINDOW_SCREEN_MARGIN: u32 = 48;
@@ -197,6 +197,14 @@ fn about_menu_text(language: &str) -> &'static str {
 }
 
 #[cfg(target_os = "macos")]
+fn settings_menu_text(language: &str) -> &'static str {
+    match language {
+        "en" => "Settings...",
+        _ => "设置...",
+    }
+}
+
+#[cfg(target_os = "macos")]
 fn check_for_update_menu_text(language: &str) -> &'static str {
     match language {
         "en" => "Check for Updates...",
@@ -205,9 +213,35 @@ fn check_for_update_menu_text(language: &str) -> &'static str {
 }
 
 #[cfg(target_os = "macos")]
+fn window_menu_text(language: &str) -> &'static str {
+    match language {
+        "en" => "Window",
+        _ => "窗口",
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn close_window_menu_text(language: &str) -> &'static str {
+    match language {
+        "en" => "Close Window",
+        _ => "关闭窗口",
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn minimize_window_menu_text(language: &str) -> &'static str {
+    match language {
+        "en" => "Minimize",
+        _ => "最小化",
+    }
+}
+
+#[cfg(target_os = "macos")]
 fn set_macos_app_menu(app: &tauri::AppHandle, language: &str) -> tauri::Result<()> {
     let app_menu = SubmenuBuilder::new(app, "Json Studio")
         .text("show_about", about_menu_text(language))
+        .separator()
+        .text("open_settings", settings_menu_text(language))
         .separator()
         .text("check_for_update", check_for_update_menu_text(language))
         .separator()
@@ -226,8 +260,22 @@ fn set_macos_app_menu(app: &tauri::AppHandle, language: &str) -> tauri::Result<(
         .paste()
         .select_all()
         .build()?;
+    let close_window_item =
+        MenuItemBuilder::with_id("window_close", close_window_menu_text(language))
+            .accelerator("Control+W")
+            .build(app)?;
+    let minimize_window_item =
+        MenuItemBuilder::with_id("window_minimize", minimize_window_menu_text(language))
+            .accelerator("Control+M")
+            .build(app)?;
+    let window_menu = SubmenuBuilder::with_id(app, WINDOW_SUBMENU_ID, window_menu_text(language))
+        .item(&close_window_item)
+        .item(&minimize_window_item)
+        .maximize()
+        .fullscreen()
+        .build()?;
     let menu = MenuBuilder::new(app)
-        .items(&[&app_menu, &edit_menu])
+        .items(&[&app_menu, &edit_menu, &window_menu])
         .build()?;
     app.set_menu(menu)?;
 
@@ -404,6 +452,20 @@ pub fn run() {
                     "check_for_update" => {
                         focus_main_window(app_handle);
                         let _ = app_handle.emit("check-for-update", ());
+                    }
+                    "open_settings" => {
+                        focus_main_window(app_handle);
+                        let _ = app_handle.emit("open-settings", ());
+                    }
+                    "window_close" => {
+                        if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.close();
+                        }
+                    }
+                    "window_minimize" => {
+                        if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.minimize();
+                        }
                     }
                     _ => {}
                 });

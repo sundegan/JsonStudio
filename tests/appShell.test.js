@@ -4,6 +4,10 @@ import { readFileSync } from 'node:fs';
 
 const layoutSource = readFileSync(new URL('../src/routes/+layout.svelte', import.meta.url), 'utf8');
 const appCssSource = readFileSync(new URL('../src/app.css', import.meta.url), 'utf8');
+const windowCommandsSource = readFileSync(
+  new URL('../src-tauri/src/commands/window.rs', import.meta.url),
+  'utf8'
+);
 const tauriConfig = JSON.parse(
   readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8')
 );
@@ -97,4 +101,30 @@ test('app shell refreshes expanded window frame state without resize listeners',
   );
   assert.doesNotMatch(layoutSource, /addEventListener\('pageshow'/);
   assert.doesNotMatch(layoutSource, /appWindow\.onResized/);
+  assert.match(
+    layoutSource,
+    /const maximized = platform === 'macos' \? false : await appWindow\.isMaximized\(\);/
+  );
+  assert.doesNotMatch(layoutSource, /Promise\.all\(\[\s*appWindow\.isFullscreen\(\),\s*appWindow\.isMaximized\(\),?\s*\]\)/);
+});
+
+test('macOS transparent chrome remains eligible for native window management', () => {
+  assert.match(windowCommandsSource, /NSWindowCollectionBehavior/);
+  assert.match(
+    windowCommandsSource,
+    /NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenPrimary/
+  );
+  assert.match(
+    windowCommandsSource,
+    /NSWindowCollectionBehavior::NSWindowCollectionBehaviorManaged/
+  );
+  assert.match(
+    windowCommandsSource,
+    /NSWindowCollectionBehavior::NSWindowCollectionBehaviorParticipatesInCycle/
+  );
+  assert.match(
+    windowCommandsSource,
+    /!\s*NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary/
+  );
+  assert.match(windowCommandsSource, /ns_window\.setCollectionBehavior_\(behavior\);/);
 });

@@ -247,9 +247,53 @@
       workspaceResizeObserver.observe(mainWorkspaceEl);
     }
 
+    const closeActiveTabFromShortcut = () => {
+      const currentTab = $activeTab;
+      if (!currentTab) return;
+
+      if (currentTab.isModified) {
+        tabToClose = currentTab.id;
+        confirmMessage = `"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
+        isConfirmOpen = true;
+        return;
+      }
+
+      tabsStore.removeTab(currentTab.id);
+    };
+
+    const minimizeCurrentWindow = async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().minimize();
+      } catch (error) {
+        console.error('Failed to minimize window:', error);
+      }
+    };
+
+    const closeCurrentWindow = async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().close();
+      } catch (error) {
+        console.error('Failed to close window:', error);
+      }
+    };
+
     const handleKeydown = async (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+      const macControlOnly = isMac && e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey;
+
+      if (macControlOnly && e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        await closeCurrentWindow();
+        return;
+      }
+      if (macControlOnly && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        await minimizeCurrentWindow();
+        return;
+      }
 
       // Fixed shortcuts (not customizable)
       if (cmdOrCtrl && e.key === 't') {
@@ -264,16 +308,7 @@
 
       if (cmdOrCtrl && !e.shiftKey && e.key === 'w') {
         e.preventDefault();
-        const currentTab = $activeTab;
-        if (currentTab) {
-          if (currentTab.isModified) {
-            tabToClose = currentTab.id;
-            confirmMessage = `"${currentTab.fileName || 'Untitled'}" has unsaved changes. Close anyway?`;
-            isConfirmOpen = true;
-            return;
-          }
-          tabsStore.removeTab(currentTab.id);
-        }
+        closeActiveTabFromShortcut();
         return;
       }
       if (cmdOrCtrl && e.key === 'Tab' && !e.shiftKey) {
@@ -358,7 +393,7 @@
       }
     };
 
-    window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('keydown', handleKeydown, { capture: true });
     window.addEventListener('pagehide', flushPendingTabPersistence);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
@@ -368,7 +403,7 @@
       if (unlistenClipboardContent) unlistenClipboardContent();
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenOpenFile) unlistenOpenFile();
-      window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('keydown', handleKeydown, { capture: true });
       window.removeEventListener('pagehide', flushPendingTabPersistence);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (autoSaveTimer) clearTimeout(autoSaveTimer);

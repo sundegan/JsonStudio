@@ -53,10 +53,8 @@
 
   async function updateWindowState() {
     if (!appWindow) return;
-    const [fullscreen, maximized] = await Promise.all([
-      appWindow.isFullscreen(),
-      appWindow.isMaximized(),
-    ]);
+    const fullscreen = await appWindow.isFullscreen();
+    const maximized = platform === 'macos' ? false : await appWindow.isMaximized();
     applyWindowState(fullscreen, maximized);
   }
 
@@ -129,7 +127,7 @@
       applyWindowState(true, false);
       return;
     }
-    applyWindowState(false, await appWindow.isMaximized());
+    applyWindowState(false, platform === 'macos' ? false : await appWindow.isMaximized());
   }
 
   async function togglePrimaryWindowExpansion() {

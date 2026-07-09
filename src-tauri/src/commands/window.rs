@@ -48,7 +48,7 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
 
 #[cfg(target_os = "macos")]
 pub fn apply_macos_transparent_chrome(ns_window: *mut std::ffi::c_void) {
-    use cocoa::appkit::{NSColor, NSWindow};
+    use cocoa::appkit::{NSColor, NSWindow, NSWindowCollectionBehavior};
     use cocoa::base::{id, nil, NO};
     use objc::{msg_send, sel, sel_impl};
 
@@ -59,6 +59,13 @@ pub fn apply_macos_transparent_chrome(ns_window: *mut std::ffi::c_void) {
         ns_window.setOpaque_(NO);
         ns_window.setBackgroundColor_(background);
         let _: () = msg_send![ns_window, setHasShadow: NO];
+
+        let mut behavior = ns_window.collectionBehavior();
+        behavior |= NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenPrimary;
+        behavior |= NSWindowCollectionBehavior::NSWindowCollectionBehaviorManaged;
+        behavior |= NSWindowCollectionBehavior::NSWindowCollectionBehaviorParticipatesInCycle;
+        behavior &= !NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary;
+        ns_window.setCollectionBehavior_(behavior);
     }
 }
 

@@ -43,10 +43,8 @@
   }
 
   async function updateWindowFrameState(appWindow: TauriWindow) {
-    const [fullscreen, maximized] = await Promise.all([
-      appWindow.isFullscreen(),
-      appWindow.isMaximized(),
-    ]);
+    const fullscreen = await appWindow.isFullscreen();
+    const maximized = platform === 'macos' ? false : await appWindow.isMaximized();
     isWindowExpanded = fullscreen || maximized;
   }
 

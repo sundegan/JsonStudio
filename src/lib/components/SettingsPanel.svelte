@@ -71,8 +71,19 @@
 
   onMount(() => {
     let unlistenCheckForUpdate: (() => void) | null = null;
+    let unlistenOpenSettings: (() => void) | null = null;
 
     void initAppUpdater();
+
+    listen('open-settings', () => {
+      open();
+    })
+      .then(unlisten => {
+        unlistenOpenSettings = unlisten;
+      })
+      .catch(error => {
+        console.error('Failed to listen for settings menu event:', error);
+      });
 
     listen('check-for-update', () => {
       void handleMenuCheckForUpdate();
@@ -90,6 +101,7 @@
       });
 
     return () => {
+      unlistenOpenSettings?.();
       unlistenCheckForUpdate?.();
     };
   });

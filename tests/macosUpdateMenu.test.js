@@ -8,6 +8,10 @@ test('macOS app menu exposes check update and emits frontend event', () => {
   assert.match(libRs, /SubmenuBuilder::new\(app,\s*"Json Studio"\)/);
   assert.match(libRs, /fn about_menu_text\(language: &str\) -> &'static str/);
   assert.match(libRs, /\.text\("show_about",\s*about_menu_text\(language\)\)/);
+  assert.match(libRs, /fn settings_menu_text\(language: &str\) -> &'static str/);
+  assert.match(libRs, /"en"\s*=>\s*"Settings\.\.\."/);
+  assert.match(libRs, /_\s*=>\s*"设置\.\.\."/);
+  assert.match(libRs, /\.text\("open_settings",\s*settings_menu_text\(language\)\)/);
   assert.match(libRs, /fn check_for_update_menu_text\(language: &str\) -> &'static str/);
   assert.match(libRs, /"en"\s*=>\s*"Check for Updates\.\.\."/);
   assert.match(libRs, /_\s*=>\s*"检查更新\.\.\."/);
@@ -23,13 +27,34 @@ test('macOS app menu exposes check update and emits frontend event', () => {
   assert.match(libRs, /\.copy\(\)/);
   assert.match(libRs, /\.paste\(\)/);
   assert.match(libRs, /\.select_all\(\)/);
-  assert.match(libRs, /\.items\(&\[&app_menu,\s*&edit_menu\]\)/);
+  assert.match(libRs, /fn window_menu_text\(language: &str\) -> &'static str/);
+  assert.match(libRs, /"en"\s*=>\s*"Window"/);
+  assert.match(libRs, /_\s*=>\s*"窗口"/);
+  assert.match(libRs, /use tauri::menu::\{MenuBuilder,\s*MenuItemBuilder,\s*SubmenuBuilder,\s*WINDOW_SUBMENU_ID\};/);
+  assert.match(libRs, /fn close_window_menu_text\(language: &str\) -> &'static str/);
+  assert.match(libRs, /fn minimize_window_menu_text\(language: &str\) -> &'static str/);
+  assert.match(libRs, /MenuItemBuilder::with_id\("window_close",\s*close_window_menu_text\(language\)\)/);
+  assert.match(libRs, /\.accelerator\("Control\+W"\)/);
+  assert.match(libRs, /MenuItemBuilder::with_id\("window_minimize",\s*minimize_window_menu_text\(language\)\)/);
+  assert.match(libRs, /\.accelerator\("Control\+M"\)/);
+  assert.match(libRs, /SubmenuBuilder::with_id\(app,\s*WINDOW_SUBMENU_ID,\s*window_menu_text\(language\)\)/);
+  assert.match(libRs, /\.item\(&close_window_item\)/);
+  assert.match(libRs, /\.item\(&minimize_window_item\)/);
+  assert.match(libRs, /\.maximize\(\)/);
+  assert.match(libRs, /\.fullscreen\(\)/);
+  assert.match(libRs, /\.items\(&\[&app_menu,\s*&edit_menu,\s*&window_menu\]\)/);
   assert.match(libRs, /app\.on_menu_event/);
   assert.match(libRs, /event\.id\(\)\.0\.as_str\(\)/);
   assert.match(libRs, /"show_about"/);
   assert.match(libRs, /emit\("show-about"/);
+  assert.match(libRs, /"open_settings"/);
+  assert.match(libRs, /emit\("open-settings"/);
   assert.match(libRs, /"check_for_update"/);
   assert.match(libRs, /emit\("check-for-update"/);
+  assert.match(libRs, /"window_close"/);
+  assert.match(libRs, /window\.close\(\)/);
+  assert.match(libRs, /"window_minimize"/);
+  assert.match(libRs, /window\.minimize\(\)/);
 });
 
 test('custom about dialog listens for menu event and shows app metadata', () => {
@@ -57,6 +82,8 @@ test('settings panel listens for menu check update event', () => {
   );
 
   assert.match(settingsPanel, /import \{ listen \} from '@tauri-apps\/api\/event';/);
+  assert.match(settingsPanel, /listen\('open-settings'/);
+  assert.match(settingsPanel, /open\(\);/);
   assert.match(settingsPanel, /checkInstallAndNotifyAppUpdate/);
   assert.match(settingsPanel, /listen\('check-for-update'/);
   assert.match(settingsPanel, /handleMenuCheckForUpdate/);
