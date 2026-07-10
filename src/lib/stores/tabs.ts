@@ -308,6 +308,19 @@ function createTabsStore() {
         return newState;
       });
     },
+
+    renameTab: (tabId: string, filePath: string | null, fileName: string) => {
+      update(state => {
+        const newState = {
+          ...state,
+          tabs: state.tabs.map(tab =>
+            tab.id === tabId ? { ...tab, filePath, fileName } : tab
+          ),
+        };
+        saveState(newState);
+        return newState;
+      });
+    },
     
     // Update tab modified state
     updateTabModified: (tabId: string, isModified: boolean) => {

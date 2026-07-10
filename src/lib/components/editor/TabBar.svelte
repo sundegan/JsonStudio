@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
   import { t } from '$lib/i18n';
+  import { renameFile } from '$lib/services/file';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { formatShortcutKey, shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import {
@@ -30,6 +31,11 @@
   let contextMenuRef = $state<HTMLDivElement | null>(null);
   let tabsContainer = $state<HTMLDivElement | null>(null);
   let shortcuts = $state<ShortcutsSettings | null>(null);
+  let renamingTabId = $state<string | null>(null);
+  let renameValue = $state('');
+  let renameError = $state('');
+  let renameInput = $state<HTMLInputElement | null>(null);
+  let isRenaming = $state(false);
   
   // Confirm dialog state
   let isConfirmOpen = $state(false);
@@ -45,6 +51,68 @@
       return;
     }
     tabsStore.setActiveTab(tabId);
+  }
+
+  function startTabRename(tab: Tab, event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isPointerDragging) return;
+
+    tabsStore.setActiveTab(tab.id);
+    renamingTabId = tab.id;
+    renameValue = getTabDisplayName(tab);
+    renameError = '';
+    void tick().then(() => {
+      renameInput?.focus();
+      renameInput?.select();
+    });
+  }
+
+  function cancelTabRename() {
+    if (isRenaming) return;
+    renamingTabId = null;
+    renameValue = '';
+    renameError = '';
+  }
+
+  async function commitTabRename(tab: Tab) {
+    if (isRenaming || renamingTabId !== tab.id) return;
+
+    const nextName = renameValue.trim();
+    if (!nextName) {
+      renameError = 'Name is required';
+      void tick().then(() => renameInput?.focus());
+      return;
+    }
+    if (nextName === getTabDisplayName(tab)) {
+      cancelTabRename();
+      return;
+    }
+
+    isRenaming = true;
+    try {
+      const nextPath = tab.filePath ? await renameFile(tab.filePath, nextName) : null;
+      tabsStore.renameTab(tab.id, nextPath, nextName);
+      renamingTabId = null;
+      renameValue = '';
+      renameError = '';
+    } catch (error) {
+      renameError = error instanceof Error ? error.message : 'Failed to rename tab';
+      void tick().then(() => renameInput?.focus());
+    } finally {
+      isRenaming = false;
+    }
+  }
+
+  function handleTabRenameKeydown(event: KeyboardEvent, tab: Tab) {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void commitTabRename(tab);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelTabRename();
+    }
   }
 
   function handleTabsWheel(event: WheelEvent) {
@@ -165,7 +233,7 @@
     if (event.button !== 0) return;
 
     const target = event.target as HTMLElement;
-    if (target.closest('button, [role="button"]')) return;
+    if (target.closest('button, input, [role="button"]')) return;
 
     closeContextMenu();
     pointerDragStart = { tabId, x: event.clientX, y: event.clientY };
@@ -317,8 +385,12 @@
                  ? 'bg-color-mix(in srgb, var(--accent) 10%, var(--bg-secondary)) text-(--accent) !border-color-mix(in srgb, var(--accent) 30%, var(--border)) shadow-sm font-semibold' 
                  : 'text-(--text-secondary) border-transparent hover:bg-(--bg-hover)'
                }
+               {renamingTabId === tab.id ? 'tab-button-renaming' : ''}
                {dragOverTabId === tab.id ? `drag-over drag-over-${dragOverPosition}` : ''}"
         onclick={(e) => handleTabClick(tab.id, e)}
+        ondblclick={(event) => {
+          if (!(event.target as HTMLElement).closest('button, input')) startTabRename(tab, event);
+        }}
         onauxclick={(e) => handleTabMiddleClick(tab.id, e)}
         oncontextmenu={(e) => handleTabContextMenu(tab.id, e)}
         onpointerdown={(e) => handleTabPointerDown(tab.id, e)}
@@ -350,9 +422,26 @@
               </button>
             </div>
           {/if}
-          <span class="truncate block min-w-0">
-            {getTabDisplayName(tab)}
-          </span>
+          {#if renamingTabId === tab.id}
+            <input
+              class="tab-rename-input"
+              bind:this={renameInput}
+              bind:value={renameValue}
+              onblur={() => void commitTabRename(tab)}
+              onkeydown={(event) => handleTabRenameKeydown(event, tab)}
+              onclick={(event) => event.stopPropagation()}
+              onpointerdown={(event) => event.stopPropagation()}
+              aria-label="Rename tab"
+              disabled={isRenaming}
+            />
+            {#if renameError}
+              <span class="tab-rename-error" role="alert">{renameError}</span>
+            {/if}
+          {:else}
+            <span class="truncate block min-w-0">
+              {getTabDisplayName(tab)}
+            </span>
+          {/if}
         </div>
         
         <!-- Right actions: Modified dot / Close button -->
@@ -470,6 +559,38 @@
   
   .tabs-container {
     scrollbar-width: none;
+  }
+
+  .tab-rename-input {
+    width: 100%;
+    min-width: 0;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .tab-button-renaming {
+    border-color: var(--accent) !important;
+    background: var(--bg-primary) !important;
+  }
+
+  .tab-rename-error {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    padding: 3px 6px;
+    border: 1px solid var(--error, #ef4444);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--error, #ef4444);
+    font-size: 10px;
+    white-space: nowrap;
   }
 
   .tab-context-menu {

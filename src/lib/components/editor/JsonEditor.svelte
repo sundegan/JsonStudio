@@ -443,6 +443,8 @@
   // Track previous active tab ID to detect tab switches
   let prevActiveTabId = $state<string | null>(null);
   let prevActiveTabContent = $state<string>('');
+  let prevActiveTabPath = $state<string | null>(null);
+  let watchedFilePath: string | null = null;
   let isFirstSync = $state(true);
 
   function getActiveTabFromState(state: import('$lib/stores/tabs').TabsState) {
@@ -602,10 +604,15 @@
   
   // Handle file watching for active tab
   async function setupFileWatching(tab: import('$lib/stores/tabs').Tab | null) {
-    if (!tab || !tab.filePath) return;
+    const nextPath = tab?.filePath ?? null;
+    if (watchedFilePath && watchedFilePath !== nextPath) {
+      await fileWatcherService.unwatchFile(watchedFilePath);
+      watchedFilePath = null;
+    }
+    if (!tab || !nextPath || watchedFilePath === nextPath) return;
     
     try {
-      await fileWatcherService.watchFile(tab.filePath, async (changedPath) => {
+      await fileWatcherService.watchFile(nextPath, async (changedPath) => {
         const currentTab = tabsState.tabs.find(t => t.id === tab.id);
         if (!currentTab) return;
         const currentContent = getDocumentContent(currentTab.id);
@@ -629,6 +636,7 @@
           }
         }
       });
+      watchedFilePath = nextPath;
     } catch (e) {
       console.error('Failed to setup file watching:', e);
     }
@@ -654,6 +662,7 @@
         isFirstSync = false;
         prevActiveTabId = newActiveTabId;
         prevActiveTabContent = String(newActiveTabVersion);
+        prevActiveTabPath = currentTab?.filePath ?? null;
         void syncActiveTab(newTabsState);
         setupFileWatching(currentTab);
         return;
@@ -664,20 +673,22 @@
       // 2. Current tab's content changed externally (e.g., file opened into empty tab)
       const tabSwitched = oldActiveTabId !== newActiveTabId;
       const contentChangedExternally = prevActiveTabContent !== String(newActiveTabVersion);
+      const filePathChanged = prevActiveTabPath !== (currentTab?.filePath ?? null);
       
-      if (tabSwitched || contentChangedExternally) {
+      if (tabSwitched || contentChangedExternally || filePathChanged) {
         const activeContentAlreadyApplied = currentTab
           ? getDocumentContent(currentTab.id) === content
           : false;
         prevActiveTabId = newActiveTabId;
         prevActiveTabContent = String(newActiveTabVersion);
+        prevActiveTabPath = currentTab?.filePath ?? null;
         void syncActiveTab(newTabsState, {
           deferSideEffects: tabSwitched,
           hideTreeWhileDetecting: tabSwitched || !activeContentAlreadyApplied,
         });
         
-        // Setup file watching for new active tab
-        if (tabSwitched) {
+        // Update file watching when the active tab or its path changes.
+        if (tabSwitched || filePathChanged) {
           setupFileWatching(currentTab);
         }
       }

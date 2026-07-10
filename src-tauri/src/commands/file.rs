@@ -57,6 +57,36 @@ pub async fn save_file(path: String, content: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to save file: {}", e))
 }
 
+#[tauri::command]
+pub async fn rename_file(path: String, new_file_name: String) -> Result<String, String> {
+    let new_file_name = new_file_name.trim();
+    if new_file_name.is_empty()
+        || Path::new(new_file_name)
+            .file_name()
+            .and_then(|name| name.to_str())
+            != Some(new_file_name)
+    {
+        return Err("File name must not contain a path".to_string());
+    }
+
+    let source_path = PathBuf::from(&path);
+    let Some(parent) = source_path.parent() else {
+        return Err("File path has no parent directory".to_string());
+    };
+    let target_path = parent.join(new_file_name);
+    if target_path == source_path {
+        return Ok(path);
+    }
+    if target_path.exists() {
+        return Err("A file with that name already exists".to_string());
+    }
+
+    tokio::fs::rename(&source_path, &target_path)
+        .await
+        .map_err(|error| format!("Failed to rename file: {error}"))?;
+    Ok(target_path.to_string_lossy().into_owned())
+}
+
 /// Save content to a new file using save dialog
 #[tauri::command]
 pub async fn save_file_dialog(

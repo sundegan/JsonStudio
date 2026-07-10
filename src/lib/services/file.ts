@@ -17,6 +17,10 @@ export async function saveFile(path: string, content: string): Promise<void> {
   await invoke('save_file', { path, content });
 }
 
+export async function renameFile(path: string, newFileName: string): Promise<string> {
+  return await invoke<string>('rename_file', { path, newFileName });
+}
+
 /**
  * Save content to new file using save dialog
  * @returns File path or null if cancelled
