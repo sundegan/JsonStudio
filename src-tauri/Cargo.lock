@@ -2137,6 +2137,8 @@ dependencies = [
  "ab_glyph",
  "base64 0.22.1",
  "cocoa",
+ "core-foundation 0.10.1",
+ "core-graphics 0.24.0",
  "csv",
  "heck 0.5.0",
  "image",

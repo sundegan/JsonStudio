@@ -622,24 +622,12 @@
 
 <div
   class="je-toolbar"
+  class:native-macos-titlebar={platform === 'macos'}
   role="toolbar"
   tabindex="-1"
   aria-label="JSON editor toolbar"
   onmousedown={handleTitlebarMouseDown}
 >
-  {#if platform === 'macos' && !isWindowFullscreen}
-    <div class="window-controls macos toolbar-window-controls" aria-label="Window controls">
-      <button class="traffic close" type="button" aria-label="Close" onclick={closeWindow}></button>
-      <button class="traffic minimize" type="button" aria-label="Minimize" onclick={minimizeWindow}></button>
-      <button
-        class={`traffic maximize ${isWindowExpanded ? 'is-expanded' : ''}`}
-        type="button"
-        aria-label={isWindowFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-        onclick={toggleFullscreenWindow}
-      ></button>
-    </div>
-  {/if}
-
   <div class="toolbar-actions-strip">
     {#if isDiffMode}
       <!-- Diff mode: only show exit button -->
@@ -863,14 +851,13 @@
     -webkit-user-select: none;
   }
 
+  .je-toolbar.native-macos-titlebar {
+    padding-left: 75px;
+  }
+
   .je-toolbar * {
     user-select: none;
     -webkit-user-select: none;
-  }
-
-  .je-toolbar .window-controls.macos {
-    padding-left: 2px;
-    padding-right: 8px;
   }
 
   .toolbar-actions-strip {
