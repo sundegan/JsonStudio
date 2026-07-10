@@ -1649,6 +1649,24 @@
     opacity: 1;
   }
 
+  /* Reserve a real lane for the closed right panel toggle. It must not overlap
+     Monaco's native vertical scrollbar, which otherwise captures its clicks. */
+  .json-view-toggler-zone.is-closed:not(.left) {
+    width: 18px;
+    flex: 0 0 18px;
+  }
+
+  .json-view-toggler-zone.is-closed:not(.left)::before {
+    left: 0;
+    right: 0;
+  }
+
+  .json-view-toggler-zone.is-closed:not(.left) .json-view-toggle-btn {
+    left: 2px;
+    border-right: 1px solid var(--border);
+    border-radius: 7px;
+  }
+
   .json-view-toggler-zone.left.is-closed .json-view-toggle-btn {
     left: auto;
     right: -14px;
