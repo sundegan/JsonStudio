@@ -172,10 +172,12 @@
   let isConfirmOpen = $state(false);
   let confirmMessage = $state('');
   let tabToClose = $state<string | null>(null);
-  let confirmAction = $state<'close' | 'close_others' | null>(null);
+  let confirmAction = $state<'close' | 'close_others' | 'close_all' | null>(null);
 
   function handleConfirmClose() {
-    if (confirmAction === 'close_others' && tabToClose) {
+    if (confirmAction === 'close_all') {
+      tabsStore.closeAllTabs();
+    } else if (confirmAction === 'close_others' && tabToClose) {
       tabsStore.closeOtherTabs(tabToClose);
     } else if (tabToClose) {
       tabsStore.removeTab(tabToClose);
@@ -356,6 +358,11 @@
           case 'minify_escape': toolbarRef?.minifyEscapeContent(); break;
           case 'fold_all': toolbarRef?.foldAllContent(); break;
           case 'unfold_all': toolbarRef?.unfoldAllContent(); break;
+          case 'toggle_pin_tab': {
+            const currentTab = $activeTab;
+            if (currentTab) tabsStore.togglePinTab(currentTab.id);
+            break;
+          }
           case 'close_other_tabs': {
             const activeTabId = tabsState.activeTabId;
             if (activeTabId) {
@@ -368,6 +375,17 @@
               } else {
                 tabsStore.closeOtherTabs(activeTabId);
               }
+            }
+            break;
+          }
+          case 'close_all_tabs': {
+            const { shouldConfirmCloseAllTabs } = await import('$lib/stores/tabClose.js');
+            if (shouldConfirmCloseAllTabs(tabsState.tabs)) {
+              confirmAction = 'close_all';
+              confirmMessage = 'Some tabs have unsaved changes. Close all tabs anyway?';
+              isConfirmOpen = true;
+            } else {
+              tabsStore.closeAllTabs();
             }
             break;
           }

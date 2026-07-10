@@ -609,7 +609,9 @@
             {@render shortcutRow('settings.minifyEscape', 'settings.minifyEscapeDesc', shortcuts.minifyEscape)}
             {@render shortcutRow('settings.foldAll', 'settings.foldAllDesc', shortcuts.foldAll)}
             {@render shortcutRow('settings.unfoldAll', 'settings.unfoldAllDesc', shortcuts.unfoldAll)}
+            {@render shortcutRow('settings.togglePinTab', 'settings.togglePinTabDesc', shortcuts.togglePinTab)}
             {@render shortcutRow('settings.closeOtherTabs', 'settings.closeOtherTabsDesc', shortcuts.closeOtherTabs)}
+            {@render shortcutRow('settings.closeAllTabs', 'settings.closeAllTabsDesc', shortcuts.closeAllTabs)}
             {@render shortcutRow('settings.quitApp', 'settings.quitAppDesc', shortcuts.quitApp)}
           </div>
         </section>

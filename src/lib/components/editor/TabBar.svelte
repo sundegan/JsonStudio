@@ -2,6 +2,7 @@
   import { invoke } from '@tauri-apps/api/core';
   import { t } from '$lib/i18n';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
+  import { formatShortcutKey, shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import {
     shouldConfirmCloseAllTabs,
     shouldConfirmCloseOtherTabs,
@@ -28,6 +29,7 @@
   let isContextMenuOpen = $state(false);
   let contextMenuRef = $state<HTMLDivElement | null>(null);
   let tabsContainer = $state<HTMLDivElement | null>(null);
+  let shortcuts = $state<ShortcutsSettings | null>(null);
   
   // Confirm dialog state
   let isConfirmOpen = $state(false);
@@ -81,6 +83,12 @@
       tabsStore.togglePinTab(contextMenuTabId);
     }
     closeContextMenu();
+  }
+
+  function pinShortcutLabel() {
+    return shortcuts
+      ? formatShortcutKey(shortcuts.togglePinTab.currentKey)
+      : 'Cmd/Ctrl+Shift+P';
   }
 
   function handleCloseAllTabs() {
@@ -273,6 +281,7 @@
   });
 
   onMount(() => {
+    const unsubscribeShortcuts = shortcutsStore.subscribe((value) => { shortcuts = value; });
     const handleWindowClick = (event: MouseEvent) => {
       if (!isContextMenuOpen) return;
       const target = event.target as Node;
@@ -290,6 +299,7 @@
     window.addEventListener('keydown', handleWindowKeydown);
 
     return () => {
+      unsubscribeShortcuts();
       window.removeEventListener('click', handleWindowClick);
       window.removeEventListener('keydown', handleWindowKeydown);
     };
@@ -331,7 +341,7 @@
               <button
                 class="pin-button flex-shrink-0"
                 onclick={(e) => { e.stopPropagation(); tabsStore.togglePinTab(tab.id); }}
-                title="Unpin"
+                title={`Unpin (${pinShortcutLabel()})`}
                 aria-label="Unpin tab"
               >
                 <svg class="w-3 h-3 rotate-45 transform" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

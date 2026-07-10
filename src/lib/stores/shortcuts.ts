@@ -24,7 +24,9 @@ export interface ShortcutsSettings {
   minifyEscape: ShortcutConfig;
   foldAll: ShortcutConfig;
   unfoldAll: ShortcutConfig;
+  togglePinTab: ShortcutConfig;
   closeOtherTabs: ShortcutConfig;
+  closeAllTabs: ShortcutConfig;
   quitApp: ShortcutConfig;
 }
 
@@ -115,10 +117,24 @@ const defaultShortcuts: ShortcutsSettings = {
     defaultKey: 'CommandOrControl+Shift+]',
     currentKey: 'CommandOrControl+Shift+]',
   },
+  togglePinTab: {
+    id: 'toggle_pin_tab',
+    name: 'Pin or Unpin Tab',
+    description: 'Toggle the pinned state of the current tab',
+    defaultKey: 'CommandOrControl+Shift+P',
+    currentKey: 'CommandOrControl+Shift+P',
+  },
   closeOtherTabs: {
     id: 'close_other_tabs',
     name: 'Close Other Tabs',
     description: 'Close all tabs except the current one',
+    defaultKey: 'CommandOrControl+Alt+W',
+    currentKey: 'CommandOrControl+Alt+W',
+  },
+  closeAllTabs: {
+    id: 'close_all_tabs',
+    name: 'Close All Tabs',
+    description: 'Close all open tabs',
     defaultKey: 'CommandOrControl+Shift+W',
     currentKey: 'CommandOrControl+Shift+W',
   },
@@ -132,6 +148,7 @@ const defaultShortcuts: ShortcutsSettings = {
 };
 
 const STORAGE_KEY = 'jsonstudio_shortcuts';
+const CLOSE_OTHER_TABS_SHORTCUT_MIGRATION_KEY = 'jsonstudio_close_other_tabs_shortcut_v2';
 let globalShortcutUpdateQueue: Promise<void> = Promise.resolve();
 
 function getDefaultShortcuts(): ShortcutsSettings {
@@ -179,6 +196,13 @@ function createShortcutsStore() {
               current[k].currentKey = parsed[k].currentKey;
             }
           }
+          if (
+            !localStorage.getItem(CLOSE_OTHER_TABS_SHORTCUT_MIGRATION_KEY)
+            && current.closeOtherTabs.currentKey === 'CommandOrControl+Shift+W'
+          ) {
+            current.closeOtherTabs.currentKey = current.closeOtherTabs.defaultKey;
+          }
+          localStorage.setItem(CLOSE_OTHER_TABS_SHORTCUT_MIGRATION_KEY, '1');
           set(current);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
         } catch (e) {
