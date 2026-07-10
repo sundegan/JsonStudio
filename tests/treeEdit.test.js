@@ -10,7 +10,7 @@ import {
   validateTreeKeyName,
 } from '../src/lib/services/treeEdit.js';
 import { parseJsonDocument } from '../src/lib/services/jsonDocumentParse.js';
-import { buildJsonTreeModel } from '../src/lib/services/jsonTreeModel.js';
+import { buildJsonTreeModel, findJsonTreeNodeAtOffset } from '../src/lib/services/jsonTreeModel.js';
 
 test('allows object keys but not array indexes to be edited', () => {
   assert.equal(isTreeKeyEditable({ parentType: 'object' }), true);
@@ -168,6 +168,29 @@ test('tree model builds JSON5 nodes, source ranges, and path index outside the c
     result.nodeIndex.get('/items').startOffset,
     result.nodeIndex.get('/items').endOffset,
   ), '[1, 2,]');
+});
+
+test('maps editor offsets in an object property to the same Tree node', () => {
+  const content = `{
+  "people": [
+    {
+      "name": "Alice",
+      "age": 20
+    },
+    {
+      "name": "Bob",
+      "age": 30
+    }
+  ]
+}`;
+  const { nodes } = buildJsonTreeModel(content);
+  const firstNameKeyOffset = content.indexOf('"name"');
+  const firstNameSeparatorOffset = content.indexOf(':', firstNameKeyOffset);
+  const firstNameValueOffset = content.indexOf('"Alice"');
+
+  assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameKeyOffset)?.path, '/people/0/name');
+  assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameSeparatorOffset)?.path, '/people/0/name');
+  assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameValueOffset)?.path, '/people/0/name');
 });
 
 test('tree nodes share parent keys instead of copying sibling keys per node', () => {
@@ -374,7 +397,6 @@ test('tree view follows the main editor cursor position', () => {
 
   assert.match(source, /editorRef\.onCursorPositionChange\(\(\{ position \}[^)]*\) => \{/);
   assert.match(source, /syncTreeSelectionFromEditorPosition\(position\)/);
-  assert.match(source, /findTreeNodeForEditorOffset\(offset, treeNodes\)/);
   assert.match(source, /if \(!node\) \{\s*selectedPath = null;\s*return;\s*\}/);
   assert.match(source, /revealSelectedTreePath\(node\.path\)/);
   assert.match(source, /getAncestorPaths\(path\)/);

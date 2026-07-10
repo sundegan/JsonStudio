@@ -3,10 +3,8 @@
   import { t } from '$lib/i18n';
   import { createGridValueEdit, isGridEditCommitKey } from '$lib/services/gridEdit.js';
   import { openExternalUrl } from '$lib/services/externalLinks.js';
-  import {
-    getCachedJsonTreeModel,
-    getJsonTreeModelAsync,
-  } from '$lib/services/jsonTreeModelCache.js';
+  import { findJsonTreeNodeAtOffset } from '$lib/services/jsonTreeModel.js';
+  import { getCachedJsonTreeModel, getJsonTreeModelAsync } from '$lib/services/jsonTreeModelCache.js';
   import { createTreeDragMove, createTreeKeyEdit, createTreePathCopyText, createTreeValueCopyText, isTreeKeyEditable as isEditableTreeKey } from '$lib/services/treeEdit.js';
   import { runTreeQuery, type QueryMode } from '$lib/services/treeQuery';
   import ConfirmDialog from '../dialogs/ConfirmDialog.svelte';
@@ -22,6 +20,8 @@
     children?: TreeNode[];
     startOffset: number;
     endOffset: number;
+    entryStartOffset: number;
+    entryEndOffset: number;
   };
 
   type TreeEditState = {
@@ -525,26 +525,6 @@
     });
   }
 
-  function containsEditorOffset(node: TreeNode, offset: number): boolean {
-    const endOffset = node.endOffset <= node.startOffset ? node.startOffset + 1 : node.endOffset;
-    return offset >= node.startOffset && offset <= endOffset;
-  }
-
-  function findTreeNodeForEditorOffset(offset: number, nodes: TreeNode[]): TreeNode | null {
-    for (const node of nodes) {
-      if (!containsEditorOffset(node, offset)) continue;
-
-      if (node.children) {
-        const childMatch = findTreeNodeForEditorOffset(offset, node.children);
-        if (childMatch) return childMatch;
-      }
-
-      return node;
-    }
-
-    return null;
-  }
-
   function findVisibleRowIndexForPath(
     path: string,
     nodes: TreeNode[],
@@ -629,7 +609,7 @@
     if (!model) return;
 
     const offset = model.getOffsetAt(position);
-    const node = findTreeNodeForEditorOffset(offset, treeNodes);
+    const node = findJsonTreeNodeAtOffset(treeNodes, offset);
     if (!node) {
       selectedPath = null;
       return;

@@ -14,6 +14,8 @@ import { getJsonSourceValue, isJsonSourceNode } from './jsonSourceModel.js';
  *   children?: TreeNode[]
  *   startOffset: number
  *   endOffset: number
+ *   entryStartOffset: number
+ *   entryEndOffset: number
  * }} TreeNode
  */
 
@@ -22,7 +24,7 @@ import { getJsonSourceValue, isJsonSourceNode } from './jsonSourceModel.js';
  * @param {string} content
  * @returns {{
  *   rootData: unknown
- *   pointers: Record<string, { valueStart?: number, valueEnd?: number }>
+ *   pointers: Record<string, { valueStart?: number, valueEnd?: number, keyStart?: number, keyEnd?: number }>
  *   dialect: 'JSON' | 'JSON5'
  *   hasDuplicateSourceKeys: boolean
  *   nodes: TreeNode[]
@@ -65,7 +67,7 @@ export function buildJsonTreeModelFromDocument(parsed) {
 
 /**
  * @param {unknown} data
- * @param {Record<string, { valueStart?: number, valueEnd?: number }>} pointers
+ * @param {Record<string, { valueStart?: number, valueEnd?: number, keyStart?: number, keyEnd?: number }>} pointers
  * @param {string} parentPath
  * @returns {TreeNode[]}
  */
@@ -129,13 +131,15 @@ function parseToTree(data, pointers, parentPath) {
  * @param {string} path
  * @param {ParentType} parentType
  * @param {string[]} parentKeys
- * @param {Record<string, { valueStart?: number, valueEnd?: number }>} pointers
+ * @param {Record<string, { valueStart?: number, valueEnd?: number, keyStart?: number, keyEnd?: number }>} pointers
  * @returns {TreeNode}
  */
 function createTreeNode(key, sourceValue, path, parentType, parentKeys, pointers) {
   const type = getValueType(sourceValue);
   const pointerInfo = pointers[path];
   const sourceNode = isJsonSourceNode(sourceValue) ? sourceValue : null;
+  const startOffset = sourceNode?.start ?? pointerInfo?.valueStart ?? 0;
+  const endOffset = sourceNode?.end ?? pointerInfo?.valueEnd ?? 0;
   /** @type {TreeNode} */
   const node = {
     key,
@@ -144,8 +148,10 @@ function createTreeNode(key, sourceValue, path, parentType, parentKeys, pointers
     path,
     parentType,
     parentKeys,
-    startOffset: sourceNode?.start ?? pointerInfo?.valueStart ?? 0,
-    endOffset: sourceNode?.end ?? pointerInfo?.valueEnd ?? 0,
+    startOffset,
+    endOffset,
+    entryStartOffset: pointerInfo?.keyStart ?? startOffset,
+    entryEndOffset: endOffset,
   };
 
   if (type === 'object' || type === 'array') {
@@ -169,6 +175,41 @@ function indexTreeNodes(nodes) {
     if (node.children) pending.push(...node.children);
   }
   return index;
+}
+
+/**
+ * Find the most specific Tree node containing an editor offset. Object properties
+ * use a range from the key through the value, including the colon and
+ * any whitespace between them.
+ * @param {TreeNode[]} nodes
+ * @param {number} offset
+ * @returns {TreeNode | null}
+ */
+export function findJsonTreeNodeAtOffset(nodes, offset) {
+  for (const node of nodes) {
+    if (!containsSourceOffset(node, offset)) continue;
+
+    if (node.children) {
+      const childMatch = findJsonTreeNodeAtOffset(node.children, offset);
+      if (childMatch) return childMatch;
+    }
+
+    return node;
+  }
+
+  return null;
+}
+
+/** @param {TreeNode} node @param {number} offset */
+function containsSourceOffset(node, offset) {
+  return isOffsetInRange(offset, node.entryStartOffset, node.entryEndOffset);
+}
+
+/** @param {number} offset @param {number | undefined} start @param {number | undefined} end */
+function isOffsetInRange(offset, start, end) {
+  if (start == null || end == null) return false;
+  const exclusiveEnd = end <= start ? start + 1 : end;
+  return offset >= start && offset < exclusiveEnd;
 }
 
 /**
