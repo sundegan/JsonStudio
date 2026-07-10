@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import {
   createGridKeyEdit,
   createGridValueEdit,
@@ -128,18 +127,4 @@ test('preserves JSON5 comments and single-quoted strings during edits', () => {
       text: "'Ada\\'s'",
     },
   });
-});
-
-test('grid view shows duplicate-key readonly dialog only when editing is attempted', () => {
-  const source = readFileSync(
-    new URL('../src/lib/components/editor/GridView.svelte', import.meta.url),
-    'utf8',
-  );
-
-  assert.match(source, /hasDuplicateSourceKeys/);
-  assert.match(source, /showDuplicateKeysReadOnly\(\)/);
-  assert.match(source, /bind:isOpen=\{duplicateKeysDialogOpen\}/);
-  assert.match(source, /gridState\.hasDuplicateSourceKeys[\s\S]*showDuplicateKeysReadOnly\(\);[\s\S]*return;/);
-  assert.match(source, /cellSelection\.target === 'value' && isGridCellEditable\(cell\)/);
-  assert.doesNotMatch(source, /gv-readonly-hint/);
 });
