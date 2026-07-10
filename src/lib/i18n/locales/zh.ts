@@ -13,6 +13,14 @@ export default {
   'toolbar.escape': '转义',
   'toolbar.unescape': '反转义',
   'toolbar.minifyEscape': '压缩转义',
+  'toolbar.sortKeysAsc': '按 Key 升序',
+  'toolbar.sortKeysAscLabel': 'Key ↑',
+  'toolbar.sortKeysDesc': '按 Key 降序',
+  'toolbar.sortKeysDescLabel': 'Key ↓',
+  'toolbar.restoreKeyOrder': '恢复原始顺序',
+  'toolbar.restoreKeyOrderLabel': '恢复',
+  'toolbar.noContentSort': '没有可排序的内容',
+  'toolbar.sortKeysFailed': 'Key 排序失败，请检查 JSON 格式',
 
   // Toolbar - Editor view
   'toolbar.foldAll': '折叠',

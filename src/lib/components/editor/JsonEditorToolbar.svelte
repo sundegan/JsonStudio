@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { escapeString, minifyJson, unescapeString } from '$lib/services/json';
+  import { sortJsonKeys } from '$lib/services/jsonKeySort.js';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, saveBinaryFileDialog, getFileName } from '$lib/services/file';
   import { exportJsonAsImage, pngBase64ToBytes } from '$lib/services/exportImage';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
@@ -244,6 +245,18 @@
   let dropdownLeft = $state(0);
   let fileActionsDropdownTop = $state(0);
   let fileActionsDropdownLeft = $state(0);
+  type KeySortState = 'none' | 'asc' | 'desc';
+  let keySortState = $state<KeySortState>('none');
+  let keySortOriginalContent: string | null = null;
+  let lastSortedContent: string | null = null;
+
+  $effect(() => {
+    if (keySortState !== 'none' && content !== lastSortedContent) {
+      keySortState = 'none';
+      keySortOriginalContent = null;
+      lastSortedContent = null;
+    }
+  });
 
   function handleWindowClick(e: MouseEvent) {
     if (showOpenMenu && openMenuEl && !openMenuEl.contains(e.target as Node)) {
@@ -529,6 +542,41 @@
     editor?.unfoldAll();
   }
 
+  async function handleToggleKeySort() {
+    if (isProcessing) return;
+    if (keySortState === 'desc') {
+      const originalContent = keySortOriginalContent;
+      keySortState = 'none';
+      keySortOriginalContent = null;
+      lastSortedContent = null;
+      if (originalContent !== null) {
+        setContentValue(originalContent);
+        await onStatsUpdate();
+      }
+      return;
+    }
+    if (!hasContent) {
+      onToast($t('toolbar.noContentSort'), 'info');
+      return;
+    }
+
+    isProcessing = true;
+    try {
+      const nextState: KeySortState = keySortState === 'none' ? 'asc' : 'desc';
+      const source = keySortOriginalContent ?? content;
+      const sorted = sortJsonKeys(source, nextState, tabSize);
+      if (keySortState === 'none') keySortOriginalContent = content;
+      keySortState = nextState;
+      lastSortedContent = sorted;
+      setContentValue(sorted);
+      await onStatsUpdate();
+    } catch {
+      onToast($t('toolbar.sortKeysFailed'), 'error');
+    } finally {
+      isProcessing = false;
+    }
+  }
+
   async function handleOpenFile() {
     try {
       const result = await openFileDialog();
@@ -746,6 +794,24 @@
         <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
           <svg class="toolbar-icon" style="color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
           {$t('toolbar.unfoldAll')}
+        </button>
+        <button
+          class="toolbar-btn"
+          class:is-active={keySortState !== 'none'}
+          onclick={handleToggleKeySort}
+          disabled={isProcessing}
+          title={keySortState === 'none' ? $t('toolbar.sortKeysAsc') : keySortState === 'asc' ? $t('toolbar.sortKeysDesc') : $t('toolbar.restoreKeyOrder')}
+        >
+          {#if keySortState === 'desc'}
+            <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15a7 7 0 1 0 1.5-8"/><path d="M5 5v5h5"/></svg>
+            {$t('toolbar.restoreKeyOrderLabel')}
+          {:else if keySortState === 'asc'}
+            <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16m0 0-3-3m3 3 3-3"/><path d="M14 5h2m-2 5h3m-3 5h4m-4 5h5"/></svg>
+            {$t('toolbar.sortKeysDescLabel')}
+          {:else}
+            <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V4m0 0-3 3m3-3 3 3"/><path d="M14 5h5m-5 5h4m-4 5h3m-3 5h2"/></svg>
+            {$t('toolbar.sortKeysAscLabel')}
+          {/if}
         </button>
       </div>
 

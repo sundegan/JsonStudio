@@ -13,6 +13,14 @@ export default {
   'toolbar.escape': 'Escape',
   'toolbar.unescape': 'Unescape',
   'toolbar.minifyEscape': 'Min+Esc',
+  'toolbar.sortKeysAsc': 'Sort Keys Ascending',
+  'toolbar.sortKeysAscLabel': 'Key ↑',
+  'toolbar.sortKeysDesc': 'Sort Keys Descending',
+  'toolbar.sortKeysDescLabel': 'Key ↓',
+  'toolbar.restoreKeyOrder': 'Restore Original Order',
+  'toolbar.restoreKeyOrderLabel': 'Restore',
+  'toolbar.noContentSort': 'No content to sort',
+  'toolbar.sortKeysFailed': 'Unable to sort keys. Check the JSON format.',
 
   // Toolbar - Editor view
   'toolbar.foldAll': 'Fold',
