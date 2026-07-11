@@ -4,43 +4,56 @@ export default {
 
   // Toolbar - File operations
   'toolbar.new': 'New',
+  'toolbar.newTooltip': 'Create new blank JSON file',
   'toolbar.open': 'Open',
+  'toolbar.openTooltip': 'Open local JSON file or folder',
   'toolbar.save': 'Save',
 
   // Toolbar - JSON transform
   'toolbar.format': 'Prettify',
+  'toolbar.formatTooltip': 'Format and beautify JSON code',
   'toolbar.minify': 'Minify',
+  'toolbar.minifyTooltip': 'Minify JSON, removing whitespace',
   'toolbar.escape': 'Escape',
+  'toolbar.escapeTooltip': 'Escape JSON special characters',
   'toolbar.unescape': 'Unescape',
+  'toolbar.unescapeTooltip': 'Unescape JSON string',
   'toolbar.minifyEscape': 'Min+Esc',
-  'toolbar.convertToStandard': 'Convert JSONC / JSON5 to Standard JSON',
+  'toolbar.minifyEscapeTooltip': 'Minify and escape JSON',
+  'toolbar.convertToStandard': 'Convert JSONC/JSON5 to standard JSON',
   'toolbar.convertToStandardLabel': 'To JSON',
   'toolbar.noContentConvertToStandard': 'No content to convert',
   'toolbar.convertToStandardSuccess': 'Converted to standard JSON',
   'toolbar.convertToStandardFailed': 'Unable to convert. Check the JSON5 syntax.',
-  'toolbar.sortKeysAsc': 'Sort Keys Ascending',
+  'toolbar.sortKeysAsc': 'Sort keys alphabetically (A-Z)',
   'toolbar.sortKeysAscLabel': 'Key ↑',
-  'toolbar.sortKeysDesc': 'Sort Keys Descending',
+  'toolbar.sortKeysDesc': 'Sort keys alphabetically (Z-A)',
   'toolbar.sortKeysDescLabel': 'Key ↓',
-  'toolbar.restoreKeyOrder': 'Restore Original Order',
+  'toolbar.restoreKeyOrder': 'Restore original key order',
   'toolbar.restoreKeyOrderLabel': 'Restore',
   'toolbar.noContentSort': 'No content to sort',
   'toolbar.sortKeysFailed': 'Unable to sort keys. Check the JSON format.',
 
   // Toolbar - Editor view
   'toolbar.foldAll': 'Fold',
+  'toolbar.foldAllTooltip': 'Fold all JSON nodes',
   'toolbar.unfoldAll': 'Unfold',
+  'toolbar.unfoldAllTooltip': 'Unfold all JSON nodes',
   'toolbar.diff': 'Diff',
+  'toolbar.diffTooltip': 'Compare two JSON contents',
   'toolbar.exitDiff': 'Exit Diff',
+  'toolbar.exitDiffTooltip': 'Exit diff mode and return to main editor',
   'toolbar.convert': 'Convert',
+  'toolbar.convertTooltip': 'Convert JSON, YAML, XML, CSV, TOML, and more',
   'toolbar.exitConvert': 'Exit Convert',
+  'toolbar.exitConvertTooltip': 'Exit convert mode and return to main editor',
 
   // Toolbar - App controls
-  'toolbar.lightMode': 'Light Mode',
-  'toolbar.darkMode': 'Dark Mode',
-  'toolbar.settings': 'Settings',
-  'toolbar.pinToTop': 'Pin to Top',
-  'toolbar.unpinFromTop': 'Unpin from Top',
+  'toolbar.lightMode': 'Switch to light theme',
+  'toolbar.darkMode': 'Switch to dark theme',
+  'toolbar.settings': 'Open settings and shortcuts',
+  'toolbar.pinToTop': 'Keep window on top',
+  'toolbar.unpinFromTop': 'Disable window on top',
 
   // About
   'about.close': 'Close about dialog',
@@ -146,9 +159,10 @@ export default {
   'settings.resetShortcut': 'Reset to default',
   'settings.resetAllShortcuts': 'Reset All Shortcuts',
 
-  // Toolbar - Codegen
   'toolbar.codegen': 'Codegen',
+  'toolbar.codegenTooltip': 'Generate TypeScript, Java, Go, etc. models from JSON',
   'toolbar.exitCodegen': 'Exit Codegen',
+  'toolbar.exitCodegenTooltip': 'Exit codegen mode and return to main editor',
 
   // Convert
   'convert.copyResult': 'Copy result',
@@ -234,7 +248,9 @@ export default {
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',
+  'toolbar.schemaTooltip': 'Generate JSON Schema or validate JSON content against a schema',
   'toolbar.exitSchema': 'Exit Schema',
+  'toolbar.exitSchemaTooltip': 'Exit schema mode and return to main editor',
 
   // Schema
   'schema.tabGenerate': 'Generate',
@@ -251,6 +267,7 @@ export default {
 
   // Export image
   'toolbar.exportImage': 'Export Image',
+  'toolbar.exportImageTooltip': 'Beautify and export current JSON code as a high-quality PNG image',
   'toolbar.exportImageSaved': 'Image saved',
   'toolbar.exportImageFailed': 'Failed to export image',
   'toolbar.noContentExport': 'No content to export',

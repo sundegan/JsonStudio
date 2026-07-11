@@ -4,43 +4,56 @@ export default {
 
   // Toolbar - File operations
   'toolbar.new': '新建',
+  'toolbar.newTooltip': '新建空白 JSON 文件',
   'toolbar.open': '打开',
+  'toolbar.openTooltip': '打开本地 JSON 文件或文件夹',
   'toolbar.save': '保存',
 
   // Toolbar - JSON transform
   'toolbar.format': '美化',
+  'toolbar.formatTooltip': '格式化并美化 JSON 代码',
   'toolbar.minify': '压缩',
+  'toolbar.minifyTooltip': '压缩 JSON，去除空格换行',
   'toolbar.escape': '转义',
+  'toolbar.escapeTooltip': '转义特殊字符输出单行字符串',
   'toolbar.unescape': '反转义',
+  'toolbar.unescapeTooltip': '反转义字符串恢复标准 JSON',
   'toolbar.minifyEscape': '压缩转义',
-  'toolbar.convertToStandard': '将 JSONC / JSON5 转换为标准 JSON',
+  'toolbar.minifyEscapeTooltip': '压缩并转义 JSON 代码',
+  'toolbar.convertToStandard': '将 JSONC/JSON5 转为标准 JSON',
   'toolbar.convertToStandardLabel': '转 JSON',
   'toolbar.noContentConvertToStandard': '没有可转换的内容',
   'toolbar.convertToStandardSuccess': '已转换为标准 JSON',
   'toolbar.convertToStandardFailed': '转换失败，请检查 JSON5 语法',
-  'toolbar.sortKeysAsc': '按 Key 升序',
+  'toolbar.sortKeysAsc': '对键名按字母升序排列',
   'toolbar.sortKeysAscLabel': 'Key ↑',
-  'toolbar.sortKeysDesc': '按 Key 降序',
+  'toolbar.sortKeysDesc': '对键名按字母降序排列',
   'toolbar.sortKeysDescLabel': 'Key ↓',
-  'toolbar.restoreKeyOrder': '恢复原始顺序',
+  'toolbar.restoreKeyOrder': '恢复键名原始顺序',
   'toolbar.restoreKeyOrderLabel': '恢复',
   'toolbar.noContentSort': '没有可排序的内容',
   'toolbar.sortKeysFailed': 'Key 排序失败，请检查 JSON 格式',
 
   // Toolbar - Editor view
   'toolbar.foldAll': '折叠',
+  'toolbar.foldAllTooltip': '折叠所有 JSON 节点',
   'toolbar.unfoldAll': '展开',
+  'toolbar.unfoldAllTooltip': '展开所有 JSON 节点',
   'toolbar.diff': '对比',
+  'toolbar.diffTooltip': '对比两段 JSON 数据的差异',
   'toolbar.exitDiff': '退出对比',
+  'toolbar.exitDiffTooltip': '退出对比模式并返回主编辑器',
   'toolbar.convert': '格式转换',
+  'toolbar.convertTooltip': '转换 YAML、XML、TOML、CSV 等多种格式',
   'toolbar.exitConvert': '退出格式转换',
+  'toolbar.exitConvertTooltip': '退出格式转换模式并返回主编辑器',
 
   // Toolbar - App controls
-  'toolbar.lightMode': '亮色模式',
-  'toolbar.darkMode': '暗色模式',
-  'toolbar.settings': '设置',
-  'toolbar.pinToTop': '置顶',
-  'toolbar.unpinFromTop': '取消置顶',
+  'toolbar.lightMode': '切换为浅色主题',
+  'toolbar.darkMode': '切换为深色主题',
+  'toolbar.settings': '打开应用设置与快捷键配置',
+  'toolbar.pinToTop': '窗口始终置顶',
+  'toolbar.unpinFromTop': '取消窗口置顶',
 
   // About
   'about.close': '关闭关于窗口',
@@ -146,9 +159,10 @@ export default {
   'settings.resetShortcut': '重置为默认',
   'settings.resetAllShortcuts': '重置所有快捷键',
 
-  // Toolbar - Codegen
   'toolbar.codegen': '生成代码',
+  'toolbar.codegenTooltip': '根据 JSON 生成 TypeScript、Java、Go 等模型代码',
   'toolbar.exitCodegen': '退出代码生成',
+  'toolbar.exitCodegenTooltip': '退出代码生成模式并返回主编辑器',
 
   // Convert
   'convert.copyResult': '复制转换结果',
@@ -234,7 +248,9 @@ export default {
 
   // Toolbar - Schema
   'toolbar.schema': 'Schema',
+  'toolbar.schemaTooltip': '根据 JSON 自动生成 JSON Schema，并对数据进行语法校验',
   'toolbar.exitSchema': '退出 Schema',
+  'toolbar.exitSchemaTooltip': '退出 Schema 模式并返回主编辑器',
 
   // Schema
   'schema.tabGenerate': '生成',
@@ -251,6 +267,7 @@ export default {
 
   // Export image
   'toolbar.exportImage': '导出图片',
+  'toolbar.exportImageTooltip': '将当前 JSON 代码美化并导出为高画质 PNG 图片',
   'toolbar.exportImageSaved': '图片已保存',
   'toolbar.exportImageFailed': '导出图片失败',
   'toolbar.noContentExport': '没有可导出的内容',

@@ -251,6 +251,56 @@
   let keySortOriginalContent: string | null = null;
   let lastSortedContent: string | null = null;
 
+  // 自定义 Tooltip 提示状态与 Action
+  let tooltipText = $state('');
+  let tooltipX = $state(0);
+  let tooltipY = $state(0);
+
+  function tooltip(node: HTMLElement, text: string) {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    function handleEnter() {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const rect = node.getBoundingClientRect();
+        tooltipText = text;
+        tooltipX = rect.left + rect.width / 2;
+        tooltipY = rect.bottom + 6;
+      }, 150); // 150ms 延迟，比原生 title 明显快捷，又防误触
+    }
+
+    function handleLeave() {
+      if (timeout) clearTimeout(timeout);
+      tooltipText = '';
+    }
+
+    node.addEventListener('mouseenter', handleEnter);
+    node.addEventListener('mouseleave', handleLeave);
+    node.addEventListener('click', handleLeave);
+    node.addEventListener('focus', handleEnter);
+    node.addEventListener('blur', handleLeave);
+
+    return {
+      update(newText: string) {
+        if (tooltipText === text) {
+          tooltipText = newText;
+        }
+        text = newText;
+      },
+      destroy() {
+        if (timeout) clearTimeout(timeout);
+        node.removeEventListener('mouseenter', handleEnter);
+        node.removeEventListener('mouseleave', handleLeave);
+        node.removeEventListener('click', handleLeave);
+        node.removeEventListener('focus', handleEnter);
+        node.removeEventListener('blur', handleLeave);
+        if (tooltipText === text) {
+          tooltipText = '';
+        }
+      }
+    };
+  }
+
   $effect(() => {
     if (keySortState !== 'none' && content !== lastSortedContent) {
       keySortState = 'none';
@@ -701,7 +751,7 @@
     {#if isDiffMode}
       <!-- Diff mode: only show exit button -->
       <div class="toolbar-group">
-        <button class="toolbar-back-btn" onclick={onToggleDiff} title={$t('toolbar.exitDiff')}>
+        <button class="toolbar-back-btn" onclick={onToggleDiff} use:tooltip={$t('toolbar.exitDiffTooltip')}>
           <svg class="toolbar-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 12H5"/>
             <path d="M12 19l-7-7 7-7"/>
@@ -711,7 +761,7 @@
     {:else}
       <!-- 1. File operations -->
       <div class="toolbar-group">
-        <button class="toolbar-btn" onclick={handleNewFile} title="{$t('toolbar.new')} ({shortcutLabel('newFile')})">
+        <button class="toolbar-btn" onclick={handleNewFile} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
           <svg class="toolbar-icon" style="color: #0ea5e9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
           {$t('toolbar.new')}
         </button>
@@ -719,7 +769,7 @@
           <button
             class="toolbar-btn toolbar-open-btn"
             onclick={() => toggleOpenMenu()}
-            title={$t('toolbar.open')}
+            use:tooltip={$t('toolbar.openTooltip')}
           >
             <svg class="toolbar-icon" style="color: #eab308;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
             {$t('toolbar.open')}
@@ -754,7 +804,7 @@
             class="toolbar-icon-btn"
             class:is-active={showFileActionsMenu}
             onclick={toggleFileActionsMenu}
-            title={$t('toolbar.exportImage')}
+            use:tooltip={$t('toolbar.exportImageTooltip')}
             aria-label={$t('toolbar.exportImage')}
           >
             <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor">
@@ -785,34 +835,34 @@
 
       <!-- 2. JSON transform -->
       <div class="toolbar-group">
-        <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} title="{$t('toolbar.format')} ({shortcutLabel('format')})">
+        <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} use:tooltip={`${$t('toolbar.formatTooltip')} (${shortcutLabel('format')})`}>
           <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
             <path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
           </svg>
           {$t('toolbar.format')}
         </button>
-        <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing} title="{$t('toolbar.minify')} ({shortcutLabel('minify')})">
+        <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing} use:tooltip={`${$t('toolbar.minifyTooltip')} (${shortcutLabel('minify')})`}>
           <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M9 4l3 2 3-2"/><path d="M4 10h16M4 14h16"/><path d="M12 22v-4M9 20l3-2 3 2"/></svg>
           {$t('toolbar.minify')}
         </button>
-        <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing} title="{$t('toolbar.escape')} ({shortcutLabel('escape')})">
+        <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing} use:tooltip={`${$t('toolbar.escapeTooltip')} (${shortcutLabel('escape')})`}>
           <svg class="toolbar-icon" style="color: #8b5cf6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
           {$t('toolbar.escape')}
         </button>
-        <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing} title="{$t('toolbar.unescape')} ({shortcutLabel('unescape')})">
+        <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing} use:tooltip={`${$t('toolbar.unescapeTooltip')} (${shortcutLabel('unescape')})`}>
           <svg class="toolbar-icon" style="color: #6366f1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6"/></svg>
           {$t('toolbar.unescape')}
         </button>
-        <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing} title="{$t('toolbar.minifyEscape')} ({shortcutLabel('minifyEscape')})">
+        <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing} use:tooltip={`${$t('toolbar.minifyEscapeTooltip')} (${shortcutLabel('minifyEscape')})`}>
           <svg class="toolbar-icon" style="color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
           {$t('toolbar.minifyEscape')}
         </button>
-        <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing} title="{$t('toolbar.foldAll')} ({shortcutLabel('foldAll')})">
+        <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing} use:tooltip={`${$t('toolbar.foldAllTooltip')} (${shortcutLabel('foldAll')})`}>
           <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
           {$t('toolbar.foldAll')}
         </button>
-        <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} title="{$t('toolbar.unfoldAll')} ({shortcutLabel('unfoldAll')})">
+        <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} use:tooltip={`${$t('toolbar.unfoldAllTooltip')} (${shortcutLabel('unfoldAll')})`}>
           <svg class="toolbar-icon" style="color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
           {$t('toolbar.unfoldAll')}
         </button>
@@ -821,7 +871,7 @@
           class:is-active={keySortState !== 'none'}
           onclick={handleToggleKeySort}
           disabled={isProcessing}
-          title={keySortState === 'none' ? $t('toolbar.sortKeysAsc') : keySortState === 'asc' ? $t('toolbar.sortKeysDesc') : $t('toolbar.restoreKeyOrder')}
+          use:tooltip={keySortState === 'none' ? $t('toolbar.sortKeysAsc') : keySortState === 'asc' ? $t('toolbar.sortKeysDesc') : $t('toolbar.restoreKeyOrder')}
         >
           {#if keySortState === 'desc'}
             <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15a7 7 0 1 0 1.5-8"/><path d="M5 5v5h5"/></svg>
@@ -834,7 +884,7 @@
             {$t('toolbar.sortKeysAscLabel')}
           {/if}
         </button>
-        <button class="toolbar-btn" onclick={handleConvertToStandardJson} disabled={isProcessing} title={$t('toolbar.convertToStandard')}>
+        <button class="toolbar-btn" onclick={handleConvertToStandardJson} disabled={isProcessing} use:tooltip={$t('toolbar.convertToStandard')}>
           <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 5H5a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5 1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 0 5 19h1" />
             <path d="M18 19h1a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1-1.5-1.5v-4A1.5 1.5 0 0 0 19 5h-1" />
@@ -848,19 +898,19 @@
 
       <!-- 3. Diff, Convert & Codegen -->
       <div class="toolbar-group">
-        <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} title={$t('toolbar.diff')}>
+        <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} use:tooltip={$t('toolbar.diffTooltip')}>
           <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
           {$t('toolbar.diff')}
         </button>
-        <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isCodegenMode || isSchemaMode} title={isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}>
+        <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isCodegenMode || isSchemaMode} use:tooltip={isConvertMode ? $t('toolbar.exitConvertTooltip') : $t('toolbar.convertTooltip')}>
           <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 4 20 7 17 10"/><path d="M4 12v-1a3 3 0 0 1 3-3h13"/><polyline points="7 20 4 17 7 14"/><path d="M20 12v1a3 3 0 0 1-3 3H4"/></svg>
           {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
         </button>
-        <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isConvertMode || isSchemaMode} title={isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}>
+        <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isConvertMode || isSchemaMode} use:tooltip={isCodegenMode ? $t('toolbar.exitCodegenTooltip') : $t('toolbar.codegenTooltip')}>
           <svg class="toolbar-icon" style="color: #d946ef;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 1 12 7 18"/><polyline points="17 6 23 12 17 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
           {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
         </button>
-        <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isConvertMode || isCodegenMode} title={isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}>
+        <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isConvertMode || isCodegenMode} use:tooltip={isSchemaMode ? $t('toolbar.exitSchemaTooltip') : $t('toolbar.schemaTooltip')}>
           <svg class="toolbar-icon" style="color: #f59e0b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3l9 4.5v5c0 4.7-3.8 9-9 10.5C6.8 21.5 3 17.2 3 12.5v-5L12 3z"/>
             <path d="M9 12l2 2 4-4"/>
@@ -881,7 +931,7 @@
     <button
       class="toolbar-icon-btn"
       onclick={onToggleTheme}
-      title={isDarkMode ? $t('toolbar.lightMode') : $t('toolbar.darkMode')}
+      use:tooltip={isDarkMode ? $t('toolbar.lightMode') : $t('toolbar.darkMode')}
     >
       {#if isDarkMode}
         <svg class="toolbar-icon" style="color: #facc15;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -897,7 +947,7 @@
     <button
       class="toolbar-icon-btn"
       onclick={onOpenSettings}
-      title={$t('toolbar.settings')}
+      use:tooltip={$t('toolbar.settings')}
     >
       <svg class="toolbar-icon" style="color: #06b6d4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
@@ -907,7 +957,7 @@
     <button
       class="toolbar-icon-btn {isAlwaysOnTop ? 'is-active' : ''}"
       onclick={onToggleAlwaysOnTop}
-      title={isAlwaysOnTop ? $t('toolbar.unpinFromTop') : $t('toolbar.pinToTop')}
+      use:tooltip={isAlwaysOnTop ? $t('toolbar.unpinFromTop') : $t('toolbar.pinToTop')}
     >
       <svg class="toolbar-icon" style="color: #ec4899;" viewBox="0 0 24 24" fill={isAlwaysOnTop ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 1 1 1z"/>
@@ -928,6 +978,16 @@
     </div>
   {/if}
 </div>
+
+{#if tooltipText}
+  <div 
+    class="je-tooltip" 
+    style="left: {tooltipX}px; top: {tooltipY}px;"
+    role="tooltip"
+  >
+    {tooltipText}
+  </div>
+{/if}
 
 <svelte:window onclick={handleWindowClick} />
 
@@ -1201,5 +1261,33 @@
   .toolbar-back-icon {
     width: 16px;
     height: 16px;
+  }
+
+  .je-tooltip {
+    position: fixed;
+    transform: translate(-50%, 0);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    animation: je-tooltip-fade-in 0.08s ease-out;
+  }
+
+  @keyframes je-tooltip-fade-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -5px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
   }
 </style>

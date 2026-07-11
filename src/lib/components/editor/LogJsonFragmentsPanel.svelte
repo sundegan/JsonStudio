@@ -12,7 +12,7 @@
     column: number;
     raw: string;
     formatted: string;
-    kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Repaired JSON';
+    kind: string;
   }
 
   let {
@@ -35,7 +35,7 @@
 
   let selectedFragment = $derived(fragments[selectedIndex] || fragments[0] || null);
   let listWidth = $state(240);
-  let panelHeight = $state(220);
+  let panelHeight = $state(380);
   let isResizing = $state(false);
   let isHeightResizing = $state(false);
   let resultEditorContainer = $state<HTMLDivElement | null>(null);
