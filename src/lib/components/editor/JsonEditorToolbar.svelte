@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { escapeString, minifyJson, unescapeString } from '$lib/services/json';
   import { sortJsonKeys } from '$lib/services/jsonKeySort.js';
+  import { convertToStandardJson } from '$lib/services/jsonToStandard.js';
   import { openFileDialog, saveFile as writeFile, saveFileDialog, saveBinaryFileDialog, getFileName } from '$lib/services/file';
   import { exportJsonAsImage, pngBase64ToBytes } from '$lib/services/exportImage';
   import { tabsStore, type Tab } from '$lib/stores/tabs';
@@ -441,6 +442,26 @@
     }
   }
 
+  async function handleConvertToStandardJson() {
+    if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentConvertToStandard'), 'info');
+      return;
+    }
+
+    isProcessing = true;
+    try {
+      setContentValue(convertToStandardJson(content, tabSize));
+      await onStatsUpdate();
+      onToast($t('toolbar.convertToStandardSuccess'));
+    } catch (error) {
+      console.error('Convert to standard JSON failed:', error);
+      onToast($t('toolbar.convertToStandardFailed'), 'error');
+    } finally {
+      isProcessing = false;
+    }
+  }
+
   async function handleEscape() {
     if (isProcessing) return;
     if (!hasContent) {
@@ -812,6 +833,14 @@
             <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V4m0 0-3 3m3-3 3 3"/><path d="M14 5h5m-5 5h4m-4 5h3m-3 5h2"/></svg>
             {$t('toolbar.sortKeysAscLabel')}
           {/if}
+        </button>
+        <button class="toolbar-btn" onclick={handleConvertToStandardJson} disabled={isProcessing} title={$t('toolbar.convertToStandard')}>
+          <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 5H5a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5 1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 0 5 19h1" />
+            <path d="M18 19h1a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1-1.5-1.5v-4A1.5 1.5 0 0 0 19 5h-1" />
+            <path d="M7 12l4 4l6-8" />
+          </svg>
+          {$t('toolbar.convertToStandardLabel')}
         </button>
       </div>
 
