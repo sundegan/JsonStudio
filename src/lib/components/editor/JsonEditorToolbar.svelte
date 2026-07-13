@@ -20,6 +20,10 @@
   import type { Window as TauriWindow } from '@tauri-apps/api/window';
   import type MonacoEditor from './MonacoEditor.svelte';
   import { folderStore } from '$lib/stores/folder';
+  import {
+    getOppositeKeyNamingFromString,
+    tryConvertJsonStringPreservingFormat,
+  } from '$lib/services/jsonKeyNaming';
 
   type TitlebarPlatform = 'macos' | 'windows' | 'linux';
 
@@ -246,6 +250,11 @@
   let dropdownLeft = $state(0);
   let fileActionsDropdownTop = $state(0);
   let fileActionsDropdownLeft = $state(0);
+  let showTransformMoreMenu = $state(false);
+  let isFolded = $state(false);
+  let transformMoreMenuEl = $state<HTMLDivElement | null>(null);
+  let transformMoreDropdownTop = $state(0);
+  let transformMoreDropdownLeft = $state(0);
   type KeySortState = 'none' | 'asc' | 'desc';
   let keySortState = $state<KeySortState>('none');
   let keySortOriginalContent: string | null = null;
@@ -309,12 +318,57 @@
     }
   });
 
+  function checkIsFolded(): boolean {
+    const rawEditor = editor?.getEditorInstance();
+    if (!rawEditor) return false;
+    const viewState = rawEditor.saveViewState();
+    const collapsedRegions = viewState?.contributionsState?.['editor.contrib.folding']?.collapsedRegions;
+    return Array.isArray(collapsedRegions) && collapsedRegions.length > 0;
+  }
+
+  $effect(() => {
+    if (!editor) return;
+    const raw = editor.getEditorInstance();
+    if (!raw) return;
+
+    // Update initial state
+    isFolded = checkIsFolded();
+
+    // Listen to events that may change folding
+    const disposable1 = raw.onDidScrollChange(() => {
+      isFolded = checkIsFolded();
+    });
+    const disposable2 = raw.onDidChangeModelContent(() => {
+      isFolded = checkIsFolded();
+    });
+    const disposable3 = raw.onMouseDown(() => {
+      setTimeout(() => {
+        isFolded = checkIsFolded();
+      }, 50);
+    });
+    const disposable4 = raw.onKeyDown(() => {
+      setTimeout(() => {
+        isFolded = checkIsFolded();
+      }, 50);
+    });
+
+    return () => {
+      disposable1.dispose();
+      disposable2.dispose();
+      disposable3.dispose();
+      disposable4.dispose();
+    };
+  });
+
   function handleWindowClick(e: MouseEvent) {
     if (showOpenMenu && openMenuEl && !openMenuEl.contains(e.target as Node)) {
       showOpenMenu = false;
     }
     if (showFileActionsMenu && fileActionsMenuEl && !fileActionsMenuEl.contains(e.target as Node)) {
       showFileActionsMenu = false;
+    }
+    if (showTransformMoreMenu && transformMoreMenuEl && !transformMoreMenuEl.contains(e.target as Node)) {
+      showTransformMoreMenu = false;
     }
   }
 
@@ -326,6 +380,7 @@
     }
     showOpenMenu = !showOpenMenu;
     showFileActionsMenu = false;
+    showTransformMoreMenu = false;
   }
 
   function toggleFileActionsMenu() {
@@ -336,6 +391,33 @@
     }
     showFileActionsMenu = !showFileActionsMenu;
     showOpenMenu = false;
+    showTransformMoreMenu = false;
+  }
+
+  function toggleTransformMoreMenu() {
+    if (!showTransformMoreMenu && transformMoreMenuEl) {
+      const rect = transformMoreMenuEl.getBoundingClientRect();
+      transformMoreDropdownTop = rect.bottom + 5;
+      transformMoreDropdownLeft = rect.left;
+    }
+    showTransformMoreMenu = !showTransformMoreMenu;
+    showOpenMenu = false;
+    showFileActionsMenu = false;
+  }
+
+  async function handleToggleKeySortFromMenu() {
+    showTransformMoreMenu = false;
+    await handleToggleKeySort();
+  }
+
+  async function handleConvertToStandardJsonFromMenu() {
+    showTransformMoreMenu = false;
+    await handleConvertToStandardJson();
+  }
+
+  async function handleConvertKeyNamingFromMenu() {
+    showTransformMoreMenu = false;
+    await handleConvertKeyNaming();
   }
 
   async function handleOpenFolder() {
@@ -512,6 +594,36 @@
     }
   }
 
+  async function handleConvertKeyNaming() {
+    if (isProcessing) return;
+    if (!hasContent) {
+      onToast($t('toolbar.noContentKeyNaming'), 'info');
+      return;
+    }
+
+    isProcessing = true;
+    try {
+      const target = getOppositeKeyNamingFromString(content);
+      const converted = tryConvertJsonStringPreservingFormat(content, target);
+      if (converted === null) {
+        throw new Error('Invalid JSON');
+      }
+
+      setContentValue(converted);
+      await onStatsUpdate();
+      onToast(
+        target === 'snake'
+          ? $t('toolbar.keyNamingSnakeSuccess')
+          : $t('toolbar.keyNamingCamelSuccess'),
+      );
+    } catch (error) {
+      console.error('Convert JSON key naming failed:', error);
+      onToast($t('toolbar.keyNamingFailed'), 'error');
+    } finally {
+      isProcessing = false;
+    }
+  }
+
   async function handleEscape() {
     if (isProcessing) return;
     if (!hasContent) {
@@ -603,6 +715,7 @@
       return;
     }
     editor?.foldAll();
+    isFolded = true;
   }
 
   function handleUnfoldAll() {
@@ -611,6 +724,15 @@
       return;
     }
     editor?.unfoldAll();
+    isFolded = false;
+  }
+
+  function handleToggleFold() {
+    if (isFolded) {
+      handleUnfoldAll();
+    } else {
+      handleFoldAll();
+    }
   }
 
   async function handleToggleKeySort() {
@@ -837,8 +959,8 @@
       <div class="toolbar-group">
         <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} use:tooltip={`${$t('toolbar.formatTooltip')} (${shortcutLabel('format')})`}>
           <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
-            <path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
+            <path d="M10 5c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
+            <path d="M16 5c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
           </svg>
           {$t('toolbar.format')}
         </button>
@@ -858,40 +980,78 @@
           <svg class="toolbar-icon" style="color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
           {$t('toolbar.minifyEscape')}
         </button>
-        <button class="toolbar-btn" onclick={handleFoldAll} disabled={isProcessing} use:tooltip={`${$t('toolbar.foldAllTooltip')} (${shortcutLabel('foldAll')})`}>
-          <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
-          {$t('toolbar.foldAll')}
-        </button>
-        <button class="toolbar-btn" onclick={handleUnfoldAll} disabled={isProcessing} use:tooltip={`${$t('toolbar.unfoldAllTooltip')} (${shortcutLabel('unfoldAll')})`}>
-          <svg class="toolbar-icon" style="color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
-          {$t('toolbar.unfoldAll')}
-        </button>
+
         <button
           class="toolbar-btn"
-          class:is-active={keySortState !== 'none'}
-          onclick={handleToggleKeySort}
+          onclick={handleToggleFold}
           disabled={isProcessing}
-          use:tooltip={keySortState === 'none' ? $t('toolbar.sortKeysAsc') : keySortState === 'asc' ? $t('toolbar.sortKeysDesc') : $t('toolbar.restoreKeyOrder')}
+          use:tooltip={isFolded ? `${$t('toolbar.unfoldAllTooltip')} (${shortcutLabel('unfoldAll')})` : `${$t('toolbar.foldAllTooltip')} (${shortcutLabel('foldAll')})`}
         >
-          {#if keySortState === 'desc'}
-            <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15a7 7 0 1 0 1.5-8"/><path d="M5 5v5h5"/></svg>
-            {$t('toolbar.restoreKeyOrderLabel')}
-          {:else if keySortState === 'asc'}
-            <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16m0 0-3-3m3 3 3-3"/><path d="M14 5h2m-2 5h3m-3 5h4m-4 5h5"/></svg>
-            {$t('toolbar.sortKeysDescLabel')}
+          {#if isFolded}
+            <svg class="toolbar-icon" style="color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/></svg>
+            {$t('toolbar.unfoldAll')}
           {:else}
-            <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V4m0 0-3 3m3-3 3 3"/><path d="M14 5h5m-5 5h4m-4 5h3m-3 5h2"/></svg>
-            {$t('toolbar.sortKeysAscLabel')}
+            <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 4 5-4"/><path d="M7 20l5-4 5 4"/></svg>
+            {$t('toolbar.foldAll')}
           {/if}
         </button>
-        <button class="toolbar-btn" onclick={handleConvertToStandardJson} disabled={isProcessing} use:tooltip={$t('toolbar.convertToStandard')}>
-          <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 5H5a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5 1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 0 5 19h1" />
-            <path d="M18 19h1a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1-1.5-1.5v-4A1.5 1.5 0 0 0 19 5h-1" />
-            <path d="M7 12l4 4l6-8" />
-          </svg>
-          {$t('toolbar.convertToStandardLabel')}
-        </button>
+
+        <div class="toolbar-transform-more-wrap" bind:this={transformMoreMenuEl}>
+          <button
+            class="toolbar-icon-btn"
+            class:is-active={showTransformMoreMenu}
+            onclick={toggleTransformMoreMenu}
+            use:tooltip={$t('toolbar.transformMoreTooltip')}
+            aria-label={$t('toolbar.transformMoreTooltip')}
+          >
+            <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="12" r="1.8"/>
+              <circle cx="12" cy="12" r="1.8"/>
+              <circle cx="19" cy="12" r="1.8"/>
+            </svg>
+          </button>
+          {#if showTransformMoreMenu}
+            <div
+              class="toolbar-transform-more-dropdown"
+              style="top: {transformMoreDropdownTop}px; left: {transformMoreDropdownLeft}px;"
+            >
+              <button class="open-menu-item" onclick={handleToggleKeySortFromMenu} disabled={isProcessing}>
+                {#if keySortState === 'desc'}
+                  <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15a7 7 0 1 0 1.5-8"/><path d="M5 5v5h5"/></svg>
+                  <span>{$t('toolbar.restoreKeyOrderLabel')}</span>
+                {:else if keySortState === 'asc'}
+                  <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16m0 0-3-3m3 3 3-3"/><path d="M14 5h2m-2 5h3m-3 5h4m-4 5h5"/></svg>
+                  <span>{$t('toolbar.sortKeysDescLabel')}</span>
+                {:else}
+                  <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V4m0 0-3 3m3-3 3 3"/><path d="M14 5h5m-5 5h4m-4 5h3m-3 5h2"/></svg>
+                  <span>{$t('toolbar.sortKeysAscLabel')}</span>
+                {/if}
+              </button>
+              <button class="open-menu-item" onclick={handleConvertToStandardJsonFromMenu} disabled={isProcessing}>
+                <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 5H5a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5 1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 0 5 19h1" />
+                  <path d="M18 19h1a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1-1.5-1.5v-4A1.5 1.5 0 0 0 19 5h-1" />
+                  <path d="M7 12l4 4l6-8" />
+                </svg>
+                <span>{$t('toolbar.convertToStandardLabel')}</span>
+              </button>
+              <button
+                class="open-menu-item"
+                onclick={handleConvertKeyNamingFromMenu}
+                disabled={isProcessing || isConvertMode || isCodegenMode || isSchemaMode}
+                aria-label={$t('toolbar.keyNamingTooltip')}
+              >
+                <svg class="toolbar-icon" style="color: #a855f7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 18 L6.5 5 L12 18"/>
+                  <path d="M3 13h6"/>
+                  <circle cx="19" cy="14" r="4"/>
+                  <path d="M23 10v8"/>
+                </svg>
+                <span>{$t('toolbar.keyNamingLabel')}</span>
+              </button>
+            </div>
+          {/if}
+        </div>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -1049,7 +1209,8 @@
 
   /* Open dropdown */
   .toolbar-open-wrap,
-  .toolbar-file-actions-wrap {
+  .toolbar-file-actions-wrap,
+  .toolbar-transform-more-wrap {
     position: relative;
   }
 
@@ -1070,7 +1231,8 @@
   }
 
   .toolbar-open-dropdown,
-  .toolbar-file-actions-dropdown {
+  .toolbar-file-actions-dropdown,
+  .toolbar-transform-more-dropdown {
     position: fixed;
     min-width: 168px;
     background: var(--bg-primary);
@@ -1084,14 +1246,15 @@
     gap: 1px;
   }
 
-  .toolbar-file-actions-dropdown {
+  .toolbar-file-actions-dropdown,
+  .toolbar-transform-more-dropdown {
     min-width: 150px;
   }
 
   .open-menu-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     padding: 6px 8px;
     border: none;
@@ -1121,10 +1284,13 @@
   }
 
   .open-menu-item svg {
-    width: 14px;
-    height: 14px;
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    max-width: 14px !important;
     flex-shrink: 0;
     color: #eab308;
+    transform: translateY(-0.5px);
   }
 
   .open-menu-item:last-child svg {
@@ -1223,6 +1389,10 @@
     width: 15px;
     height: 15px;
     flex-shrink: 0;
+  }
+
+  .toolbar-btn .toolbar-icon {
+    transform: translateY(-0.5px);
   }
 
   .toolbar-drag-spacer {
