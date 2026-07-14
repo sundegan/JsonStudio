@@ -25,6 +25,11 @@
     tryConvertJsonStringPreservingFormat,
   } from '$lib/services/jsonKeyNaming';
 
+  type JsonEditorTarget = Pick<
+    MonacoEditor,
+    'getValue' | 'setValue' | 'minify' | 'foldAll' | 'unfoldAll' | 'getEditorInstance'
+  >;
+
   type TitlebarPlatform = 'macos' | 'windows' | 'linux';
 
   let shortcuts = $state<ShortcutsSettings | null>(null);
@@ -199,12 +204,16 @@
     isDiffMode,
     isConvertMode,
     isCodegenMode,
+    isCodegenJsonOutputActive,
     isSchemaMode,
     content,
     activeTab,
     isDarkMode,
     isAlwaysOnTop,
-    editor,
+    jsonContent,
+    jsonEditor,
+    foldEditor,
+    foldEditorReadyVersion,
     tabSize,
     onToggleDiff,
     onToggleConvert,
@@ -213,19 +222,24 @@
     onToggleTheme,
     onToggleAlwaysOnTop,
     onOpenSettings,
-    onContentChange,
+    onJsonContentChange,
     onStatsUpdate,
+    onJsonStatsUpdate,
     onToast
   } = $props<{
     isDiffMode: boolean;
     isConvertMode: boolean;
     isCodegenMode: boolean;
+    isCodegenJsonOutputActive: boolean;
     isSchemaMode: boolean;
     content: string;
     activeTab: Tab | null;
     isDarkMode: boolean;
     isAlwaysOnTop: boolean;
-    editor: MonacoEditor | null;
+    jsonContent: string;
+    jsonEditor: JsonEditorTarget | null;
+    foldEditor: JsonEditorTarget | null;
+    foldEditorReadyVersion: number;
     tabSize: number;
     onToggleDiff: () => void;
     onToggleConvert: () => void;
@@ -234,14 +248,17 @@
     onToggleTheme: () => void;
     onToggleAlwaysOnTop: () => void;
     onOpenSettings: () => void;
-    onContentChange: (value: string) => void;
+    onJsonContentChange: (value: string) => void;
     onStatsUpdate: () => Promise<void> | void;
+    onJsonStatsUpdate: () => Promise<void> | void;
     onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   }>();
 
   let isProcessing = $state(false);
   let isExporting = $state(false);
   let hasContent = $derived(Boolean(content.trim()));
+  let hasJsonContent = $derived(Boolean(jsonContent.trim()));
+  let canUseJsonTools = $derived(!isCodegenMode || isCodegenJsonOutputActive);
   let showOpenMenu = $state(false);
   let showFileActionsMenu = $state(false);
   let openMenuEl = $state<HTMLDivElement | null>(null);
@@ -311,15 +328,22 @@
   }
 
   $effect(() => {
-    if (keySortState !== 'none' && content !== lastSortedContent) {
+    if (keySortState !== 'none' && jsonContent !== lastSortedContent) {
       keySortState = 'none';
       keySortOriginalContent = null;
       lastSortedContent = null;
     }
   });
 
+  $effect(() => {
+    if (isCodegenMode) {
+      showOpenMenu = false;
+      showFileActionsMenu = false;
+    }
+  });
+
   function checkIsFolded(): boolean {
-    const rawEditor = editor?.getEditorInstance();
+    const rawEditor = foldEditor?.getEditorInstance();
     if (!rawEditor) return false;
     const viewState = rawEditor.saveViewState();
     const collapsedRegions = viewState?.contributionsState?.['editor.contrib.folding']?.collapsedRegions;
@@ -327,8 +351,9 @@
   }
 
   $effect(() => {
-    if (!editor) return;
-    const raw = editor.getEditorInstance();
+    foldEditorReadyVersion;
+    if (!foldEditor) return;
+    const raw = foldEditor.getEditorInstance();
     if (!raw) return;
 
     // Update initial state
@@ -373,6 +398,7 @@
   }
 
   function toggleOpenMenu() {
+    if (isCodegenMode) return;
     if (!showOpenMenu && openMenuEl) {
       const rect = openMenuEl.getBoundingClientRect();
       dropdownTop = rect.bottom + 5;
@@ -384,6 +410,7 @@
   }
 
   function toggleFileActionsMenu() {
+    if (isCodegenMode) return;
     if (!showFileActionsMenu && fileActionsMenuEl) {
       const rect = fileActionsMenuEl.getBoundingClientRect();
       fileActionsDropdownTop = rect.bottom + 5;
@@ -395,6 +422,7 @@
   }
 
   function toggleTransformMoreMenu() {
+    if (!canUseJsonTools) return;
     if (!showTransformMoreMenu && transformMoreMenuEl) {
       const rect = transformMoreMenuEl.getBoundingClientRect();
       transformMoreDropdownTop = rect.bottom + 5;
@@ -421,11 +449,13 @@
   }
 
   async function handleOpenFolder() {
+    if (isCodegenMode) return;
     showOpenMenu = false;
     await folderStore.openFolder();
   }
 
   function handleOpenFileFromMenu() {
+    if (isCodegenMode) return;
     showOpenMenu = false;
     handleOpenFile();
   }
@@ -446,6 +476,7 @@
   });
 
   async function handleExportImage() {
+    if (isCodegenMode) return;
     if (isExporting) return;
     if (!hasContent) {
       onToast($t('toolbar.noContentExport'), 'info');
@@ -476,9 +507,10 @@
     }
   }
 
-  function setContentValue(value: string) {
-    onContentChange(value);
-    editor?.setValue(value);
+  function setJsonContentValue(value: string) {
+    if (!canUseJsonTools) return;
+    onJsonContentChange(value);
+    jsonEditor?.setValue(value);
   }
 
   export async function formatContent() {
@@ -526,8 +558,8 @@
   }
 
   async function handleFormat() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentFormat'), 'info');
       return;
     }
@@ -535,12 +567,12 @@
 
     try {
       const { formatJson5, formatJsonText } = await import('$lib/services/json5Format.js');
-      const stats = await getJsonDocumentStatsAsync(activeTab?.id ?? 'toolbar', content);
+      const stats = await getJsonDocumentStatsAsync(activeTab?.id ?? 'toolbar', jsonContent);
       const formatted = stats.valid && stats.format_type === 'JSON5'
-        ? await formatJson5(content, tabSize)
-        : await formatJsonText(content, tabSize);
-      setContentValue(formatted);
-      await onStatsUpdate();
+        ? await formatJson5(jsonContent, tabSize)
+        : await formatJsonText(jsonContent, tabSize);
+      setJsonContentValue(formatted);
+      await onJsonStatsUpdate();
     } catch (e) {
     } finally {
       isProcessing = false;
@@ -548,25 +580,25 @@
   }
 
   async function handleMinify() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentMinify'), 'info');
       return;
     }
     isProcessing = true;
-    const contentSize = content.length;
+    const contentSize = jsonContent.length;
 
     try {
       let minified = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        minified = await minifyJson(content);
+        minified = await minifyJson(jsonContent);
       } else {
-        minified = editor?.minify() || '';
+        minified = jsonEditor?.minify() || '';
       }
 
       if (minified) {
-        setContentValue(minified);
-        await onStatsUpdate();
+        setJsonContentValue(minified);
+        await onJsonStatsUpdate();
       }
     } catch (e) {
     } finally {
@@ -575,16 +607,16 @@
   }
 
   async function handleConvertToStandardJson() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentConvertToStandard'), 'info');
       return;
     }
 
     isProcessing = true;
     try {
-      setContentValue(convertToStandardJson(content, tabSize));
-      await onStatsUpdate();
+      setJsonContentValue(convertToStandardJson(jsonContent, tabSize));
+      await onJsonStatsUpdate();
       onToast($t('toolbar.convertToStandardSuccess'));
     } catch (error) {
       console.error('Convert to standard JSON failed:', error);
@@ -595,22 +627,22 @@
   }
 
   async function handleConvertKeyNaming() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentKeyNaming'), 'info');
       return;
     }
 
     isProcessing = true;
     try {
-      const target = getOppositeKeyNamingFromString(content);
-      const converted = tryConvertJsonStringPreservingFormat(content, target);
+      const target = getOppositeKeyNamingFromString(jsonContent);
+      const converted = tryConvertJsonStringPreservingFormat(jsonContent, target);
       if (converted === null) {
         throw new Error('Invalid JSON');
       }
 
-      setContentValue(converted);
-      await onStatsUpdate();
+      setJsonContentValue(converted);
+      await onJsonStatsUpdate();
       onToast(
         target === 'snake'
           ? $t('toolbar.keyNamingSnakeSuccess')
@@ -625,24 +657,24 @@
   }
 
   async function handleEscape() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentEscape'), 'info');
       return;
     }
     isProcessing = true;
-    const contentSize = content.length;
+    const contentSize = jsonContent.length;
 
     try {
       let escaped = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        escaped = await escapeString(content);
+        escaped = await escapeString(jsonContent);
       } else {
-        escaped = JSON.stringify(content);
+        escaped = JSON.stringify(jsonContent);
       }
 
-      setContentValue(escaped);
-      await onStatsUpdate();
+      setJsonContentValue(escaped);
+      await onJsonStatsUpdate();
     } catch (e) {
     } finally {
       isProcessing = false;
@@ -650,20 +682,20 @@
   }
 
   async function handleUnescape() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentUnescape'), 'info');
       return;
     }
     isProcessing = true;
-    const contentSize = content.length;
+    const contentSize = jsonContent.length;
 
     try {
       let unescaped = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        unescaped = await unescapeString(content);
+        unescaped = await unescapeString(jsonContent);
       } else {
-        const parsed = JSON.parse(content);
+        const parsed = JSON.parse(jsonContent);
         if (typeof parsed === 'string') {
           unescaped = parsed;
         } else {
@@ -672,8 +704,8 @@
       }
 
       if (unescaped) {
-        setContentValue(unescaped);
-        await onStatsUpdate();
+        setJsonContentValue(unescaped);
+        await onJsonStatsUpdate();
       }
     } catch (e) {
     } finally {
@@ -682,26 +714,26 @@
   }
 
   async function handleMinifyEscape() {
-    if (isProcessing) return;
-    if (!hasContent) {
+    if (!canUseJsonTools || isProcessing) return;
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentProcess'), 'info');
       return;
     }
     isProcessing = true;
-    const contentSize = content.length;
+    const contentSize = jsonContent.length;
 
     try {
       let minified = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        minified = await minifyJson(content);
+        minified = await minifyJson(jsonContent);
       } else {
-        minified = editor?.minify() || '';
+        minified = jsonEditor?.minify() || '';
       }
 
       if (minified) {
         const escaped = JSON.stringify(minified);
-        setContentValue(escaped);
-        await onStatsUpdate();
+        setJsonContentValue(escaped);
+        await onJsonStatsUpdate();
       }
     } catch (e) {
     } finally {
@@ -710,20 +742,20 @@
   }
 
   function handleFoldAll() {
-    if (!hasContent) {
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentFold'), 'info');
       return;
     }
-    editor?.foldAll();
+    foldEditor?.foldAll();
     isFolded = true;
   }
 
   function handleUnfoldAll() {
-    if (!hasContent) {
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentUnfold'), 'info');
       return;
     }
-    editor?.unfoldAll();
+    foldEditor?.unfoldAll();
     isFolded = false;
   }
 
@@ -736,19 +768,19 @@
   }
 
   async function handleToggleKeySort() {
-    if (isProcessing) return;
+    if (!canUseJsonTools || isProcessing) return;
     if (keySortState === 'desc') {
       const originalContent = keySortOriginalContent;
       keySortState = 'none';
       keySortOriginalContent = null;
       lastSortedContent = null;
       if (originalContent !== null) {
-        setContentValue(originalContent);
-        await onStatsUpdate();
+        setJsonContentValue(originalContent);
+        await onJsonStatsUpdate();
       }
       return;
     }
-    if (!hasContent) {
+    if (!hasJsonContent) {
       onToast($t('toolbar.noContentSort'), 'info');
       return;
     }
@@ -756,13 +788,13 @@
     isProcessing = true;
     try {
       const nextState: KeySortState = keySortState === 'none' ? 'asc' : 'desc';
-      const source = keySortOriginalContent ?? content;
+      const source = keySortOriginalContent ?? jsonContent;
       const sorted = sortJsonKeys(source, nextState, tabSize);
-      if (keySortState === 'none') keySortOriginalContent = content;
+      if (keySortState === 'none') keySortOriginalContent = jsonContent;
       keySortState = nextState;
       lastSortedContent = sorted;
-      setContentValue(sorted);
-      await onStatsUpdate();
+      setJsonContentValue(sorted);
+      await onJsonStatsUpdate();
     } catch {
       onToast($t('toolbar.sortKeysFailed'), 'error');
     } finally {
@@ -771,6 +803,7 @@
   }
 
   async function handleOpenFile() {
+    if (isCodegenMode) return;
     try {
       const result = await openFileDialog();
       if (result) {
@@ -797,6 +830,7 @@
   }
 
   async function handleSaveFile(isAutoSave = false) {
+    if (isCodegenMode) return;
     const currentContent = content;
     if (!currentContent.trim() && !isAutoSave) {
       onToast('Nothing to save', 'info');
@@ -832,6 +866,7 @@
   }
 
   async function handleSaveAsFile() {
+    if (isCodegenMode) return;
     if (!content.trim()) {
       onToast('Nothing to save', 'info');
       return;
@@ -856,6 +891,7 @@
   }
 
   function handleNewFile() {
+    if (isCodegenMode) return;
     tabsStore.addTab();
     onToast('New tab created');
   }
@@ -883,7 +919,7 @@
     {:else}
       <!-- 1. File operations -->
       <div class="toolbar-group">
-        <button class="toolbar-btn" onclick={handleNewFile} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
+        <button class="toolbar-btn" onclick={handleNewFile} disabled={isCodegenMode} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
           <svg class="toolbar-icon" style="color: #0ea5e9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
           {$t('toolbar.new')}
         </button>
@@ -891,6 +927,7 @@
           <button
             class="toolbar-btn toolbar-open-btn"
             onclick={() => toggleOpenMenu()}
+            disabled={isCodegenMode}
             use:tooltip={$t('toolbar.openTooltip')}
           >
             <svg class="toolbar-icon" style="color: #eab308;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
@@ -904,7 +941,7 @@
               class="toolbar-open-dropdown"
               style="top: {dropdownTop}px; left: {dropdownLeft}px;"
             >
-              <button class="open-menu-item" onclick={handleOpenFileFromMenu}>
+              <button class="open-menu-item" onclick={handleOpenFileFromMenu} disabled={isCodegenMode}>
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M10 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L10 1.5z" stroke-linecap="round" stroke-linejoin="round"/>
                   <path d="M10 1.5V5.5h4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -912,7 +949,7 @@
                 <span>Open File</span>
                 <span class="open-menu-shortcut">{shortcutLabel('openFile')}</span>
               </button>
-              <button class="open-menu-item" onclick={handleOpenFolder}>
+              <button class="open-menu-item" onclick={handleOpenFolder} disabled={isCodegenMode}>
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M1 4.5a1 1 0 011-1h3.586a1 1 0 01.707.293L7.707 5.5H13a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1v-8z" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -926,6 +963,7 @@
             class="toolbar-icon-btn"
             class:is-active={showFileActionsMenu}
             onclick={toggleFileActionsMenu}
+            disabled={isCodegenMode}
             use:tooltip={$t('toolbar.exportImageTooltip')}
             aria-label={$t('toolbar.exportImage')}
           >
@@ -940,7 +978,7 @@
               class="toolbar-file-actions-dropdown"
               style="top: {fileActionsDropdownTop}px; left: {fileActionsDropdownLeft}px;"
             >
-              <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting}>
+              <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting || isCodegenMode}>
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <rect x="2" y="2" width="12" height="12" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                   <circle cx="5.5" cy="5.5" r="1" />
@@ -957,26 +995,26 @@
 
       <!-- 2. JSON transform -->
       <div class="toolbar-group">
-        <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing} use:tooltip={`${$t('toolbar.formatTooltip')} (${shortcutLabel('format')})`}>
+        <button class="toolbar-btn is-primary" onclick={handleFormat} disabled={isProcessing || !canUseJsonTools} use:tooltip={`${$t('toolbar.formatTooltip')} (${shortcutLabel('format')})`}>
           <svg class="toolbar-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M10 5c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3"/>
             <path d="M16 5c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3"/>
           </svg>
           {$t('toolbar.format')}
         </button>
-        <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing} use:tooltip={`${$t('toolbar.minifyTooltip')} (${shortcutLabel('minify')})`}>
+        <button class="toolbar-btn" onclick={handleMinify} disabled={isProcessing || !canUseJsonTools} use:tooltip={`${$t('toolbar.minifyTooltip')} (${shortcutLabel('minify')})`}>
           <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M9 4l3 2 3-2"/><path d="M4 10h16M4 14h16"/><path d="M12 22v-4M9 20l3-2 3 2"/></svg>
           {$t('toolbar.minify')}
         </button>
-        <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing} use:tooltip={`${$t('toolbar.escapeTooltip')} (${shortcutLabel('escape')})`}>
+        <button class="toolbar-btn" onclick={handleEscape} disabled={isProcessing || !canUseJsonTools} use:tooltip={`${$t('toolbar.escapeTooltip')} (${shortcutLabel('escape')})`}>
           <svg class="toolbar-icon" style="color: #8b5cf6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
           {$t('toolbar.escape')}
         </button>
-        <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing} use:tooltip={`${$t('toolbar.unescapeTooltip')} (${shortcutLabel('unescape')})`}>
+        <button class="toolbar-btn" onclick={handleUnescape} disabled={isProcessing || !canUseJsonTools} use:tooltip={`${$t('toolbar.unescapeTooltip')} (${shortcutLabel('unescape')})`}>
           <svg class="toolbar-icon" style="color: #6366f1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6"/></svg>
           {$t('toolbar.unescape')}
         </button>
-        <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing} use:tooltip={`${$t('toolbar.minifyEscapeTooltip')} (${shortcutLabel('minifyEscape')})`}>
+        <button class="toolbar-btn" onclick={handleMinifyEscape} disabled={isProcessing || !canUseJsonTools} use:tooltip={`${$t('toolbar.minifyEscapeTooltip')} (${shortcutLabel('minifyEscape')})`}>
           <svg class="toolbar-icon" style="color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
           {$t('toolbar.minifyEscape')}
         </button>
@@ -1001,6 +1039,7 @@
             class="toolbar-icon-btn"
             class:is-active={showTransformMoreMenu}
             onclick={toggleTransformMoreMenu}
+            disabled={isProcessing || !canUseJsonTools}
             use:tooltip={$t('toolbar.transformMoreTooltip')}
             aria-label={$t('toolbar.transformMoreTooltip')}
           >
@@ -1015,7 +1054,7 @@
               class="toolbar-transform-more-dropdown"
               style="top: {transformMoreDropdownTop}px; left: {transformMoreDropdownLeft}px;"
             >
-              <button class="open-menu-item" onclick={handleToggleKeySortFromMenu} disabled={isProcessing}>
+              <button class="open-menu-item" onclick={handleToggleKeySortFromMenu} disabled={isProcessing || !canUseJsonTools}>
                 {#if keySortState === 'desc'}
                   <svg class="toolbar-icon" style="color: #f97316;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15a7 7 0 1 0 1.5-8"/><path d="M5 5v5h5"/></svg>
                   <span>{$t('toolbar.restoreKeyOrderLabel')}</span>
@@ -1027,7 +1066,7 @@
                   <span>{$t('toolbar.sortKeysAscLabel')}</span>
                 {/if}
               </button>
-              <button class="open-menu-item" onclick={handleConvertToStandardJsonFromMenu} disabled={isProcessing}>
+              <button class="open-menu-item" onclick={handleConvertToStandardJsonFromMenu} disabled={isProcessing || !canUseJsonTools}>
                 <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M6 5H5a1.5 1.5 0 0 0-1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5 1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 0 5 19h1" />
                   <path d="M18 19h1a1.5 1.5 0 0 0 1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1-1.5-1.5v-4A1.5 1.5 0 0 0 19 5h-1" />
@@ -1038,7 +1077,7 @@
               <button
                 class="open-menu-item"
                 onclick={handleConvertKeyNamingFromMenu}
-                disabled={isProcessing || isConvertMode || isCodegenMode || isSchemaMode}
+                disabled={isProcessing || !canUseJsonTools || isConvertMode || isSchemaMode}
                 aria-label={$t('toolbar.keyNamingTooltip')}
               >
                 <svg class="toolbar-icon" style="color: #a855f7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1374,6 +1413,12 @@
   .toolbar-icon-btn:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
+  }
+
+  .toolbar-icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 
   .toolbar-icon-btn:active {

@@ -1,0 +1,5 @@
+[env]
+# Keep the Tree-sitter grammars used by Codegen in the application so builds
+# and tests do not depend on a runtime download.
+TSLP_LANGUAGES = "javascript,typescript,java,kotlin,go,rust,python,swift,csharp,dart,php,ruby,scala,cpp,objc,proto,thrift"
+TSLP_LINK_MODE = "static"

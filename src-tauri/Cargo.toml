@@ -42,6 +42,10 @@ base64 = "0.22.1"
 notify = "6.1"
 notify-debouncer-mini = "0.4"
 walkdir = "2.4"
+tree-sitter-language-pack = { version = "=1.8.1", default-features = false }
+
+[patch.crates-io]
+tree-sitter-language-pack = { path = "../vendor/tree-sitter-language-pack" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.25"

@@ -8,6 +8,7 @@
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import ConvertView from './ConvertView.svelte';
   import CodeGenView from './CodeGenView.svelte';
+  import type CodeGenViewType from './CodeGenView.svelte';
   import SchemaView from './SchemaView.svelte';
   import TabBar from './TabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
@@ -24,11 +25,18 @@
   import { getDocumentContent, hasDocumentContent, loadDocumentContent } from '$lib/stores/documentStore';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import AboutDialog from '$lib/components/AboutDialog.svelte';
-  import { MAX_LOG_JSON_INPUT_LENGTH } from '$lib/services/logJsonFragments.js';
   import {
-    cancelLogJsonDetection,
-    extractLogJsonFragmentsAsync,
-  } from '$lib/services/logJsonWorker.js';
+    MAX_SMART_JSON_INPUT_LENGTH,
+    isStandaloneStructuredJsonDocument,
+  } from '$lib/services/smartJsonExtraction.js';
+  import {
+    cancelSmartJsonExtraction,
+    extractSmartJsonFragmentsAsync,
+  } from '$lib/services/smartJsonExtractionWorker.js';
+  import { detectSmartCodeDefinition } from '$lib/services/smartCodeDefinition.js';
+  import type { CodegenLanguage } from '$lib/services/codegen';
+  import { detectWholeConvertFormat } from '$lib/services/convertExtraFormats.js';
+  import type { ConvertFormat } from '$lib/services/convert';
   import { cancelPasteFormat, formatPastedJsonAsync } from '$lib/services/pasteFormatWorker.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import {
@@ -44,7 +52,7 @@
     column: number;
     raw: string;
     formatted: string;
-    kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Repaired JSON';
+    kind: string;
   };
   type LogJsonDetectionState = {
     source: string;
@@ -68,6 +76,7 @@
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let logJsonTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor = $state<MonacoEditor | null>(null);
+  let codegenView = $state<CodeGenViewType | null>(null);
   let toolbarRef = $state<JsonEditorToolbar | null>(null);
   let settingsPanel = $state<SettingsPanel | null>(null);
   let isAlwaysOnTop = $state(false);
@@ -75,6 +84,14 @@
   let isConvertMode = $state(false);
   let isCodegenMode = $state(false);
   let isSchemaMode = $state(false);
+  let convertInitialFormat = $state<ConvertFormat>('yaml');
+  let convertInitialDirection = $state<'json2fmt' | 'fmt2json'>('json2fmt');
+  let codegenInitialLanguage = $state<CodegenLanguage>('typescript');
+  let codegenInitialClassName = $state('MyModel');
+  let codegenInitialDirection = $state<'json2code' | 'code2json'>('json2code');
+  let codegenJsonContent = $state('');
+  let isCodegenJsonOutputActive = $state(false);
+  let codegenEditorReadyVersion = $state(0);
   let logJsonFragments = $state<LogJsonFragment[]>([]);
   let selectedLogJsonFragmentIndex = $state(0);
   let isLogJsonPanelOpen = $state(false);
@@ -125,6 +142,14 @@
   let isEditorModelPending = $state(false);
   let editorModelSwitchTimer: ReturnType<typeof setTimeout> | null = null;
   let editorModelSwitchVersion = 0;
+
+  let jsonToolContent = $derived(
+    isCodegenMode && isCodegenJsonOutputActive ? codegenJsonContent : content,
+  );
+  let jsonToolEditor = $derived(
+    isCodegenMode && isCodegenJsonOutputActive ? codegenView : monacoEditor,
+  );
+  let foldEditor = $derived(isCodegenMode ? codegenView : monacoEditor);
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -426,7 +451,7 @@
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       if (logJsonTimer) clearTimeout(logJsonTimer);
-      cancelLogJsonDetection();
+      cancelSmartJsonExtraction();
       cancelPasteFormat();
       fileWatcherService.destroy();
       fileWatcherService.unwatchAll();
@@ -705,6 +730,16 @@
   let isMixedLogContent = $derived(logJsonSource === content && logJsonFragments.length > 0);
   let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && isMixedLogContent);
   let usesLogJsonLayout = $derived(hasLogJsonFragmentsPanel || isLogJsonDetectionPending);
+  let smartExtractionFormatLabel = $derived.by(() => {
+    if (!isMixedLogContent) return null;
+    if (
+      logJsonFragments.length === 1 &&
+      logJsonFragments[0].raw.trim() === content.trim()
+    ) {
+      return getSmartExtractionFormatLabel(logJsonFragments[0].kind);
+    }
+    return 'JSON Fragments';
+  });
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
 
   onDestroy(() => {
@@ -792,6 +827,7 @@
       isConvertMode = false;
     }
     if (isCodegenMode) {
+      handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
     }
     if (isSchemaMode) {
@@ -821,6 +857,36 @@
   //   Exit:  if originalJson5Content is set → restore it (auto-conversion was done)
   //          if originalJson5Content is empty → keep current content (standard JSON,
   //          user edits in the sub-page persist back to the main editor)
+  function handleCodegenJsonContentChange(value: string) {
+    if (isCodegenJsonOutputActive) {
+      codegenJsonContent = value;
+    }
+  }
+
+  function handleCodegenJsonOutputActiveChange(active: boolean) {
+    isCodegenJsonOutputActive = active;
+    if (!active) {
+      codegenJsonContent = '';
+    }
+  }
+
+  function handleCodegenEditorReady() {
+    codegenEditorReadyVersion += 1;
+  }
+
+  function handleJsonToolContentChange(value: string) {
+    if (isCodegenJsonOutputActive) {
+      handleCodegenJsonContentChange(value);
+      return;
+    }
+    handleToolbarContentChange(value);
+  }
+
+  async function handleJsonToolStatsUpdate() {
+    if (isCodegenJsonOutputActive) return;
+    await updateStats();
+  }
+
   async function toggleConvertMode() {
     if (isConvertMode) {
       isConvertMode = false;
@@ -851,12 +917,13 @@
       toggleDiffMode();
     }
     if (isCodegenMode) {
+      handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
     }
     if (isSchemaMode) {
       isSchemaMode = false;
     }
-    
+
     // Convert JSON5 to standard JSON if needed
     await convertJson5ToJsonIfNeeded();
     
@@ -865,6 +932,9 @@
 
   async function toggleCodegenMode() {
     if (isCodegenMode) {
+      const reverseOutput = isCodegenJsonOutputActive ? codegenJsonContent : '';
+      const hasReverseOutput = reverseOutput.trim().length > 0;
+      handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
       
       if (originalJson5Content) {
@@ -875,6 +945,15 @@
           tabsStore.updateTabContent(currentTab.id, originalJson5Content);
         }
         originalJson5Content = '';
+        await updateStats();
+      } else if (hasReverseOutput) {
+        setContentState(reverseOutput, { syncRightPanel: true });
+        monacoEditor?.setValue(reverseOutput);
+        const currentTab = $activeTab;
+        if (currentTab) {
+          tabsStore.updateTabContent(currentTab.id, reverseOutput);
+        }
+        scheduleLogJsonDetection(reverseOutput);
         await updateStats();
       } else {
         const currentTab = $activeTab;
@@ -898,6 +977,11 @@
     if (isSchemaMode) {
       isSchemaMode = false;
     }
+
+    codegenInitialLanguage = 'typescript';
+    codegenInitialClassName = 'MyModel';
+    codegenInitialDirection = 'json2code';
+    handleCodegenJsonOutputActiveChange(false);
     
     // Convert JSON5 to standard JSON if needed
     await convertJson5ToJsonIfNeeded();
@@ -938,6 +1022,7 @@
       isConvertMode = false;
     }
     if (isCodegenMode) {
+      handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
     }
     
@@ -995,12 +1080,21 @@
     isLogJsonPanelOpen = false;
   }
 
+  function getSmartExtractionFormatLabel(kind: string) {
+    switch (kind) {
+      case 'Java toString': return 'Java toString';
+      case 'Python repr': return 'Python repr';
+      case 'JS/TS Object': return 'JS/TS Object';
+      default: return kind;
+    }
+  }
+
   function resetLogJsonFragments() {
     if (logJsonTimer) {
       clearTimeout(logJsonTimer);
       logJsonTimer = null;
     }
-    cancelLogJsonDetection();
+    cancelSmartJsonExtraction();
     clearActiveLogJsonState();
     isLogJsonDetectionPending = false;
   }
@@ -1014,7 +1108,7 @@
       clearTimeout(logJsonTimer);
       logJsonTimer = null;
     }
-    cancelLogJsonDetection();
+    cancelSmartJsonExtraction();
 
     const cached = logJsonStateByTab.get(tab.id);
     if (cached?.source === value) {
@@ -1024,15 +1118,10 @@
 
     const wasMixedLogContent = logJsonFragments.length > 0;
     clearActiveLogJsonState();
-    if (tab.stats.valid && !cached) {
-      logJsonStateByTab.set(tab.id, { source: value, fragments: [] });
-      isLogJsonDetectionPending = false;
-      return false;
-    }
     const needsDetection = Boolean(
       value.trim() &&
-      value.length <= MAX_LOG_JSON_INPUT_LENGTH &&
-      (!tab.stats.valid || Boolean(cached)),
+      value.length <= MAX_SMART_JSON_INPUT_LENGTH &&
+      (!cached || cached.source !== value),
     );
     isLogJsonDetectionPending =
       needsDetection && (options.hideTreeWhileDetecting || wasMixedLogContent);
@@ -1045,9 +1134,36 @@
     fragments: LogJsonFragment[],
     updateCache = true,
   ) {
-    const isWholeDocumentJson =
-      fragments.length === 1 && fragments[0].raw.trim() === value.trim();
-    const mixedFragments = isWholeDocumentJson ? [] : fragments;
+    const isStandaloneEscapedJson =
+      fragments.length === 1 &&
+      fragments[0].kind === 'Escaped JSON' &&
+      fragments[0].raw.trim() === value.trim() &&
+      fragments[0].formatted.trim() !== value.trim();
+
+    if (isStandaloneEscapedJson) {
+      const normalized = fragments[0].formatted;
+      if (updateCache) {
+        logJsonStateByTab.set(tabId, { source: normalized, fragments: [] });
+      }
+      isLogJsonDetectionPending = false;
+      clearActiveLogJsonState();
+
+      // A standalone escaped JSON document is an input representation, not a
+      // mixed-text fragment. Decode it in the main editor and let the regular
+      // JSON detection path settle on the formatted document.
+      if ($activeTab?.id === tabId && content === value) {
+        setContentState(normalized, { syncRightPanel: true });
+        monacoEditor?.setValue(normalized);
+        tabsStore.updateTabContent(tabId, normalized);
+        scheduleLogJsonDetection(normalized, { tabId, delay: 0 });
+        void updateStats();
+      }
+      return;
+    }
+
+    const mixedFragments = isStandaloneStructuredJsonDocument(value, fragments)
+      ? []
+      : fragments;
 
     if (updateCache) {
       logJsonStateByTab.set(tabId, { source: value, fragments: mixedFragments });
@@ -1065,26 +1181,58 @@
     isLogJsonPanelOpen = true;
   }
 
+  function enterDetectedCodegen(language: CodegenLanguage, className: string) {
+    clearActiveLogJsonState();
+    isLogJsonDetectionPending = false;
+    codegenInitialLanguage = language;
+    codegenInitialClassName = className;
+    codegenInitialDirection = 'code2json';
+    codegenJsonContent = '';
+    handleCodegenJsonOutputActiveChange(true);
+    isDiffMode = false;
+    isConvertMode = false;
+    isSchemaMode = false;
+    isCodegenMode = true;
+  }
+
+  function enterDetectedConvert(format: ConvertFormat) {
+    clearActiveLogJsonState();
+    isLogJsonDetectionPending = false;
+    convertInitialFormat = format;
+    convertInitialDirection = 'fmt2json';
+    isDiffMode = false;
+    isCodegenMode = false;
+    isSchemaMode = false;
+    isConvertMode = true;
+  }
+
   function scheduleLogJsonDetection(
     value: string,
     options: { tabId?: string; delay?: number } = {},
   ) {
     if (logJsonTimer) clearTimeout(logJsonTimer);
-    cancelLogJsonDetection();
+    cancelSmartJsonExtraction();
     const tabId = options.tabId ?? $activeTab?.id;
 
-    if (!tabId || !value.trim() || value.length > MAX_LOG_JSON_INPUT_LENGTH) {
+    if (!tabId || !value.trim() || value.length > MAX_SMART_JSON_INPUT_LENGTH) {
       resetLogJsonFragments();
       return;
     }
 
     logJsonTimer = setTimeout(async () => {
       try {
-        const fragments = await extractLogJsonFragmentsAsync(value, {
+        const fragments = await extractSmartJsonFragmentsAsync(value, {
           indent: tabSize,
         }) as LogJsonFragment[];
         if ($activeTab?.id === tabId && content === value) {
-          applyLogJsonDetectionResult(tabId, value, fragments);
+          const convertFormat = detectWholeConvertFormat(fragments, value) as ConvertFormat | null;
+          // A complete code definition may contain braces that the smart
+          // extractor can interpret as JSON-like fragments. Codegen detection
+          // therefore must not depend on `fragments.length === 0`.
+          const codeDefinition = !convertFormat ? detectSmartCodeDefinition(value) : null;
+          if (convertFormat) enterDetectedConvert(convertFormat);
+          else if (codeDefinition) enterDetectedCodegen(codeDefinition.language, codeDefinition.label);
+          else applyLogJsonDetectionResult(tabId, value, fragments);
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -1357,12 +1505,16 @@
     isDiffMode={isDiffMode}
     isConvertMode={isConvertMode}
     isCodegenMode={isCodegenMode}
+    isCodegenJsonOutputActive={isCodegenJsonOutputActive}
     isSchemaMode={isSchemaMode}
     content={content}
     activeTab={$activeTab}
     isDarkMode={isDarkMode}
     isAlwaysOnTop={isAlwaysOnTop}
-    editor={monacoEditor}
+    jsonContent={jsonToolContent}
+    jsonEditor={jsonToolEditor}
+    foldEditor={foldEditor}
+    foldEditorReadyVersion={codegenEditorReadyVersion}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
     onToggleConvert={toggleConvertMode}
@@ -1371,8 +1523,9 @@
     onToggleTheme={toggleTheme}
     onToggleAlwaysOnTop={toggleAlwaysOnTop}
     onOpenSettings={openSettings}
-    onContentChange={handleToolbarContentChange}
+    onJsonContentChange={handleJsonToolContentChange}
     onStatsUpdate={updateStats}
+    onJsonStatsUpdate={handleJsonToolStatsUpdate}
     onToast={showToast}
   />
   
@@ -1452,18 +1605,27 @@
             fontSize={fontSize}
             lineHeight={lineHeight}
             tabSize={tabSize}
+            initialFormat={convertInitialFormat}
+            initialDirection={convertInitialDirection}
             onInputChange={handleToolbarContentChange}
             onToast={showToast}
             onExit={toggleConvertMode}
           />
         {:else if isCodegenMode}
           <CodeGenView
+            bind:this={codegenView}
             inputValue={content}
             theme={monacoTheme}
             fontSize={fontSize}
             lineHeight={lineHeight}
             tabSize={tabSize}
+            initialLanguage={codegenInitialLanguage}
+            initialDirection={codegenInitialDirection}
+            initialClassName={codegenInitialClassName}
             onInputChange={handleToolbarContentChange}
+            onJsonContentChange={handleCodegenJsonContentChange}
+            onJsonOutputActiveChange={handleCodegenJsonOutputActiveChange}
+            onEditorReady={handleCodegenEditorReady}
             onToast={showToast}
             onExit={toggleCodegenMode}
           />
@@ -1573,7 +1735,7 @@
       activeTab={$activeTab}
       stats={stats}
       lineCount={lineCount}
-      isMixedMode={isMixedLogContent}
+      smartExtractionFormatLabel={smartExtractionFormatLabel}
     />
   {/if}
 

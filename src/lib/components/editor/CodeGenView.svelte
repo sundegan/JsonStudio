@@ -14,7 +14,13 @@
     fontSize = 13,
     lineHeight = 20,
     tabSize = 2,
+    initialLanguage = 'typescript' as CodegenLanguage,
+    initialDirection = 'json2code' as Direction,
+    initialClassName = 'MyModel',
     onInputChange = (_value: string) => {},
+    onJsonContentChange = (_value: string) => {},
+    onJsonOutputActiveChange = (_active: boolean) => {},
+    onEditorReady = () => {},
     onToast = (_msg: string) => {},
     onExit = () => {},
   }: {
@@ -23,7 +29,13 @@
     fontSize?: number;
     lineHeight?: number;
     tabSize?: number;
+    initialLanguage?: CodegenLanguage;
+    initialDirection?: Direction;
+    initialClassName?: string;
     onInputChange?: (value: string) => void;
+    onJsonContentChange?: (value: string) => void;
+    onJsonOutputActiveChange?: (active: boolean) => void;
+    onEditorReady?: () => void;
     onToast?: (msg: string) => void;
     onExit?: () => void;
   } = $props();
@@ -37,11 +49,58 @@
   let className = $state('MyModel');
   let direction = $state<Direction>('json2code');
   let genError = $state('');
-  let isGenerating = $state(false);
   let isSyncingLeft = false;
   let genTimer: ReturnType<typeof setTimeout> | null = null;
   let copied = $state(false);
   let isLangDropdownOpen = $state(false);
+  let conversionSequence = 0;
+
+  // Custom Tooltip state and Action
+  let tooltipText = $state('');
+  let tooltipX = $state(0);
+  let tooltipY = $state(0);
+
+  function tooltip(node: HTMLElement, text: string) {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    function handleEnter() {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const rect = node.getBoundingClientRect();
+        tooltipText = text;
+        tooltipX = rect.left + rect.width / 2;
+        tooltipY = rect.bottom + 6;
+      }, 150); // 150ms delay
+    }
+
+    function handleLeave() {
+      if (timeout) clearTimeout(timeout);
+      tooltipText = '';
+    }
+
+    node.addEventListener('mouseenter', handleEnter);
+    node.addEventListener('mouseleave', handleLeave);
+    node.addEventListener('click', handleLeave);
+    node.addEventListener('focus', handleEnter);
+    node.addEventListener('blur', handleLeave);
+
+    return {
+      update(newText: string) {
+        if (tooltipText === text) {
+          tooltipText = newText;
+        }
+        text = newText;
+      },
+      destroy() {
+        if (timeout) clearTimeout(timeout);
+        node.removeEventListener('mouseenter', handleEnter);
+        node.removeEventListener('mouseleave', handleLeave);
+        node.removeEventListener('click', handleLeave);
+        node.removeEventListener('focus', handleEnter);
+        node.removeEventListener('blur', handleLeave);
+      }
+    };
+  }
 
   function toggleLangDropdown(e: Event) {
     e.stopPropagation();
@@ -49,6 +108,7 @@
   }
 
   function selectLanguage(langId: CodegenLanguage) {
+    invalidateConversion();
     selectedLang = langId;
     isLangDropdownOpen = false;
   }
@@ -103,10 +163,11 @@
 
   $effect(() => {
     const lang = selectedLang;
-    const cls = className;
     const dir = direction;
+    const cls = dir === 'json2code' ? className : null;
     if (dir === 'code2json' && !supportsReverse(lang)) {
       direction = 'json2code';
+      onJsonOutputActiveChange(false);
       return;
     }
     if (pendingLang !== lang || pendingClassName !== cls || pendingDirection !== dir) {
@@ -118,31 +179,43 @@
     }
   });
 
+  function invalidateConversion() {
+    conversionSequence += 1;
+    if (genTimer) {
+      clearTimeout(genTimer);
+      genTimer = null;
+    }
+  }
+
   async function doConvert(content: string) {
+    const requestId = ++conversionSequence;
     if (!content.trim()) {
       if (rightEditor) rightEditor.setValue('');
       genError = '';
       return;
     }
-    if (isGenerating) return;
-    isGenerating = true;
     genError = '';
 
+    const requestDirection = direction;
+    const requestLanguage = selectedLang;
+    const requestClassName = className;
+
     try {
-      const lang = selectedLang;
       let result: string;
-      if (direction === 'json2code') {
-        result = await generateCode(content, lang, className);
+      if (requestDirection === 'json2code') {
+        result = await generateCode(content, requestLanguage, requestClassName);
+        if (requestId !== conversionSequence) return;
         if (rightEditor) {
           const model = rightEditor.getModel();
           if (model) {
-            const langInfo = CODEGEN_LANGUAGES.find(l => l.id === lang);
+            const langInfo = CODEGEN_LANGUAGES.find(l => l.id === requestLanguage);
             monaco?.editor.setModelLanguage(model, langInfo?.monacoLang || 'plaintext');
           }
           rightEditor.setValue(result);
         }
       } else {
-        result = await codeToJson(content, lang, className);
+        result = await codeToJson(content, requestLanguage);
+        if (requestId !== conversionSequence) return;
         if (rightEditor) {
           const model = rightEditor.getModel();
           if (model) {
@@ -152,23 +225,26 @@
         }
       }
     } catch (e: any) {
+      if (requestId !== conversionSequence) return;
       genError = typeof e === 'string' ? e : e?.message || 'Conversion failed';
       if (rightEditor) rightEditor.setValue('');
-    } finally {
-      isGenerating = false;
     }
   }
 
   function handleLeftChange(value: string) {
     if (isSyncingLeft) return;
+    invalidateConversion();
     if (direction === 'json2code') {
       onInputChange(value);
     }
-    if (genTimer) clearTimeout(genTimer);
-    genTimer = setTimeout(() => doConvert(value), 300);
+    genTimer = setTimeout(() => {
+      genTimer = null;
+      void doConvert(value);
+    }, 300);
   }
 
   function handleClassNameInput(e: Event) {
+    invalidateConversion();
     className = (e.target as HTMLInputElement).value;
   }
 
@@ -179,7 +255,9 @@
     const oldLeft = leftEditor?.getValue() || '';
     const oldRight = rightEditor?.getValue() || '';
 
+    invalidateConversion();
     direction = direction === 'json2code' ? 'code2json' : 'json2code';
+    onJsonOutputActiveChange(direction === 'code2json');
 
     if (leftEditor && rightEditor && monaco) {
       isSyncingLeft = true;
@@ -204,8 +282,6 @@
       isSyncingLeft = false;
       genError = '';
 
-      // Trigger conversion with new content
-      doConvert(oldRight);
     }
   }
 
@@ -220,17 +296,46 @@
     } catch (_) {}
   }
 
-  function updateLeftLanguage() {
-    if (!leftEditor || !monaco) return;
-    const model = leftEditor.getModel();
+  export function getValue(): string {
+    return rightEditor?.getValue() || '';
+  }
+
+  export function setValue(value: string) {
+    const model = rightEditor?.getModel();
     if (!model) return;
-    if (direction === 'code2json') {
-      const langInfo = CODEGEN_LANGUAGES.find(l => l.id === selectedLang);
-      monaco.editor.setModelLanguage(model, langInfo?.monacoLang || 'plaintext');
+    model.pushEditOperations([], [{ range: model.getFullModelRange(), text: value }], () => null);
+  }
+
+  export function minify(): string {
+    const value = getValue();
+    try {
+      return JSON.stringify(JSON.parse(value));
+    } catch (_) {
+      return value;
     }
   }
 
+  export function foldAll() {
+    const editor = rightEditor;
+    if (!editor) return;
+    void editor.getAction('editor.foldAll')?.run();
+  }
+
+  export function unfoldAll() {
+    const editor = rightEditor;
+    if (!editor) return;
+    void editor.getAction('editor.unfoldAll')?.run();
+  }
+
+  export function getEditorInstance() {
+    return rightEditor;
+  }
+
   onMount(async () => {
+    selectedLang = initialLanguage;
+    className = initialClassName;
+    direction = initialDirection;
+
     const monacoInstance = await initMonaco();
     monaco = monacoInstance;
     registerMonacoThemes(monacoInstance);
@@ -247,6 +352,10 @@
       renderLineHighlight: 'line' as const,
       lineNumbersMinChars: 3,
       tabSize,
+      folding: true,
+      foldingStrategy: 'indentation',
+      glyphMargin: true,
+      showFoldingControls: 'always',
     };
 
     leftEditor = monacoInstance.editor.create(leftContainer, {
@@ -262,6 +371,14 @@
       readOnly: true,
     });
 
+    rightEditor.onDidChangeModelContent(() => {
+      if (direction === 'code2json') {
+        onJsonContentChange(rightEditor?.getValue() || '');
+      }
+    });
+    onEditorReady();
+    onJsonOutputActiveChange(direction === 'code2json');
+
     leftEditor!.onDidChangeModelContent(() => {
       if (isSyncingLeft) return;
       handleLeftChange(leftEditor!.getValue());
@@ -271,17 +388,21 @@
   });
 
   onDestroy(() => {
-    if (genTimer) clearTimeout(genTimer);
+    invalidateConversion();
+    onJsonOutputActiveChange(false);
+    onJsonContentChange('');
     leftEditor?.dispose();
     rightEditor?.dispose();
   });
 
-  // When language changes in code2json mode, update left editor language
+  // Keep the source editor language aligned with the selected reverse parser.
   $effect(() => {
-    const _lang = selectedLang;
-    if (direction === 'code2json') {
-      updateLeftLanguage();
-    }
+    const language = selectedLang;
+    if (direction !== 'code2json' || !leftEditor || !monaco) return;
+    const model = leftEditor.getModel();
+    if (!model) return;
+    const langInfo = CODEGEN_LANGUAGES.find(l => l.id === language);
+    monaco.editor.setModelLanguage(model, langInfo?.monacoLang || 'plaintext');
   });
 </script>
 
@@ -291,7 +412,12 @@
     <div class="cg-pane">
       <div class="cg-pane-header">
         <div class="cg-pane-header-left">
-          <button class="cg-back-btn" onclick={onExit} title={$t('toolbar.exitCodegen')}>
+          <button
+            class="cg-back-btn"
+            onclick={onExit}
+            use:tooltip={$t('toolbar.exitCodegen')}
+            aria-label={$t('toolbar.exitCodegen')}
+          >
             <svg class="cg-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 12H5"/>
               <path d="M12 19l-7-7 7-7"/>
@@ -326,16 +452,6 @@
                 </div>
               {/if}
             </div>
-            <div class="cg-classname-wrap">
-              <input
-                class="cg-classname-input"
-                type="text"
-                value={className}
-                oninput={handleClassNameInput}
-                placeholder={$t('codegen.classNamePlaceholder')}
-                spellcheck="false"
-              />
-            </div>
           {/if}
         </div>
       </div>
@@ -351,7 +467,8 @@
         class="cg-divider-icon"
         class:is-disabled={!canReverse}
         onclick={toggleDirection}
-        title={canReverse ? $t('codegen.toggleDirection') : $t('codegen.reverseNotSupported')}
+        use:tooltip={canReverse ? $t('codegen.toggleDirection') : $t('codegen.reverseNotSupported')}
+        aria-label={canReverse ? $t('codegen.toggleDirection') : $t('codegen.reverseNotSupported')}
         disabled={!canReverse}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -366,6 +483,7 @@
     <div class="cg-pane">
       <div class="cg-pane-header">
         <div class="cg-header-controls">
+          <div class="cg-header-gutter-spacer"></div>
           {#if direction === 'json2code'}
             <div class="cg-custom-select-wrap">
               <button class="cg-custom-select" onclick={toggleLangDropdown}>
@@ -411,7 +529,8 @@
           <button
             class="cg-action-btn {copied ? 'is-copied' : ''}"
             onclick={copyResult}
-            title={$t('codegen.copyResult')}
+            use:tooltip={$t('codegen.copyResult')}
+            aria-label={$t('codegen.copyResult')}
             disabled={!!genError}
           >
             {#if copied}
@@ -445,6 +564,16 @@
     </div>
   </div>
 </div>
+
+{#if tooltipText}
+  <div
+    class="cg-tooltip"
+    style="left: {tooltipX}px; top: {tooltipY}px;"
+    role="tooltip"
+  >
+    {tooltipText}
+  </div>
+{/if}
 
 <style>
   .cg {
@@ -529,6 +658,11 @@
     gap: 8px;
   }
 
+  .cg-header-gutter-spacer {
+    width: 26px;
+    flex-shrink: 0;
+  }
+
   /* Custom Select */
   .cg-custom-select-wrap {
     position: relative;
@@ -542,28 +676,28 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    border: 1.5px solid color-mix(in srgb, #8b5cf6 30%, var(--border));
-    border-radius: 8px;
-    background: color-mix(in srgb, #8b5cf6 8%, transparent);
-    color: #8b5cf6;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     min-width: 100px;
     justify-content: space-between;
   }
 
   .cg-custom-select:hover {
-    background: color-mix(in srgb, #8b5cf6 15%, transparent);
-    border-color: color-mix(in srgb, #8b5cf6 50%, var(--border));
+    background: var(--bg-hover);
+    border-color: var(--text-tertiary);
   }
 
   .cg-select-arrow {
     width: 14px;
     height: 14px;
     transition: transform 0.2s ease;
-    opacity: 0.8;
+    opacity: 0.6;
   }
 
   .cg-select-arrow.is-open {
@@ -575,13 +709,13 @@
     top: calc(100% + 6px);
     left: 0;
     min-width: 160px;
-    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    padding: 4px;
     z-index: 100;
     display: flex;
     flex-direction: column;
@@ -598,15 +732,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
+    padding: 6px 10px;
     border: none;
-    border-radius: 6px;
+    border-radius: 5px;
     background: transparent;
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.12s ease;
     text-align: left;
   }
 
@@ -616,8 +750,8 @@
   }
 
   .cg-dropdown-item.is-active {
-    background: color-mix(in srgb, #8b5cf6 15%, transparent);
-    color: #8b5cf6;
+    background: var(--accent-glow);
+    color: var(--accent);
   }
 
   .cg-classname-wrap {
@@ -629,31 +763,30 @@
     width: 140px;
     height: 28px;
     padding: 0 12px;
-    border: 1.5px solid color-mix(in srgb, #f43f5e 30%, var(--border));
-    border-radius: 8px;
-    background: color-mix(in srgb, #f43f5e 8%, transparent);
-    color: #f43f5e;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     font-size: 12px;
-    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-    font-weight: 700;
+    font-weight: 500;
     outline: none;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
   }
 
   .cg-classname-input:hover {
-    background: color-mix(in srgb, #f43f5e 15%, transparent);
-    border-color: color-mix(in srgb, #f43f5e 50%, var(--border));
+    background: var(--bg-hover);
+    border-color: var(--text-tertiary);
   }
 
   .cg-classname-input:focus {
-    border-color: #f43f5e;
-    background: color-mix(in srgb, #f43f5e 12%, var(--bg-primary));
-    box-shadow: 0 0 0 2px color-mix(in srgb, #f43f5e 20%, transparent);
+    border-color: var(--accent);
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 2px var(--accent-glow);
   }
 
   .cg-classname-input::placeholder {
-    color: color-mix(in srgb, #f43f5e 50%, var(--text-tertiary));
-    font-weight: 500;
+    color: var(--text-tertiary);
+    font-weight: 400;
   }
 
   .cg-pane-actions {
@@ -681,33 +814,34 @@
   .cg-divider-icon {
     width: 36px;
     height: 36px;
-    border-radius: 10px;
-    background: color-mix(in srgb, #8b5cf6 10%, var(--bg-primary));
-    border: 1px solid color-mix(in srgb, #8b5cf6 30%, var(--border));
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #8b5cf6;
+    color: var(--text-secondary);
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    animation: cg-pulse 2s ease-in-out 3;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 15;
   }
 
   .cg-divider-icon:hover:not(:disabled) {
-    background: #8b5cf6;
-    border-color: #8b5cf6;
-    color: white;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 6px 16px var(--accent-glow);
+    transform: translate(-50%, -50%) scale(1.12);
   }
 
   .cg-divider-icon:active:not(:disabled) {
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: translate(-50%, -50%) scale(0.92);
   }
 
   .cg-divider-icon.is-disabled {
@@ -715,18 +849,17 @@
     cursor: not-allowed;
     background: var(--bg-secondary);
     color: var(--text-tertiary);
-    animation: none;
     border-color: var(--border);
   }
 
   .cg-divider-icon svg {
     width: 20px;
     height: 20px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  @keyframes cg-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.3); }
-    50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+  .cg-divider-icon:hover:not(:disabled) svg {
+    transform: rotate(180deg);
   }
 
   /* Action button */
@@ -734,9 +867,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: 1px solid transparent;
+    width: 26px;
+    height: 26px;
+    border: none;
     border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
@@ -745,8 +878,7 @@
   }
 
   .cg-action-btn:hover:not(:disabled) {
-    background: var(--bg-primary);
-    border-color: var(--border);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
@@ -757,8 +889,7 @@
 
   .cg-action-btn.is-copied {
     color: var(--success);
-    background: color-mix(in srgb, var(--success) 15%, transparent);
-    border-color: color-mix(in srgb, var(--success) 30%, transparent);
+    background: color-mix(in srgb, var(--success) 12%, transparent);
   }
 
   .cg-action-icon {
@@ -797,5 +928,34 @@
   .cg-editor-mount {
     width: 100%;
     height: 100%;
+  }
+
+  /* Tooltip */
+  .cg-tooltip {
+    position: fixed;
+    transform: translate(-50%, 0);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    animation: cg-tooltip-fade-in 0.08s ease-out;
+  }
+
+  @keyframes cg-tooltip-fade-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -5px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
   }
 </style>
