@@ -25,17 +25,12 @@
   import { getDocumentContent, hasDocumentContent, loadDocumentContent } from '$lib/stores/documentStore';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import AboutDialog from '$lib/components/AboutDialog.svelte';
+  import { canExtractLogJsonFragments } from '$lib/services/logJsonFragments.js';
   import {
-    MAX_SMART_JSON_INPUT_LENGTH,
-    isStandaloneStructuredJsonDocument,
-  } from '$lib/services/smartJsonExtraction.js';
-  import {
-    cancelSmartJsonExtraction,
-    extractSmartJsonFragmentsAsync,
-  } from '$lib/services/smartJsonExtractionWorker.js';
-  import { detectSmartCodeDefinition } from '$lib/services/smartCodeDefinition.js';
+    cancelLogJsonDetection,
+    extractLogJsonFragmentsAsync,
+  } from '$lib/services/logJsonWorker.js';
   import type { CodegenLanguage } from '$lib/services/codegen';
-  import { detectWholeConvertFormat } from '$lib/services/convertExtraFormats.js';
   import type { ConvertFormat } from '$lib/services/convert';
   import { cancelPasteFormat, formatPastedJsonAsync } from '$lib/services/pasteFormatWorker.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
@@ -451,7 +446,7 @@
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       if (logJsonTimer) clearTimeout(logJsonTimer);
-      cancelSmartJsonExtraction();
+      cancelLogJsonDetection();
       cancelPasteFormat();
       fileWatcherService.destroy();
       fileWatcherService.unwatchAll();
@@ -730,16 +725,6 @@
   let isMixedLogContent = $derived(logJsonSource === content && logJsonFragments.length > 0);
   let hasLogJsonFragmentsPanel = $derived(isLogJsonPanelOpen && isMixedLogContent);
   let usesLogJsonLayout = $derived(hasLogJsonFragmentsPanel || isLogJsonDetectionPending);
-  let smartExtractionFormatLabel = $derived.by(() => {
-    if (!isMixedLogContent) return null;
-    if (
-      logJsonFragments.length === 1 &&
-      logJsonFragments[0].raw.trim() === content.trim()
-    ) {
-      return getSmartExtractionFormatLabel(logJsonFragments[0].kind);
-    }
-    return 'JSON Fragments';
-  });
   let monacoTheme = $derived<EditorTheme>(isDarkMode ? settings.darkTheme : settings.lightTheme);
 
   onDestroy(() => {
@@ -1080,21 +1065,12 @@
     isLogJsonPanelOpen = false;
   }
 
-  function getSmartExtractionFormatLabel(kind: string) {
-    switch (kind) {
-      case 'Java toString': return 'Java toString';
-      case 'Python repr': return 'Python repr';
-      case 'JS/TS Object': return 'JS/TS Object';
-      default: return kind;
-    }
-  }
-
   function resetLogJsonFragments() {
     if (logJsonTimer) {
       clearTimeout(logJsonTimer);
       logJsonTimer = null;
     }
-    cancelSmartJsonExtraction();
+    cancelLogJsonDetection();
     clearActiveLogJsonState();
     isLogJsonDetectionPending = false;
   }
@@ -1108,7 +1084,7 @@
       clearTimeout(logJsonTimer);
       logJsonTimer = null;
     }
-    cancelSmartJsonExtraction();
+    cancelLogJsonDetection();
 
     const cached = logJsonStateByTab.get(tab.id);
     if (cached?.source === value) {
@@ -1118,11 +1094,7 @@
 
     const wasMixedLogContent = logJsonFragments.length > 0;
     clearActiveLogJsonState();
-    const needsDetection = Boolean(
-      value.trim() &&
-      value.length <= MAX_SMART_JSON_INPUT_LENGTH &&
-      (!cached || cached.source !== value),
-    );
+    const needsDetection = canExtractLogJsonFragments(value);
     isLogJsonDetectionPending =
       needsDetection && (options.hideTreeWhileDetecting || wasMixedLogContent);
     return needsDetection;
@@ -1134,36 +1106,15 @@
     fragments: LogJsonFragment[],
     updateCache = true,
   ) {
-    const isStandaloneEscapedJson =
+    // Only standard JSON can be handled by the main editor itself, so a
+    // single whole-document fragment is redundant. Non-standard whole-document
+    // content (Go fmt, JSON5, language print output, ...) is not parseable in
+    // the editor and must still surface through the fragments panel.
+    const isWholeDocumentJson =
       fragments.length === 1 &&
-      fragments[0].kind === 'Escaped JSON' &&
-      fragments[0].raw.trim() === value.trim() &&
-      fragments[0].formatted.trim() !== value.trim();
-
-    if (isStandaloneEscapedJson) {
-      const normalized = fragments[0].formatted;
-      if (updateCache) {
-        logJsonStateByTab.set(tabId, { source: normalized, fragments: [] });
-      }
-      isLogJsonDetectionPending = false;
-      clearActiveLogJsonState();
-
-      // A standalone escaped JSON document is an input representation, not a
-      // mixed-text fragment. Decode it in the main editor and let the regular
-      // JSON detection path settle on the formatted document.
-      if ($activeTab?.id === tabId && content === value) {
-        setContentState(normalized, { syncRightPanel: true });
-        monacoEditor?.setValue(normalized);
-        tabsStore.updateTabContent(tabId, normalized);
-        scheduleLogJsonDetection(normalized, { tabId, delay: 0 });
-        void updateStats();
-      }
-      return;
-    }
-
-    const mixedFragments = isStandaloneStructuredJsonDocument(value, fragments)
-      ? []
-      : fragments;
+      fragments[0].kind === 'JSON' &&
+      fragments[0].raw.trim() === value.trim();
+    const mixedFragments = isWholeDocumentJson ? [] : fragments;
 
     if (updateCache) {
       logJsonStateByTab.set(tabId, { source: value, fragments: mixedFragments });
@@ -1181,58 +1132,26 @@
     isLogJsonPanelOpen = true;
   }
 
-  function enterDetectedCodegen(language: CodegenLanguage, className: string) {
-    clearActiveLogJsonState();
-    isLogJsonDetectionPending = false;
-    codegenInitialLanguage = language;
-    codegenInitialClassName = className;
-    codegenInitialDirection = 'code2json';
-    codegenJsonContent = '';
-    handleCodegenJsonOutputActiveChange(true);
-    isDiffMode = false;
-    isConvertMode = false;
-    isSchemaMode = false;
-    isCodegenMode = true;
-  }
-
-  function enterDetectedConvert(format: ConvertFormat) {
-    clearActiveLogJsonState();
-    isLogJsonDetectionPending = false;
-    convertInitialFormat = format;
-    convertInitialDirection = 'fmt2json';
-    isDiffMode = false;
-    isCodegenMode = false;
-    isSchemaMode = false;
-    isConvertMode = true;
-  }
-
   function scheduleLogJsonDetection(
     value: string,
     options: { tabId?: string; delay?: number } = {},
   ) {
     if (logJsonTimer) clearTimeout(logJsonTimer);
-    cancelSmartJsonExtraction();
+    cancelLogJsonDetection();
     const tabId = options.tabId ?? $activeTab?.id;
 
-    if (!tabId || !value.trim() || value.length > MAX_SMART_JSON_INPUT_LENGTH) {
+    if (!tabId || !canExtractLogJsonFragments(value)) {
       resetLogJsonFragments();
       return;
     }
 
     logJsonTimer = setTimeout(async () => {
       try {
-        const fragments = await extractSmartJsonFragmentsAsync(value, {
+        const fragments = await extractLogJsonFragmentsAsync(value, {
           indent: tabSize,
         }) as LogJsonFragment[];
         if ($activeTab?.id === tabId && content === value) {
-          const convertFormat = detectWholeConvertFormat(fragments, value) as ConvertFormat | null;
-          // A complete code definition may contain braces that the smart
-          // extractor can interpret as JSON-like fragments. Codegen detection
-          // therefore must not depend on `fragments.length === 0`.
-          const codeDefinition = !convertFormat ? detectSmartCodeDefinition(value) : null;
-          if (convertFormat) enterDetectedConvert(convertFormat);
-          else if (codeDefinition) enterDetectedCodegen(codeDefinition.language, codeDefinition.label);
-          else applyLogJsonDetectionResult(tabId, value, fragments);
+          applyLogJsonDetectionResult(tabId, value, fragments);
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -1735,7 +1654,7 @@
       activeTab={$activeTab}
       stats={stats}
       lineCount={lineCount}
-      smartExtractionFormatLabel={smartExtractionFormatLabel}
+      isMixedMode={isMixedLogContent}
     />
   {/if}
 

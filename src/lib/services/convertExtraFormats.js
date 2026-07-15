@@ -68,9 +68,3 @@ function formatMarkdownValue(value) {
   if (value === null) return 'null';
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
-
-/** @param {{ kind: string, raw: string }[]} fragments @param {string} content */
-export function detectWholeConvertFormat(fragments, content) {
-  if (fragments.length !== 1 || fragments[0].raw.trim() !== content.trim()) return null;
-  return ({ YAML: 'yaml', XML: 'xml', TOML: 'toml', CSV: 'csv', Properties: 'properties', INI: 'ini', 'Markdown Table': 'markdown' })[fragments[0].kind] ?? null;
-}

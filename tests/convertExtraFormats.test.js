@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { detectWholeConvertFormat, formatMarkdownTable, formatProperties, parseMarkdownTable, parseProperties } from '../src/lib/services/convertExtraFormats.js';
+import { formatMarkdownTable, formatProperties, parseMarkdownTable, parseProperties } from '../src/lib/services/convertExtraFormats.js';
 
 test('converts Properties and INI configuration text', () => {
   assert.deepEqual(parseProperties('host=localhost\nport=8080'), { host: 'localhost', port: 8080 });
@@ -48,9 +48,4 @@ test('converts Markdown tables', () => {
   assert.deepEqual(parseMarkdownTable(source), [{ id: 1, name: 'Alice' }]);
   assert.equal(formatMarkdownTable([{ id: 1, name: 'Alice' }]), source);
   assert.throws(() => formatMarkdownTable({}), /at least one column/);
-});
-
-test('routes only whole supported documents into Convert', () => {
-  assert.equal(detectWholeConvertFormat([{ kind: 'Properties', raw: 'host=localhost' }], 'host=localhost'), 'properties');
-  assert.equal(detectWholeConvertFormat([{ kind: 'JSON', raw: '{"id":1}' }], 'INFO payload={"id":1}'), null);
 });

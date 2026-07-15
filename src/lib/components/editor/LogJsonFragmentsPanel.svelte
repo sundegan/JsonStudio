@@ -399,19 +399,16 @@
 
   .log-json-close {
     height: 24px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    transition: all 0.15s ease;
-  }
-
-  .log-json-close {
     width: 24px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
   }
 
   .log-json-close svg {
