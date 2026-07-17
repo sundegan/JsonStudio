@@ -289,7 +289,7 @@ test('tree text keeps release-style spacing with integer typography for 1x displ
   );
 
   assert.match(globalStyles, /\.json-tree-content \{[\s\S]*font-size: 13px;[\s\S]*line-height: 18px;/);
-  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*gap: 6px;[\s\S]*padding: 4px 64px 4px 0;[\s\S]*min-height: 26px;/);
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*gap: 6px;[\s\S]*padding: 4px 8px 4px 0;[\s\S]*min-height: 26px;/);
   assert.match(globalStyles, /\.tree-key \{[\s\S]*line-height: 18px;/);
   assert.match(globalStyles, /\.tree-value \{[\s\S]*font-size: 12px;[\s\S]*font-weight: 500;[\s\S]*line-height: 18px;/);
   assert.match(globalStyles, /\.tree-child-count \{[\s\S]*font-size: 11px;[\s\S]*line-height: 18px;/);
@@ -305,7 +305,7 @@ test('tree copy actions float at the scrollport edge for the active row without 
     'utf8',
   );
 
-  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*padding: 4px 64px 4px 0;/);
+  assert.match(globalStyles, /\.tree-node-content \{[\s\S]*padding: 4px 8px 4px 0;/);
   assert.match(globalStyles, /\.tree-key-value \{[\s\S]*overflow: visible;/);
   assert.match(globalStyles, /\.tree-value \{[\s\S]*overflow: visible;/);
   assert.doesNotMatch(globalStyles, /\.tree-key \{[\s\S]*text-overflow: ellipsis;/);
