@@ -7,9 +7,11 @@
   import MonacoEditor from './MonacoEditor.svelte';
   import MonacoDiffEditor from './MonacoDiffEditor.svelte';
   import ConvertView from './ConvertView.svelte';
+  import type ConvertViewType from './ConvertView.svelte';
   import CodeGenView from './CodeGenView.svelte';
   import type CodeGenViewType from './CodeGenView.svelte';
   import SchemaView from './SchemaView.svelte';
+  import type SchemaViewType from './SchemaView.svelte';
   import TabBar from './TabBar.svelte';
   import JsonEditorToolbar from './JsonEditorToolbar.svelte';
   import JsonEditorStatusBar from './JsonEditorStatusBar.svelte';
@@ -71,7 +73,9 @@
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let logJsonTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor = $state<MonacoEditor | null>(null);
+  let convertView = $state<ConvertViewType | null>(null);
   let codegenView = $state<CodeGenViewType | null>(null);
+  let schemaView = $state<SchemaViewType | null>(null);
   let toolbarRef = $state<JsonEditorToolbar | null>(null);
   let settingsPanel = $state<SettingsPanel | null>(null);
   let isAlwaysOnTop = $state(false);
@@ -84,6 +88,11 @@
   let codegenInitialLanguage = $state<CodegenLanguage>('typescript');
   let codegenInitialClassName = $state('MyModel');
   let codegenInitialDirection = $state<'json2code' | 'code2json'>('json2code');
+  let convertJsonContent = $state('');
+  let isConvertJsonOutputActive = $state(false);
+  let convertInputContent = $state('');
+  let codegenInputContent = $state('');
+  let schemaInputContent = $state('');
   let codegenJsonContent = $state('');
   let isCodegenJsonOutputActive = $state(false);
   let codegenEditorReadyVersion = $state(0);
@@ -93,10 +102,6 @@
   let isLogJsonDetectionPending = $state(false);
   let logJsonSource = $state('');
   const logJsonStateByTab = new Map<string, LogJsonDetectionState>();
-  // When entering Convert/CodeGen/Schema with JSON5 content, the original JSON5
-  // is saved here so it can be restored on exit. For standard JSON this stays empty,
-  // meaning sub-page edits persist back to the main editor.
-  let originalJson5Content = $state('');
   let diffOriginal = $state('');
   let diffModified = $state('');
   let diffLineCount = $state(0);
@@ -139,12 +144,28 @@
   let editorModelSwitchVersion = 0;
 
   let jsonToolContent = $derived(
-    isCodegenMode && isCodegenJsonOutputActive ? codegenJsonContent : content,
+    isCodegenMode && isCodegenJsonOutputActive
+      ? codegenJsonContent
+      : isCodegenMode
+        ? codegenInputContent
+        : isConvertMode && isConvertJsonOutputActive
+          ? convertJsonContent
+          : isConvertMode
+            ? convertInputContent
+            : isSchemaMode
+              ? schemaInputContent
+              : content,
   );
   let jsonToolEditor = $derived(
-    isCodegenMode && isCodegenJsonOutputActive ? codegenView : monacoEditor,
+    isCodegenMode
+      ? codegenView
+      : isConvertMode
+        ? convertView
+        : isSchemaMode
+          ? schemaView
+          : monacoEditor,
   );
-  let foldEditor = $derived(isCodegenMode ? codegenView : monacoEditor);
+  let foldEditor = $derived(jsonToolEditor);
   
   let tabsState = $state<import('$lib/stores/tabs').TabsState>({
     tabs: [],
@@ -810,13 +831,17 @@
 
     if (isConvertMode) {
       isConvertMode = false;
+      convertInputContent = '';
+      handleConvertJsonOutputActiveChange(false);
     }
     if (isCodegenMode) {
       handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
+      codegenInputContent = '';
     }
     if (isSchemaMode) {
       isSchemaMode = false;
+      schemaInputContent = '';
     }
 
     const emptyStats: JsonStats = {
@@ -836,16 +861,35 @@
     diffRightStats = emptyStats;
   }
 
-  // Sub-page toggle functions (Convert / CodeGen / Schema) share the same
-  // JSON5 content protection pattern:
-  //   Enter: convertJson5ToJsonIfNeeded() stashes original JSON5 → converts to JSON
-  //   Exit:  if originalJson5Content is set → restore it (auto-conversion was done)
-  //          if originalJson5Content is empty → keep current content (standard JSON,
-  //          user edits in the sub-page persist back to the main editor)
+  // Convert, CodeGen, and Schema edit local snapshots. The main editor is only
+  // changed by direct edits in the primary editor.
+  function handleConvertInputChange(value: string) {
+    if (isConvertMode) convertInputContent = value;
+  }
+
+  function handleCodegenInputChange(value: string) {
+    if (isCodegenMode) codegenInputContent = value;
+  }
+
+  function handleSchemaInputChange(value: string) {
+    if (isSchemaMode) schemaInputContent = value;
+  }
+
   function handleCodegenJsonContentChange(value: string) {
     if (isCodegenJsonOutputActive) {
       codegenJsonContent = value;
     }
+  }
+
+  function handleConvertJsonContentChange(value: string) {
+    if (isConvertJsonOutputActive) {
+      convertJsonContent = value;
+    }
+  }
+
+  function handleConvertJsonOutputActiveChange(active: boolean) {
+    isConvertJsonOutputActive = active;
+    if (!active) convertJsonContent = '';
   }
 
   function handleCodegenJsonOutputActiveChange(active: boolean) {
@@ -860,41 +904,39 @@
   }
 
   function handleJsonToolContentChange(value: string) {
-    if (isCodegenJsonOutputActive) {
-      handleCodegenJsonContentChange(value);
+    if (isCodegenMode) {
+      if (isCodegenJsonOutputActive) {
+        handleCodegenJsonContentChange(value);
+      } else {
+        codegenInputContent = value;
+      }
+      return;
+    }
+    if (isConvertMode) {
+      if (isConvertJsonOutputActive) {
+        handleConvertJsonContentChange(value);
+      } else {
+        convertInputContent = value;
+      }
+      return;
+    }
+    if (isSchemaMode) {
+      schemaInputContent = value;
       return;
     }
     handleToolbarContentChange(value);
   }
 
   async function handleJsonToolStatsUpdate() {
-    if (isCodegenJsonOutputActive) return;
+    if (isCodegenMode || isConvertMode || isSchemaMode) return;
     await updateStats();
   }
 
   async function toggleConvertMode() {
     if (isConvertMode) {
       isConvertMode = false;
-      
-      if (originalJson5Content) {
-        setContentState(originalJson5Content, { syncRightPanel: true });
-        monacoEditor?.setValue(originalJson5Content);
-        const currentTab = $activeTab;
-        if (currentTab) {
-          tabsStore.updateTabContent(currentTab.id, originalJson5Content);
-        }
-        originalJson5Content = '';
-        await updateStats();
-      } else {
-        const currentTab = $activeTab;
-        if (currentTab) {
-          const currentContent = getDocumentContent(currentTab.id);
-          setContentState(currentContent, { syncRightPanel: true });
-          stats = currentTab.stats;
-          monacoEditor?.setValue(currentContent);
-        }
-      }
-      
+      convertInputContent = '';
+      handleConvertJsonOutputActiveChange(false);
       return;
     }
 
@@ -907,49 +949,18 @@
     }
     if (isSchemaMode) {
       isSchemaMode = false;
+      schemaInputContent = '';
     }
 
-    // Convert JSON5 to standard JSON if needed
-    await convertJson5ToJsonIfNeeded();
-    
+    convertInputContent = await getSubPageInputContent();
     isConvertMode = true;
   }
 
   async function toggleCodegenMode() {
     if (isCodegenMode) {
-      const reverseOutput = isCodegenJsonOutputActive ? codegenJsonContent : '';
-      const hasReverseOutput = reverseOutput.trim().length > 0;
       handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
-      
-      if (originalJson5Content) {
-        setContentState(originalJson5Content, { syncRightPanel: true });
-        monacoEditor?.setValue(originalJson5Content);
-        const currentTab = $activeTab;
-        if (currentTab) {
-          tabsStore.updateTabContent(currentTab.id, originalJson5Content);
-        }
-        originalJson5Content = '';
-        await updateStats();
-      } else if (hasReverseOutput) {
-        setContentState(reverseOutput, { syncRightPanel: true });
-        monacoEditor?.setValue(reverseOutput);
-        const currentTab = $activeTab;
-        if (currentTab) {
-          tabsStore.updateTabContent(currentTab.id, reverseOutput);
-        }
-        scheduleLogJsonDetection(reverseOutput);
-        await updateStats();
-      } else {
-        const currentTab = $activeTab;
-        if (currentTab) {
-          const currentContent = getDocumentContent(currentTab.id);
-          setContentState(currentContent, { syncRightPanel: true });
-          stats = currentTab.stats;
-          monacoEditor?.setValue(currentContent);
-        }
-      }
-      
+      codegenInputContent = '';
       return;
     }
 
@@ -958,9 +969,12 @@
     }
     if (isConvertMode) {
       isConvertMode = false;
+      convertInputContent = '';
+      handleConvertJsonOutputActiveChange(false);
     }
     if (isSchemaMode) {
       isSchemaMode = false;
+      schemaInputContent = '';
     }
 
     codegenInitialLanguage = 'typescript';
@@ -968,35 +982,14 @@
     codegenInitialDirection = 'json2code';
     handleCodegenJsonOutputActiveChange(false);
     
-    // Convert JSON5 to standard JSON if needed
-    await convertJson5ToJsonIfNeeded();
-    
+    codegenInputContent = await getSubPageInputContent();
     isCodegenMode = true;
   }
 
   async function toggleSchemaMode() {
     if (isSchemaMode) {
       isSchemaMode = false;
-      
-      if (originalJson5Content) {
-        setContentState(originalJson5Content, { syncRightPanel: true });
-        monacoEditor?.setValue(originalJson5Content);
-        const currentTab = $activeTab;
-        if (currentTab) {
-          tabsStore.updateTabContent(currentTab.id, originalJson5Content);
-        }
-        originalJson5Content = '';
-        await updateStats();
-      } else {
-        const currentTab = $activeTab;
-        if (currentTab) {
-          const currentContent = getDocumentContent(currentTab.id);
-          setContentState(currentContent, { syncRightPanel: true });
-          stats = currentTab.stats;
-          monacoEditor?.setValue(currentContent);
-        }
-      }
-      
+      schemaInputContent = '';
       return;
     }
 
@@ -1005,15 +998,16 @@
     }
     if (isConvertMode) {
       isConvertMode = false;
+      convertInputContent = '';
+      handleConvertJsonOutputActiveChange(false);
     }
     if (isCodegenMode) {
       handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
+      codegenInputContent = '';
     }
     
-    // Convert JSON5 to standard JSON if needed
-    await convertJson5ToJsonIfNeeded();
-    
+    schemaInputContent = await getSubPageInputContent();
     isSchemaMode = true;
   }
 
@@ -1389,30 +1383,20 @@
     } catch (e) {}
   }
 
-  // Called before entering Convert / CodeGen / Schema sub-pages.
-  // These pages require standard JSON input, so JSON5 content is converted
-  // automatically. The original JSON5 is stashed in `originalJson5Content`
-  // and will be restored when the user exits the sub-page.
-  // For standard JSON content this is a no-op (originalJson5Content stays empty).
-  async function convertJson5ToJsonIfNeeded() {
-    if (stats.format_type === 'JSON5') {
-      try {
-        originalJson5Content = content;
-        
-        const converted = await formatJson(content, tabSize);
-        setContentState(converted, { syncRightPanel: true });
-        monacoEditor?.setValue(converted);
-        
-        const currentTab = $activeTab;
-        if (currentTab) {
-          tabsStore.updateTabContent(currentTab.id, converted);
-        }
-        
-        await updateStats();
-        showToast($t('toast.json5Converted'), 'info');
-      } catch (e) {
-        showToast($t('toast.json5ConvertFailed'), 'error');
-      }
+  // Convert JSON5 only inside the sub-page snapshot. Entering a tool must not
+  // modify the active document or its Tab.
+  async function getSubPageInputContent() {
+    const sourceContent = content;
+    const sourceFormat = await detectJsonDialectAsync('sub-page-input', sourceContent);
+    if (sourceFormat !== 'JSON5') return sourceContent;
+
+    try {
+      const converted = await formatJson(sourceContent, tabSize);
+      showToast($t('toast.json5Converted'), 'info');
+      return converted;
+    } catch (e) {
+      showToast($t('toast.json5ConvertFailed'), 'error');
+      return sourceContent;
     }
   }
 
@@ -1519,21 +1503,24 @@
           </div>
         {:else if isConvertMode}
           <ConvertView
-            inputValue={content}
+            bind:this={convertView}
+            inputValue={convertInputContent}
             theme={monacoTheme}
             fontSize={fontSize}
             lineHeight={lineHeight}
             tabSize={tabSize}
             initialFormat={convertInitialFormat}
             initialDirection={convertInitialDirection}
-            onInputChange={handleToolbarContentChange}
+            onInputChange={handleConvertInputChange}
+            onJsonContentChange={handleConvertJsonContentChange}
+            onJsonOutputActiveChange={handleConvertJsonOutputActiveChange}
             onToast={showToast}
             onExit={toggleConvertMode}
           />
         {:else if isCodegenMode}
           <CodeGenView
             bind:this={codegenView}
-            inputValue={content}
+            inputValue={codegenInputContent}
             theme={monacoTheme}
             fontSize={fontSize}
             lineHeight={lineHeight}
@@ -1541,7 +1528,7 @@
             initialLanguage={codegenInitialLanguage}
             initialDirection={codegenInitialDirection}
             initialClassName={codegenInitialClassName}
-            onInputChange={handleToolbarContentChange}
+            onInputChange={handleCodegenInputChange}
             onJsonContentChange={handleCodegenJsonContentChange}
             onJsonOutputActiveChange={handleCodegenJsonOutputActiveChange}
             onEditorReady={handleCodegenEditorReady}
@@ -1550,12 +1537,13 @@
           />
         {:else if isSchemaMode}
           <SchemaView
-            inputValue={content}
+            bind:this={schemaView}
+            inputValue={schemaInputContent}
             theme={monacoTheme}
             fontSize={fontSize}
             lineHeight={lineHeight}
             tabSize={tabSize}
-            onInputChange={handleToolbarContentChange}
+            onInputChange={handleSchemaInputChange}
             onToast={showToast}
             onExit={toggleSchemaMode}
           />

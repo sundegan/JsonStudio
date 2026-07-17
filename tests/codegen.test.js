@@ -50,9 +50,10 @@ test('PHP keeps date-time strings mapped to DateTime', async () => {
   assert.match(generated, /private DateTime \$createdAt;/);
 });
 
-test('Codegen reverse output is wired to the JSON toolbar target', async () => {
-  const [codegenView, toolbar, editor, cargoConfig] = await Promise.all([
+test('tool sub-pages keep edits local to their active editor', async () => {
+  const [codegenView, convertView, toolbar, editor, cargoConfig] = await Promise.all([
     readFile(new URL('../src/lib/components/editor/CodeGenView.svelte', import.meta.url), 'utf8'),
+    readFile(new URL('../src/lib/components/editor/ConvertView.svelte', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/components/editor/JsonEditorToolbar.svelte', import.meta.url), 'utf8'),
     readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8'),
     readFile(new URL('../.cargo/config.toml', import.meta.url), 'utf8'),
@@ -60,6 +61,8 @@ test('Codegen reverse output is wired to the JSON toolbar target', async () => {
 
   assert.doesNotMatch(codegenView, /cg-naming-toggle|fieldNaming|toggleFieldNaming/);
   assert.match(codegenView, /onJsonContentChange\(rightEditor\?\.getValue\(\) \|\| ''\)/);
+  assert.match(convertView, /onJsonContentChange\(rightEditor!\.getValue\(\)\)/);
+  assert.match(convertView, /onJsonOutputActiveChange\(direction === 'fmt2json'\)/);
   assert.match(codegenView, /folding: true/);
   assert.match(codegenView, /foldingStrategy: 'indentation'/);
   assert.match(codegenView, /glyphMargin: true/);
@@ -78,8 +81,17 @@ test('Codegen reverse output is wired to the JSON toolbar target', async () => {
   assert.match(editor, /jsonEditor=\{jsonToolEditor\}/);
   assert.match(editor, /foldEditor=\{foldEditor\}/);
   assert.match(editor, /onEditorReady=\{handleCodegenEditorReady\}/);
-  assert.match(editor, /const reverseOutput = isCodegenJsonOutputActive \? codegenJsonContent : ''/);
-  assert.match(editor, /tabsStore\.updateTabContent\(currentTab\.id, reverseOutput\)/);
+  assert.match(editor, /let codegenInputContent = \$state\(''\)/);
+  assert.match(editor, /let convertInputContent = \$state\(''\)/);
+  assert.match(editor, /let isConvertJsonOutputActive = \$state\(false\)/);
+  assert.match(editor, /let schemaInputContent = \$state\(''\)/);
+  assert.match(editor, /inputValue=\{convertInputContent\}/);
+  assert.match(editor, /inputValue=\{codegenInputContent\}/);
+  assert.match(editor, /inputValue=\{schemaInputContent\}/);
+  assert.match(editor, /function getSubPageInputContent\(\)/);
+  assert.match(editor, /isConvertMode && isConvertJsonOutputActive/);
+  assert.doesNotMatch(editor, /tabsStore\.updateTabContent\(currentTab\.id, reverseOutput\)/);
+  assert.doesNotMatch(editor, /originalJson5Content/);
   assert.match(cargoConfig, /TSLP_LINK_MODE = "static"/);
   assert.match(cargoConfig, /TSLP_LANGUAGES =/);
 });

@@ -142,6 +142,37 @@
     onToast($t('schema.copied'));
   }
 
+  export function getValue(): string {
+    return leftEditor?.getValue() || '';
+  }
+
+  export function setValue(value: string) {
+    const model = leftEditor?.getModel();
+    if (!model) return;
+    model.pushEditOperations([], [{ range: model.getFullModelRange(), text: value }], () => null);
+  }
+
+  export function minify(): string {
+    const value = getValue();
+    try {
+      return JSON.stringify(JSON.parse(value));
+    } catch (_) {
+      return value;
+    }
+  }
+
+  export function foldAll() {
+    void leftEditor?.getAction('editor.foldAll')?.run();
+  }
+
+  export function unfoldAll() {
+    void leftEditor?.getAction('editor.unfoldAll')?.run();
+  }
+
+  export function getEditorInstance() {
+    return leftEditor;
+  }
+
   onMount(async () => {
     const monacoInstance = await initMonaco();
     monaco = monacoInstance;

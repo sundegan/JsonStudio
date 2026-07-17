@@ -17,6 +17,8 @@
     initialFormat = 'yaml' as ConvertFormat,
     initialDirection = 'json2fmt' as Direction,
     onInputChange = (_value: string) => {},
+    onJsonContentChange = (_value: string) => {},
+    onJsonOutputActiveChange = (_active: boolean) => {},
     onToast = (_msg: string) => {},
     onExit = () => {},
   }: {
@@ -28,6 +30,8 @@
     initialFormat?: ConvertFormat;
     initialDirection?: Direction;
     onInputChange?: (value: string) => void;
+    onJsonContentChange?: (value: string) => void;
+    onJsonOutputActiveChange?: (active: boolean) => void;
     onToast?: (msg: string) => void;
     onExit?: () => void;
   } = $props();
@@ -329,6 +333,7 @@
     const oldRight = rightEditor?.getValue() || '';
 
     direction = direction === 'json2fmt' ? 'fmt2json' : 'json2fmt';
+    onJsonOutputActiveChange(direction === 'fmt2json');
 
     if (leftEditor && rightEditor && monaco) {
       isSyncingLeft = true;
@@ -374,6 +379,41 @@
       onToast($t('convert.copied'));
       setTimeout(() => { copied = false; }, 1500);
     } catch (_) {}
+  }
+
+  function getJsonEditor() {
+    return direction === 'json2fmt' ? leftEditor : rightEditor;
+  }
+
+  export function getValue(): string {
+    return getJsonEditor()?.getValue() || '';
+  }
+
+  export function setValue(value: string) {
+    const model = getJsonEditor()?.getModel();
+    if (!model) return;
+    model.pushEditOperations([], [{ range: model.getFullModelRange(), text: value }], () => null);
+  }
+
+  export function minify(): string {
+    const value = getValue();
+    try {
+      return JSON.stringify(JSON.parse(value));
+    } catch (_) {
+      return value;
+    }
+  }
+
+  export function foldAll() {
+    void getJsonEditor()?.getAction('editor.foldAll')?.run();
+  }
+
+  export function unfoldAll() {
+    void getJsonEditor()?.getAction('editor.unfoldAll')?.run();
+  }
+
+  export function getEditorInstance() {
+    return getJsonEditor();
   }
 
   function registerCsvLanguage(m: typeof Monaco) {
@@ -427,6 +467,14 @@
       handleLeftChange(leftEditor!.getValue());
     });
 
+    rightEditor!.onDidChangeModelContent(() => {
+      if (direction === 'fmt2json') {
+        onJsonContentChange(rightEditor!.getValue());
+      }
+    });
+
+    onJsonOutputActiveChange(direction === 'fmt2json');
+
     doConvert(inputValue);
   });
 
@@ -441,6 +489,8 @@
     document.removeEventListener('click', handleDocumentClick);
     if (convertTimer) clearTimeout(convertTimer);
     if (scrollFixTimer) clearTimeout(scrollFixTimer);
+    onJsonOutputActiveChange(false);
+    onJsonContentChange('');
     leftEditor?.dispose();
     rightEditor?.dispose();
   });
