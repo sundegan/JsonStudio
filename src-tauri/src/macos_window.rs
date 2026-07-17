@@ -5,8 +5,8 @@ use crate::window_bounds::restored_window_axis;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder, WINDOW_SUBMENU_ID};
 use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
 
-const DEFAULT_WIDTH: f64 = 1280.0;
-const DEFAULT_HEIGHT: f64 = 800.0;
+const DEFAULT_WIDTH: f64 = 1440.0;
+const DEFAULT_HEIGHT: f64 = 900.0;
 const MIN_WIDTH: f64 = 960.0;
 const MIN_HEIGHT: f64 = 640.0;
 
@@ -479,10 +479,10 @@ mod tests {
                 Placement::Center,
             ),
             (
-                PhysicalPosition { x: 460, y: 350 },
+                PhysicalPosition { x: 380, y: 300 },
                 PhysicalSize {
-                    width: 1280,
-                    height: 800
+                    width: 1440,
+                    height: 900
                 }
             )
         );

@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Json Studio",
-        "width": 1280,
-        "height": 800,
+        "width": 1440,
+        "height": 900,
         "minWidth": 960,
         "minHeight": 640,
         "center": true,

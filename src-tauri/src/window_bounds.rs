@@ -51,13 +51,13 @@ fn clamp_main_window_to_visible_area(window: &WebviewWindow) -> tauri::Result<()
         width: restored_window_axis(
             current_logical_size.width,
             work_area_logical_size.width,
-            1280.0,
+            1440.0,
             960.0,
         ),
         height: restored_window_axis(
             current_logical_size.height,
             work_area_logical_size.height,
-            800.0,
+            900.0,
             640.0,
         ),
     };
@@ -108,9 +108,9 @@ mod tests {
 
     #[test]
     fn restores_sensible_window_sizes() {
-        assert_eq!(restored_window_axis(1520.0, 1512.0, 1280.0, 960.0), 1280.0);
-        assert_eq!(restored_window_axis(1161.0, 1512.0, 1280.0, 960.0), 1161.0);
-        assert_eq!(restored_window_axis(480.0, 1512.0, 1280.0, 960.0), 960.0);
-        assert_eq!(restored_window_axis(1.0, 40.0, 1280.0, 1.0), 20.0);
+        assert_eq!(restored_window_axis(1520.0, 1512.0, 1440.0, 960.0), 1361.0);
+        assert_eq!(restored_window_axis(1161.0, 1512.0, 1440.0, 960.0), 1161.0);
+        assert_eq!(restored_window_axis(480.0, 1512.0, 1440.0, 960.0), 960.0);
+        assert_eq!(restored_window_axis(1.0, 40.0, 1440.0, 1.0), 20.0);
     }
 }
