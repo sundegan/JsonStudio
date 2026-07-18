@@ -55,6 +55,7 @@
     source: string;
     fragments: LogJsonFragment[];
   };
+  type DiffSide = 'original' | 'modified';
   type TabWithContent = import('$lib/stores/tabs').Tab & { content: string };
 
   let content = $state('');
@@ -73,6 +74,7 @@
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let logJsonTimer: ReturnType<typeof setTimeout> | null = null;
   let monacoEditor = $state<MonacoEditor | null>(null);
+  let diffEditor = $state<MonacoDiffEditor | null>(null);
   let convertView = $state<ConvertViewType | null>(null);
   let codegenView = $state<CodeGenViewType | null>(null);
   let schemaView = $state<SchemaViewType | null>(null);
@@ -96,6 +98,8 @@
   let codegenJsonContent = $state('');
   let isCodegenJsonOutputActive = $state(false);
   let codegenEditorReadyVersion = $state(0);
+  let diffEditorReadyVersion = $state(0);
+  let activeDiffSide = $state<DiffSide>('original');
   let logJsonFragments = $state<LogJsonFragment[]>([]);
   let selectedLogJsonFragmentIndex = $state(0);
   let isLogJsonPanelOpen = $state(false);
@@ -121,8 +125,6 @@
     format_type: '',
     error_info: null,
   });
-  let diffLeftTimer: ReturnType<typeof setTimeout> | null = null;
-  let diffRightTimer: ReturnType<typeof setTimeout> | null = null;
   let treeViewWidth = $state(380);
   let isResizingTreeView = $state(false);
   let folderViewWidth = $state(220);
@@ -144,26 +146,30 @@
   let editorModelSwitchVersion = 0;
 
   let jsonToolContent = $derived(
-    isCodegenMode && isCodegenJsonOutputActive
-      ? codegenJsonContent
-      : isCodegenMode
-        ? codegenInputContent
-        : isConvertMode && isConvertJsonOutputActive
-          ? convertJsonContent
-          : isConvertMode
-            ? convertInputContent
-            : isSchemaMode
-              ? schemaInputContent
-              : content,
+    isDiffMode
+      ? activeDiffSide === 'original' ? diffOriginal : diffModified
+      : isCodegenMode && isCodegenJsonOutputActive
+        ? codegenJsonContent
+        : isCodegenMode
+          ? codegenInputContent
+          : isConvertMode && isConvertJsonOutputActive
+            ? convertJsonContent
+            : isConvertMode
+              ? convertInputContent
+              : isSchemaMode
+                ? schemaInputContent
+                : content,
   );
   let jsonToolEditor = $derived(
-    isCodegenMode
-      ? codegenView
-      : isConvertMode
-        ? convertView
-        : isSchemaMode
-          ? schemaView
-          : monacoEditor,
+    isDiffMode
+      ? diffEditor
+      : isCodegenMode
+        ? codegenView
+        : isConvertMode
+          ? convertView
+          : isSchemaMode
+            ? schemaView
+            : monacoEditor,
   );
   let foldEditor = $derived(jsonToolEditor);
   
@@ -784,18 +790,20 @@
 
   $effect(() => {
     if (!isDiffMode) return;
-    if (diffLeftTimer) clearTimeout(diffLeftTimer);
-    diffLeftTimer = setTimeout(() => {
-      updateDiffStatsForSide('left');
+    const value = diffOriginal;
+    const timer = setTimeout(() => {
+      void updateDiffStatsForSide('left', value);
     }, 200);
+    return () => clearTimeout(timer);
   });
 
   $effect(() => {
     if (!isDiffMode) return;
-    if (diffRightTimer) clearTimeout(diffRightTimer);
-    diffRightTimer = setTimeout(() => {
-      updateDiffStatsForSide('right');
+    const value = diffModified;
+    const timer = setTimeout(() => {
+      void updateDiffStatsForSide('right', value);
     }, 200);
+    return () => clearTimeout(timer);
   });
 
   async function toggleAlwaysOnTop() {
@@ -852,6 +860,8 @@
     };
 
     isDiffMode = true;
+    activeDiffSide = 'original';
+    diffEditorReadyVersion = 0;
     diffLineCount = 0;
     diffOriginal = content;
     diffModified = '';
@@ -901,7 +911,25 @@
     codegenEditorReadyVersion += 1;
   }
 
+  function handleDiffActiveSideChange(side: DiffSide) {
+    if (activeDiffSide === side) return;
+    activeDiffSide = side;
+    diffEditorReadyVersion += 1;
+  }
+
+  function handleDiffEditorReady() {
+    diffEditorReadyVersion += 1;
+  }
+
   function handleJsonToolContentChange(value: string) {
+    if (isDiffMode) {
+      if (activeDiffSide === 'original') {
+        diffOriginal = value;
+      } else {
+        diffModified = value;
+      }
+      return;
+    }
     if (isCodegenMode) {
       if (isCodegenJsonOutputActive) {
         handleCodegenJsonContentChange(value);
@@ -926,6 +954,11 @@
   }
 
   async function handleJsonToolStatsUpdate() {
+    if (isDiffMode) {
+      const side = activeDiffSide === 'original' ? 'left' : 'right';
+      await updateDiffStatsForSide(side);
+      return;
+    }
     if (isCodegenMode || isConvertMode || isSchemaMode) return;
     await updateStats();
   }
@@ -1236,8 +1269,10 @@
     diffLineCount = diffLines;
   }
 
-  async function updateDiffStatsForSide(side: 'left' | 'right') {
-    const value = side === 'left' ? diffOriginal : diffModified;
+  async function updateDiffStatsForSide(
+    side: 'left' | 'right',
+    value = side === 'left' ? diffOriginal : diffModified,
+  ) {
     
     if (!value.trim()) {
       const emptyStats: JsonStats = {
@@ -1259,7 +1294,7 @@
     try {
       const result = await getJsonDocumentStatsAsync(`diff:${side}`, value) as JsonStats;
       const currentValue = side === 'left' ? diffOriginal : diffModified;
-      if (currentValue !== value) return;
+      if (!isDiffMode || currentValue !== value) return;
       if (side === 'left') {
         diffLeftStats = result;
       } else {
@@ -1415,7 +1450,7 @@
     jsonContent={jsonToolContent}
     jsonEditor={jsonToolEditor}
     foldEditor={foldEditor}
-    foldEditorReadyVersion={codegenEditorReadyVersion}
+    foldEditorReadyVersion={isDiffMode ? diffEditorReadyVersion : codegenEditorReadyVersion}
     tabSize={tabSize}
     onToggleDiff={toggleDiffMode}
     onToggleConvert={toggleConvertMode}
@@ -1486,6 +1521,7 @@
           <div class="flex flex-col h-full">
             <div class="flex-1 min-h-0">
               <MonacoDiffEditor
+                bind:this={diffEditor}
                 originalValue={diffOriginal}
                 modifiedValue={diffModified}
                 theme={monacoTheme}
@@ -1496,6 +1532,9 @@
                 onOriginalChange={(value) => { diffOriginal = value; }}
                 onModifiedChange={(value) => { diffModified = value; }}
                 onDiffUpdate={updateDiffStats}
+                onActiveSideChange={handleDiffActiveSideChange}
+                onEditorReady={handleDiffEditorReady}
+                onExit={toggleDiffMode}
               />
             </div>
           </div>

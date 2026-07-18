@@ -29,6 +29,10 @@
     MonacoEditor,
     'getValue' | 'setValue' | 'minify' | 'foldAll' | 'unfoldAll' | 'getEditorInstance'
   >;
+  type JsonOperationContext = {
+    content: string;
+    editor: ReturnType<JsonEditorTarget['getEditorInstance']>;
+  };
 
   type TitlebarPlatform = 'macos' | 'windows' | 'linux';
 
@@ -258,7 +262,7 @@
   let isExporting = $state(false);
   let hasContent = $derived(Boolean(content.trim()));
   let hasJsonContent = $derived(Boolean(jsonContent.trim()));
-  let isSubPageMode = $derived(isConvertMode || isCodegenMode || isSchemaMode);
+  let isSubPageMode = $derived(isDiffMode || isConvertMode || isCodegenMode || isSchemaMode);
   let canUseJsonTools = $derived(!isCodegenMode || isCodegenJsonOutputActive);
   let showOpenMenu = $state(false);
   let showFileActionsMenu = $state(false);
@@ -508,10 +512,24 @@
     }
   }
 
-  function setJsonContentValue(value: string) {
-    if (!canUseJsonTools) return;
+  function captureJsonOperationContext(): JsonOperationContext {
+    return {
+      content: jsonContent,
+      editor: jsonEditor?.getEditorInstance() ?? null,
+    };
+  }
+
+  function isJsonOperationContextCurrent(context: JsonOperationContext): boolean {
+    if (jsonContent !== context.content) return false;
+    if ((jsonEditor?.getEditorInstance() ?? null) !== context.editor) return false;
+    return !context.editor || context.editor.getValue() === context.content;
+  }
+
+  function setJsonContentValue(value: string, context?: JsonOperationContext): boolean {
+    if (!canUseJsonTools || (context && !isJsonOperationContextCurrent(context))) return false;
     onJsonContentChange(value);
     jsonEditor?.setValue(value);
+    return true;
   }
 
   export async function formatContent() {
@@ -564,15 +582,17 @@
       onToast($t('toolbar.noContentFormat'), 'info');
       return;
     }
+    const operation = captureJsonOperationContext();
+    const source = operation.content;
     isProcessing = true;
 
     try {
       const { formatJson5, formatJsonText } = await import('$lib/services/json5Format.js');
-      const stats = await getJsonDocumentStatsAsync(activeTab?.id ?? 'toolbar', jsonContent);
+      const stats = await getJsonDocumentStatsAsync(activeTab?.id ?? 'toolbar', source);
       const formatted = stats.valid && stats.format_type === 'JSON5'
-        ? await formatJson5(jsonContent, tabSize)
-        : await formatJsonText(jsonContent, tabSize);
-      setJsonContentValue(formatted);
+        ? await formatJson5(source, tabSize)
+        : await formatJsonText(source, tabSize);
+      if (!setJsonContentValue(formatted, operation)) return;
       await onJsonStatsUpdate();
     } catch (e) {
     } finally {
@@ -586,19 +606,20 @@
       onToast($t('toolbar.noContentMinify'), 'info');
       return;
     }
+    const operation = captureJsonOperationContext();
+    const source = operation.content;
     isProcessing = true;
-    const contentSize = jsonContent.length;
+    const contentSize = source.length;
 
     try {
       let minified = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        minified = await minifyJson(jsonContent);
+        minified = await minifyJson(source);
       } else {
         minified = jsonEditor?.minify() || '';
       }
 
-      if (minified) {
-        setJsonContentValue(minified);
+      if (minified && setJsonContentValue(minified, operation)) {
         await onJsonStatsUpdate();
       }
     } catch (e) {
@@ -614,9 +635,13 @@
       return;
     }
 
+    const operation = captureJsonOperationContext();
     isProcessing = true;
     try {
-      setJsonContentValue(convertToStandardJson(jsonContent, tabSize));
+      if (!setJsonContentValue(
+        convertToStandardJson(operation.content, tabSize),
+        operation,
+      )) return;
       await onJsonStatsUpdate();
       onToast($t('toolbar.convertToStandardSuccess'));
     } catch (error) {
@@ -634,15 +659,16 @@
       return;
     }
 
+    const operation = captureJsonOperationContext();
     isProcessing = true;
     try {
-      const target = getOppositeKeyNamingFromString(jsonContent);
-      const converted = tryConvertJsonStringPreservingFormat(jsonContent, target);
+      const target = getOppositeKeyNamingFromString(operation.content);
+      const converted = tryConvertJsonStringPreservingFormat(operation.content, target);
       if (converted === null) {
         throw new Error('Invalid JSON');
       }
 
-      setJsonContentValue(converted);
+      if (!setJsonContentValue(converted, operation)) return;
       await onJsonStatsUpdate();
       onToast(
         target === 'snake'
@@ -663,18 +689,20 @@
       onToast($t('toolbar.noContentEscape'), 'info');
       return;
     }
+    const operation = captureJsonOperationContext();
+    const source = operation.content;
     isProcessing = true;
-    const contentSize = jsonContent.length;
+    const contentSize = source.length;
 
     try {
       let escaped = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        escaped = await escapeString(jsonContent);
+        escaped = await escapeString(source);
       } else {
-        escaped = JSON.stringify(jsonContent);
+        escaped = JSON.stringify(source);
       }
 
-      setJsonContentValue(escaped);
+      if (!setJsonContentValue(escaped, operation)) return;
       await onJsonStatsUpdate();
     } catch (e) {
     } finally {
@@ -688,15 +716,17 @@
       onToast($t('toolbar.noContentUnescape'), 'info');
       return;
     }
+    const operation = captureJsonOperationContext();
+    const source = operation.content;
     isProcessing = true;
-    const contentSize = jsonContent.length;
+    const contentSize = source.length;
 
     try {
       let unescaped = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        unescaped = await unescapeString(jsonContent);
+        unescaped = await unescapeString(source);
       } else {
-        const parsed = JSON.parse(jsonContent);
+        const parsed = JSON.parse(source);
         if (typeof parsed === 'string') {
           unescaped = parsed;
         } else {
@@ -704,8 +734,7 @@
         }
       }
 
-      if (unescaped) {
-        setJsonContentValue(unescaped);
+      if (unescaped && setJsonContentValue(unescaped, operation)) {
         await onJsonStatsUpdate();
       }
     } catch (e) {
@@ -720,20 +749,22 @@
       onToast($t('toolbar.noContentProcess'), 'info');
       return;
     }
+    const operation = captureJsonOperationContext();
+    const source = operation.content;
     isProcessing = true;
-    const contentSize = jsonContent.length;
+    const contentSize = source.length;
 
     try {
       let minified = '';
       if (contentSize > LARGE_FILE_THRESHOLD) {
-        minified = await minifyJson(jsonContent);
+        minified = await minifyJson(source);
       } else {
         minified = jsonEditor?.minify() || '';
       }
 
       if (minified) {
         const escaped = JSON.stringify(minified);
-        setJsonContentValue(escaped);
+        if (!setJsonContentValue(escaped, operation)) return;
         await onJsonStatsUpdate();
       }
     } catch (e) {
@@ -771,12 +802,13 @@
   async function handleToggleKeySort() {
     if (!canUseJsonTools || isProcessing) return;
     if (keySortState === 'desc') {
+      const operation = captureJsonOperationContext();
       const originalContent = keySortOriginalContent;
       keySortState = 'none';
       keySortOriginalContent = null;
       lastSortedContent = null;
       if (originalContent !== null) {
-        setJsonContentValue(originalContent);
+        if (!setJsonContentValue(originalContent, operation)) return;
         await onJsonStatsUpdate();
       }
       return;
@@ -786,15 +818,16 @@
       return;
     }
 
+    const operation = captureJsonOperationContext();
     isProcessing = true;
     try {
       const nextState: KeySortState = keySortState === 'none' ? 'asc' : 'desc';
-      const source = keySortOriginalContent ?? jsonContent;
+      const source = keySortOriginalContent ?? operation.content;
       const sorted = sortJsonKeys(source, nextState, tabSize);
-      if (keySortState === 'none') keySortOriginalContent = jsonContent;
+      if (keySortState === 'none') keySortOriginalContent = operation.content;
       keySortState = nextState;
       lastSortedContent = sorted;
-      setJsonContentValue(sorted);
+      if (!setJsonContentValue(sorted, operation)) return;
       await onJsonStatsUpdate();
     } catch {
       onToast($t('toolbar.sortKeysFailed'), 'error');
@@ -907,17 +940,6 @@
   onmousedown={handleTitlebarMouseDown}
 >
   <div class="toolbar-actions-strip">
-    {#if isDiffMode}
-      <!-- Diff mode: only show exit button -->
-      <div class="toolbar-group">
-        <button class="toolbar-back-btn" onclick={onToggleDiff} use:tooltip={$t('toolbar.exitDiffTooltip')}>
-          <svg class="toolbar-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5"/>
-            <path d="M12 19l-7-7 7-7"/>
-          </svg>
-        </button>
-      </div>
-    {:else}
       <!-- 1. File operations -->
       <div class="toolbar-group">
         <button class="toolbar-btn" onclick={handleNewFile} disabled={isSubPageMode} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
@@ -1098,19 +1120,19 @@
 
       <!-- 3. Diff, Convert & Codegen -->
       <div class="toolbar-group">
-        <button class="toolbar-btn" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} use:tooltip={$t('toolbar.diffTooltip')}>
+        <button class="toolbar-btn {isDiffMode ? 'is-active' : ''}" onclick={onToggleDiff} disabled={isConvertMode || isCodegenMode || isSchemaMode} use:tooltip={isDiffMode ? $t('toolbar.exitDiffTooltip') : $t('toolbar.diffTooltip')}>
           <svg class="toolbar-icon" style="color: #14b8a6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 4v16"/></svg>
-          {$t('toolbar.diff')}
+          {isDiffMode ? $t('toolbar.exitDiff') : $t('toolbar.diff')}
         </button>
-        <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isCodegenMode || isSchemaMode} use:tooltip={isConvertMode ? $t('toolbar.exitConvertTooltip') : $t('toolbar.convertTooltip')}>
+        <button class="toolbar-btn {isConvertMode ? 'is-active' : ''}" onclick={onToggleConvert} disabled={isDiffMode || isCodegenMode || isSchemaMode} use:tooltip={isConvertMode ? $t('toolbar.exitConvertTooltip') : $t('toolbar.convertTooltip')}>
           <svg class="toolbar-icon" style="color: #3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 4 20 7 17 10"/><path d="M4 12v-1a3 3 0 0 1 3-3h13"/><polyline points="7 20 4 17 7 14"/><path d="M20 12v1a3 3 0 0 1-3 3H4"/></svg>
           {isConvertMode ? $t('toolbar.exitConvert') : $t('toolbar.convert')}
         </button>
-        <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isConvertMode || isSchemaMode} use:tooltip={isCodegenMode ? $t('toolbar.exitCodegenTooltip') : $t('toolbar.codegenTooltip')}>
+        <button class="toolbar-btn {isCodegenMode ? 'is-active' : ''}" onclick={onToggleCodegen} disabled={isDiffMode || isConvertMode || isSchemaMode} use:tooltip={isCodegenMode ? $t('toolbar.exitCodegenTooltip') : $t('toolbar.codegenTooltip')}>
           <svg class="toolbar-icon" style="color: #d946ef;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 1 12 7 18"/><polyline points="17 6 23 12 17 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
           {isCodegenMode ? $t('toolbar.exitCodegen') : $t('toolbar.codegen')}
         </button>
-        <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isConvertMode || isCodegenMode} use:tooltip={isSchemaMode ? $t('toolbar.exitSchemaTooltip') : $t('toolbar.schemaTooltip')}>
+        <button class="toolbar-btn {isSchemaMode ? 'is-active' : ''}" onclick={onToggleSchema} disabled={isDiffMode || isConvertMode || isCodegenMode} use:tooltip={isSchemaMode ? $t('toolbar.exitSchemaTooltip') : $t('toolbar.schemaTooltip')}>
           <svg class="toolbar-icon" style="color: #f59e0b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3l9 4.5v5c0 4.7-3.8 9-9 10.5C6.8 21.5 3 17.2 3 12.5v-5L12 3z"/>
             <path d="M9 12l2 2 4-4"/>
@@ -1118,7 +1140,6 @@
           {isSchemaMode ? $t('toolbar.exitSchema') : $t('toolbar.schema')}
         </button>
       </div>
-    {/if}
   </div>
 
   <div
@@ -1452,31 +1473,6 @@
 
   .toolbar-window-controls {
     flex: 0 0 auto;
-  }
-
-  .toolbar-back-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .toolbar-back-btn:hover {
-    background: color-mix(in srgb, var(--accent) 15%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-    color: var(--accent);
-  }
-
-  .toolbar-back-icon {
-    width: 16px;
-    height: 16px;
   }
 
   .je-tooltip {
