@@ -75,8 +75,10 @@ test('tool sub-pages keep edits local to their active editor', async () => {
   assert.match(toolbar, /foldEditor\?\.foldAll\(\)/);
   assert.match(toolbar, /foldEditor\?\.unfoldAll\(\)/);
   assert.match(toolbar, /canUseJsonTools/);
-  assert.match(toolbar, /disabled=\{isCodegenMode\}/);
-  assert.match(toolbar, /if \(isCodegenMode\) return;/);
+  assert.match(toolbar, /let isSubPageMode = \$derived\(isConvertMode \|\| isCodegenMode \|\| isSchemaMode\)/);
+  assert.match(toolbar, /disabled=\{isProcessing \|\| !canUseJsonTools\}\s+aria-label=\{\$t\('toolbar\.keyNamingTooltip'\)\}/);
+  assert.match(toolbar, /disabled=\{isSubPageMode\}/);
+  assert.match(toolbar, /if \(isSubPageMode\) return;/);
   assert.match(editor, /jsonContent=\{jsonToolContent\}/);
   assert.match(editor, /jsonEditor=\{jsonToolEditor\}/);
   assert.match(editor, /foldEditor=\{foldEditor\}/);

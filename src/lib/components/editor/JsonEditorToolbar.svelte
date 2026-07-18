@@ -258,6 +258,7 @@
   let isExporting = $state(false);
   let hasContent = $derived(Boolean(content.trim()));
   let hasJsonContent = $derived(Boolean(jsonContent.trim()));
+  let isSubPageMode = $derived(isConvertMode || isCodegenMode || isSchemaMode);
   let canUseJsonTools = $derived(!isCodegenMode || isCodegenJsonOutputActive);
   let showOpenMenu = $state(false);
   let showFileActionsMenu = $state(false);
@@ -336,7 +337,7 @@
   });
 
   $effect(() => {
-    if (isCodegenMode) {
+    if (isSubPageMode) {
       showOpenMenu = false;
       showFileActionsMenu = false;
     }
@@ -398,7 +399,7 @@
   }
 
   function toggleOpenMenu() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     if (!showOpenMenu && openMenuEl) {
       const rect = openMenuEl.getBoundingClientRect();
       dropdownTop = rect.bottom + 5;
@@ -410,7 +411,7 @@
   }
 
   function toggleFileActionsMenu() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     if (!showFileActionsMenu && fileActionsMenuEl) {
       const rect = fileActionsMenuEl.getBoundingClientRect();
       fileActionsDropdownTop = rect.bottom + 5;
@@ -449,13 +450,13 @@
   }
 
   async function handleOpenFolder() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     showOpenMenu = false;
     await folderStore.openFolder();
   }
 
   function handleOpenFileFromMenu() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     showOpenMenu = false;
     handleOpenFile();
   }
@@ -476,7 +477,7 @@
   });
 
   async function handleExportImage() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     if (isExporting) return;
     if (!hasContent) {
       onToast($t('toolbar.noContentExport'), 'info');
@@ -803,7 +804,7 @@
   }
 
   async function handleOpenFile() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     try {
       const result = await openFileDialog();
       if (result) {
@@ -830,7 +831,7 @@
   }
 
   async function handleSaveFile(isAutoSave = false) {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     const currentContent = content;
     if (!currentContent.trim() && !isAutoSave) {
       onToast('Nothing to save', 'info');
@@ -866,7 +867,7 @@
   }
 
   async function handleSaveAsFile() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     if (!content.trim()) {
       onToast('Nothing to save', 'info');
       return;
@@ -891,7 +892,7 @@
   }
 
   function handleNewFile() {
-    if (isCodegenMode) return;
+    if (isSubPageMode) return;
     tabsStore.addTab();
     onToast('New tab created');
   }
@@ -919,7 +920,7 @@
     {:else}
       <!-- 1. File operations -->
       <div class="toolbar-group">
-        <button class="toolbar-btn" onclick={handleNewFile} disabled={isCodegenMode} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
+        <button class="toolbar-btn" onclick={handleNewFile} disabled={isSubPageMode} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
           <svg class="toolbar-icon" style="color: #0ea5e9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
           {$t('toolbar.new')}
         </button>
@@ -927,7 +928,7 @@
           <button
             class="toolbar-btn toolbar-open-btn"
             onclick={() => toggleOpenMenu()}
-            disabled={isCodegenMode}
+            disabled={isSubPageMode}
             use:tooltip={$t('toolbar.openTooltip')}
           >
             <svg class="toolbar-icon" style="color: #eab308;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
@@ -941,7 +942,7 @@
               class="toolbar-open-dropdown"
               style="top: {dropdownTop}px; left: {dropdownLeft}px;"
             >
-              <button class="open-menu-item" onclick={handleOpenFileFromMenu} disabled={isCodegenMode}>
+              <button class="open-menu-item" onclick={handleOpenFileFromMenu} disabled={isSubPageMode}>
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M10 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L10 1.5z" stroke-linecap="round" stroke-linejoin="round"/>
                   <path d="M10 1.5V5.5h4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -949,7 +950,7 @@
                 <span>Open File</span>
                 <span class="open-menu-shortcut">{shortcutLabel('openFile')}</span>
               </button>
-              <button class="open-menu-item" onclick={handleOpenFolder} disabled={isCodegenMode}>
+              <button class="open-menu-item" onclick={handleOpenFolder} disabled={isSubPageMode}>
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M1 4.5a1 1 0 011-1h3.586a1 1 0 01.707.293L7.707 5.5H13a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1v-8z" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -963,7 +964,7 @@
             class="toolbar-icon-btn"
             class:is-active={showFileActionsMenu}
             onclick={toggleFileActionsMenu}
-            disabled={isCodegenMode}
+            disabled={isSubPageMode}
             use:tooltip={$t('toolbar.exportImageTooltip')}
             aria-label={$t('toolbar.exportImage')}
           >
@@ -978,7 +979,7 @@
               class="toolbar-file-actions-dropdown"
               style="top: {fileActionsDropdownTop}px; left: {fileActionsDropdownLeft}px;"
             >
-              <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting || isCodegenMode}>
+              <button class="open-menu-item export-menu-item" onclick={handleExportImageFromMenu} disabled={isExporting || isSubPageMode}>
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <rect x="2" y="2" width="12" height="12" rx="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                   <circle cx="5.5" cy="5.5" r="1" />
@@ -1077,7 +1078,7 @@
               <button
                 class="open-menu-item"
                 onclick={handleConvertKeyNamingFromMenu}
-                disabled={isProcessing || !canUseJsonTools || isConvertMode || isSchemaMode}
+                disabled={isProcessing || !canUseJsonTools}
                 aria-label={$t('toolbar.keyNamingTooltip')}
               >
                 <svg class="toolbar-icon" style="color: #a855f7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
