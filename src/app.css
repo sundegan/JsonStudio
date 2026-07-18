@@ -78,6 +78,14 @@ body {
   --tree-line-active: rgba(152, 152, 176, 0.42);
 }
 
+/* Apply theme colors in one paint; interactive transitions resume on the next frame. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
 .light {
   --bg-base: #f4f4f8;
   --bg-primary: #ffffff;
@@ -498,20 +506,6 @@ a {
   cursor: not-allowed;
 }
 
-/* Error message */
-.json-tree-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  margin: 8px 12px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid var(--error);
-  border-radius: 6px;
-  color: var(--error);
-  font-size: 11px;
-}
-
 /* Tree content area */
 .json-tree-content {
   flex: 1;
@@ -782,11 +776,6 @@ a {
   line-height: 18px;
   margin-left: 4px;
   font-variant-numeric: tabular-nums;
-}
-
-.tree-node:hover .tree-child-count,
-.tree-node-selected .tree-child-count {
-  color: var(--text-secondary);
 }
 
 .tree-node:hover .tree-line-vertical,

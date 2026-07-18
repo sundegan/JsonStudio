@@ -233,8 +233,6 @@
   }
 
   onMount(() => {
-    settingsStore.init();
-    
     // Initialize file watcher service
     fileWatcherService.init();
     

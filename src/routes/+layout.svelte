@@ -10,6 +10,8 @@
   let platform = $state<TitlebarPlatform>('macos');
   let isWindowInactive = $state(false);
   let isWindowExpanded = $state(false);
+  let themeSwitchFrame: number | null = null;
+  let appliedTheme: boolean | null = null;
 
   async function detectPlatform(): Promise<TitlebarPlatform> {
     try {
@@ -25,15 +27,25 @@
     return 'macos';
   }
 
-  async function applyTheme(isDarkMode: boolean) {
+  function applyTheme(isDarkMode: boolean) {
     const html = document.documentElement;
-    if (isDarkMode) {
-      html.classList.remove('light');
-    } else {
-      html.classList.add('light');
+    if (themeSwitchFrame !== null) {
+      cancelAnimationFrame(themeSwitchFrame);
     }
+
+    html.classList.add('theme-switching');
+    html.classList.toggle('light', !isDarkMode);
     html.style.colorScheme = isDarkMode ? 'dark' : 'light';
-    
+
+    themeSwitchFrame = requestAnimationFrame(() => {
+      themeSwitchFrame = null;
+      html.classList.remove('theme-switching');
+    });
+
+    void syncNativeWindowTheme(isDarkMode);
+  }
+
+  async function syncNativeWindowTheme(isDarkMode: boolean) {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('set_window_theme', { isDark: isDarkMode });
@@ -145,10 +157,17 @@
     document.addEventListener('selectstart', handleSelectStart);
 
     const unsubscribe = settingsStore.subscribe(settings => {
+      if (appliedTheme === settings.isDarkMode) return;
+      appliedTheme = settings.isDarkMode;
       applyTheme(settings.isDarkMode);
     });
     return () => {
       disposed = true;
+      if (themeSwitchFrame !== null) {
+        cancelAnimationFrame(themeSwitchFrame);
+        themeSwitchFrame = null;
+      }
+      document.documentElement.classList.remove('theme-switching');
       unsubscribe();
       window.removeEventListener('jsonstudio-window-expanded-change', handleWindowExpandedChange);
       window.removeEventListener('focus', syncWindowFrameState);

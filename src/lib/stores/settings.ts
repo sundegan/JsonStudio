@@ -126,7 +126,7 @@ function createSettingsStore() {
     },
     
     // Update single setting
-    async updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
       update(settings => {
         const newSettings = { ...settings, [key]: value };
         saveSettings(newSettings);
@@ -136,16 +136,6 @@ function createSettingsStore() {
       if (key === 'language') {
         locale.set(value as Locale);
         void syncAppMenuLanguage(value as Locale);
-      }
-
-      // If updating dark mode, sync macOS window theme
-      if (key === 'isDarkMode') {
-        try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          await invoke('set_window_theme', { isDark: value });
-        } catch (error) {
-          console.error('Failed to update window theme:', error);
-        }
       }
     },
     
