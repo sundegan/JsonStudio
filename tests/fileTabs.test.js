@@ -70,6 +70,26 @@ test('toolbar creates new tabs directly', async () => {
   assert.match(handlerBody, /New tab created/);
 });
 
+test('toolbar exposes a save button matching the file operation buttons', async () => {
+  const source = await readFile(
+    new URL('../src/lib/components/editor/JsonEditorToolbar.svelte', import.meta.url),
+    'utf8',
+  );
+  const saveButton = source.match(
+    /<button\s+class="toolbar-btn"\s+type="button"\s+onclick=\{\(\) => handleSaveFile\(\)\}[\s\S]*?<\/button>/,
+  )?.[0] || '';
+
+  assert.match(saveButton, /onclick=\{\(\) => handleSaveFile\(\)\}/);
+  assert.match(saveButton, /\$t\('toolbar\.save'\)/);
+  assert.match(saveButton, /shortcutLabel\('saveFile'\)/);
+  assert.match(saveButton, /<SaveIcon size=\{15\} strokeWidth=\{2\}/);
+
+  const newButton = source.match(
+    /<button class="toolbar-btn" onclick=\{handleNewFile\}[\s\S]*?<\/button>/,
+  )?.[0] || '';
+  assert.match(newButton, /<FilePlus2 size=\{15\} strokeWidth=\{2\}/);
+});
+
 test('tab bar does not expose a separate inline new-tab button', async () => {
   const source = await readFile(
     new URL('../src/lib/components/editor/TabBar.svelte', import.meta.url),

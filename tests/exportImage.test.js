@@ -12,6 +12,10 @@ test('export image toolbar saves PNG bytes to a selected file location', async (
   assert.match(source, /saveBinaryFileDialog/);
   assert.match(source, /pngBase64ToBytes/);
   assert.match(source, /json-export\.png/);
+  assert.match(source, /<circle cx="5" cy="12" r="1\.8"\/>[\s\S]*<circle cx="12" cy="12" r="1\.8"\/>[\s\S]*<circle cx="19" cy="12" r="1\.8"\/>/);
+  assert.match(source, /onclick=\{toggleFileActionsMenu\}/);
+  assert.match(source, /\{#if showFileActionsMenu\}/);
+  assert.match(source, /class="toolbar-file-actions-dropdown"/);
   assert.match(handlerBody, /saveBinaryFileDialog\(pngBytes,\s*fileName,\s*'png'\)/);
   assert.match(handlerBody, /toolbar\.exportImageSaved/);
   assert.doesNotMatch(handlerBody, /copyImageToClipboard/);
