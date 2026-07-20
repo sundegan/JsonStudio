@@ -5,7 +5,7 @@
  */
 
 /** @typedef {'Printed Structure' | 'Go fmt' | 'C# record'} PrintedStructureHint */
-/** @typedef {'Java/Kotlin toString' | 'C# record' | 'Go fmt' | 'Python repr' | 'Rust Debug'} PrintedStructureKind */
+/** @typedef {'Java/Kotlin toString' | 'C# record' | 'Go fmt' | 'Python repr' | 'Rust Debug' | 'JavaScript inspection'} PrintedStructureKind */
 
 /**
  * @param {string} value
@@ -27,6 +27,10 @@ export function formatPrintedStructure(value, indent, kindHint) {
   }
 
   if (kindHint !== 'Printed Structure') return null;
+
+  const javascriptValue = parseJavaScriptInspection(value);
+  if (javascriptValue !== null)
+    return formatStructure(javascriptValue, indent, 'JavaScript inspection');
 
   const pythonValue = parsePythonRepr(value);
   if (pythonValue !== null)
@@ -120,6 +124,92 @@ function parseJvmEqualsValue(value) {
       .filter((item) => item.trim())
       .map(parseJvmEqualsValue);
   return parseKeyValueObject(body, '=', parseJvmEqualsValue);
+}
+
+/** @param {string} value @returns {object | unknown[] | null} */
+function parseJavaScriptInspection(value) {
+  const input = value.trim();
+  const map = input.match(/^Map\(\d+\)\s*\{([\s\S]*)\}$/);
+  if (map) {
+    const result = {};
+    for (const entry of splitTopLevel(map[1])) {
+      if (!entry.trim()) continue;
+      const arrow = findTopLevelArrow(entry);
+      if (arrow === -1) return null;
+      const key = parseJavaScriptInspectionValue(entry.slice(0, arrow));
+      if (key !== null && typeof key === 'object') return null;
+      setOwnValue(
+        result,
+        String(key),
+        parseJavaScriptInspectionValue(entry.slice(arrow + 2)),
+      );
+    }
+    return result;
+  }
+
+  const set = input.match(/^Set\(\d+\)\s*\{([\s\S]*)\}$/);
+  if (set) {
+    return splitTopLevel(set[1])
+      .filter((item) => item.trim())
+      .map(parseJavaScriptInspectionValue);
+  }
+
+  return null;
+}
+
+/** @param {string} value @returns {unknown} */
+function parseJavaScriptInspectionValue(value) {
+  const input = value.trim();
+  const collection = parseJavaScriptInspection(input);
+  if (collection !== null) return collection;
+  if (input === 'undefined' || input === 'NaN' || input === 'Infinity') {
+    return null;
+  }
+  if (input === 'true') return true;
+  if (input === 'false') return false;
+  if (input === 'null') return null;
+  if (isNumericLiteral(input)) return Number(input);
+  if (isQuotedValue(input)) return parseQuotedValue(input);
+  if (input.startsWith('{') && input.endsWith('}')) {
+    const object = parseKeyValueObject(
+      input.slice(1, -1),
+      ':',
+      parseJavaScriptInspectionValue,
+    );
+    if (object !== null) return object;
+  }
+  if (input.startsWith('[') && input.endsWith(']')) {
+    return splitTopLevel(input.slice(1, -1))
+      .filter((item) => item.trim())
+      .map(parseJavaScriptInspectionValue);
+  }
+  return input;
+}
+
+/** @param {string} value @returns {number} */
+function findTopLevelArrow(value) {
+  let quote = null;
+  let escaped = false;
+  const stack = [];
+  for (let index = 0; index < value.length - 1; index += 1) {
+    const char = value[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === '{') stack.push('}');
+    else if (char === '[') stack.push(']');
+    else if (char === '(') stack.push(')');
+    else if (char === '}' || char === ']' || char === ')') {
+      if (stack.at(-1) === char) stack.pop();
+    } else if (char === '=' && value[index + 1] === '>' && stack.length === 0) {
+      return index;
+    }
+  }
+  return -1;
 }
 
 /** @param {string} value @returns {object | null} */
@@ -313,12 +403,13 @@ function parseGoTypedBody(body) {
 
 /** @param {string} value @returns {object | null} */
 function parseGoTypedValue(value) {
-  const input = value.trim();
+  const input = value.trim().replace(/^&(?=[A-Za-z_])/, '');
   const mapType = input.match(/^map\[[^\]\n]+\]/);
   if (mapType) {
     const opener = findGoMapLiteralOpener(input, mapType[0].length);
     if (opener !== -1 && input.endsWith('}')) {
-      return parseGoTypedBody(input.slice(opener + 1, -1));
+      const body = input.slice(opener + 1, -1);
+      return body.trim() ? parseGoTypedBody(body) : {};
     }
   }
   const collection = parseGoTypedCollection(input);
@@ -398,6 +489,7 @@ function parseGoFields(body, minimumFields) {
 /** @param {string} value @returns {unknown} */
 function parseGoValue(value) {
   const input = value.trim();
+  if (input.startsWith('&')) return parseGoValue(input.slice(1));
   if (input === 'nil') return null;
   if (input === 'true') return true;
   if (input === 'false') return false;
@@ -463,7 +555,9 @@ function findGoValueEnd(value, start) {
     else if (char === '}' || char === ']' || char === ')') {
       if (stack.at(-1) === char) stack.pop();
     } else if (stack.length === 0 && char === ',') {
-      return index;
+      if (/^\s*[A-Za-z_][\w.-]*:(?!\s)/.test(value.slice(index + 1))) {
+        return index;
+      }
     } else if (stack.length === 0 && /\s/.test(char)) {
       // `%+v` emits `Key:Value` with no space after the colon, so a following
       // `word:` only starts a new field when its colon is immediately followed
@@ -520,7 +614,7 @@ function splitGoSequence(value) {
  * @returns {object | null}
  */
 function parseKeyValueObject(body, separator, parseValue) {
-  const entries = splitTopLevel(body).filter((item) => item.trim());
+  const entries = splitKeyValueEntries(body, separator);
   if (!entries.length) return null;
   const result = {};
   for (const entry of entries) {
@@ -532,6 +626,43 @@ function parseKeyValueObject(body, separator, parseValue) {
     setOwnValue(result, key, parseValue(entry.slice(index + 1)));
   }
   return result;
+}
+
+/**
+ * Java, Kotlin, and C# string fields are commonly printed without quotes.
+ * A comma inside such a value is indistinguishable from a delimiter until a
+ * following top-level `key=` entry appears, so keep delimiter-less segments
+ * attached to the preceding field.
+ *
+ * @param {string} body
+ * @param {'=' | ':'} separator
+ * @returns {string[]}
+ */
+function splitKeyValueEntries(body, separator) {
+  const entries = [];
+  for (const part of splitTopLevel(body)) {
+    if (!part.trim()) continue;
+    if (isKeyValueEntryStart(part, separator) || entries.length === 0) {
+      entries.push(part);
+    } else {
+      entries[entries.length - 1] += `,${part}`;
+    }
+  }
+  return entries;
+}
+
+/**
+ * A continuation of an unquoted string may itself contain `=` or `:`. Only a
+ * separator preceded by a valid field name starts the next entry.
+ *
+ * @param {string} value
+ * @param {'=' | ':'} separator
+ */
+function isKeyValueEntryStart(value, separator) {
+  const index = findTopLevelSeparator(value, separator);
+  if (index === -1) return false;
+  const key = value.slice(0, index).trim();
+  return /^[A-Za-z_$][\w$.-]*$/.test(key) || isQuotedValue(key);
 }
 
 /** @param {string} value */
@@ -627,11 +758,12 @@ function setOwnValue(target, key, value) {
 
 /** @param {string} value */
 export function isGoFormatStruct(value) {
-  return (
-    splitTopLevel(value.slice(1, -1)).length === 1 &&
-    /^\{[\s\S]*\b[A-Za-z_][\w.-]*\s*:/.test(value) &&
-    /\s+[A-Za-z_][\w.-]*\s*:/.test(value)
-  );
+  if (!value.startsWith('{') || !value.endsWith('}')) return false;
+  if (/\/\/|\/\*/.test(value)) return false;
+  const body = value.slice(1, -1);
+  if (!/[^\s,]\s+[A-Za-z_][\w.-]*\s*:/.test(body)) return false;
+  const fields = splitGoFields(body);
+  return Boolean(fields && fields.length >= 2);
 }
 
 /** @param {string} value */

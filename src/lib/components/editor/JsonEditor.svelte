@@ -1113,7 +1113,7 @@
 
     const cached = logJsonStateByTab.get(tab.id);
     if (cached?.source === value) {
-      applyLogJsonDetectionResult(tab.id, value, cached.fragments, false);
+      void applyLogJsonDetectionResult(tab.id, value, cached.fragments, false);
       return false;
     }
 
@@ -1125,21 +1125,33 @@
     return needsDetection;
   }
 
-  function applyLogJsonDetectionResult(
+  async function applyLogJsonDetectionResult(
     tabId: string,
     value: string,
     fragments: LogJsonFragment[],
     updateCache = true,
   ) {
-    // Only standard JSON can be handled by the main editor itself, so a
-    // single whole-document fragment is redundant. Non-standard whole-document
-    // content (Go fmt, JSON5, language print output, ...) is not parseable in
-    // the editor and must still surface through the fragments panel.
-    const isWholeDocumentJson =
+    const isWholeDocumentFragment =
       fragments.length === 1 &&
-      fragments[0].kind === 'JSON' &&
       fragments[0].raw.trim() === value.trim();
-    const mixedFragments = isWholeDocumentJson ? [] : fragments;
+
+    let isWholeDocumentEditorContent =
+      isWholeDocumentFragment && fragments[0].kind === 'JSON';
+
+    // The log extractor can repair JSON-like text and label it JSON5 even when
+    // the source parser rejects it. Only parser-valid JSON5 belongs in the
+    // main editor; repairable log fragments stay in the result panel.
+    if (isWholeDocumentFragment && fragments[0].kind === 'JSON5') {
+      const documentStats = await getJsonDocumentStatsAsync(
+        `log-json:${tabId}`,
+        value,
+      );
+      if ($activeTab?.id !== tabId || content !== value) return;
+      isWholeDocumentEditorContent =
+        documentStats.valid && documentStats.format_type === 'JSON5';
+    }
+
+    const mixedFragments = isWholeDocumentEditorContent ? [] : fragments;
 
     if (updateCache) {
       logJsonStateByTab.set(tabId, { source: value, fragments: mixedFragments });
@@ -1176,7 +1188,7 @@
           indent: tabSize,
         }) as LogJsonFragment[];
         if ($activeTab?.id === tabId && content === value) {
-          applyLogJsonDetectionResult(tabId, value, fragments);
+          await applyLogJsonDetectionResult(tabId, value, fragments);
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;

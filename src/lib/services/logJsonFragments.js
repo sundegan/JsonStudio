@@ -33,7 +33,7 @@ export function canExtractLogJsonFragments(
  *   column: number;
  *   raw: string;
  *   formatted: string;
- *   kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Java/Kotlin toString' | 'C# record' | 'Go fmt' | 'Python repr' | 'Rust Debug';
+ *   kind: 'JSON' | 'JSON5' | 'Escaped JSON' | 'Java/Kotlin toString' | 'C# record' | 'Go fmt' | 'Python repr' | 'Rust Debug' | 'JavaScript inspection';
  * }} LogJsonFragment
  */
 
@@ -116,7 +116,7 @@ function extractLogJsonFragmentsInternal(
     );
     if (
       preferredNested.length > 0 &&
-      shouldPreferNestedPayload(candidate, parsed)
+      shouldPreferNestedPayload(content, candidate, parsed)
     ) {
       insertNestedCandidates(candidates, index + 1, preferredNested);
       continue;
@@ -189,8 +189,8 @@ function normalizeJsonCandidate(value, indent, kindHint) {
   if (printedStructure) return printedStructure;
 
   // A top-level bare `%+v` struct such as `{Level:info Msg:a b Code:5}` reaches
-  // here without a "Go fmt" hint, because language parsers are gated on log
-  // context (level keyword or field label) that whole-content input lacks.
+  // here without a "Go fmt" hint because whole-document candidates deliberately
+  // skip the surrounding log-context check.
   // Try Go parsing before jsonrepair, which would otherwise swallow a
   // multi-word value like `Msg:connection refused: timeout` into one string and
   // emit a plausible-but-wrong JSON5 result. isGoFormatStruct requires
@@ -237,6 +237,7 @@ function tryFormatJson(value, indent) {
  * @returns {string | null}
  */
 function tryRepair(value, indent) {
+  if (hasAmbiguousCommentInBareValue(value)) return null;
   try {
     const repaired = jsonrepair(value);
     return JSON.stringify(JSON.parse(repaired), null, indent);
@@ -279,6 +280,61 @@ function hasJson5Syntax(value) {
 }
 
 /**
+ * `jsonrepair` treats `//` and `/*` as comments. In a malformed log value
+ * such as `{message:use // as text}`, that would silently discard data.
+ * Reject only comments that follow a non-JSON bare value; comments after a
+ * real scalar or between fields remain supported.
+ *
+ * @param {string} value
+ */
+function hasAmbiguousCommentInBareValue(value) {
+  let quote = null;
+  let escaped = false;
+  let bareValueStart = null;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      bareValueStart = null;
+      continue;
+    }
+    if (char === ':') {
+      bareValueStart = index + 1;
+      continue;
+    }
+    if ('{[,\n'.includes(char) || '}]'.includes(char)) {
+      bareValueStart = null;
+      continue;
+    }
+    if (char !== '/' || !['/', '*'].includes(value[index + 1])) continue;
+
+    const prefix =
+      bareValueStart === null ? '' : value.slice(bareValueStart, index).trim();
+    if (prefix && !isJsonLikeBareScalar(prefix)) return true;
+    if (value[index + 1] === '*') {
+      const close = value.indexOf('*/', index + 2);
+      if (close === -1) return false;
+      bareValueStart = null;
+      index = close + 1;
+    } else {
+      const lineEnd = value.indexOf('\n', index + 2);
+      if (lineEnd === -1) break;
+      bareValueStart = null;
+      index = lineEnd;
+    }
+  }
+
+  return false;
+}
+
+/**
  * @param {string} content
  * @param {number} maxFragments
  * @returns {PrintedStructureCandidate[]}
@@ -309,14 +365,14 @@ function findJsonCandidates(content, maxFragments) {
     ...printedStructureCandidates,
     ...stringCandidates,
   ]
-    .sort((a, b) => a.start - b.start || a.end - b.end)
+    .sort((a, b) => a.start - b.start || b.end - a.end)
     .slice(0, maxFragments);
 }
 
 /**
- * Find log values whose syntax is specific to direct language-level printing.
- * These candidates require either a field label or a conventional log level so
- * ordinary source declarations such as `class User { ... }` remain untouched.
+ * Find values whose syntax is specific to direct language-level printing.
+ * Candidate boundaries must still exclude source declarations and expressions;
+ * the value itself, rather than a log-level prefix, determines its format.
  *
  * @param {string} content
  * @param {number} maxCandidates
@@ -332,7 +388,8 @@ function findPrintedStructureCandidates(content, maxCandidates) {
   const add = (start, end, kindHint) => {
     if (end === -1 || candidates.length >= maxCandidates) return;
     const key = `${start}:${end}`;
-    if (seen.has(key) || !isLanguageLogCandidate(content, start, end)) return;
+    if (seen.has(key) || !isPrintedStructureCandidate(content, start, end))
+      return;
     seen.add(key);
     const position = getLineColumnAt(content, start);
     candidates.push({
@@ -346,7 +403,7 @@ function findPrintedStructureCandidates(content, maxCandidates) {
   };
 
   const typedValue =
-    /\b(?:(?:[A-Z][\w$]*)(?:\.[A-Z][\w$]*)*|(?:[a-z_][\w$]*\.)+[A-Z][\w$]*)(?:<[^>\n]+>)?(?:@[\da-fA-F]+)?(?=[({])/g;
+    /(?<![\w$])&?(?:(?:[A-Z][\w$]*)(?:\.[A-Z][\w$]*)*|(?:[a-z_][\w$]*\.)+[A-Z][\w$]*)(?:<[^>\n]+>)?(?:@[\da-fA-F]+)?(?=[({])/g;
   for (const match of content.matchAll(typedValue)) {
     const start = match.index ?? 0;
     const openIndex = start + match[0].length;
@@ -378,6 +435,17 @@ function findPrintedStructureCandidates(content, maxCandidates) {
     add(
       start,
       findMatchingJsonEnd(content, openIndex, openChar),
+      'Printed Structure',
+    );
+  }
+
+  const javascriptCollection = /\b(?:Map|Set)\(\d+\)\s*(?=\{)/g;
+  for (const match of content.matchAll(javascriptCollection)) {
+    const start = match.index ?? 0;
+    const openIndex = start + match[0].length;
+    add(
+      start,
+      findMatchingJsonEnd(content, openIndex, '{'),
       'Printed Structure',
     );
   }
@@ -433,8 +501,13 @@ function findPrintedStructureCandidates(content, maxCandidates) {
 function isRustTupleBody(body) {
   if (!body.trim()) return false;
   if (/[:=]/.test(body.replace(/"[^"]*"|'[^']*'/g, ''))) return false;
-  const items = splitTopLevelParen(body).filter((item) => item.trim());
-  if (items.length < 2) return false;
+  const parts = splitTopLevelParen(body);
+  const items = parts.filter((item) => item.trim());
+  const lastPart = parts[parts.length - 1] ?? '';
+  const hasTrailingComma = parts.length > 1 && !lastPart.trim();
+  if (items.length < 2 && !(hasTrailingComma && items.length === 1)) {
+    return false;
+  }
   return items.every((item) => isRustScalarItem(item.trim()));
 }
 
@@ -503,20 +576,79 @@ function isGoTypedCollectionPrefix(content, start, end) {
  * @param {number} start
  * @param {number} end
  */
-function isLanguageLogCandidate(content, start, end) {
-  if (isWholeContentCandidate(content, { start, end })) return false;
+function isPrintedStructureCandidate(content, start, end) {
+  const raw = content.slice(start, end + 1).trim();
+  const isWholePrintedValue = isWholeContentCandidate(content, { start, end });
+  if (isWholePrintedValue) {
+    return isWholePrintedValueSyntax(raw);
+  }
   const before = content.slice(Math.max(0, start - 160), start);
-  if (isSourceDeclarationPrefix(before)) return false;
+  if (isSourceCodePrefix(before)) return false;
   return (
     hasExplicitFragmentLabel(content, start) ||
-    /\b(?:TRACE|DEBUG|INFO|WARN|WARNING|ERROR|FATAL)\b/i.test(before)
+    /\s$/.test(before) ||
+    hasAssignmentContext(before)
   );
+}
+
+/**
+ * A complete printed value can start with a type name, so its structural
+ * object/array child is not the value the user intended to inspect. Keep the
+ * syntax check narrow enough to avoid treating ordinary JSON5 objects as
+ * language output.
+ *
+ * @param {string} value
+ */
+function isWholePrintedValueSyntax(value) {
+  return (
+    isTypedPrintCall(value) ||
+    /^(?:Map|Set)\(\d+\)\s*\{/.test(value) ||
+    /^(?:[A-Za-z_][\w$]*\.)+[A-Z][\w$]*(?:<[^>\n]+>)?\s*\{[\s\S]*\}$/.test(
+      value,
+    ) ||
+    /^(?:\*?(?:\[\d*\]\*?)+)(?:[A-Za-z_][\w$]*\.)*[A-Za-z_][\w$]*\{[\s\S]*\}$/.test(
+      value,
+    ) ||
+    /^map\[[^\]\n]+\][\s\S]*\{[\s\S]*\}$/.test(value) ||
+    /^Optional\s*\[[\s\S]*\]$/.test(value) ||
+    (isRustDebugCollection(value) &&
+      (!isRustNamedStructValue(value) || /:/.test(value))) ||
+    isCSharpRecord(value)
+  );
+}
+
+/** @param {string} value */
+function isTypedPrintCall(value) {
+  return /^(?:[A-Za-z_][\w$]*(?:\.|::))*[A-Z][\w$]*(?:<[^>\n]+>)?\s*\(/.test(
+    value,
+  );
+}
+
+/** @param {string} value */
+function isRustNamedStructValue(value) {
+  return /^(?:[A-Za-z_][\w$]*::)*[A-Z][\w$]*(?:<[^>\n]+>)?\s*\{/.test(value);
+}
+
+/** @param {string} value */
+function hasAssignmentContext(value) {
+  const assignment = value.lastIndexOf('=');
+  if (assignment === -1) return false;
+  return !/[;\n]/.test(value.slice(assignment + 1));
 }
 
 /** @param {string} value */
 function isSourceDeclarationPrefix(value) {
   return /\b(?:class|interface|enum|record|struct|type|func|function)\b(?:\s+[\w$<>,.()[\]]+)*\s*$/i.test(
     value,
+  );
+}
+
+/** @param {string} value */
+function isSourceCodePrefix(value) {
+  const line = value.slice(value.lastIndexOf('\n') + 1);
+  return (
+    isSourceDeclarationPrefix(line) ||
+    /(?:^|[;{}])\s*(?:const|let|var|return|new|function)\b/.test(line)
   );
 }
 
@@ -528,22 +660,22 @@ function isSourceDeclarationPrefix(value) {
  *
  * @param {string} content
  * @param {number} start
- * @param {number} end
  * @param {string} raw
  */
-function isEmptyTypedStructure(content, start, end, raw) {
+function isEmptyTypedStructure(content, start, raw) {
   const before = content.slice(Math.max(0, start - 160), start);
-  if (raw === '[]') {
-    return (
-      isLanguageLogCandidate(content, start, end) && /\bmap\s*$/.test(before)
-    );
-  }
+  if (raw === '[]') return isTypedLiteralPrefix(before);
   if (raw !== '{}') return false;
-  if (!isLanguageLogCandidate(content, start, end)) return false;
-  return (
-    /\b(?:interface|struct|any|error)\s*$/.test(before) ||
-    /(?:[A-Z][\w$]*|[a-z_][\w$]*(?:\.[A-Z][\w$]*)+)\s*$/.test(before)
-  );
+  return isTypedLiteralPrefix(before);
+}
+
+/** @param {string} value */
+function isTypedLiteralPrefix(value) {
+  const match = value.match(/([A-Za-z_$][\w$.-]*)\s*$/);
+  if (!match) return false;
+  const typeName = match[1];
+  const suffix = match[0].slice(typeName.length);
+  return suffix === '' || /[A-Z]/.test(typeName);
 }
 
 /**
@@ -580,8 +712,8 @@ function findStructuralJsonCandidates(content, maxFragments) {
         const raw = content.slice(index, end + 1);
         const before = content.slice(Math.max(0, index - 160), index);
         if (
-          isSourceDeclarationPrefix(before) ||
-          isEmptyTypedStructure(content, index, end, raw) ||
+          isSourceCodePrefix(before) ||
+          isEmptyTypedStructure(content, index, raw) ||
           isGoTypedCollectionPrefix(content, index, end)
         ) {
           ({ line, column } = advancePosition(raw, line, column));
@@ -626,7 +758,7 @@ function findStructuralJsonCandidates(content, maxFragments) {
  * @returns {PrintedStructureKindHint | undefined}
  */
 function getStructuralKindHint(content, start, end, raw) {
-  if (!isLanguageLogCandidate(content, start, end)) return undefined;
+  if (!isPrintedStructureCandidate(content, start, end)) return undefined;
   if (isGoFormatStruct(raw)) return 'Go fmt';
   return isJavaKeyValueObject(raw) || isRustDebugCollection(raw)
     ? 'Printed Structure'
@@ -635,7 +767,7 @@ function getStructuralKindHint(content, start, end, raw) {
 
 /**
  * @param {string} content
- * @param {{ start: number, end: number, kindHint?: PrintedStructureKindHint }} parent
+ * @param {{ start: number, end: number }} parent
  * @returns {PrintedStructureCandidate[]}
  */
 function findNestedJsonCandidates(content, parent) {
@@ -687,7 +819,7 @@ function insertNestedCandidates(candidates, insertAt, nested) {
 
 /**
  * @param {string} content
- * @param {{ start: number, end: number, kindHint?: PrintedStructureKindHint }} parent
+ * @param {{ start: number, end: number }} parent
  * @param {number} indent
  * @returns {PrintedStructureCandidate[]}
  */
@@ -701,12 +833,93 @@ function findPreferredNestedPayloadCandidates(content, parent, indent) {
 }
 
 /**
- * @param {{ raw: string }} candidate
+ * @param {string} content
+ * @param {{ start: number, end: number, raw: string }} candidate
  * @param {{ kind: LogJsonFragment['kind'] }} parsed
  */
-function shouldPreferNestedPayload(candidate, parsed) {
-  if (parsed.kind !== 'JSON5') return false;
-  return hasBareScalarEnvelopeField(candidate.raw);
+function shouldPreferNestedPayload(content, candidate, parsed) {
+  if (parsed.kind !== 'JSON5' || isWholeContentCandidate(content, candidate)) {
+    return false;
+  }
+  return (
+    isAssignedWrapperCandidate(content, candidate.start) &&
+    hasBareScalarEnvelopeField(candidate.raw)
+  );
+}
+
+/**
+ * @param {string} value
+ * @param {number} start
+ */
+function isAssignedWrapperCandidate(value, start) {
+  const before = value.slice(Math.max(0, start - 160), start);
+  return /[A-Za-z_$][\w.$-]*\s*=\s*["']?\s*&?\s*$/.test(before);
+}
+
+/** @param {string} value */
+function hasBareScalarEnvelopeField(value) {
+  return splitTopLevelObjectFields(value).some((field) => {
+    const separator = findTopLevelFieldSeparator(field);
+    if (separator === -1) return false;
+    return isBareScalarEnvelopeValue(field.slice(separator + 1).trim());
+  });
+}
+
+/** @param {string} value @returns {string[]} */
+function splitTopLevelObjectFields(value) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return [];
+
+  const body = trimmed.slice(1, -1);
+  const fields = [];
+  let start = 0;
+  let quote = null;
+  let escaped = false;
+  const stack = [];
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === '{' || char === '[' || char === '(') stack.push(char);
+    else if (char === '}' || char === ']' || char === ')') stack.pop();
+    else if (char === ',' && stack.length === 0) {
+      fields.push(body.slice(start, index));
+      start = index + 1;
+    }
+  }
+  fields.push(body.slice(start));
+  return fields;
+}
+
+/** @param {string} field */
+function findTopLevelFieldSeparator(field) {
+  let quote = null;
+  let escaped = false;
+  for (let index = 0; index < field.length; index += 1) {
+    const char = field[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === ':') return index;
+  }
+  return -1;
+}
+
+/** @param {string} value */
+function isBareScalarEnvelopeValue(value) {
+  if (!value) return true;
+  if (value.startsWith('{') || value.startsWith('[')) return false;
+  if (value.startsWith('"') || value.startsWith("'")) return false;
+  return !isJsonLikeBareScalar(value);
 }
 
 /**
@@ -716,15 +929,6 @@ function shouldPreferNestedPayload(candidate, parsed) {
  *
  * @param {string} value
  */
-function hasBareScalarEnvelopeField(value) {
-  return [
-    ...value.matchAll(
-      /[{,]\s*[A-Za-z_$][\w$-]*\s*:\s*([^"',{}\[\]\s][^,{}\[\]]*)/g,
-    ),
-  ].some((match) => !isJsonLikeBareScalar(match[1].trim()));
-}
-
-/** @param {string} value */
 function isJsonLikeBareScalar(value) {
   return (
     value === 'true' ||
@@ -747,7 +951,17 @@ function isLikelyLogBracketMarker(content, candidate) {
   if (isWholeContentCandidate(content, candidate)) return false;
 
   const label = inferFragmentLabel(content, candidate.start, 1);
-  return label === 'Fragment 1';
+  return (
+    label === 'Fragment 1' &&
+    hasAdjacentBracketPrefix(
+      content.slice(Math.max(0, candidate.start - 160), candidate.start),
+    )
+  );
+}
+
+/** @param {string} value */
+function hasAdjacentBracketPrefix(value) {
+  return /\[[^\]\r\n]+\]\s*$/.test(value.trimEnd());
 }
 
 /**
@@ -756,7 +970,7 @@ function isLikelyLogBracketMarker(content, candidate) {
  */
 function isInsideAcceptedRange(ranges, candidate) {
   return ranges.some(
-    (range) => candidate.start > range.start && candidate.end <= range.end,
+    (range) => candidate.start >= range.start && candidate.end <= range.end,
   );
 }
 

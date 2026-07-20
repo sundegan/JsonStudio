@@ -6,7 +6,11 @@ import {
 } from './helpers/editorHarness.js';
 
 const ESCAPED_JSON = String.raw`"{\"people\":[{\"name\":\"Alice\",\"age\":20},{\"name\":\"Bob\",\"age\":30}],\"meta\":{\"count\":2}}"`;
+const JSON5_DOCUMENT = "{ userId: 42, name: 'Alice', enabled: true, }";
+const REPAIRABLE_LOG_OBJECT = '{ operation: Foo.Bar, payload: { id: 123 } }';
 const MIXED_LOG = 'INFO trace=abc payload={"id":1,"path":"/api"} cost=12ms';
+const RPC_REQUEST_LOG =
+  '2026-07-20 12:20:06.272451\t[60988404cd9d32b170d6985165fdc0b2]\t[INFO]\t[rpc_log_wrapper.go:123:1]\t[1784521206272423668]Service Called *Request*: {serviceName:Health.Check, clientHost:, clientService:, req:{"service":"Local"}}';
 
 test('shows the JSON fragments panel for mixed log content', async ({ page }) => {
   await installTauriEditorHarness(page, MIXED_LOG, { showTreeView: true });
@@ -34,6 +38,29 @@ test('shows the JSON fragments panel for mixed log content', async ({ page }) =>
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(panel).toHaveCount(0);
   await expect(page.getByTestId('editor-format-type')).toHaveText('Mixed');
+});
+
+test('keeps the complete RPC request envelope in the fragments panel', async ({
+  page,
+}) => {
+  await installTauriEditorHarness(page, RPC_REQUEST_LOG);
+  await page.goto('/');
+
+  const panel = page.getByRole('region', { name: 'JSON Fragments' });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('.view-lines')).toContainText(
+    '"serviceName": "Health.Check"',
+  );
+  await expect(panel.locator('.view-lines')).toContainText(
+    '"clientHost": null',
+  );
+  await expect(panel.locator('.view-lines')).toContainText(
+    '"clientService": null',
+  );
+  await expect(panel.locator('.view-lines')).toContainText('"req":');
+  await expect(panel.locator('.view-lines')).toContainText(
+    '"service": "Local"',
+  );
 });
 
 test('restores mixed log layout without flashing Tree View after a tab switch', async ({ page }) => {
@@ -93,7 +120,9 @@ test('keeps Tree View mounted while editing standard JSON', async ({ page }) => 
   await page.waitForTimeout(600);
 
   await expect(treeView).toBeVisible();
-  expect(await page.evaluate(() => window.__treeViewWasRemoved)).toBe(false);
+  expect(await page.evaluate(() => window.__treeViewWasRemoved === true)).toBe(
+    false,
+  );
 });
 
 test('formats standalone escaped JSON without entering mixed log mode', async ({ page }) => {
@@ -106,4 +135,43 @@ test('formats standalone escaped JSON without entering mixed log mode', async ({
   await expect(editorSurface).toContainText('"name": "Alice"');
   await expect(editorSurface).toContainText('"count": 2');
   await expect(page.getByRole('region', { name: 'JSON Fragments' })).toHaveCount(0);
+});
+
+test('shows a whole JSON5 document in the main editor', async ({ page }) => {
+  await installTauriEditorHarness(page, JSON5_DOCUMENT, { showTreeView: true });
+  await page.goto('/');
+
+  const editorSurface = page.getByTestId('json-editor').locator('.view-lines');
+  await expect(editorSurface).toBeVisible();
+  await expect(editorSurface).toContainText('userId');
+  await expect(
+    page.getByRole('region', { name: 'JSON Fragments' }),
+  ).toHaveCount(0);
+});
+
+test('keeps a standalone escaped JSON document in the main editor', async ({
+  page,
+}) => {
+  await installTauriEditorHarness(page, ESCAPED_JSON, { showTreeView: true });
+  await page.goto('/');
+
+  const editorSurface = page.getByTestId('json-editor').locator('.view-lines');
+  await expect(editorSurface).toBeVisible();
+  await expect(editorSurface).toContainText('people');
+  await expect(
+    page.getByRole('region', { name: 'JSON Fragments' }),
+  ).toHaveCount(0);
+});
+
+test('keeps repairable non-JSON5 text in the fragments panel', async ({
+  page,
+}) => {
+  await installTauriEditorHarness(page, REPAIRABLE_LOG_OBJECT);
+  await page.goto('/');
+
+  const panel = page.getByRole('region', { name: 'JSON Fragments' });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('.view-lines')).toContainText(
+    '"operation": "Foo.Bar"',
+  );
 });

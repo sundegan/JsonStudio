@@ -66,14 +66,83 @@ test("does not let invalid bracket prefixes hide later JSON payloads", () => {
   assert.equal(fragments[0].label, "payload");
 });
 
-test("extracts nested JSON payloads from log envelopes with bracket markers", () => {
+test("keeps numeric arrays unless a structured log prefix identifies a marker", () => {
+  const payload = extractLogJsonFragments("INFO [12345678901]");
+  assert.equal(payload.length, 1);
+  assert.equal(payload[0].raw, "[12345678901]");
+
+  const log =
+    '2026-07-20 12:20:06.272451 [trace-id] [INFO] [1234567890123456789] payload={"id":1}';
+  const fragments = extractLogJsonFragments(log);
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, "payload");
+});
+
+test("does not truncate bare text that resembles a JSON5 comment", () => {
+  assert.deepEqual(
+    extractLogJsonFragments("INFO payload={message:use // as text}"),
+    [],
+  );
+});
+
+test("recognizes unlabelled printed values without log-level matching", () => {
+  assert.deepEqual(
+    JSON.parse(
+      extractLogJsonFragments("request User(id=1, active=true) done")[0]
+        .formatted,
+    ),
+    { id: 1, active: true },
+  );
+  assert.deepEqual(
+    JSON.parse(
+      extractLogJsonFragments("event User(id=2, active=false) done")[0]
+        .formatted,
+    ),
+    { id: 2, active: false },
+  );
+  assert.deepEqual(
+    JSON.parse(
+      extractLogJsonFragments("request will return User(id=3) later")[0]
+        .formatted,
+    ),
+    { id: 3 },
+  );
+});
+
+test("keeps envelopes with multiple top-level metadata fields together", () => {
   const log = String.raw`2026-06-04 18:48:25.923768	[6b3d81e51e2b8913439c17372077b8aa] [INFO] [PH]	[rpc_log_wrapper.go/121: 1] [1780570105923755786]Service Called Request: {serviceName:BasicService.BatchQueryRecommendInfo, clientHost:10.196.55.183, clientService:insurance.unified.gateway, req:{"user_id":0,"account_id":0,"lang":"","source":0,"req_list":[{"resource_code":"homepage:banner","id_type":0,"refer_id":"","extend":"{\"spp_biz_id\":\"c202a7326b2c68213bb8f69e053c0a60\"}"},{"resource_code":"homepage:pop_up","id_type":0,"refer_id":"","extend":"{\"spp_biz_id\":\"e232a53ae392039a571457639451263b\"}"},{"resource_code":"homepage:recommend","id_type":0,"refer_id":"","extend":""},{"resource_code":"standalone_homepage:voucher","id_type":0,"refer_id":"","extend":""},{"resource_code":"homepage:referral","id_type":0,"refer_id":"","extend":""},{"resource_code":"homepage:review","id_type":0,"refer_id":"","extend":""},{"resource_code":"homepage:icon","id_type":0,"refer_id":"","extend":""}],"extend":""}}`;
   const fragments = extractLogJsonFragments(log);
 
   assert.equal(fragments.length, 1);
-  assert.equal(fragments[0].label, "req");
+  assert.equal(fragments[0].label, "Request");
+  assert.equal(fragments[0].kind, "JSON5");
+  assert.match(
+    fragments[0].formatted,
+    /"serviceName": "BasicService.BatchQueryRecommendInfo"/,
+  );
+  assert.match(fragments[0].formatted, /"clientHost": "10.196.55.183"/);
+  assert.match(
+    fragments[0].formatted,
+    /"clientService": "insurance.unified.gateway"/,
+  );
+  assert.match(fragments[0].formatted, /"req": \{/);
   assert.match(fragments[0].formatted, /"resource_code": "homepage:banner"/);
   assert.doesNotMatch(fragments[0].formatted, /1780570105923755800/);
+});
+
+test("keeps envelopes with empty metadata fields together", () => {
+  const log =
+    '2026-07-20 12:20:06.272451\t[60988404cd9d32b170d6985165fdc0b2]\t[INFO]\t[rpc_log_wrapper.go:123:1]\t[1784521206272423668]Service Called *Request*: {serviceName:Health.Check, clientHost:, clientService:, req:{"service":"Local"}}';
+  const fragments = extractLogJsonFragments(log);
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].kind, "JSON5");
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    serviceName: "Health.Check",
+    clientHost: null,
+    clientService: null,
+    req: { service: "Local" },
+  });
 });
 
 test("prefers explicitly labeled JSON payloads without depending on field names", () => {
@@ -85,6 +154,30 @@ test("prefers explicitly labeled JSON payloads without depending on field names"
   assert.equal(fragments[0].label, "payloadBody");
   assert.equal(fragments[0].kind, "JSON");
   assert.equal(fragments[0].formatted, '{\n  "id": 1,\n  "ok": true\n}');
+});
+
+test("keeps ordinary assignment wrappers focused on their nested payload", () => {
+  const fragments = extractLogJsonFragments(
+    'INFO wrapper={operation:Foo.Bar, method:POST, payload:{"id":1}}',
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, "payload");
+  assert.equal(fragments[0].kind, "JSON");
+  assert.equal(fragments[0].formatted, '{\n  "id": 1\n}');
+});
+
+test("does not classify nested bare values as wrapper metadata", () => {
+  const fragments = extractLogJsonFragments(
+    "INFO state={meta:{name:Alice}, values:[1,2]} done",
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].label, "state");
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    meta: { name: "Alice" },
+    values: [1, 2],
+  });
 });
 
 test("repairs JSON-like log payloads", () => {
@@ -145,6 +238,66 @@ test("extracts Java toString values with nested objects and collections", () => 
     id: 3,
     role: { name: "admin" },
     metadata: { source: "api" },
+  });
+});
+
+test("extracts a complete Java toString value as one fragment", () => {
+  const fragments = extractLogJsonFragments(
+    "User(id=9928, name=张三, profile=Profile{city=杭州, tags=[dev, ops]}, active=true, extra=null)",
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].kind, "Java/Kotlin toString");
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    id: 9928,
+    name: "张三",
+    profile: { city: "杭州", tags: ["dev", "ops"] },
+    active: true,
+    extra: null,
+  });
+});
+
+test("extracts complete typed Go and Rust values without a log prefix", () => {
+  const goStruct = extractLogJsonFragments('main.Item{ID:2, Name:"B"}');
+  const goSlice = extractLogJsonFragments("[]int{1, 2, 3}");
+  const rustCollection = extractLogJsonFragments("[Some(1), None, Ok(2)]");
+
+  assert.equal(goStruct.length, 1);
+  assert.equal(goStruct[0].kind, "Go fmt");
+  assert.deepEqual(JSON.parse(goStruct[0].formatted), { ID: 2, Name: "B" });
+
+  assert.equal(goSlice.length, 1);
+  assert.equal(goSlice[0].kind, "Go fmt");
+  assert.deepEqual(JSON.parse(goSlice[0].formatted), [1, 2, 3]);
+
+  assert.equal(rustCollection.length, 1);
+  assert.equal(rustCollection[0].kind, "Rust Debug");
+  assert.deepEqual(JSON.parse(rustCollection[0].formatted), [1, null, 2]);
+});
+
+test("keeps unquoted comma text inside Java fields", () => {
+  const fragments = extractLogJsonFragments(
+    "INFO user=User(id=1, message=hello, world, profile=Profile(note=first, second), status=OK)",
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    id: 1,
+    message: "hello, world",
+    profile: { note: "first, second" },
+    status: "OK",
+  });
+});
+
+test("does not split a Java text field at an embedded equals sign", () => {
+  const fragments = extractLogJsonFragments(
+    "INFO user=User(message=left = right, status=OK)",
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    message: "left = right",
+    status: "OK",
   });
 });
 
@@ -273,6 +426,16 @@ test("extracts Go fmt struct and map output", () => {
   });
 });
 
+test("extracts an empty typed Go map as one fragment", () => {
+  const fragments = extractLogJsonFragments(
+    "INFO data=map[string]interface {}{} done",
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].kind, "Go fmt");
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {});
+});
+
 test("keeps colons and spaces inside Go fmt %+v field values", () => {
   const messageFragments = extractLogJsonFragments(
     "INFO event={Level:info Msg:connection refused: timeout Code:5}",
@@ -293,6 +456,35 @@ test("keeps colons and spaces inside Go fmt %+v field values", () => {
   assert.deepEqual(JSON.parse(trailingProseFragments[0].formatted), {
     Status: "ok",
     Detail: "retry later: giving up",
+  });
+});
+
+test("keeps commas in Go %+v text fields and parses pointer fields", () => {
+  const fragments = extractLogJsonFragments(
+    'INFO user={ID:1 Name:Alice Message:hello, world Active:true Profile:&main.Profile{City:"Hangzhou"}}',
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].kind, "Go fmt");
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    ID: 1,
+    Name: "Alice",
+    Message: "hello, world",
+    Active: true,
+    Profile: { City: "Hangzhou" },
+  });
+});
+
+test("extracts a top-level Go pointer literal", () => {
+  const fragments = extractLogJsonFragments(
+    '&main.User{ID:1, Profile:&main.Profile{City:"Hangzhou"}}',
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].kind, "Go fmt");
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    ID: 1,
+    Profile: { City: "Hangzhou" },
   });
 });
 
@@ -448,6 +640,7 @@ test("extracts Rust Debug structures, Result values, and maps", () => {
 
 test("extracts Rust anonymous tuples as JSON arrays", () => {
   const bareTuple = extractLogJsonFragments("DEBUG coord=(1, 2, 3)");
+  const singleTuple = extractLogJsonFragments("DEBUG value=(42,)");
   const mixedTuple = extractLogJsonFragments('DEBUG pair=(1, "a")');
   const tupleField = extractLogJsonFragments("DEBUG point=X { pos: (1, 2) }");
   const vecOfTuples = extractLogJsonFragments(
@@ -460,6 +653,7 @@ test("extracts Rust anonymous tuples as JSON arrays", () => {
   assert.equal(bareTuple.length, 1);
   assert.equal(bareTuple[0].kind, "Rust Debug");
   assert.deepEqual(JSON.parse(bareTuple[0].formatted), [1, 2, 3]);
+  assert.deepEqual(JSON.parse(singleTuple[0].formatted), [42]);
   assert.deepEqual(JSON.parse(mixedTuple[0].formatted), [1, "a"]);
   assert.deepEqual(JSON.parse(tupleField[0].formatted), { pos: [1, 2] });
   assert.equal(vecOfTuples[0].kind, "Rust Debug");
@@ -517,6 +711,63 @@ test("extracts JavaScript and TypeScript Node inspection objects", () => {
   });
 });
 
+test("extracts Node Map and Set inspection output", () => {
+  const map = extractLogJsonFragments(
+    "INFO map=Map(3) { 'a' => 1, 'b' => Set(2) { 'x', 'y' }, 'user' => { id: 7, tags: ['dev'] } } done",
+  );
+  const set = extractLogJsonFragments("INFO set=Set(3) { 'a', 2, true } done");
+
+  assert.equal(map.length, 1);
+  assert.equal(map[0].kind, "JavaScript inspection");
+  assert.deepEqual(JSON.parse(map[0].formatted), {
+    a: 1,
+    b: ["x", "y"],
+    user: { id: 7, tags: ["dev"] },
+  });
+  assert.equal(set.length, 1);
+  assert.equal(set[0].kind, "JavaScript inspection");
+  assert.deepEqual(JSON.parse(set[0].formatted), ["a", 2, true]);
+});
+
+test("keeps primitive keys in Node Map inspection output", () => {
+  const fragments = extractLogJsonFragments(
+    "INFO values=Map(3) { true => 'yes', null => 'empty', 1 => 'one' }",
+  );
+
+  assert.equal(fragments.length, 1);
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    true: "yes",
+    null: "empty",
+    1: "one",
+  });
+});
+
+test("extracts Java, Go, JavaScript, and Rust values from one log line", () => {
+  const fragments = extractLogJsonFragments(
+    "INFO java=User(id=1, name=\"Alice\") go=main.Item{ID:2, Name:\"B\"} js=Map(2) { 'x' => 3, 'y' => 4 } rust=Point(5, 6)",
+  );
+
+  assert.deepEqual(
+    fragments.map(({ label, kind }) => ({ label, kind })),
+    [
+      { label: "java", kind: "Java/Kotlin toString" },
+      { label: "go", kind: "Go fmt" },
+      { label: "js", kind: "JavaScript inspection" },
+      { label: "rust", kind: "Rust Debug" },
+    ],
+  );
+  assert.deepEqual(JSON.parse(fragments[0].formatted), {
+    id: 1,
+    name: "Alice",
+  });
+  assert.deepEqual(JSON.parse(fragments[1].formatted), {
+    ID: 2,
+    Name: "B",
+  });
+  assert.deepEqual(JSON.parse(fragments[2].formatted), { x: 3, y: 4 });
+  assert.deepEqual(JSON.parse(fragments[3].formatted), [5, 6]);
+});
+
 test("keeps Java Optional output classified as JVM toString", () => {
   const fragments = extractLogJsonFragments(
     "INFO value=Optional[User{id=1, active=true}] done",
@@ -536,6 +787,12 @@ test("does not show unparseable structures or source declarations as log data", 
     extractLogJsonFragments("INFO user={Alice true} cost=2ms"),
     [],
   );
+  assert.deepEqual(extractLogJsonFragments("const result = User(id=1)"), []);
+  assert.deepEqual(
+    extractLogJsonFragments("function render() { return User(id=1) }"),
+    [],
+  );
+  assert.deepEqual(extractLogJsonFragments("invoke(1, 2)"), []);
   assert.deepEqual(extractLogJsonFragments("User{id=1}"), []);
   assert.deepEqual(
     extractLogJsonFragments("public class User { private String name; }"),
@@ -798,6 +1055,15 @@ test("shows a whole-document JSON5 body as a fragment", () => {
   assert.deepEqual(result.data, { id: 1, name: "Alice" });
 });
 
+test("keeps a complete JSON5 envelope together", () => {
+  const value = "{ operation: 'Foo.Bar', payload: { id: 1 } }";
+  const fragments = extractLogJsonFragments(value);
+
+  assert.equal(fragments.length, 1);
+  assert.equal(fragments[0].kind, "JSON5");
+  assert.equal(fragments[0].raw, value);
+});
+
 test("keeps treating a whole-document standard JSON as owned by the editor", () => {
   // The main editor formats standard JSON itself, so it should not appear as a
   // mixed-log fragment.
@@ -838,12 +1104,12 @@ test("recognizes JSON5 line and block comments", () => {
   assert.deepEqual(block.data, { a: 1, b: 2 });
 });
 
-test("detects fragments after WARNING, FATAL, and TRACE log levels", () => {
-  assert.deepEqual(extractOne("WARNING payload={id:1 status:ok}").data, {
+test("detects fragments after arbitrary log prefixes", () => {
+  assert.deepEqual(extractOne("NOTICE payload={id:1 status:ok}").data, {
     id: 1,
     status: "ok",
   });
-  assert.deepEqual(extractOne("FATAL err={code:500 msg:down}").data, {
+  assert.deepEqual(extractOne("ALERT err={code:500 msg:down}").data, {
     code: 500,
     msg: "down",
   });
