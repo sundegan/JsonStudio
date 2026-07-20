@@ -609,7 +609,38 @@
     if (!model) return;
 
     const offset = model.getOffsetAt(position);
-    const node = findJsonTreeNodeAtOffset(treeNodes, offset);
+    const lineStartOffset = model.getOffsetAt({
+      lineNumber: position.lineNumber,
+      column: 1,
+    });
+    const lineEndOffset = model.getOffsetAt({
+      lineNumber: position.lineNumber,
+      column: model.getLineMaxColumn(position.lineNumber),
+    });
+    const lineContent = model.getLineContent(position.lineNumber);
+    let node = findJsonTreeNodeAtOffset(treeNodes, offset);
+    if (!node || offset >= lineEndOffset - 1) {
+      // A JSON field commonly ends with a comma, so the line-end cursor can
+      // be at or one offset past the node range. Prefer the most specific node
+      // before the cursor while keeping the fallback within this line.
+      let candidateOffset = offset - 1;
+      while (
+        candidateOffset >= lineStartOffset
+        && /\s/.test(lineContent[candidateOffset - lineStartOffset] ?? '')
+      ) {
+        candidateOffset -= 1;
+      }
+      if (candidateOffset >= lineStartOffset) {
+        const candidateNode = findJsonTreeNodeAtOffset(treeNodes, candidateOffset);
+        const isMoreSpecificNode = node
+          && candidateNode
+          && candidateNode.path !== node.path
+          && candidateNode.path.startsWith(`${node.path}/`);
+        if (candidateNode && (!node || isMoreSpecificNode)) {
+          node = candidateNode;
+        }
+      }
+    }
     if (!node) {
       selectedPath = null;
       return;

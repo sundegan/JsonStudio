@@ -180,7 +180,8 @@ function indexTreeNodes(nodes) {
 /**
  * Find the most specific Tree node containing an editor offset. Object properties
  * use a range from the key through the value, including the colon and
- * any whitespace between them.
+ * any whitespace between them. The end offset is inclusive so a cursor at the
+ * end of the node range still selects that node.
  * @param {TreeNode[]} nodes
  * @param {number} offset
  * @returns {TreeNode | null}
@@ -208,8 +209,8 @@ function containsSourceOffset(node, offset) {
 /** @param {number} offset @param {number | undefined} start @param {number | undefined} end */
 function isOffsetInRange(offset, start, end) {
   if (start == null || end == null) return false;
-  const exclusiveEnd = end <= start ? start + 1 : end;
-  return offset >= start && offset < exclusiveEnd;
+  const inclusiveEnd = end < start ? start : end;
+  return offset >= start && offset <= inclusiveEnd;
 }
 
 /**
