@@ -1620,7 +1620,7 @@
     border-radius: 6px;
     border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
     background: color-mix(in srgb, var(--bg-primary) 94%, var(--bg-secondary));
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font-size: 10.5px;
     font-weight: 600;
     line-height: 1;
@@ -1826,7 +1826,7 @@
     background: var(--bg-primary);
     border: 1px solid var(--border);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font-size: 12px;
     overflow: hidden;
     z-index: 9000;
@@ -1845,7 +1845,7 @@
 
   .json-tree-help-title {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-secondary);
   }
 
   .json-tree-help-link {
@@ -1924,7 +1924,7 @@
     padding: 10px;
     font-size: 11px;
     line-height: 1.5;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     overflow-x: auto;
   }
 

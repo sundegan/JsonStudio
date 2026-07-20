@@ -631,8 +631,12 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-primary);
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font-size: 11px;
+  }
+  .gv-search-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
   }
   .gv-toolbar-btn {
     display: flex;
@@ -688,7 +692,7 @@
     border: 0;
     border-radius: 5px;
     background: transparent;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font-size: 11px;
     text-align: left;
     cursor: pointer;
@@ -802,7 +806,7 @@
     gap: 6px;
   }
   .gv-nested-label {
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font-weight: 600;
   }
   .gv-inline-child {
@@ -832,7 +836,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font-size: 12px;
   }
   .gv-value-shell {
