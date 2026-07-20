@@ -19,8 +19,6 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
 
     #[cfg(target_os = "macos")]
     {
-        apply_macos_transparent_chrome(window.ns_window().map_err(|e| e.to_string())?);
-
         use cocoa::base::{id, nil};
         use cocoa::foundation::NSString;
         use objc::{msg_send, sel, sel_impl};
@@ -41,6 +39,10 @@ pub fn set_window_theme(window: tauri::Window, is_dark: bool) -> Result<(), Stri
             let appearance: id = msg_send![appearance_class, appearanceNamed: appearance_name];
             let _: () = msg_send![ns_window, setAppearance: appearance];
         }
+
+        // Changing the appearance relayouts the native titlebar. Position the
+        // traffic lights after that relayout so a theme switch cannot move them.
+        apply_macos_transparent_chrome(ns_window as *mut std::ffi::c_void);
     }
 
     Ok(())
