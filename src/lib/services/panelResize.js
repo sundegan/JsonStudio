@@ -2,13 +2,16 @@ const PANEL_MIN_WIDTH = 280;
 const PANEL_MAX_WIDTH = 1500;
 const EDITOR_MIN_WIDTH = 240;
 const PANEL_MAX_RATIO = 0.7;
-const PANEL_DEFAULT_RATIO = 0.38;
+const PANEL_DEFAULT_RATIO = 0.32;
+const PANEL_DEFAULT_MAX_WIDTH = 420;
 
 // Folder sidebar constraints
 const FOLDER_MIN_WIDTH = 160;
 const FOLDER_MAX_WIDTH = 480;
 const FOLDER_MAX_RATIO = 0.35;
 const FOLDER_EDITOR_MIN_WIDTH = 320;
+const FOLDER_DEFAULT_WIDTH = 240;
+export const SIDEBAR_COLLAPSE_THRESHOLD = 56;
 
 /**
  * Clamp the right panel so it remains useful without starving the editor.
@@ -47,5 +50,36 @@ export function clampFolderWidth(requestedWidth, workspaceWidth) {
  * @param {number} workspaceWidth
  */
 export function getDefaultPanelWidth(workspaceWidth) {
-  return clampPanelWidth(Math.round(workspaceWidth * PANEL_DEFAULT_RATIO), workspaceWidth);
+  return clampPanelWidth(
+    Math.min(PANEL_DEFAULT_MAX_WIDTH, Math.round(workspaceWidth * PANEL_DEFAULT_RATIO)),
+    workspaceWidth,
+  );
+}
+
+/**
+ * Give the file browser enough room for filenames without taking focus from
+ * the editor on a standard desktop window.
+ * @param {number} workspaceWidth
+ */
+export function getDefaultFolderWidth(workspaceWidth) {
+  return clampFolderWidth(FOLDER_DEFAULT_WIDTH, workspaceWidth);
+}
+
+/**
+ * Measure how far a resize gesture has pushed beyond the panel's minimum.
+ * The panel stays at its minimum width during this range to avoid accidental
+ * collapse from a short drag.
+ * @param {number} requestedWidth
+ * @param {number} minimumWidth
+ */
+export function getSidebarResizeResistance(requestedWidth, minimumWidth) {
+  return Math.max(0, minimumWidth - requestedWidth);
+}
+
+/**
+ * @param {number} requestedWidth
+ * @param {number} minimumWidth
+ */
+export function shouldCollapseSidebar(requestedWidth, minimumWidth) {
+  return getSidebarResizeResistance(requestedWidth, minimumWidth) >= SIDEBAR_COLLAPSE_THRESHOLD;
 }

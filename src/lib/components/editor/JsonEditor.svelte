@@ -40,7 +40,14 @@
     detectJsonDialectAsync,
     getJsonDocumentStatsAsync,
   } from '$lib/services/jsonTreeModelCache.js';
-  import { clampPanelWidth, getDefaultPanelWidth, clampFolderWidth } from '$lib/services/panelResize.js';
+  import {
+    clampPanelWidth,
+    getDefaultPanelWidth,
+    clampFolderWidth,
+    getDefaultFolderWidth,
+    getSidebarResizeResistance,
+    shouldCollapseSidebar,
+  } from '$lib/services/panelResize.js';
   import { t } from '$lib/i18n';
 
   type LogJsonFragment = {
@@ -127,8 +134,10 @@
   });
   let treeViewWidth = $state(380);
   let isResizingTreeView = $state(false);
-  let folderViewWidth = $state(220);
+  let isResistingTreeView = $state(false);
+  let folderViewWidth = $state(240);
   let isResizingFolderView = $state(false);
+  let isResistingFolderView = $state(false);
   let mainWorkspaceEl: HTMLDivElement | null = null;
   let rightPanelContent = $state('');
   let rightPanelActiveTabId = $state('');
@@ -286,9 +295,11 @@
     let workspaceResizeObserver: ResizeObserver | null = null;
     if (mainWorkspaceEl) {
       treeViewWidth = getDefaultPanelWidth(mainWorkspaceEl.clientWidth);
+      folderViewWidth = getDefaultFolderWidth(mainWorkspaceEl.clientWidth);
       workspaceResizeObserver = new ResizeObserver(([entry]) => {
-        if (isResizingTreeView) return;
+        if (isResizingTreeView || isResizingFolderView) return;
         treeViewWidth = clampPanelWidth(treeViewWidth, entry.contentRect.width);
+        folderViewWidth = clampFolderWidth(folderViewWidth, entry.contentRect.width);
         monacoEditor?.getEditorInstance()?.layout();
       });
       workspaceResizeObserver.observe(mainWorkspaceEl);
@@ -1215,22 +1226,34 @@
     const startWidth = treeViewWidth;
     const workspaceWidth = mainWorkspaceEl.clientWidth;
     isResizingTreeView = true;
+    isResistingTreeView = false;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!isResizingTreeView) return;
       const delta = startX - moveEvent.clientX;
-      treeViewWidth = clampPanelWidth(startWidth + delta, workspaceWidth);
+      const requestedWidth = startWidth + delta;
+      const minimumWidth = clampPanelWidth(0, workspaceWidth);
+      isResistingTreeView = getSidebarResizeResistance(requestedWidth, minimumWidth) > 0;
+      if (shouldCollapseSidebar(requestedWidth, minimumWidth)) {
+        settingsStore.updateSetting('showTreeView', false);
+        handlePointerUp();
+        return;
+      }
+      treeViewWidth = clampPanelWidth(requestedWidth, workspaceWidth);
       requestAnimationFrame(() => monacoEditor?.getEditorInstance()?.layout());
     };
 
     const handlePointerUp = () => {
       isResizingTreeView = false;
+      isResistingTreeView = false;
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
   }
 
   function startFolderResize(event: PointerEvent) {
@@ -1241,22 +1264,34 @@
     const startWidth = folderViewWidth;
     const workspaceWidth = mainWorkspaceEl.clientWidth;
     isResizingFolderView = true;
+    isResistingFolderView = false;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!isResizingFolderView) return;
       const delta = moveEvent.clientX - startX;
-      folderViewWidth = clampFolderWidth(startWidth + delta, workspaceWidth);
+      const requestedWidth = startWidth + delta;
+      const minimumWidth = clampFolderWidth(0, workspaceWidth);
+      isResistingFolderView = getSidebarResizeResistance(requestedWidth, minimumWidth) > 0;
+      if (shouldCollapseSidebar(requestedWidth, minimumWidth)) {
+        settingsStore.updateSetting('showFolderView', false);
+        handlePointerUp();
+        return;
+      }
+      folderViewWidth = clampFolderWidth(requestedWidth, workspaceWidth);
       requestAnimationFrame(() => monacoEditor?.getEditorInstance()?.layout());
     };
 
     const handlePointerUp = () => {
       isResizingFolderView = false;
+      isResistingFolderView = false;
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
   }
 
   function updateDiffStats(changes: Array<{
@@ -1496,6 +1531,7 @@
           aria-orientation="vertical"
           aria-label="Resize folder panel"
           tabindex="0"
+          class:is-resisting={isResistingFolderView}
           onpointerdown={startFolderResize}
         ></div>
       {/if}
@@ -1645,6 +1681,7 @@
           aria-orientation="vertical"
           aria-label="Resize view panel"
           tabindex="0"
+          class:is-resisting={isResistingTreeView}
           onpointerdown={startTreeResize}
         ></div>
       {/if}
@@ -1747,7 +1784,9 @@
 
   .json-view-toggle-btn {
     position: absolute;
-    left: 1px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 14px;
     height: 56px;
     background: var(--bg-secondary);
@@ -1757,17 +1796,11 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: #111111;
     opacity: 0;
     transition: opacity 0.2s, background 0.2s, color 0.2s;
     z-index: 2;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  /* Left-side specific toggler styling */
-  .json-view-toggler-zone.left .json-view-toggle-btn {
-    left: auto;
-    right: 1px;
   }
 
   /* Trigger hover from the resizer or the zone */
@@ -1780,7 +1813,7 @@
 
   .json-view-toggle-btn:hover {
     background: var(--bg-hover);
-    color: var(--text-primary);
+    color: #000000;
   }
 
   .json-view-toggle-btn svg {
@@ -1789,10 +1822,6 @@
   }
 
   .json-view-toggler-zone.is-closed .json-view-toggle-btn {
-    left: -14px;
-    border-right: none;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
     opacity: 1;
   }
 
@@ -1810,19 +1839,24 @@
 
   .json-view-toggler-zone.is-closed:not(.left) .json-view-toggle-btn {
     left: 2px;
-    border-right: 1px solid var(--border);
-    border-radius: 7px;
+    transform: translateY(-50%);
+    border-left: 1px solid var(--border);
+    border-right: none;
+    border-top-left-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .json-view-toggler-zone.left.is-closed .json-view-toggle-btn {
     left: auto;
     right: -14px;
+    transform: translateY(-50%);
     border-right: 1px solid var(--border);
     border-left: none;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     border-top-right-radius: 7px;
     border-bottom-right-radius: 7px;
-    opacity: 1;
   }
 </style>

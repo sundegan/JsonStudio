@@ -35,9 +35,11 @@
 
   let selectedFragment = $derived(fragments[selectedIndex] || fragments[0] || null);
   let listWidth = $state(240);
-  let panelHeight = $state(380);
+  let panelHeightRatio = $state(0.5);
+  let workspaceHeight = $state(0);
   let isResizing = $state(false);
   let isHeightResizing = $state(false);
+  let panelElement = $state<HTMLElement | null>(null);
   let resultEditorContainer = $state<HTMLDivElement | null>(null);
   let resultEditor: Monaco.editor.IStandaloneCodeEditor | null = null;
   let monaco: typeof Monaco | null = null;
@@ -45,9 +47,10 @@
   const MIN_LIST_WIDTH = 180;
   const MAX_LIST_WIDTH = 420;
   const MIN_PANEL_HEIGHT = 160;
-  const MAX_PANEL_HEIGHT = 520;
+  const MAX_PANEL_HEIGHT_RATIO = 0.7;
   const DEFAULT_LOG_JSON_FOLD_LEVEL = 5;
   let stopResizeListeners: (() => void) | null = null;
+  let workspaceResizeObserver: ResizeObserver | null = null;
   let pendingFoldTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clampListWidth(width: number) {
@@ -55,9 +58,15 @@
   }
 
   function clampPanelHeight(height: number) {
-    const maxViewportHeight = Math.max(MIN_PANEL_HEIGHT, Math.floor(window.innerHeight * 0.62));
-    const maxPanelHeight = Math.min(MAX_PANEL_HEIGHT, maxViewportHeight);
+    const maxPanelHeight = Math.max(
+      MIN_PANEL_HEIGHT,
+      Math.floor(workspaceHeight * MAX_PANEL_HEIGHT_RATIO),
+    );
     return Math.min(maxPanelHeight, Math.max(MIN_PANEL_HEIGHT, height));
+  }
+
+  function getPanelHeight() {
+    return clampPanelHeight(workspaceHeight * panelHeightRatio);
   }
 
   function startResize(event: PointerEvent) {
@@ -94,12 +103,13 @@
     stopResizeListeners?.();
     isResizing = false;
     const startY = event.clientY;
-    const startHeight = panelHeight;
+    const startHeight = getPanelHeight();
     isHeightResizing = true;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!isHeightResizing) return;
-      panelHeight = clampPanelHeight(startHeight + startY - moveEvent.clientY);
+      const nextHeight = clampPanelHeight(startHeight + startY - moveEvent.clientY);
+      panelHeightRatio = nextHeight / workspaceHeight;
     };
 
     const handlePointerUp = () => {
@@ -172,6 +182,15 @@
   });
 
   onMount(async () => {
+    const workspaceElement = panelElement?.parentElement;
+    workspaceResizeObserver = new ResizeObserver(([entry]) => {
+      workspaceHeight = entry.contentRect.height;
+    });
+    if (workspaceElement) {
+      workspaceHeight = workspaceElement.clientHeight;
+      workspaceResizeObserver.observe(workspaceElement);
+    }
+
     const monacoInstance = await initMonaco();
     if (!resultEditorContainer) return;
 
@@ -226,6 +245,7 @@
 
   onDestroy(() => {
     stopResizeListeners?.();
+    workspaceResizeObserver?.disconnect();
     clearPendingDefaultFold();
     resultEditor?.dispose();
   });
@@ -236,7 +256,8 @@
     class="log-json-panel"
     class:is-height-resizing={isHeightResizing}
     aria-label={$t('logJson.title')}
-    style={`height: ${panelHeight}px;`}
+    bind:this={panelElement}
+    style={`height: ${getPanelHeight()}px;`}
   >
     <div
       class="log-json-height-resizer"

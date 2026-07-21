@@ -421,27 +421,47 @@ a {
 
 .json-tree-resizer,
 .json-folder-resizer {
+  --resizer-color: var(--border);
   width: 1px;
   cursor: col-resize;
   align-self: stretch;
-  background: var(--border);
+  background: linear-gradient(
+    to bottom,
+    var(--resizer-color) 0 calc(50% - 29px),
+    transparent calc(50% - 29px) calc(50% + 29px),
+    var(--resizer-color) calc(50% + 29px)
+  );
   flex-shrink: 0;
   transition: background 0.15s;
   touch-action: none;
   position: relative;
   z-index: 20;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(50% - 29px),
+    0 calc(50% - 29px),
+    0 calc(50% + 29px),
+    100% calc(50% + 29px),
+    100% 100%,
+    0 100%
+  );
 }
 
-.json-tree-resizer:hover,
 .json-folder-resizer:hover {
-  background: var(--accent, #3b82f6);
+  --resizer-color: var(--accent, #3b82f6);
+}
+
+.json-tree-resizer.is-resisting,
+.json-folder-resizer.is-resisting {
+  --resizer-color: color-mix(in srgb, var(--accent) 60%, var(--border));
 }
 
 .json-tree-resizer:focus-visible,
 .resizing-tree-view .json-tree-resizer,
 .json-folder-resizer:focus-visible,
 .resizing-tree-view .json-folder-resizer {
-  background: var(--accent, #3b82f6);
+  --resizer-color: var(--accent, #3b82f6);
 }
 
 .json-tree-resizer::before,
