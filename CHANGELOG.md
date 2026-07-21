@@ -2,6 +2,31 @@
 
 All notable changes to this project are documented here.
 
+## [1.4.0] - 2026-07-21
+
+### Added
+- **Toolbar features**: added a visible Save button plus operations for sorting object keys, converting JSON5/JSONC to standard JSON, and recursively toggling key names between `snake_case` and `camelCase`.
+- **Tree and tab navigation**: added cursor-linked Tree View selection with automatic ancestor expansion and scrolling, one-click JSON path copying, shortcuts for pinning tabs and closing all tabs, and in-place tab renaming.
+- **Native desktop integration**: added a custom frameless window and titlebar, integrated toolbar actions into the titlebar, and added a native macOS Window menu with shortcuts such as Move & Resize.
+- **Common JSON-family file support**: added system file associations for common JSON formats including `.json5`, `.jsonl`, `.ndjson`, `.jsonc`, `.geojson`, `.topojson`, `.har`, `.webmanifest`, `.ipynb`, and `.sarif`.
+- **Interactive documentation**: added a bilingual product demo and dedicated Tree/Grid View guides, refreshed README screenshots and feature messaging, and improved website navigation and responsive presentation.
+
+### Improved
+- **Format conversion**: expanded Convert View with Properties, INI, and Markdown Table support; improved YAML/XML/TOML/CSV round trips for root arrays, empty values, escaped XML keys, and CDATA; and returned an error when CSV arrays contain non-object values instead of dropping data.
+- **Code generation and reverse conversion**: replaced heuristic code-to-JSON conversion with bundled Tree-sitter AST parsers, preserving nested and optional structures, root arrays, and more language-specific type shapes; stabilized PHP generation, language switching, and concurrent conversions.
+- **Smart log data extraction and parsing**: added recognition for Java/Kotlin `toString`, C# record, Go `fmt`, Python repr, Rust Debug, and JavaScript Map/Set output embedded in logs, making it possible to extract, parse, and display structured data from noisy log content for easier inspection.
+- **Tool-page workflows**: made the JSON toolbar work across Diff, Convert, Codegen, and Schema panels; unified their titlebar styling and return actions; and isolated standalone tool-page edits from the main editor's file tabs.
+- **UI styling and layout**: improved cursor mapping at property boundaries and line ends, query-help placement, panel colors and spacing, the default sidebar width, resize resistance and drag-to-collapse behavior, and workspace-responsive sizing for bottom panels.
+- **Desktop workflow**: raised the default window to 1440x900 with 960x640 minimum bounds, selected the system locale by default, and suppressed browser-style context menus, selection, dragging, and zoom interactions for a more native desktop feel.
+- **Build and release pipeline**: upgraded builds to Node.js 22 and pnpm 11, bundled Tree-sitter grammars for offline/reproducible Rust builds, stabilized CI dependency handling, and added a Windows portable ZIP package.
+
+### Fixed
+- **Editor interactions**: fixed Monaco search-widget hover artifacts and removed the visible delay when switching themes.
+- **Link opening**: fixed editor and resource links so they open through the native desktop opener.
+
+### Removed
+- **Code-generation targets**: because the new AST-backed reverse-conversion workflow does not support some languages, removed the less commonly used Elm, Haskell, Crystal, Elixir, and Pike targets from code-structure and JSON conversion.
+
 ## [1.3.0] - 2026-06-13
 
 ### Added

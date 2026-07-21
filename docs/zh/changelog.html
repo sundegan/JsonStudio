@@ -105,6 +105,49 @@
   <div class="changelog-container">
     <div class="timeline">
       
+      <!-- v1.4.0 -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+        <div class="timeline-header">
+          <span class="timeline-version">v1.4.0</span>
+          <span class="timeline-date">2026-07-21</span>
+        </div>
+        <div class="timeline-body">
+          <h3>新增</h3>
+          <ul>
+            <li><strong>工具栏功能</strong>：新增可见的保存按钮，以及对象key排序、JSON5/JSONC转标准JSON、递归切换 <code>snake_case</code> 与 <code>camelCase</code> 键名等操作。</li>
+            <li><strong>Tree View与标签页导航</strong>：新增根据编辑器光标联动选择Tree View节点、自动展开祖先节点并滚动定位、一键复制JSON路径、固定/关闭全部标签页快捷键，以及支持标签页原地重命名。</li>
+            <li><strong>原生桌面集成</strong>：自定义无边框窗口和标题栏，将工具栏按钮集成至标题栏，新增macOS原生窗口菜单和"移动与调整窗口大小"等快捷操作。</li>
+            <li><strong>常见JSON家族文件支持</strong>：新增 <code>.json5</code>、<code>.jsonl</code>、<code>.ndjson</code>、<code>.jsonc</code>、<code>.geojson</code>、<code>.topojson</code>、<code>.har</code>、<code>.webmanifest</code>、<code>.ipynb</code>、<code>.sarif</code> 等常见json格式系统文件关联。</li>
+            <li><strong>交互式文档</strong>：新增中英文产品演示和Tree/Grid View专题指南，更新README截图与功能文案，并改进官网导航及响应式展示。</li>
+          </ul>
+          <h3>改进</h3>
+          <ul>
+            <li><strong>格式转换</strong>：Convert View新增Properties、INI和Markdown Table支持；改进YAML/XML/TOML/CSV对根数组、空值、转义 XML key和CDATA的往返转换，并在CSV数组混入非对象时直接报错，避免丢失数据。</li>
+            <li><strong>代码生成与反向转换</strong>：使用内置Tree-sitter AST解析器替代启发式代码转JSON，保留嵌套/可选结构、根数组及更多语言特有类型结构；同时稳定 PHP代码生成、语言切换和并发转换。</li>
+            <li><strong>日志数据智能提取解析</strong>：支持识别日志内容中的Java/Kotlin toString、C# record、Go fmt、Python repr、Rust Debug和JavaScript Map/Set等打印输出格式，从杂乱的日志数据中智能提取解析对应数据进行展示，方便查看各种日志数据。</li>
+            <li><strong>工具页面流程</strong>：让JSON工具栏作用于Diff/Convert/Codegen/Schema面板，统一Diff/Convert/Codegen/Schema的标题栏样式与返回操作，将独立工具页面编辑与主编辑器文件标签页隔离。</li>
+            <li><strong>界面样式与UI布局</strong>：改进属性边界和行尾光标映射、查询帮助弹窗定位、面板颜色与间距、侧栏默认宽度、拖拽阻尼与拖动收起行为，以及随工作区高度调整的底部展示面板。</li>
+            <li><strong>桌面端流程</strong>：默认窗口调整为1440x900，最小尺寸为960x640；默认使用系统语言，并抑制浏览器式右键菜单、文本选择、拖拽和缩放交互，减少网页感。</li>
+            <li><strong>构建与发布流程</strong>：升级至Node.js 22和pnpm 11，为离线及可复现Rust构建内置Tree-sitter语法，稳定CI依赖处理，并新增Windows便携ZIP安装包。</li>
+          </ul>
+          <h3>修复</h3>
+          <ul>
+            <li><strong>编辑器交互</strong>：修复Monaco查询框悬停残留，并消除主题切换时的可见延迟。</li>
+            <li><strong>链接打开</strong>：修复编辑器和资源链接，确保通过桌面端原生opener打开。</li>
+          </ul>
+          <h3>移除</h3>
+          <ul>
+            <li><strong>代码生成目标</strong>：由于新的AST反向转换流程不再支持部分语言，代码结构和json互转模块移除Elm、Haskell、Crystal、Elixir和Pike等非常见语言。</li>
+          </ul>
+          <a href="https://github.com/sundegan/JsonStudio/releases/tag/v1.4.0" target="_blank" class="release-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下载 v1.4.0
+          </a>
+        </div>
+      </div>
+
       <!-- v1.3.0 -->
       <div class="timeline-item">
         <div class="timeline-dot"></div>
