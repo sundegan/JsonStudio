@@ -182,6 +182,7 @@ fn merge_struct_fields(
 struct CollectResult {
     structs: BTreeMap<String, BTreeMap<String, JsonType>>,
     top_level_type: JsonType,
+    synthetic_array_wrappers: BTreeSet<String>,
 }
 
 struct TypeNameRegistry {
@@ -248,6 +249,7 @@ fn collect_structs(value: &Value, name: &str) -> CollectResult {
             return CollectResult {
                 structs,
                 top_level_type: JsonType::Array(Box::new(JsonType::Object(struct_name))),
+                synthetic_array_wrappers: BTreeSet::new(),
             };
         }
     }
@@ -265,6 +267,7 @@ fn collect_structs(value: &Value, name: &str) -> CollectResult {
         return CollectResult {
             structs,
             top_level_type: JsonType::Object(root_name),
+            synthetic_array_wrappers: BTreeSet::new(),
         };
     }
 
@@ -272,6 +275,7 @@ fn collect_structs(value: &Value, name: &str) -> CollectResult {
     CollectResult {
         structs,
         top_level_type,
+        synthetic_array_wrappers: BTreeSet::new(),
     }
 }
 
@@ -333,6 +337,25 @@ fn to_field_identifier(s: &str) -> String {
         identifier = format!("field_{identifier}");
     }
     identifier
+}
+
+fn collection_field_identifier(name: &str) -> String {
+    let base = to_field_identifier(name);
+    if base.ends_with('s') || base.ends_with('x') || base.ends_with('z') {
+        return base;
+    }
+    if base.ends_with("ch") || base.ends_with("sh") {
+        return format!("{base}es");
+    }
+    if base.ends_with('y')
+        && base
+            .chars()
+            .nth_back(1)
+            .is_some_and(|ch| !matches!(ch, 'a' | 'e' | 'i' | 'o' | 'u'))
+    {
+        return format!("{}ies", &base[..base.len() - 1]);
+    }
+    format!("{base}s")
 }
 
 fn unique_field_identifier(key: &str, used: &mut BTreeSet<String>) -> String {
@@ -465,26 +488,132 @@ fn is_repeated_type(t: &JsonType) -> bool {
     }
 }
 
+fn type_contains_array(t: &JsonType) -> bool {
+    match t {
+        JsonType::Array(_) => true,
+        JsonType::Optional(inner) => type_contains_array(inner),
+        _ => false,
+    }
+}
+
+// Protobuf cannot use a repeated field as another repeated field's element;
+// nested arrays therefore need a synthetic message for each inner dimension.
+fn allocate_synthetic_message_name(base: &str, used: &mut BTreeSet<String>) -> String {
+    let base = to_type_identifier(base);
+    let mut candidate = base.clone();
+    let mut suffix = 2;
+    if !used.insert(candidate.clone()) {
+        candidate = format!("{base}Value");
+        while !used.insert(candidate.clone()) {
+            candidate = format!("{base}Value{suffix}");
+            suffix += 1;
+        }
+    }
+    candidate
+}
+
+fn normalize_protobuf_type(
+    t: &JsonType,
+    hint: &str,
+    structs: &mut BTreeMap<String, BTreeMap<String, JsonType>>,
+    used_names: &mut BTreeSet<String>,
+    synthetic_array_wrappers: &mut BTreeSet<String>,
+) -> JsonType {
+    match t {
+        JsonType::Array(inner) if type_contains_array(inner) => {
+            let nested_type = normalize_protobuf_type(
+                inner,
+                &format!("{hint}Item"),
+                structs,
+                used_names,
+                synthetic_array_wrappers,
+            );
+            let message_name = allocate_synthetic_message_name(&format!("{hint}Item"), used_names);
+            let mut fields = BTreeMap::new();
+            fields.insert("items".to_string(), nested_type);
+            structs.insert(message_name.clone(), fields);
+            synthetic_array_wrappers.insert(message_name.clone());
+            JsonType::Array(Box::new(JsonType::Object(message_name)))
+        }
+        JsonType::Array(inner) => JsonType::Array(Box::new(normalize_protobuf_type(
+            inner,
+            hint,
+            structs,
+            used_names,
+            synthetic_array_wrappers,
+        ))),
+        JsonType::Optional(inner) => JsonType::Optional(Box::new(normalize_protobuf_type(
+            inner,
+            hint,
+            structs,
+            used_names,
+            synthetic_array_wrappers,
+        ))),
+        _ => t.clone(),
+    }
+}
+
+fn normalize_protobuf_arrays(result: &mut CollectResult, root_name: &str) {
+    let mut used_names: BTreeSet<String> = result.structs.keys().cloned().collect();
+    let original_names: Vec<String> = result.structs.keys().cloned().collect();
+    for struct_name in original_names {
+        let Some(fields) = result.structs.get(&struct_name).cloned() else {
+            continue;
+        };
+        let normalized = fields
+            .into_iter()
+            .map(|(field_name, field_type)| {
+                let normalized_type = normalize_protobuf_type(
+                    &field_type,
+                    &field_name,
+                    &mut result.structs,
+                    &mut used_names,
+                    &mut result.synthetic_array_wrappers,
+                );
+                (field_name, normalized_type)
+            })
+            .collect();
+        if let Some(fields) = result.structs.get_mut(&struct_name) {
+            *fields = normalized;
+        }
+    }
+    result.top_level_type = normalize_protobuf_type(
+        &result.top_level_type,
+        root_name,
+        &mut result.structs,
+        &mut used_names,
+        &mut result.synthetic_array_wrappers,
+    );
+}
+
 pub(super) fn gen_protobuf(value: &Value, name: &str) -> String {
-    let result = collect_structs(value, name);
+    let mut result = collect_structs(value, name);
+    normalize_protobuf_arrays(&mut result, name);
     let mut out = String::from("syntax = \"proto3\";\n\n");
-    if result
-        .structs
-        .values()
-        .flat_map(|fields| fields.values())
-        .any(protobuf_uses_any)
+    if protobuf_uses_any(&result.top_level_type)
+        || result
+            .structs
+            .values()
+            .flat_map(|fields| fields.values())
+            .any(protobuf_uses_any)
     {
         out.push_str("import \"google/protobuf/any.proto\";\n\n");
     }
     if let JsonType::Array(inner) = &result.top_level_type {
         let item_type = protobuf_type(inner);
         let wrapper_name = to_type_identifier(name);
-        let field_name = to_field_identifier(&format!("{}s", name));
+        let field_name = collection_field_identifier(name);
+        out.push_str(&format!(
+            "// jsonstudio:root-array-field {wrapper_name} {field_name}\n"
+        ));
         out.push_str(&format!("message {} {{\n", wrapper_name));
         out.push_str(&format!("  repeated {} {} = 1;\n", item_type, field_name));
         out.push_str("}\n\n");
     }
     for (sname, fields) in &result.structs {
+        if result.synthetic_array_wrappers.contains(sname) {
+            out.push_str(&format!("// jsonstudio:array-wrapper {sname}\n"));
+        }
         out.push_str(&format!("message {} {{\n", sname));
         let mut used_field_names = BTreeSet::new();
         for (idx, (key, ftype)) in fields.iter().enumerate() {
@@ -535,7 +664,10 @@ pub(super) fn gen_thrift(value: &Value, name: &str) -> String {
     if let JsonType::Array(inner) = &result.top_level_type {
         let item_type = thrift_type(inner);
         let wrapper_name = to_type_identifier(name);
-        let field_name = to_field_identifier(&format!("{}s", name));
+        let field_name = collection_field_identifier(name);
+        out.push_str(&format!(
+            "// jsonstudio:root-array-field {wrapper_name} {field_name}\n"
+        ));
         out.push_str(&format!("struct {} {{\n", wrapper_name));
         out.push_str(&format!(
             "  1: required list<{}> {};\n",
@@ -614,6 +746,16 @@ mod tests {
             thrift
         );
         assert!(thrift.contains("list<MyModelItem>"), "Thrift:\n{}", thrift);
+        assert_eq!(
+            parse_code_to_json_ast(&proto, "protobuf").unwrap(),
+            serde_json::json!([{ "name": "", "value": 0 }]),
+            "{proto}"
+        );
+        assert_eq!(
+            parse_code_to_json_ast(&thrift, "thrift").unwrap(),
+            serde_json::json!([{ "name": "", "value": 0 }]),
+            "{thrift}"
+        );
     }
 
     #[test]
@@ -623,7 +765,38 @@ mod tests {
         assert!(json_to_code("true", "protobuf", "X").is_err());
         assert!(json_to_code("null", "protobuf", "X").is_err());
         assert!(json_to_code("[]", "protobuf", "X").is_err());
-        assert!(json_to_code("[1,2,3]", "protobuf", "X").is_err());
+    }
+
+    #[test]
+    fn test_top_level_primitive_arrays_are_supported() {
+        let protobuf = json_to_code("[1,2,3]", "protobuf", "Numbers").unwrap();
+        assert!(protobuf.contains("repeated int64 numbers"), "{protobuf}");
+
+        let thrift = json_to_code("[1,2,3]", "thrift", "Numbers").unwrap();
+        assert!(thrift.contains("required list<i64> numbers"), "{thrift}");
+    }
+
+    #[test]
+    fn test_protobuf_top_level_nested_arrays_use_an_intermediate_message() {
+        let protobuf = json_to_code("[[1,2],[3,4]]", "protobuf", "Numbers").unwrap();
+        assert!(protobuf.contains("message NumbersItem {"), "{protobuf}");
+        assert!(protobuf.contains("repeated int64 items = 1;"), "{protobuf}");
+        assert!(
+            protobuf.contains("repeated NumbersItem numbers = 1;"),
+            "{protobuf}"
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(&code_to_json(&protobuf, "protobuf").unwrap()).unwrap(),
+            serde_json::json!([[]]),
+            "{protobuf}"
+        );
+
+        let thrift = json_to_code("[[1,2],[3,4]]", "thrift", "Numbers").unwrap();
+        assert_eq!(
+            serde_json::from_str::<Value>(&code_to_json(&thrift, "thrift").unwrap()).unwrap(),
+            serde_json::json!([[]]),
+            "{thrift}"
+        );
     }
 
     // ========== 2. Singularize tests ==========
@@ -735,6 +908,42 @@ mod tests {
         assert!(
             matches!(user_fields.get("name"), Some(JsonType::String)),
             "name should be required"
+        );
+    }
+
+    #[test]
+    fn test_protobuf_nested_arrays_preserve_dimensions() {
+        let value: Value = serde_json::from_str(r#"{"matrix":[[1,2],[3,4]]}"#).unwrap();
+        let proto = gen_protobuf(&value, "Root");
+
+        assert!(proto.contains("message MatrixItem {"), "{proto}");
+        assert!(proto.contains("repeated int64 items = 1;"), "{proto}");
+        assert!(proto.contains("repeated MatrixItem matrix = 1;"), "{proto}");
+        assert!(!proto.contains("repeated int64 matrix"), "{proto}");
+        assert_eq!(
+            parse_code_to_json_ast(&proto, "protobuf").unwrap(),
+            serde_json::json!({"matrix": [[]]}),
+            "{proto}"
+        );
+    }
+
+    #[test]
+    fn test_protobuf_top_level_mixed_array_imports_any() {
+        let value: Value = serde_json::from_str(r#"[{"x":1},2]"#).unwrap();
+        let proto = gen_protobuf(&value, "Root");
+
+        assert!(
+            proto.contains("import \"google/protobuf/any.proto\";"),
+            "{proto}"
+        );
+        assert!(
+            proto.contains("repeated google.protobuf.Any roots = 1;"),
+            "{proto}"
+        );
+        assert_eq!(
+            parse_code_to_json_ast(&proto, "protobuf").unwrap(),
+            serde_json::json!([]),
+            "{proto}"
         );
     }
 
@@ -882,21 +1091,13 @@ mod tests {
             let generated = json_to_code(json, language, "User").unwrap();
             let restored: Value =
                 serde_json::from_str(&code_to_json(&generated, language).unwrap()).unwrap();
-            assert!(
-                restored["User"].as_object().is_some(),
-                "{language}: {restored}"
-            );
-            assert!(
-                restored["Profile"].as_object().is_some(),
-                "{language}: {restored}"
-            );
             assert_eq!(
-                restored["User"]["tags"],
+                restored["tags"],
                 Value::Array(Vec::new()),
                 "{language}: {restored}"
             );
             assert_eq!(
-                restored["Profile"]["active"],
+                restored["profile"]["active"],
                 Value::Bool(false),
                 "{language}: {restored}"
             );
@@ -1017,16 +1218,13 @@ message PolicyQueryParam {
 "#;
         let result = parse_code_to_json_ast(proto, "protobuf").unwrap();
         let obj = result.as_object().unwrap();
-        assert!(obj.contains_key("MyModel"));
-        assert!(obj.contains_key("PolicyQueryParam"));
-        let my_model = obj["MyModel"].as_object().unwrap();
         assert!(
-            my_model.contains_key("email_title"),
+            obj.contains_key("email_title"),
             "got {:?}",
-            my_model.keys().collect::<Vec<_>>()
+            obj.keys().collect::<Vec<_>>()
         );
-        assert!(my_model.contains_key("broker_id"));
-        assert!(my_model.contains_key("policy_query_param"));
+        assert!(obj.contains_key("broker_id"));
+        assert_eq!(obj["policy_query_param"]["es_query_size"], 0);
     }
 
     #[test]

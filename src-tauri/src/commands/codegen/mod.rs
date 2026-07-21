@@ -1,5 +1,6 @@
 mod parser;
 mod schema;
+mod type_shape;
 
 use serde_json::Value;
 
@@ -17,9 +18,6 @@ pub fn json_to_code(content: &str, language: &str, class_name: &str) -> Result<S
         }
         Value::Array(values) if values.is_empty() => {
             return Err("Empty JSON array: cannot infer element types".into());
-        }
-        Value::Array(values) if values.iter().all(|value| !value.is_object()) => {
-            return Err("JSON array of primitive values: no structure to generate".into());
         }
         _ => {}
     }

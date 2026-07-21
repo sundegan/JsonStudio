@@ -22,12 +22,30 @@ test('quicktype generates a structure for every configured frontend language', a
   }
 });
 
+test('marks frontend code generated from a top-level array for reverse parsing', async () => {
+  const generated = await generateCode('[{"id":1}]', 'typescript', 'Items');
+  assert.match(generated, /^\/\/ jsonstudio:root-array\n/);
+});
+
 test('every configured Codegen language supports reverse conversion', () => {
   const unsupported = CODEGEN_LANGUAGES
     .map(({ id }) => id)
     .filter((language) => !supportsReverse(language));
 
   assert.deepEqual(unsupported, []);
+});
+
+test('Kotlin, C# and Scala generate data structures without serializers', async () => {
+  const forbidden = {
+    kotlin: /Klaxon|Json\(|fromJson|toJson/,
+    csharp: /Newtonsoft|JsonConvert|Converter|FromJson|ToJson/,
+    scala: /Circe|upickle|Json\w*|Reads|Writes/,
+  };
+
+  for (const language of Object.keys(forbidden)) {
+    const generated = await generateCode(SAMPLE_JSON, language, 'UserProfile');
+    assert.doesNotMatch(generated, forbidden[language], `${language} emitted serializer helpers`);
+  }
 });
 
 test('PHP treats date-only strings as string fields', async () => {
@@ -48,6 +66,26 @@ test('PHP keeps date-time strings mapped to DateTime', async () => {
   );
 
   assert.match(generated, /private DateTime \$createdAt;/);
+});
+
+test('PHP null-only fields use consistent nullable types', async () => {
+  const generated = await generateCode(JSON.stringify({ value: null }), 'php', 'Root');
+
+  assert.match(generated, /private \?Value \$value;/);
+  assert.match(generated, /fromValue\(\?stdClass \$value\): \?Value/);
+  assert.match(generated, /toValue\(\): \?stdClass/);
+  assert.doesNotMatch(generated, /private Object \$value;/);
+  assert.doesNotMatch(generated, /fromValue\(null \$value\): Object/);
+});
+
+test('PHP falls back for mixed null and scalar array members', async () => {
+  const generated = await generateCode(
+    JSON.stringify({ items: [{ value: null }, { value: 1 }] }),
+    'php',
+    'Root',
+  );
+
+  assert.match(generated, /private array \$items;/);
 });
 
 test('tool sub-pages keep edits local to their active editor', async () => {
