@@ -342,7 +342,8 @@ jobs:
             JSON.stringify(
               {
                 platform,
-                asset: path.basename(updaterFile),
+                // GitHub release assets normalize spaces in uploaded filenames to dots.
+                asset: path.basename(updaterFile).replaceAll(' ', '.'),
                 signature,
               },
               null,
