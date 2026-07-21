@@ -18,6 +18,7 @@
   import { t } from '$lib/i18n';
   import type { EditorTheme } from '$lib/config/monacoThemes';
   import type { Window as TauriWindow } from '@tauri-apps/api/window';
+  import { FilePlus2, Save as SaveIcon } from '@lucide/svelte';
   import type MonacoEditor from './MonacoEditor.svelte';
   import { folderStore } from '$lib/stores/folder';
   import {
@@ -943,7 +944,7 @@
       <!-- 1. File operations -->
       <div class="toolbar-group">
         <button class="toolbar-btn" onclick={handleNewFile} disabled={isSubPageMode} use:tooltip={`${$t('toolbar.newTooltip')} (${shortcutLabel('newFile')})`}>
-          <svg class="toolbar-icon" style="color: #0ea5e9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6M9 14h6"/></svg>
+          <FilePlus2 size={15} strokeWidth={2} style="color: #0ea5e9;" aria-hidden="true" />
           {$t('toolbar.new')}
         </button>
         <div class="toolbar-open-wrap" bind:this={openMenuEl}>
@@ -981,6 +982,16 @@
             </div>
           {/if}
         </div>
+        <button
+          class="toolbar-btn"
+          type="button"
+          onclick={() => handleSaveFile()}
+          disabled={isSubPageMode}
+          use:tooltip={`${$t('toolbar.save')} (${shortcutLabel('saveFile')})`}
+        >
+          <SaveIcon size={15} strokeWidth={2} style="color: #3b82f6;" aria-hidden="true" />
+          {$t('toolbar.save')}
+        </button>
         <div class="toolbar-file-actions-wrap" bind:this={fileActionsMenuEl}>
           <button
             class="toolbar-icon-btn"
@@ -990,7 +1001,7 @@
             use:tooltip={$t('toolbar.exportImageTooltip')}
             aria-label={$t('toolbar.exportImage')}
           >
-            <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="toolbar-icon" style="color: #94a3b8;" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <circle cx="5" cy="12" r="1.8"/>
               <circle cx="12" cy="12" r="1.8"/>
               <circle cx="19" cy="12" r="1.8"/>

@@ -818,7 +818,7 @@
   .settings-item-name {
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     letter-spacing: 0.01em;
   }
 
@@ -892,7 +892,7 @@
   .settings-theme-option-name {
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-secondary);
   }
 
   /* Radio dot */
@@ -969,7 +969,7 @@
     font-size: 14px;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-secondary);
   }
 
   /* Toggle switch */

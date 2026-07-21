@@ -187,10 +187,12 @@ test('maps editor offsets in an object property to the same Tree node', () => {
   const firstNameKeyOffset = content.indexOf('"name"');
   const firstNameSeparatorOffset = content.indexOf(':', firstNameKeyOffset);
   const firstNameValueOffset = content.indexOf('"Alice"');
+  const firstNameValueEndOffset = firstNameValueOffset + '"Alice"'.length;
 
   assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameKeyOffset)?.path, '/people/0/name');
   assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameSeparatorOffset)?.path, '/people/0/name');
   assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameValueOffset)?.path, '/people/0/name');
+  assert.equal(findJsonTreeNodeAtOffset(nodes, firstNameValueEndOffset)?.path, '/people/0/name');
 });
 
 test('tree nodes share parent keys instead of copying sibling keys per node', () => {
@@ -403,6 +405,9 @@ test('tree view follows the main editor cursor position', () => {
   assert.match(source, /scrollTreePathIntoView\(path, nextExpanded\)/);
   assert.match(source, /findVisibleRowIndexForPath/);
   assert.match(source, /void tick\(\)\.then\(syncTreeSelectionFromEditor\)/);
+  assert.match(source, /const lineStartOffset = model\.getOffsetAt\(\{[\s\S]*column: 1,[\s\S]*\}\);/);
+  assert.match(source, /const lineContent = model\.getLineContent\(position\.lineNumber\)/);
+  assert.match(source, /candidateNode\.path\.startsWith/);
 });
 
 test('moves object fields before and after siblings', () => {

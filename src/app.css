@@ -73,8 +73,7 @@ body {
   --json-boolean-bg: rgba(244, 114, 182, 0.07);
   --json-null: #a8b0c8;
   --json-null-bg: rgba(168, 176, 200, 0.06);
-  --json-count: #8b91a8;
-  --tree-line: rgba(152, 152, 176, 0.2);
+  --tree-key: #a2a6b3;
   --tree-line-active: rgba(152, 152, 176, 0.42);
 }
 
@@ -114,8 +113,7 @@ html.theme-switching *::after {
   --json-boolean-bg: rgba(219, 39, 119, 0.05);
   --json-null: #64748b;
   --json-null-bg: rgba(100, 116, 139, 0.05);
-  --json-count: #7a8199;
-  --tree-line: rgba(104, 104, 160, 0.16);
+  --tree-key: #555c6b;
   --tree-line-active: rgba(104, 104, 160, 0.38);
 }
 
@@ -721,7 +719,7 @@ a {
 /* Key name styling */
 .tree-key {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--tree-key);
   line-height: 18px;
   white-space: nowrap;
 }
@@ -737,7 +735,7 @@ a {
 }
 
 .tree-colon {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   margin: 0;
   flex-shrink: 0;
   line-height: 18px;
@@ -748,25 +746,29 @@ a {
   overflow: visible;
   white-space: nowrap;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 18px;
   margin-left: 4px;
 }
 
 .tree-value-string {
-  color: var(--json-string);
+  color: color-mix(in srgb, var(--json-string) 72%, var(--text-primary));
+}
+
+.light .tree-value-string {
+  color: color-mix(in srgb, var(--json-string) 86%, var(--text-primary));
 }
 
 .tree-value-number {
-  color: var(--json-number);
+  color: color-mix(in srgb, var(--json-number) 72%, var(--text-primary));
 }
 
 .tree-value-boolean {
-  color: var(--json-boolean);
+  color: color-mix(in srgb, var(--json-boolean) 72%, var(--text-primary));
 }
 
 .tree-value-null {
-  color: var(--json-null);
+  color: color-mix(in srgb, var(--json-null) 78%, var(--text-primary));
 }
 
 .tree-child-count {
