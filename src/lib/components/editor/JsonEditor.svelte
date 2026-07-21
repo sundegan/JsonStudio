@@ -987,7 +987,7 @@
     isConvertMode = true;
   }
 
-  async function toggleCodegenMode() {
+  function toggleCodegenMode() {
     if (isCodegenMode) {
       handleCodegenJsonOutputActiveChange(false);
       isCodegenMode = false;
@@ -1012,8 +1012,8 @@
     codegenInitialClassName = 'MyModel';
     codegenInitialDirection = 'json2code';
     handleCodegenJsonOutputActiveChange(false);
-    
-    codegenInputContent = await getSubPageInputContent();
+
+    codegenInputContent = '';
     isCodegenMode = true;
   }
 

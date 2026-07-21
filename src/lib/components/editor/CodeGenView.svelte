@@ -108,9 +108,18 @@
   }
 
   function selectLanguage(langId: CodegenLanguage) {
-    invalidateConversion();
-    selectedLang = langId;
     isLangDropdownOpen = false;
+    if (langId === selectedLang) return;
+
+    invalidateConversion();
+    if (direction === 'code2json') {
+      isSyncingLeft = true;
+      leftEditor?.setValue('');
+      rightEditor?.setValue('');
+      isSyncingLeft = false;
+      genError = '';
+    }
+    selectedLang = langId;
   }
 
   function handleGlobalClick() {

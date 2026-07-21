@@ -35,6 +35,20 @@ test('every configured Codegen language supports reverse conversion', () => {
   assert.deepEqual(unsupported, []);
 });
 
+test('Codegen starts empty and clears language-specific reverse input', async () => {
+  const [codegenView, editor] = await Promise.all([
+    readFile(new URL('../src/lib/components/editor/CodeGenView.svelte', import.meta.url), 'utf8'),
+    readFile(new URL('../src/lib/components/editor/JsonEditor.svelte', import.meta.url), 'utf8'),
+  ]);
+
+  assert.doesNotMatch(editor, /codegenInputContent = await getSubPageInputContent\(\)/);
+  assert.match(codegenView, /if \(langId === selectedLang\) return;/);
+  assert.match(
+    codegenView,
+    /if \(direction === 'code2json'\) \{[\s\S]*?leftEditor\?\.setValue\(''\);[\s\S]*?rightEditor\?\.setValue\(''\);/,
+  );
+});
+
 test('Kotlin, C# and Scala generate data structures without serializers', async () => {
   const forbidden = {
     kotlin: /Klaxon|Json\(|fromJson|toJson/,
