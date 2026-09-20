@@ -219,7 +219,7 @@
       lineNumbersMinChars: 3,
       folding: true,
       showFoldingControls: 'always',
-      foldingStrategy: 'indentation',
+      foldingStrategy: 'auto',
     };
     const originalEditor = createdDiffEditor.getOriginalEditor();
     const modifiedEditor = createdDiffEditor.getModifiedEditor();

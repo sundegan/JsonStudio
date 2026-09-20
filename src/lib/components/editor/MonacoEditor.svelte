@@ -67,6 +67,85 @@
       ],
       comments: { lineComment: '//', blockComment: ['/*', '*/'] },
     });
+
+    monacoInstance.languages.registerFoldingRangeProvider('json5', {
+      provideFoldingRanges(model) {
+        const lineCount = model.getLineCount();
+        const ranges = [];
+        const stack = [];
+
+        let inString = false;
+        let stringChar = '';
+        let isEscaped = false;
+        let inLineComment = false;
+        let inBlockComment = false;
+
+        for (let i = 1; i <= lineCount; i++) {
+          const line = model.getLineContent(i);
+          inLineComment = false;
+
+          for (let j = 0; j < line.length; j++) {
+            const ch = line[j];
+            const nextCh = j + 1 < line.length ? line[j + 1] : '';
+
+            if (inLineComment) break;
+
+            if (inBlockComment) {
+              if (ch === '*' && nextCh === '/') {
+                inBlockComment = false;
+                j++;
+              }
+              continue;
+            }
+
+            if (inString) {
+              if (isEscaped) {
+                isEscaped = false;
+              } else if (ch === '\\') {
+                isEscaped = true;
+              } else if (ch === stringChar) {
+                inString = false;
+              }
+              continue;
+            }
+
+            if (ch === '/' && nextCh === '/') {
+              inLineComment = true;
+              break;
+            }
+            if (ch === '/' && nextCh === '*') {
+              inBlockComment = true;
+              j++;
+              continue;
+            }
+
+            if (ch === '"' || ch === "'") {
+              inString = true;
+              stringChar = ch;
+              isEscaped = false;
+              continue;
+            }
+
+            if (ch === '{' || ch === '[') {
+              stack.push({ char: ch, line: i });
+            } else if (ch === '}' || ch === ']') {
+              const match = ch === '}' ? '{' : '[';
+              for (let k = stack.length - 1; k >= 0; k--) {
+                if (stack[k].char === match) {
+                  const start = stack[k].line;
+                  if (i > start) {
+                    ranges.push({ start, end: i });
+                  }
+                  stack.splice(k, 1);
+                  break;
+                }
+              }
+            }
+          }
+        }
+        return ranges;
+      }
+    });
     
     monacoInstance.languages.setMonarchTokensProvider('json5', {
       tokenizer: {
@@ -198,13 +277,17 @@
     if (editor && value !== editor.getValue()) {
       const model = editor.getModel();
       if (model) {
-        // Use pushEditOperations instead of setValue to preserve undo history
-        const fullRange = model.getFullModelRange();
-        model.pushEditOperations(
-          [],
-          [{ range: fullRange, text: value }],
-          () => null
-        );
+        if (!editor.getValue()) {
+          model.setValue(value);
+        } else {
+          // Use pushEditOperations instead of setValue to preserve undo history
+          const fullRange = model.getFullModelRange();
+          model.pushEditOperations(
+            [],
+            [{ range: fullRange, text: value }],
+            () => null
+          );
+        }
       }
     }
   });
@@ -379,7 +462,7 @@
       smoothScrolling: true,
       padding: { top: 12, bottom: 12 },
       showFoldingControls: 'always',
-      foldingStrategy: 'indentation',
+      foldingStrategy: 'auto',
       selectionHighlight: false,
       occurrencesHighlight: 'off',
       scrollbar: {
