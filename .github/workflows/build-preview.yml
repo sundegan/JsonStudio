@@ -1,0 +1,303 @@
+name: Build Preview
+
+on:
+  workflow_dispatch:  # Manual trigger - build preview versions on demand
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        type: choice
+        options:
+          - windows
+          - macos
+          - linux
+          - all
+
+jobs:
+  build-windows:
+    if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
+    runs-on: windows-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Build Tauri app
+        run: pnpm tauri build --target x86_64-pc-windows-msvc --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Prepare artifacts
+        shell: bash
+        run: |
+          BUNDLE_DIR="./src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
+          VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json', 'utf8')).version)")"
+
+          shopt -s nullglob
+          INSTALLER_CANDIDATES=(
+            "$BUNDLE_DIR/nsis/Json Studio"*"_x64-setup.exe"
+            "$BUNDLE_DIR/nsis/Json.Studio"*"_x64-setup.exe"
+          )
+
+          PORTABLE_EXE_CANDIDATES=(
+            "$BUNDLE_DIR/../jsonstudio.exe"
+            "$BUNDLE_DIR/../Json Studio.exe"
+            "$BUNDLE_DIR/../Json.Studio.exe"
+          )
+
+          RENAMED_INSTALLER="$BUNDLE_DIR/nsis/JsonStudio_${VERSION}_windows_x64-setup.exe"
+          PORTABLE_ZIP="$BUNDLE_DIR/JsonStudio_${VERSION}_windows_x64-portable.zip"
+
+          if [ ${#INSTALLER_CANDIDATES[@]} -gt 0 ]; then
+            mv "${INSTALLER_CANDIDATES[0]}" "$RENAMED_INSTALLER"
+            echo "✓ Renamed installer: $RENAMED_INSTALLER"
+          else
+            echo "❌ Installer not found"
+            exit 1
+          fi
+
+          PORTABLE_EXE=""
+          for candidate in "${PORTABLE_EXE_CANDIDATES[@]}"; do
+            if [ -f "$candidate" ]; then
+              PORTABLE_EXE="$candidate"
+              break
+            fi
+          done
+
+          if [ -n "$PORTABLE_EXE" ]; then
+            TEMP_DIR="$(mktemp -d)"
+            PORTABLE_ROOT="$TEMP_DIR/JsonStudio"
+            mkdir -p "$PORTABLE_ROOT"
+            cp "$PORTABLE_EXE" "$PORTABLE_ROOT/JsonStudio.exe"
+
+            PORTABLE_ROOT_WIN="$(cygpath -w "$PORTABLE_ROOT")"
+            PORTABLE_ZIP_WIN="$(cygpath -w "$PORTABLE_ZIP")"
+            export PORTABLE_ROOT_WIN PORTABLE_ZIP_WIN
+            powershell -NoProfile -Command "Compress-Archive -Path \$env:PORTABLE_ROOT_WIN -DestinationPath \$env:PORTABLE_ZIP_WIN -Force"
+            rm -rf "$TEMP_DIR"
+
+            echo "✓ Created portable zip: $PORTABLE_ZIP"
+          fi
+
+          echo "=== Build artifacts ready ==="
+          ls -lh "$RENAMED_INSTALLER"
+          [ -f "$PORTABLE_ZIP" ] && ls -lh "$PORTABLE_ZIP"
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
+
+      - name: Upload Windows portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/*-portable.zip
+        if: hashFiles('src-tauri/target/x86_64-pc-windows-msvc/release/bundle/*-portable.zip') != ''
+
+  build-macos:
+    if: github.event.inputs.platform == 'macos' || github.event.inputs.platform == 'all'
+    runs-on: macos-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Build Tauri app
+        run: pnpm tauri build --target aarch64-apple-darwin --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Create DMG with install guides
+        run: |
+          BUNDLE_DIR="./src-tauri/target/aarch64-apple-darwin/release/bundle"
+          APP_PATH="$BUNDLE_DIR/macos/Json Studio.app"
+          VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json', 'utf8')).version)")"
+          DMG_PATH="$BUNDLE_DIR/dmg/JsonStudio_${VERSION}_macos_aarch64.dmg"
+          TEMP_DIR="$(mktemp -d)"
+          DMG_ROOT="$TEMP_DIR/dmg"
+
+          codesign --force --deep --sign - "$APP_PATH"
+
+          mkdir -p "$DMG_ROOT" "$BUNDLE_DIR/dmg"
+          cp -R "$APP_PATH" "$DMG_ROOT/"
+          mkdir -p "$DMG_ROOT/.background"
+          cp "src-tauri/dmg/background.png" "$DMG_ROOT/.background/background.png"
+
+          rm -f "$DMG_PATH"
+          RW_DMG="$TEMP_DIR/JsonStudio.rw.dmg"
+          MOUNT_DIR="/Volumes/Json Studio"
+
+          hdiutil detach "$MOUNT_DIR" >/dev/null 2>&1 || true
+          hdiutil create -volname "Json Studio" -srcfolder "$DMG_ROOT" -ov -format UDRW "$RW_DMG"
+          hdiutil attach "$RW_DMG" -readwrite -noverify -noautoopen
+
+          osascript <<'APPLESCRIPT'
+          set applicationsFolder to POSIX file "/Applications" as alias
+          tell application "Finder"
+            tell disk "Json Studio"
+              make new alias file at it to applicationsFolder with properties {name:"Applications"}
+            end tell
+          end tell
+          APPLESCRIPT
+
+          swift - <<'SWIFT'
+          import AppKit
+          let iconPath = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns"
+          let aliasPath = "/Volumes/Json Studio/Applications"
+          guard
+            let icon = NSImage(contentsOfFile: iconPath),
+            NSWorkspace.shared.setIcon(icon, forFile: aliasPath, options: [])
+          else {
+            fatalError("Failed to apply Applications folder icon")
+          }
+          SWIFT
+
+          osascript <<'APPLESCRIPT'
+          tell application "Finder"
+            tell disk "Json Studio"
+              open
+              set current view of container window to icon view
+              set toolbar visible of container window to false
+              set statusbar visible of container window to false
+              set the bounds of container window to {120, 120, 780, 520}
+              set viewOptions to the icon view options of container window
+              set arrangement of viewOptions to not arranged
+              set icon size of viewOptions to 96
+              set background picture of viewOptions to file ".background:background.png"
+              set position of item "Json Studio.app" of container window to {180, 220}
+              set position of item "Applications" of container window to {480, 220}
+              close
+              open
+              update without registering applications
+              delay 2
+            end tell
+          end tell
+          APPLESCRIPT
+
+          sync
+          hdiutil detach "$MOUNT_DIR"
+          hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH"
+
+          echo "✓ macOS DMG created: $DMG_PATH"
+          ls -lh "$DMG_PATH"
+          rm -rf "$TEMP_DIR"
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+
+  build-linux:
+    if: github.event.inputs.platform == 'linux' || github.event.inputs.platform == 'all'
+    runs-on: ubuntu-22.04
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Build Tauri app
+        run: pnpm tauri build --target x86_64-unknown-linux-gnu --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Rename AppImage
+        run: |
+          BUNDLE_DIR="./src-tauri/target/x86_64-unknown-linux-gnu/release/bundle"
+          VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json', 'utf8')).version)")"
+
+          shopt -s nullglob
+          CANDIDATES=(
+            "$BUNDLE_DIR/appimage/Json Studio"*"_amd64.AppImage"
+            "$BUNDLE_DIR/appimage/Json.Studio"*"_amd64.AppImage"
+          )
+
+          RENAMED_APPIMAGE="$BUNDLE_DIR/appimage/JsonStudio_${VERSION}_linux_amd64.AppImage"
+
+          if [ ${#CANDIDATES[@]} -gt 0 ]; then
+            mv "${CANDIDATES[0]}" "$RENAMED_APPIMAGE"
+            echo "✓ Renamed AppImage: $RENAMED_APPIMAGE"
+            ls -lh "$RENAMED_APPIMAGE"
+          else
+            echo "❌ AppImage not found"
+            exit 1
+          fi
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
