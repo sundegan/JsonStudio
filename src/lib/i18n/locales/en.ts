@@ -60,6 +60,8 @@ export default {
   'toolbar.lightMode': 'Switch to light theme',
   'toolbar.darkMode': 'Switch to dark theme',
   'toolbar.settings': 'Open settings and shortcuts',
+  'toolbar.settingsUpdateAvailable': 'New version available. Open settings to update',
+  'toolbar.settingsUpdateReady': 'Update installed. Open settings to restart',
   'toolbar.pinToTop': 'Keep window on top',
   'toolbar.unpinFromTop': 'Disable window on top',
 

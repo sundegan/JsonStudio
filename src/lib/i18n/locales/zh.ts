@@ -60,6 +60,8 @@ export default {
   'toolbar.lightMode': '切换为浅色主题',
   'toolbar.darkMode': '切换为深色主题',
   'toolbar.settings': '打开应用设置与快捷键配置',
+  'toolbar.settingsUpdateAvailable': '发现新版本，打开设置更新',
+  'toolbar.settingsUpdateReady': '更新已安装，打开设置重启',
   'toolbar.pinToTop': '窗口始终置顶',
   'toolbar.unpinFromTop': '取消窗口置顶',
 

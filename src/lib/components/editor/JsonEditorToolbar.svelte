@@ -9,6 +9,7 @@
   import { getDocumentContent } from '$lib/stores/documentStore';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import { settingsStore } from '$lib/stores/settings';
+  import { appUpdateStore } from '$lib/stores/appUpdateStore';
   import { getSaveFileName } from '$lib/stores/untitledTabs.js';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { isJsonlFilePath } from '$lib/services/jsonlParser.js';
@@ -43,6 +44,12 @@
   let platform = $state<TitlebarPlatform>('macos');
   let isWindowFullscreen = $state(false);
   let isWindowExpanded = $state(false);
+  let hasPendingUpdate = $derived($appUpdateStore.update !== null);
+  let settingsTooltip = $derived(
+    $appUpdateStore.status === 'ready-to-restart'
+      ? $t('toolbar.settingsUpdateReady')
+      : hasPendingUpdate ? $t('toolbar.settingsUpdateAvailable') : $t('toolbar.settings')
+  );
 
   $effect(() => {
     const unsubscribe = shortcutsStore.subscribe(s => { shortcuts = s; });
@@ -1193,15 +1200,18 @@
       {/if}
     </button>
     <button
-      class="toolbar-icon-btn"
+      class="toolbar-icon-btn toolbar-settings-btn"
       onclick={onOpenSettings}
-      aria-label={$t('toolbar.settings')}
-      use:tooltip={$t('toolbar.settings')}
+      aria-label={settingsTooltip}
+      use:tooltip={settingsTooltip}
     >
       <svg class="toolbar-icon" style="color: #06b6d4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
         <circle cx="12" cy="12" r="3"/>
       </svg>
+      {#if hasPendingUpdate}
+        <span class="settings-update-badge" aria-hidden="true"></span>
+      {/if}
     </button>
     <button
       class="toolbar-icon-btn {isAlwaysOnTop ? 'is-active' : ''}"
@@ -1479,6 +1489,22 @@
   .toolbar-icon-btn.is-active {
     color: var(--accent);
     background: var(--accent-glow);
+  }
+
+  .toolbar-settings-btn {
+    position: relative;
+  }
+
+  .settings-update-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border: 2px solid var(--bg-primary);
+    border-radius: 50%;
+    background: var(--error);
+    pointer-events: none;
   }
 
   .toolbar-icon {

@@ -1,6 +1,11 @@
 /**
  * @typedef {'idle' | 'checking' | 'available' | 'installing' | 'ready-to-restart' | 'error'} UpdaterStatus
- * @typedef {{ version?: string, body?: string, downloadAndInstall: () => Promise<void> }} AppUpdate
+ * @typedef {{
+ *   version?: string,
+ *   body?: string,
+ *   downloadAndInstall: () => Promise<void>,
+ *   close?: () => Promise<void>,
+ * }} AppUpdate
  * @typedef {{
  *   currentVersion: string,
  *   status: UpdaterStatus,
@@ -42,6 +47,14 @@ export function createInitialUpdaterState(currentVersion = '') {
 export async function checkForAppUpdate(state, deps) {
   try {
     const update = await deps.check();
+    if (state.update?.close && state.update !== update) {
+      try {
+        await state.update.close();
+      } catch (error) {
+        console.warn('Failed to close superseded app update:', error);
+      }
+    }
+
     if (!update) {
       return {
         ...state,
@@ -71,10 +84,9 @@ export async function checkForAppUpdate(state, deps) {
 
 /**
  * @param {UpdaterState} state
- * @param {{ relaunch?: () => Promise<void> }} deps
  * @returns {Promise<UpdaterState>}
  */
-export async function installAppUpdate(state, deps = {}) {
+export async function installAppUpdate(state) {
   if (!state.update) {
     return {
       ...state,
@@ -105,6 +117,7 @@ export async function installAppUpdate(state, deps = {}) {
 /**
  * @param {{
  *   check: () => Promise<AppUpdate | null>,
+ *   install?: (update: AppUpdate) => Promise<void>,
  *   message: (content: string) => Promise<void>,
  *   confirm: (content: string) => Promise<boolean>,
  *   relaunch: () => Promise<void>,
@@ -126,7 +139,11 @@ export async function checkInstallAndNotifyAppUpdate(deps) {
     }
 
     await deps.message(deps.labels.available(update.version));
-    await update.downloadAndInstall();
+    if (deps.install) {
+      await deps.install(update);
+    } else {
+      await update.downloadAndInstall();
+    }
 
     const shouldRestart = await deps.confirm(deps.labels.readyToRestart);
     if (shouldRestart) {
@@ -138,12 +155,4 @@ export async function checkInstallAndNotifyAppUpdate(deps) {
     await deps.message(`${deps.labels.failed}\n${getErrorMessage(error)}`);
     return { status: 'error' };
   }
-}
-
-/**
- * @param {{ relaunch: () => Promise<void> }} deps
- * @returns {Promise<void>}
- */
-export async function restartAfterAppUpdate(deps) {
-  await deps.relaunch();
 }

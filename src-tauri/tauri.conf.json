@@ -113,7 +113,7 @@
         "https://github.com/sundegan/JsonStudio/releases/latest/download/latest.json"
       ],
       "windows": {
-        "installMode": "passive"
+        "installMode": "basicUi"
       }
     }
   }
