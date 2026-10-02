@@ -106,13 +106,13 @@ jobs:
           ls -lh "$PORTABLE_ZIP"
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-installer
           path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
 
       - name: Upload Windows portable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-portable
           path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/*.zip
