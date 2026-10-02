@@ -55,10 +55,9 @@ test('installs update and marks the app ready to restart', async () => {
     },
   };
 
-  const state = await installAppUpdate(
-    { ...createInitialUpdaterState('1.2.1'), status: 'available', update },
-    { relaunch: async () => {} }
-  );
+  const state = await installAppUpdate({
+    ...createInitialUpdaterState('1.2.1'), status: 'available', update,
+  });
 
   assert.equal(installed, true);
   assert.equal(state.status, 'ready-to-restart');
@@ -73,10 +72,9 @@ test('keeps update metadata when install fails so the UI can retry', async () =>
     },
   };
 
-  const state = await installAppUpdate(
-    { ...createInitialUpdaterState('1.2.1'), status: 'available', update },
-    { relaunch: async () => {} }
-  );
+  const state = await installAppUpdate({
+    ...createInitialUpdaterState('1.2.1'), status: 'available', update,
+  });
 
   assert.equal(state.status, 'error');
   assert.equal(state.messageKey, 'settings.updateFailed');
@@ -95,6 +93,90 @@ test('captures updater errors without discarding the current version', async () 
   assert.equal(state.status, 'error');
   assert.equal(state.messageKey, 'settings.updateFailed');
   assert.equal(state.error, 'network unavailable');
+});
+
+test('repeated checks close the superseded update resource even for the same version', async () => {
+  let closed = false;
+  const previousUpdate = {
+    version: '1.4.1',
+    downloadAndInstall: async () => {},
+    close: async () => { closed = true; },
+  };
+  const update = { version: '1.4.1', downloadAndInstall: async () => {} };
+
+  const state = await checkForAppUpdate({
+    ...createInitialUpdaterState('1.4.0'), status: 'available', update: previousUpdate,
+  }, { check: async () => update });
+
+  assert.equal(closed, true);
+  assert.equal(state.update, update);
+  assert.equal(state.status, 'available');
+});
+
+test('a check without an update closes the previously available resource', async () => {
+  let closed = false;
+  const update = {
+    version: '1.4.1',
+    downloadAndInstall: async () => {},
+    close: async () => { closed = true; },
+  };
+
+  const state = await checkForAppUpdate({
+    ...createInitialUpdaterState('1.4.0'), status: 'available', update,
+  }, { check: async () => null });
+
+  assert.equal(closed, true);
+  assert.equal(state.update, null);
+  assert.equal(state.status, 'idle');
+});
+
+test('a failed check keeps the previous update resource open for installation', async () => {
+  const update = {
+    version: '1.4.1',
+    downloadAndInstall: async () => {},
+    close: async () => assert.fail('a failed check must preserve the available resource'),
+  };
+
+  const state = await checkForAppUpdate({
+    ...createInitialUpdaterState('1.4.0'), status: 'available', update,
+  }, { check: async () => { throw new Error('Network unavailable'); } });
+
+  assert.equal(state.update, update);
+  assert.equal(state.status, 'error');
+});
+
+test('checks do not close an update resource that is still in use', async () => {
+  const update = {
+    version: '1.4.1',
+    downloadAndInstall: async () => {},
+    close: async () => assert.fail('the active resource must remain open'),
+  };
+
+  const state = await checkForAppUpdate({
+    ...createInitialUpdaterState('1.4.0'), status: 'available', update,
+  }, { check: async () => update });
+
+  assert.equal(state.update, update);
+  assert.equal(state.status, 'available');
+});
+
+test('resource cleanup errors do not discard a newly detected update', async t => {
+  const warnings = [];
+  t.mock.method(console, 'warn', (...args) => warnings.push(args));
+  const previousUpdate = {
+    version: '1.4.1',
+    downloadAndInstall: async () => {},
+    close: async () => { throw new Error('Resource cleanup failed'); },
+  };
+  const update = { version: '1.4.2', downloadAndInstall: async () => {} };
+
+  const state = await checkForAppUpdate({
+    ...createInitialUpdaterState('1.4.0'), status: 'available', update: previousUpdate,
+  }, { check: async () => update });
+
+  assert.equal(state.update, update);
+  assert.equal(state.status, 'available');
+  assert.equal(warnings.length, 1);
 });
 
 test('menu updater notifies when the app is already up to date', async () => {
@@ -167,4 +249,32 @@ test('menu updater reports check and install errors', async () => {
 
   assert.equal(result.status, 'error');
   assert.deepEqual(messages, ['failed\nnetwork unavailable']);
+});
+
+test('menu updater can install through the shared app update state', async () => {
+  const actions = [];
+  const update = {
+    version: '1.4.1',
+    downloadAndInstall: async () => assert.fail('shared installation should be used'),
+  };
+
+  const result = await checkInstallAndNotifyAppUpdate({
+    check: async () => update,
+    install: async receivedUpdate => {
+      assert.equal(receivedUpdate, update);
+      actions.push('install');
+    },
+    message: async content => actions.push(content),
+    confirm: async () => false,
+    relaunch: async () => assert.fail('restart should require confirmation'),
+    labels: {
+      latest: 'latest',
+      available: version => `available ${version}`,
+      readyToRestart: 'restart?',
+      failed: 'failed',
+    },
+  });
+
+  assert.equal(result.status, 'installed');
+  assert.deepEqual(actions, ['available 1.4.1', 'install']);
 });

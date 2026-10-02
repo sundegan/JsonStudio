@@ -3,7 +3,6 @@ import {
   checkForAppUpdate,
   createInitialUpdaterState,
   installAppUpdate,
-  restartAfterAppUpdate,
 } from '$lib/services/appUpdater';
 
 type AppUpdaterState = ReturnType<typeof createInitialUpdaterState>;
@@ -29,6 +28,15 @@ export async function initAppUpdater() {
 }
 
 export async function checkAppUpdates(options: { showErrors?: boolean } = {}) {
+  const previousState = get(appUpdateState);
+  if (
+    previousState.status === 'checking' ||
+    previousState.status === 'installing' ||
+    previousState.status === 'ready-to-restart'
+  ) {
+    return previousState;
+  }
+
   appUpdateState.update(state => ({
     ...state,
     status: 'checking',
@@ -56,17 +64,19 @@ export async function checkAppUpdates(options: { showErrors?: boolean } = {}) {
 
   try {
     const { check } = await import('@tauri-apps/plugin-updater');
-    const nextState = await checkForAppUpdate(get(appUpdateState), { check });
+    const checkedState = await checkForAppUpdate(get(appUpdateState), { check });
+    const nextState = !options.showErrors && checkedState.status === 'error'
+      ? previousState
+      : checkedState;
     appUpdateState.set(nextState);
     return nextState;
   } catch (error) {
-    const previousState = get(appUpdateState);
-    const nextState: AppUpdaterState = {
+    const nextState: AppUpdaterState = options.showErrors ? {
       ...previousState,
-      status: options.showErrors ? 'error' : 'idle',
-      messageKey: options.showErrors ? 'settings.updateFailed' : 'settings.updateReady',
-      error: options.showErrors ? (error instanceof Error ? error.message : String(error)) : null,
-    };
+      status: 'error',
+      messageKey: 'settings.updateFailed',
+      error: error instanceof Error ? error.message : String(error),
+    } : previousState;
     appUpdateState.set(nextState);
     return nextState;
   }
@@ -81,6 +91,15 @@ function isMockAppUpdateEnabled() {
 }
 
 export async function installAvailableAppUpdate() {
+  const previousState = get(appUpdateState);
+  if (
+    previousState.status === 'checking' ||
+    previousState.status === 'installing' ||
+    previousState.status === 'ready-to-restart'
+  ) {
+    return previousState;
+  }
+
   appUpdateState.update(state => ({
     ...state,
     status: 'installing',
@@ -96,12 +115,10 @@ export async function installAvailableAppUpdate() {
 export async function restartInstalledAppUpdate() {
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    await restartAfterAppUpdate({ relaunch: () => invoke('restart_app') });
+    await invoke('restart_app');
   } catch (error) {
     appUpdateState.update(state => ({
       ...state,
-      status: 'error',
-      messageKey: 'settings.updateFailed',
       error: error instanceof Error ? error.message : String(error),
     }));
   }

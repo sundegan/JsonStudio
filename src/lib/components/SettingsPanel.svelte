@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
-  import { check } from '@tauri-apps/plugin-updater';
   import { settingsStore, darkThemes, lightThemes, type AppSettings } from '$lib/stores/settings';
   import { globalShortcutsState, shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import {
@@ -31,6 +30,7 @@
   ];
 
   let isOpen = $state(false);
+  let settingsTabsElement = $state<HTMLElement | null>(null);
   let activeTab = $state<SettingsTab>('appearance');
   let shortcuts = $state<ShortcutsSettings | null>(null);
   let updaterState = $state(createInitialUpdaterState(''));
@@ -107,7 +107,14 @@
   });
 
   export function open() {
+    if (updaterState.update) activeTab = 'application';
     isOpen = true;
+    void tick().then(() => {
+      settingsTabsElement?.querySelector('[aria-current="page"]')?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+      });
+    });
   }
 
   function selectTab(tab: SettingsTab) {
@@ -159,8 +166,21 @@
   }
 
   async function handleMenuCheckForUpdate() {
+    if (isUpdaterBusy() || updaterState.status === 'ready-to-restart') {
+      open();
+      return;
+    }
+
     await checkInstallAndNotifyAppUpdate({
-      check,
+      check: async () => {
+        const state = await checkAppUpdates({ showErrors: true });
+        if (state.status === 'error') throw new Error(state.error ?? $t('settings.updateFailed'));
+        return state.update;
+      },
+      install: async () => {
+        const state = await installAvailableAppUpdate();
+        if (state.status === 'error') throw new Error(state.error ?? $t('settings.updateFailed'));
+      },
       message: async content => window.alert(content),
       confirm: async content => window.confirm(content),
       relaunch: () => invoke('restart_app'),
@@ -230,7 +250,7 @@
       </div>
 
       <div class="settings-content">
-        <nav class="settings-tabs" aria-label={$t('settings.title')}>
+        <nav class="settings-tabs" aria-label={$t('settings.title')} bind:this={settingsTabsElement}>
           {#each settingsTabs as tab}
             <button
               class="settings-tab {activeTab === tab.id ? 'is-active' : ''}"
@@ -505,15 +525,16 @@
                 </div>
 
                 <div class="settings-update-actions">
-                  {#if updaterState.status === 'available'}
+                  {#if updaterState.update && updaterState.status !== 'ready-to-restart'}
                     <button
                       class="settings-primary-btn"
                       onclick={handleInstallUpdate}
+                      disabled={isUpdaterBusy()}
                       type="button"
                     >
                       {$t('updates.updateNow')}
                     </button>
-                  {:else}
+                  {:else if updaterState.status !== 'ready-to-restart'}
                     <button
                       class="settings-secondary-btn"
                       onclick={handleCheckForUpdate}
@@ -1101,7 +1122,7 @@
     color: var(--accent);
   }
 
-  .settings-primary-btn:hover {
+  .settings-primary-btn:hover:not(:disabled) {
     background: color-mix(in srgb, var(--accent) 24%, transparent);
   }
 
@@ -1116,6 +1137,7 @@
     color: var(--text-primary);
   }
 
+  .settings-primary-btn:disabled,
   .settings-secondary-btn:disabled {
     opacity: 0.55;
     cursor: not-allowed;

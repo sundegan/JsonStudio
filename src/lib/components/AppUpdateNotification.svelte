@@ -14,6 +14,7 @@
   import { t } from '$lib/i18n';
 
   const AUTO_CHECK_DELAY_MS = 5000;
+  const AUTO_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
   let updaterState = $state(createInitialUpdaterState(''));
   let isDismissed = $state(false);
@@ -29,32 +30,40 @@
         (shouldShowError && updaterState.status === 'error'))
   );
 
-  $effect(() => {
+  onMount(() => {
     const unsubscribe = appUpdateStore.subscribe(state => {
+      const previousState = updaterState;
       updaterState = state;
-      if (state.status === 'available' || state.status === 'ready-to-restart') {
+      if (
+        (state.status === 'available' && state.update?.version !== previousState.update?.version) ||
+        (state.status === 'ready-to-restart' && previousState.status !== 'ready-to-restart')
+      ) {
         isDismissed = false;
       }
     });
-    return () => unsubscribe();
-  });
 
-  onMount(() => {
-    let timer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    const startupTimer = setTimeout(() => {
       void checkForUpdates(false);
     }, AUTO_CHECK_DELAY_MS);
+    const periodicTimer = setInterval(() => {
+      void checkForUpdates(false);
+    }, AUTO_CHECK_INTERVAL_MS);
 
     void initAppUpdater();
 
     return () => {
-      if (timer) clearTimeout(timer);
+      clearTimeout(startupTimer);
+      clearInterval(periodicTimer);
+      unsubscribe();
     };
   });
 
   async function checkForUpdates(showErrors: boolean) {
     const nextState = await checkAppUpdates({ showErrors });
-    shouldShowError = showErrors && nextState.status === 'error';
-    isDismissed = nextState.status === 'idle';
+    if (showErrors) {
+      shouldShowError = nextState.status === 'error';
+      isDismissed = false;
+    }
   }
 
   async function handleInstallUpdate() {
