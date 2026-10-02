@@ -127,6 +127,8 @@ export default {
 
   'settings.shortcuts': 'Shortcuts',
   'settings.shortcutsGlobal': 'Global Shortcuts',
+  'settings.enableGlobalShortcuts': 'Enable global shortcuts',
+  'settings.shortcutsUpdateFailed': 'Could not update shortcuts',
   'settings.shortcutsApp': 'App Shortcuts',
   'settings.showApp': 'Show App',
   'settings.showAppDesc': 'Bring Json Studio to front',

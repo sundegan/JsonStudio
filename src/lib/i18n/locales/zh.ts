@@ -127,6 +127,8 @@ export default {
 
   'settings.shortcuts': '快捷键',
   'settings.shortcutsGlobal': '全局快捷键',
+  'settings.enableGlobalShortcuts': '启用全局快捷键',
+  'settings.shortcutsUpdateFailed': '快捷键设置失败',
   'settings.shortcutsApp': '应用快捷键',
   'settings.showApp': '显示应用',
   'settings.showAppDesc': '将 Json Studio 置于前台',

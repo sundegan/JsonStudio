@@ -4,6 +4,7 @@
   import type * as Monaco from 'monaco-editor';
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { initMonaco } from '$lib/services/monaco';
+  import { getJson5FoldingRanges } from '$lib/services/json5Folding.js';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
   
   // Props
@@ -66,6 +67,10 @@
         { open: "'", close: "'" },
       ],
       comments: { lineComment: '//', blockComment: ['/*', '*/'] },
+    });
+
+    monacoInstance.languages.registerFoldingRangeProvider('json5', {
+      provideFoldingRanges: getJson5FoldingRanges,
     });
     
     monacoInstance.languages.setMonarchTokensProvider('json5', {
@@ -379,7 +384,7 @@
       smoothScrolling: true,
       padding: { top: 12, bottom: 12 },
       showFoldingControls: 'always',
-      foldingStrategy: 'indentation',
+      foldingStrategy: 'auto',
       selectionHighlight: false,
       occurrencesHighlight: 'off',
       scrollbar: {

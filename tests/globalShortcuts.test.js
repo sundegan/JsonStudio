@@ -1,25 +1,70 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { get } from 'svelte/store';
 
-test('global shortcut handlers only run for key press events', async () => {
+const STORAGE_KEY = 'jsonstudio_shortcuts';
+let moduleId = 0;
+
+async function createHarness(saved) {
+  const storage = new Map();
+  if (saved !== undefined) {
+    storage.set(STORAGE_KEY, typeof saved === 'string' ? saved : JSON.stringify(saved));
+  }
+  const harness = {
+    calls: [],
+    active: [],
+    handleUpdate: null,
+    storageError: false,
+    storage,
+  };
+  globalThis.localStorage = {
+    getItem: key => storage.get(key) ?? null,
+    setItem(key, value) {
+      if (harness.storageError) {
+        harness.storageError = false;
+        throw new Error('Storage unavailable');
+      }
+      storage.set(key, String(value));
+    },
+  };
+  globalThis.window = {
+    __TAURI_INTERNALS__: {
+      async invoke(command, args) {
+        assert.equal(command, 'update_global_shortcuts');
+        harness.calls.push(structuredClone(args.bindings));
+        if (harness.handleUpdate) return harness.handleUpdate(args.bindings);
+        harness.active = structuredClone(args.bindings);
+        return { bindings: harness.active, error: null };
+      },
+    },
+  };
+  globalThis.isTauri = true;
+  const module = await import(`../src/lib/stores/shortcuts.ts?test=${++moduleId}`);
+  harness.store = module.shortcutsStore;
+  harness.status = () => get(module.globalShortcutsState);
+  harness.settings = () => get(module.shortcutsStore);
+  harness.saved = () => JSON.parse(storage.get(STORAGE_KEY));
+  return harness;
+}
+
+test('native handlers only run for key presses and startup does not register defaults', async () => {
   const [libSource, shortcutSource] = await Promise.all([
     readFile(new URL('../src-tauri/src/lib.rs', import.meta.url), 'utf8'),
     readFile(new URL('../src-tauri/src/commands/shortcuts.rs', import.meta.url), 'utf8'),
   ]);
-
   const handlerCount = (shortcutSource.match(/\.on_shortcut\(/g) || []).length;
   const pressGuardCount = (
     shortcutSource.match(/event\.state != ShortcutState::Pressed/g) || []
   ).length;
-
   assert.equal(handlerCount, 2);
   assert.equal(pressGuardCount, handlerCount);
-  assert.doesNotMatch(libSource, /\.on_shortcut\(/);
-  assert.match(libSource, /register_global_shortcut/);
+  assert.doesNotMatch(libSource, /register_global_shortcut\(/);
+  assert.match(libSource, /update_global_shortcuts/);
+  assert.match(shortcutSource, /#\[derive\(Default\)\][\s\S]*?bindings: Mutex<Vec/);
 });
 
-test('format clipboard shortcut delegates JSON normalization to the frontend worker', async () => {
+test('format clipboard delegates JSON normalization to the frontend worker', async () => {
   const source = await readFile(
     new URL('../src-tauri/src/commands/shortcuts.rs', import.meta.url),
     'utf8',
@@ -27,97 +72,205 @@ test('format clipboard shortcut delegates JSON normalization to the frontend wor
   const handler = source.match(
     /pub async fn format_clipboard_and_show[\s\S]*?\n}\n\nfn ensure_window_in_front/,
   )?.[0] || '';
-
   assert.match(handler, /\.emit\("clipboard-content", clipboard_text\)/);
-  assert.doesNotMatch(handler, /serde_json::from_str/);
-  assert.doesNotMatch(handler, /serde_json::to_string_pretty/);
-  assert.doesNotMatch(handler, /clipboard-formatted|clipboard-pasted-raw/);
+  assert.doesNotMatch(handler, /serde_json::from_str|serde_json::to_string_pretty/);
 });
 
-test('shortcut updates unregister the current binding and restore it on failure', async () => {
-  const source = await readFile(
-    new URL('../src-tauri/src/commands/shortcuts.rs', import.meta.url),
-    'utf8',
-  );
-
-  assert.match(source, /let mut keys = registry[\s\S]*?\.keys[\s\S]*?\.lock\(\)/);
-  assert.match(source, /let old_key = keys[\s\S]*?\.get\(&id\)/);
-  assert.match(source, /if shortcuts\.is_registered\(old_key\.as_str\(\)\)/);
-  assert.match(source, /shortcuts[\s\S]*?\.unregister\(old_key\.as_str\(\)\)/);
-  assert.match(source, /register_global_shortcut\(&app, &id, &old_key\)/);
-  assert.match(source, /failed to restore previous shortcut/);
-  assert.match(source, /keys\.insert\(id, key\)/);
+test('new and legacy settings default to enabled and retain custom bindings', async () => {
+  for (const saved of [undefined, { showApp: { currentKey: 'Control+Alt+J' } }]) {
+    const harness = await createHarness(saved);
+    await harness.store.init();
+    assert.equal(harness.status().enabled, true);
+    assert.equal(harness.saved().globalShortcutsEnabled, true);
+    assert.equal(harness.active.length, 2);
+    if (saved) assert.equal(harness.active[0].key, 'Control+Alt+J');
+  }
 });
 
-test('synchronizing an unchanged registered shortcut is a no-op', async () => {
-  const source = await readFile(
-    new URL('../src-tauri/src/commands/shortcuts.rs', import.meta.url),
-    'utf8',
-  );
-
-  assert.match(source, /if old_key == key && shortcuts\.is_registered\(key\.as_str\(\)\)/);
-  assert.match(source, /if old_key == key[\s\S]*?return Ok\(\(\)\)/);
+test('a saved opt-out never registers default or custom global hotkeys', async () => {
+  const harness = await createHarness({
+    globalShortcutsEnabled: false,
+    showApp: { currentKey: 'Control+Alt+J' },
+  });
+  await harness.store.init();
+  assert.deepEqual(harness.calls, [[]]);
+  assert.equal(harness.status().enabled, false);
+  assert.equal(harness.settings().showApp.currentKey, 'Control+Alt+J');
 });
 
-test('saved global shortcuts are synchronized when the frontend starts', async () => {
-  const source = await readFile(
-    new URL('../src/lib/stores/shortcuts.ts', import.meta.url),
-    'utf8',
-  );
-
-  assert.match(source, /void syncGlobalShortcuts\(current\)/);
-  assert.match(source, /if \(shortcut\.isGlobal\)/);
-  assert.match(
-    source,
-    /invokeGlobalShortcutUpdate\(shortcut\.id, shortcut\.currentKey\)/,
-  );
-  assert.match(source, /Failed to initialize global shortcut \$\{shortcut\.id\}/);
+test('initialization is idempotent across multiple callers', async () => {
+  const harness = await createHarness();
+  const first = harness.store.init();
+  assert.equal(harness.store.init(), first);
+  await first;
+  await harness.store.init();
+  assert.equal(harness.calls.length, 1);
 });
 
-test('global shortcut settings are persisted only after backend registration succeeds', async () => {
-  const source = await readFile(
-    new URL('../src/lib/stores/shortcuts.ts', import.meta.url),
-    'utf8',
-  );
-
-  const updateHandler = source.match(
-    /updateShortcut: async[\s\S]*?\n    \},\n    resetShortcut:/,
-  )?.[0] || '';
-  const resetHandler = source.match(
-    /resetShortcut: async[\s\S]*?\n    \},\n    reset:/,
-  )?.[0] || '';
-
-  assert.match(updateHandler, /await invokeGlobalShortcutUpdate\(id, key\)/);
-  assert.match(updateHandler, /updateStoredShortcut\(id, key\)/);
-  assert.ok(
-    updateHandler.indexOf('await invokeGlobalShortcutUpdate(id, key)') <
-      updateHandler.indexOf('updateStoredShortcut(id, key)'),
-  );
-
-  assert.match(resetHandler, /await invokeGlobalShortcutUpdate\(id, shortcut\.defaultKey\)/);
-  assert.match(resetHandler, /updateStoredShortcut\(id, shortcut\.defaultKey\)/);
-  assert.ok(
-    resetHandler.indexOf('await invokeGlobalShortcutUpdate(id, shortcut.defaultKey)') <
-      resetHandler.indexOf('updateStoredShortcut(id, shortcut.defaultKey)'),
-  );
-
-  const resetAllHandler = source.match(
-    /reset: async[\s\S]*?\n    \},\n    matchShortcut/,
-  )?.[0] || '';
-  assert.match(
-    resetAllHandler,
-    /nextState\[k\]\.currentKey = get\(\{ subscribe \}\)\[k\]\.currentKey/,
-  );
-  assert.match(resetAllHandler, /set\(nextState\)/);
+test('disabling releases both hotkeys and survives a restart without losing bindings', async () => {
+  const harness = await createHarness({ showApp: { currentKey: 'Control+Alt+J' } });
+  await harness.store.init();
+  await harness.store.setGlobalShortcutsEnabled(false);
+  assert.deepEqual(harness.active, []);
+  assert.equal(harness.saved().globalShortcutsEnabled, false);
+  const restarted = await createHarness(harness.saved());
+  await restarted.store.init();
+  assert.deepEqual(restarted.calls, [[]]);
+  assert.equal(restarted.settings().showApp.currentKey, 'Control+Alt+J');
 });
 
-test('frontend global shortcut updates are serialized in call order', async () => {
-  const source = await readFile(
-    new URL('../src/lib/stores/shortcuts.ts', import.meta.url),
-    'utf8',
-  );
+test('editing keys while disabled does not register them and enabling uses the latest keys', async () => {
+  const harness = await createHarness({ globalShortcutsEnabled: false });
+  await harness.store.init();
+  await harness.store.updateShortcut('show_app', 'Control+Alt+J');
+  assert.deepEqual(harness.active, []);
+  assert.equal(harness.saved().showApp.currentKey, 'Control+Alt+J');
+  assert.equal(harness.saved().globalShortcutsEnabled, false);
+  await harness.store.setGlobalShortcutsEnabled(true);
+  assert.equal(harness.active[0].key, 'Control+Alt+J');
+  assert.equal(harness.active.length, 2);
+});
 
-  assert.match(source, /let globalShortcutUpdateQueue: Promise<void> = Promise\.resolve\(\)/);
-  assert.match(source, /globalShortcutUpdateQueue\.then\(async \(\) =>/);
-  assert.match(source, /globalShortcutUpdateQueue = operation\.catch\(\(\) => \{\}\)/);
+test('single and bulk resets preserve the global opt-out', async () => {
+  const harness = await createHarness({
+    globalShortcutsEnabled: false,
+    showApp: { currentKey: 'Control+Alt+J' },
+    formatClipboard: { currentKey: 'Control+Alt+V' },
+  });
+  await harness.store.init();
+  await harness.store.resetShortcut('show_app');
+  assert.equal(harness.settings().showApp.currentKey, harness.settings().showApp.defaultKey);
+  assert.equal(harness.status().enabled, false);
+  await harness.store.reset();
+  assert.equal(harness.settings().formatClipboard.currentKey, harness.settings().formatClipboard.defaultKey);
+  assert.equal(harness.saved().globalShortcutsEnabled, false);
+  assert(harness.calls.every(bindings => bindings.length === 0));
+});
+
+test('a failed enable leaves the switch off, preserves keys, and exposes the error', async () => {
+  const harness = await createHarness({ globalShortcutsEnabled: false });
+  await harness.store.init();
+  harness.handleUpdate = () => ({ bindings: [], error: 'Shortcut already in use' });
+  await harness.store.setGlobalShortcutsEnabled(true);
+  assert.deepEqual(harness.status(), {
+    enabled: false,
+    pending: false,
+    error: 'Shortcut already in use',
+  });
+  assert.equal(harness.saved().globalShortcutsEnabled, false);
+});
+
+test('a failed disable keeps the switch on and does not persist a false opt-out', async () => {
+  const harness = await createHarness();
+  await harness.store.init();
+  harness.handleUpdate = () => ({ bindings: harness.active, error: 'Could not unregister' });
+  await harness.store.setGlobalShortcutsEnabled(false);
+  assert.equal(harness.status().enabled, true);
+  assert.equal(harness.saved().globalShortcutsEnabled, true);
+  assert.equal(harness.status().error, 'Could not unregister');
+});
+
+test('failed binding updates and resets do not overwrite the saved keys', async () => {
+  const harness = await createHarness({ showApp: { currentKey: 'Control+Alt+J' } });
+  await harness.store.init();
+  harness.handleUpdate = () => ({ bindings: harness.active, error: 'Registration failed' });
+  await harness.store.updateShortcut('show_app', 'Control+Alt+K');
+  assert.equal(harness.saved().showApp.currentKey, 'Control+Alt+J');
+  await harness.store.resetShortcut('show_app');
+  assert.equal(harness.settings().showApp.currentKey, 'Control+Alt+J');
+  await harness.store.reset();
+  assert.equal(harness.saved().showApp.currentKey, 'Control+Alt+J');
+});
+
+test('queued edits and toggles read the latest state and persist in execution order', async () => {
+  const harness = await createHarness();
+  await harness.store.init();
+  await Promise.all([
+    harness.store.setGlobalShortcutsEnabled(false),
+    harness.store.updateShortcut('show_app', 'Control+Alt+J'),
+    harness.store.setGlobalShortcutsEnabled(true),
+    harness.store.updateShortcut('format_clipboard', 'Control+Alt+V'),
+  ]);
+  assert.equal(harness.status().enabled, true);
+  assert.equal(harness.saved().showApp.currentKey, 'Control+Alt+J');
+  assert.equal(harness.saved().formatClipboard.currentKey, 'Control+Alt+V');
+  assert.deepEqual(harness.calls.slice(1, 3), [[], []]);
+  assert.deepEqual(harness.active, [
+    { id: 'show_app', key: 'Control+Alt+J' },
+    { id: 'format_clipboard', key: 'Control+Alt+V' },
+  ]);
+});
+
+test('a pending native update does not optimistically change the switch', async () => {
+  const harness = await createHarness();
+  await harness.store.init();
+  let finish;
+  harness.handleUpdate = bindings => new Promise(resolve => {
+    finish = () => {
+      harness.active = bindings;
+      resolve({ bindings, error: null });
+    };
+  });
+  const operation = harness.store.setGlobalShortcutsEnabled(false);
+  assert.equal(harness.status().pending, true);
+  assert.equal(harness.status().enabled, true);
+  await new Promise(resolve => setImmediate(resolve));
+  finish();
+  await operation;
+  assert.equal(harness.status().pending, false);
+  assert.equal(harness.status().enabled, false);
+});
+
+test('a rollback failure reflects remaining native bindings and can be retried', async () => {
+  const harness = await createHarness({ globalShortcutsEnabled: false });
+  await harness.store.init();
+  harness.handleUpdate = bindings => ({
+    bindings: bindings.slice(0, 1),
+    error: 'Registration failed; rollback failed',
+  });
+  await harness.store.setGlobalShortcutsEnabled(true);
+  assert.equal(harness.status().enabled, true);
+  assert.equal(harness.saved().globalShortcutsEnabled, true);
+  assert.match(harness.status().error, /rollback failed/);
+  harness.handleUpdate = null;
+  await harness.store.setGlobalShortcutsEnabled(false);
+  assert.equal(harness.status().enabled, false);
+  assert.equal(harness.status().error, null);
+});
+
+test('a persistence failure restores the previous native registration', async () => {
+  const harness = await createHarness();
+  await harness.store.init();
+  harness.storageError = true;
+  await harness.store.setGlobalShortcutsEnabled(false);
+  assert.equal(harness.active.length, 2);
+  assert.equal(harness.status().enabled, true);
+  assert.equal(harness.saved().globalShortcutsEnabled, true);
+  assert.equal(harness.status().error, 'Storage unavailable');
+});
+
+test('corrupt saved settings fail closed without overwriting the stored data', async () => {
+  const harness = await createHarness('{invalid');
+  await harness.store.init();
+  assert.deepEqual(harness.calls, [[]]);
+  assert.equal(harness.status().enabled, false);
+  assert(harness.status().error);
+  assert.equal(harness.storage.get(STORAGE_KEY), '{invalid');
+});
+
+test('app-local shortcuts are unaffected by the global opt-out', async () => {
+  const harness = await createHarness({ globalShortcutsEnabled: false });
+  await harness.store.init();
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+  assert.equal(harness.store.matchShortcut({
+    key: 's',
+    code: 'KeyS',
+    ctrlKey: !isMac,
+    metaKey: isMac,
+    shiftKey: false,
+    altKey: false,
+  }), 'save_file');
+  await harness.store.updateShortcut('save_file', 'CommandOrControl+Alt+S');
+  assert.equal(harness.calls.length, 1);
+  assert.equal(harness.saved().globalShortcutsEnabled, false);
 });

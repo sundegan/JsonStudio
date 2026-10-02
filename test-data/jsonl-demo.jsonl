@@ -1,0 +1,31 @@
+{"id":"evt-001","timestamp":"2026-08-03T09:00:00.000Z","type":"session_meta","message":"Session started","meta":{"session_id":"demo-session-001","provider":"codex","mode":"interactive"}}
+{"id":"evt-002","timestamp":"2026-08-03T09:00:01.125Z","type":"user_message","message":"Open the JSONL demo file.","meta":{"turn":1,"language":"en-US"}}
+{"id":"evt-003","timestamp":"2026-08-03T09:00:05.420Z","type":"assistant_message","message":"Please inspect parsing, pagination, field filtering, compact previews, and expandable JSON details. This message is intentionally long so the list row can verify truncation while the expanded view still shows the complete text.","meta":{"turn":1,"status":"complete"}}
+{"id":"evt-004","timestamp":"2026-08-03T09:00:08.812Z","type":"tool_call","message":"Searching JSONL files","meta":{"tool":"search_files","query":"jsonl","paths":["src","tests"]}}
+{"id":"evt-005","timestamp":"2026-08-03T09:00:12.030Z","type":"tool_result","message":"Search completed","meta":{"matches":12,"duration_ms":385,"truncated":false}}
+{"id":"evt-006","timestamp":"2026-08-03T09:00:12.415Z","type":"event","message":"View initialized","meta":{"page":1,"page_size":10,"theme":"light"}}
+{"id":"evt-007","timestamp":"2026-08-03T09:00:15.000Z","type":"session_meta","message":"Session settings updated","meta":{"session_id":"demo-session-001","mode":"interactive","locale":"en-US"}}
+{"id":"evt-008","timestamp":"2026-08-03T09:00:18.240Z","type":"user_message","message":"Use the type field to find session_meta records, then compare contains and not contains in the filter control.","meta":{"field":"type","value":"session_meta"}}
+{"id":"evt-009","timestamp":"2026-08-03T09:00:22.701Z","type":"assistant_message","message":"The data is ready for filtering and nested JSON inspection.","meta":{"valid":true,"page_count":3}}
+{"id":"evt-010","timestamp":"2026-08-03T09:00:26.144Z","type":"warning","message":"Long preview text detected","meta":{"line":3,"severity":"info"}}
+
+{"id":"evt-011","timestamp":"2026-08-03T09:00:30.018Z","type":"tool_call","message":"Reading the source file","meta":{"tool":"read_file","range":{"start":1,"end":10}}}
+{"id":"evt-012","timestamp":"2026-08-03T09:00:30.267Z","type":"tool_result","message":"Source loaded","meta":{"lines":10,"bytes":2786,"encoding":"UTF-8"}}
+{"id":"evt-013","timestamp":"2026-08-03T09:00:33.550Z","type":"user_message","message":"Filter records where type equals session_meta.","meta":{"field":"type","operator":"=","value":"session_meta"}}
+{"id":"evt-014","timestamp":"2026-08-03T09:00:36.990Z","type":"assistant_message","message":"Four session_meta records match the exact field filter.","meta":{"matches":4,"filter_active":true}}
+{"id":"evt-015","timestamp":"2026-08-03T09:00:40.001Z","type":"event","message":"Page changed","meta":{"from":1,"to":2,"reason":"next_button"}}
+{"id":"evt-016","timestamp":"2026-08-03T09:00:43.777Z","type":"session_meta","message":"Second session started","meta":{"session_id":"demo-session-002","provider":"local","mode":"batch"}}
+{"id":"evt-017","timestamp":"2026-08-03T09:00:47.230Z","type":"user_message","message":"Search for every record containing the word session.","meta":{"operator":"contains","value":"session","case_sensitive":false}}
+{"id":"evt-018","timestamp":"2026-08-03T09:00:50.508Z","type":"tool_call","message":"Running regression tests","meta":{"tool":"test_runner","command":"pnpm test"}}
+{"id":"evt-019","timestamp":"2026-08-03T09:01:04.875Z","type":"tool_result","message":"Regression tests passed","meta":{"passed":385,"failed":0,"skipped":0}}
+{"id":"evt-020","timestamp":"2026-08-03T09:01:08.102Z","type":"tool_result","message":"This record is intentionally invalid","meta":{"passed":4,"failed":1,},}
+{"id":"evt-021","timestamp":"2026-08-03T09:01:11.444Z","type":"assistant_message","message":"The invalid row should remain visible and be marked as Invalid JSON.","meta":{"recoverable":true,"show_source":true}}
+{"id":"evt-022","timestamp":"2026-08-03T09:01:15.006Z","type":"user_message","message":"Expand this row to verify that nested objects and arrays can be collapsed at any depth.","meta":{"target":"nested_data","expand_depth":2}}
+{"id":"evt-023","timestamp":"2026-08-03T09:01:18.669Z","type":"tool_call","message":"Inspecting nested data","meta":{"tool":"inspect_json","include_arrays":true,"include_nulls":true}}
+{"id":"evt-024","timestamp":"2026-08-03T09:01:22.812Z","type":"tool_result","message":"Nested data is ready","meta":{"profile":{"name":"Alice","active":true},"items":[{"name":"laptop","online":true},{"name":"phone","online":false}]}}
+{"id":"evt-025","timestamp":"2026-08-03T09:01:26.500Z","type":"session_meta","message":"Session metadata captured","meta":{"session_id":"demo-session-002","tags":["demo","regression"],"owner":"test-user"}}
+{"id":"evt-026","timestamp":"2026-08-03T09:01:30.333Z","type":"event","message":"Filter applied","meta":{"field":"type","operator":"=","value":"session_meta","count":4}}
+{"id":"evt-027","timestamp":"2026-08-03T09:01:34.920Z","type":"assistant_message","message":"The second page is ready for expansion and source-row copying.","meta":{"page":2,"page_count":3,"copy_available":true}}
+{"id":"evt-028","timestamp":"2026-08-03T09:01:38.760Z","type":"system_message","message":"Display test completed","meta":{"pagination":true,"field_filter":true,"tree_view":true}}
+{"id":"evt-029","timestamp":"2026-08-03T09:01:42.142Z","type":"tool_result","message":"Summary generated","meta":{"valid":29,"invalid":1,"empty":1}}
+{"id":"evt-030","timestamp":"2026-08-03T09:01:45.000Z","type":"session_end","message":"Session completed","meta":{"records":30,"pages":3,"success":true}}

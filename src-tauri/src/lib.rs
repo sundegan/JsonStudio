@@ -24,9 +24,7 @@ use commands::file_watcher::{unwatch_all_files, unwatch_file, watch_file, FileWa
 use commands::json::{json_escape, json_format, json_minify, json_unescape};
 use commands::schema::fetch_remote_schema;
 use commands::shortcuts::{
-    format_clipboard_and_show, register_global_shortcut, show_main_window, update_shortcut,
-    GlobalShortcutRegistry, DEFAULT_FORMAT_CLIPBOARD_SHORTCUT, DEFAULT_SHOW_APP_SHORTCUT,
-    FORMAT_CLIPBOARD_SHORTCUT_ID, SHOW_APP_SHORTCUT_ID,
+    format_clipboard_and_show, show_main_window, update_global_shortcuts, GlobalShortcutRegistry,
 };
 use commands::window::{desktop_platform, open_devtools, quit_app, restart_app, set_window_theme};
 use window_bounds::schedule_main_window_bounds_clamp;
@@ -81,20 +79,6 @@ pub fn run() {
                     .unwrap_or_default();
                 queue_or_emit_open_files(&app_handle, collect_json_file_args(&args, &cwd));
             }
-            if let Err(error) = register_global_shortcut(
-                &app_handle,
-                SHOW_APP_SHORTCUT_ID,
-                DEFAULT_SHOW_APP_SHORTCUT,
-            ) {
-                eprintln!("Failed to register show app shortcut: {error}");
-            }
-            if let Err(error) = register_global_shortcut(
-                &app_handle,
-                FORMAT_CLIPBOARD_SHORTCUT_ID,
-                DEFAULT_FORMAT_CLIPBOARD_SHORTCUT,
-            ) {
-                eprintln!("Failed to register format clipboard shortcut: {error}");
-            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -108,7 +92,7 @@ pub fn run() {
             open_devtools,
             show_main_window,
             format_clipboard_and_show,
-            update_shortcut,
+            update_global_shortcuts,
             open_file_dialog,
             save_file,
             save_file_dialog,

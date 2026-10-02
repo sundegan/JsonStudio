@@ -4,7 +4,7 @@
   import { listen } from '@tauri-apps/api/event';
   import { check } from '@tauri-apps/plugin-updater';
   import { settingsStore, darkThemes, lightThemes, type AppSettings } from '$lib/stores/settings';
-  import { shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import { globalShortcutsState, shortcutsStore, type ShortcutsSettings } from '$lib/stores/shortcuts';
   import {
     checkInstallAndNotifyAppUpdate,
     createInitialUpdaterState,
@@ -548,6 +548,7 @@
             <button 
               class="settings-action-link"
               onclick={() => shortcutsStore.reset()}
+              disabled={$globalShortcutsState.pending}
               type="button"
             >
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -572,6 +573,7 @@
                       <button
                         class="settings-reset-btn"
                         onclick={() => shortcutsStore.resetShortcut(shortcut.id)}
+                        disabled={$globalShortcutsState.pending}
                         title={$t('settings.resetShortcut')}
                         type="button"
                       >
@@ -584,6 +586,7 @@
                   </div>
                   <ShortcutRecorder 
                     value={shortcut.currentKey}
+                    disabled={$globalShortcutsState.pending}
                     onchange={(key) => shortcutsStore.updateShortcut(shortcut.id, key)}
                   />
                 </div>
@@ -591,7 +594,26 @@
             </div>
           {/snippet}
 
-          <div class="settings-shortcut-group-label">{$t('settings.shortcutsGlobal')}</div>
+          <div class="settings-shortcut-group-label settings-shortcut-group-row">
+            <span>{$t('settings.shortcutsGlobal')}</span>
+            <button
+              class="settings-toggle {$globalShortcutsState.enabled ? 'is-on' : ''}"
+              role="switch"
+              aria-checked={$globalShortcutsState.enabled}
+              aria-label={$t('settings.enableGlobalShortcuts')}
+              title={$t('settings.enableGlobalShortcuts')}
+              disabled={$globalShortcutsState.pending}
+              onclick={() => shortcutsStore.setGlobalShortcutsEnabled(!$globalShortcutsState.enabled)}
+              type="button"
+            >
+              <span class="settings-toggle-thumb"></span>
+            </button>
+          </div>
+          {#if $globalShortcutsState.error}
+            <p class="settings-error settings-shortcut-error" role="alert">
+              {$t('settings.shortcutsUpdateFailed')}: {$globalShortcutsState.error}
+            </p>
+          {/if}
           <div class="settings-list">
             {@render shortcutRow('settings.showApp', 'settings.showAppDesc', shortcuts.showApp)}
             {@render shortcutRow('settings.formatClipboard', 'settings.formatClipboardDesc', shortcuts.formatClipboard)}
@@ -991,6 +1013,13 @@
     border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   }
 
+  .settings-toggle:disabled,
+  .settings-action-link:disabled,
+  .settings-reset-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .settings-toggle-thumb {
     position: absolute;
     top: 2px;
@@ -1120,6 +1149,18 @@
 
   .settings-shortcut-group-label:first-of-type {
     padding-top: 0;
+  }
+
+  .settings-shortcut-group-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .settings-shortcut-error {
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
   }
 
   /* Reset button (shortcuts) */

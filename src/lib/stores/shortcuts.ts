@@ -149,50 +149,142 @@ const defaultShortcuts: ShortcutsSettings = {
 
 const STORAGE_KEY = 'jsonstudio_shortcuts';
 const CLOSE_OTHER_TABS_SHORTCUT_MIGRATION_KEY = 'jsonstudio_close_other_tabs_shortcut_v2';
-let globalShortcutUpdateQueue: Promise<void> = Promise.resolve();
+
+interface GlobalShortcutsState {
+  enabled: boolean;
+  pending: boolean;
+  error: string | null;
+}
+
+interface GlobalShortcutUpdate {
+  bindings: Array<{ id: string; key: string }>;
+  error: string | null;
+}
+
+const globalShortcutStatus = writable<GlobalShortcutsState>({
+  enabled: true,
+  pending: false,
+  error: null,
+});
+
+export const globalShortcutsState = { subscribe: globalShortcutStatus.subscribe };
+
+let shortcutUpdateQueue: Promise<void> = Promise.resolve();
+let pendingUpdates = 0;
 
 function getDefaultShortcuts(): ShortcutsSettings {
   return JSON.parse(JSON.stringify(defaultShortcuts));
 }
 
-function invokeGlobalShortcutUpdate(id: string, key: string): Promise<void> {
-  const operation = globalShortcutUpdateQueue.then(async () => {
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('update_shortcut', { id, key });
+function enqueueShortcutUpdate(update: () => Promise<void>): Promise<void> {
+  pendingUpdates += 1;
+  globalShortcutStatus.update(state => ({ ...state, pending: true }));
+  const operation = shortcutUpdateQueue.then(async () => {
+    globalShortcutStatus.update(state => ({ ...state, error: null }));
+    try {
+      await update();
+    } catch (error) {
+      globalShortcutStatus.update(state => ({
+        ...state,
+        error: error instanceof Error ? error.message : String(error),
+      }));
+    } finally {
+      pendingUpdates -= 1;
+      globalShortcutStatus.update(state => ({ ...state, pending: pendingUpdates > 0 }));
+    }
   });
-  globalShortcutUpdateQueue = operation.catch(() => {});
+  shortcutUpdateQueue = operation.catch(() => {});
   return operation;
 }
 
 function createShortcutsStore() {
-  const { subscribe, set, update } = writable<ShortcutsSettings>(getDefaultShortcuts());
+  const { subscribe, set } = writable<ShortcutsSettings>(getDefaultShortcuts());
+  let initialization: Promise<void> | null = null;
 
-  function updateStoredShortcut(id: string, key: string): void {
-    update(state => {
-      const newState = { ...state };
-      for (const shortcutKey in newState) {
-        const k = shortcutKey as keyof ShortcutsSettings;
-        if (newState[k].id === id) {
-          newState[k] = { ...newState[k], currentKey: key };
-          break;
+  function persist(shortcuts: ShortcutsSettings, enabled: boolean): void {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      ...shortcuts,
+      globalShortcutsEnabled: enabled,
+    }));
+  }
+
+  async function syncGlobalShortcuts(shortcuts: ShortcutsSettings, enabled: boolean): Promise<void> {
+    const { invoke, isTauri } = await import('@tauri-apps/api/core');
+    if (!isTauri()) return;
+
+    const bindings = enabled
+      ? Object.values(shortcuts)
+        .filter(shortcut => shortcut.isGlobal)
+        .map(shortcut => ({ id: shortcut.id, key: shortcut.currentKey }))
+      : [];
+    const result = await invoke<GlobalShortcutUpdate>('update_global_shortcuts', { bindings });
+    if (result?.error) {
+      // Even a failed rollback must report any bindings that remain active.
+      const actualEnabled = result.bindings.length > 0;
+      globalShortcutStatus.update(state => ({ ...state, enabled: actualEnabled }));
+      persist(get({ subscribe }), actualEnabled);
+      throw new Error(result.error);
+    }
+  }
+
+  async function commit(
+    next: ShortcutsSettings,
+    enabled: boolean,
+    synchronize: boolean,
+  ): Promise<void> {
+    const previous = get({ subscribe });
+    const previousEnabled = get(globalShortcutStatus).enabled;
+    if (synchronize) await syncGlobalShortcuts(next, enabled);
+
+    try {
+      persist(next, enabled);
+    } catch (error) {
+      if (synchronize) {
+        try {
+          await syncGlobalShortcuts(previous, previousEnabled);
+        } catch (rollbackError) {
+          throw new Error(`${String(error)}; failed to restore previous shortcuts: ${String(rollbackError)}`);
         }
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      return newState;
+      throw error;
+    }
+
+    set(next);
+    globalShortcutStatus.update(state => ({ ...state, enabled }));
+  }
+
+  function changeShortcut(id: string, key: string | null): Promise<void> {
+    return enqueueShortcutUpdate(async () => {
+      const current = get({ subscribe });
+      const entry = Object.entries(current).find(([, shortcut]) => shortcut.id === id);
+      if (!entry) return;
+
+      const [shortcutKey, shortcut] = entry;
+      const next = {
+        ...current,
+        [shortcutKey]: { ...shortcut, currentKey: key ?? shortcut.defaultKey },
+      };
+      await commit(next, get(globalShortcutStatus).enabled, !!shortcut.isGlobal);
     });
   }
 
   return {
     subscribe,
     init: () => {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      if (initialization) return initialization;
       let current = getDefaultShortcuts();
-      if (stored) {
-        try {
+      let enabled = true;
+      let loadError: string | null = null;
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
           const parsed = JSON.parse(stored);
+          if (typeof parsed.globalShortcutsEnabled === 'boolean') {
+            enabled = parsed.globalShortcutsEnabled;
+          }
           for (const key in current) {
             const k = key as keyof ShortcutsSettings;
-            if (parsed[k] && parsed[k].currentKey) {
+            if (typeof parsed[k]?.currentKey === 'string' && parsed[k].currentKey) {
               current[k].currentKey = parsed[k].currentKey;
             }
           }
@@ -203,66 +295,32 @@ function createShortcutsStore() {
             current.closeOtherTabs.currentKey = current.closeOtherTabs.defaultKey;
           }
           localStorage.setItem(CLOSE_OTHER_TABS_SHORTCUT_MIGRATION_KEY, '1');
-          set(current);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
-        } catch (e) {
-          console.error('Failed to parse shortcuts settings:', e);
-          current = getDefaultShortcuts();
-          set(current);
         }
+      } catch (error) {
+        // Do not register defaults when the saved opt-out could not be read.
+        enabled = false;
+        loadError = error instanceof Error ? error.message : String(error);
       }
+      set(current);
+      globalShortcutStatus.update(state => ({ ...state, enabled }));
 
-      void syncGlobalShortcuts(current);
-    },
-    updateShortcut: async (id: string, key: string) => {
-      const shortcut = Object.values(get({ subscribe })).find(item => item.id === id);
-      if (!shortcut) return;
-
-      if (shortcut.isGlobal) {
-        try {
-          await invokeGlobalShortcutUpdate(id, key);
-        } catch (error) {
-          console.error('Failed to update shortcut:', error);
-          return;
+      initialization = enqueueShortcutUpdate(async () => {
+        await syncGlobalShortcuts(current, enabled);
+        if (loadError) {
+          throw new Error(loadError);
         }
-      }
-
-      updateStoredShortcut(id, key);
+        persist(current, enabled);
+      });
+      return initialization;
     },
-    resetShortcut: async (id: string) => {
-      const shortcut = Object.values(get({ subscribe })).find(item => item.id === id);
-      if (!shortcut) return;
-
-      if (shortcut.isGlobal) {
-        try {
-          await invokeGlobalShortcutUpdate(id, shortcut.defaultKey);
-        } catch (error) {
-          console.error('Failed to reset global shortcut:', error);
-          return;
-        }
-      }
-
-      updateStoredShortcut(id, shortcut.defaultKey);
-    },
-    reset: async () => {
-      const nextState = getDefaultShortcuts();
-
-      for (const key in nextState) {
-        const k = key as keyof ShortcutsSettings;
-        const shortcut = nextState[k];
-        if (shortcut.isGlobal) {
-          try {
-            await invokeGlobalShortcutUpdate(shortcut.id, shortcut.defaultKey);
-          } catch (error) {
-            nextState[k].currentKey = get({ subscribe })[k].currentKey;
-            console.error(`Failed to reset global shortcut ${shortcut.id}:`, error);
-          }
-        }
-      }
-
-      set(nextState);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-    },
+    setGlobalShortcutsEnabled: (enabled: boolean) => enqueueShortcutUpdate(async () => {
+      await commit(get({ subscribe }), enabled, true);
+    }),
+    updateShortcut: (id: string, key: string) => changeShortcut(id, key),
+    resetShortcut: (id: string) => changeShortcut(id, null),
+    reset: () => enqueueShortcutUpdate(async () => {
+      await commit(getDefaultShortcuts(), get(globalShortcutStatus).enabled, true);
+    }),
     matchShortcut(e: KeyboardEvent): string | null {
       const state = get({ subscribe });
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -278,19 +336,6 @@ function createShortcutsStore() {
       return null;
     },
   };
-}
-
-async function syncGlobalShortcuts(shortcuts: ShortcutsSettings): Promise<void> {
-  for (const key in shortcuts) {
-    const shortcut = shortcuts[key as keyof ShortcutsSettings];
-    if (shortcut.isGlobal) {
-      try {
-        await invokeGlobalShortcutUpdate(shortcut.id, shortcut.currentKey);
-      } catch (error) {
-        console.error(`Failed to initialize global shortcut ${shortcut.id}:`, error);
-      }
-    }
-  }
 }
 
 function matchKey(shortcutKey: string, e: KeyboardEvent, cmdOrCtrl: boolean): boolean {
