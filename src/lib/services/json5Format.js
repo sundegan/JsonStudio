@@ -14,6 +14,7 @@ export async function formatJson5(content, indent = 2) {
     parser: 'json5',
     plugins: [babelPlugin, estreePlugin],
     tabWidth: indent,
+    endOfLine: 'lf', // Use LF for consistency across platforms (fixes Windows CRLF issues)
   });
 }
 
@@ -29,5 +30,6 @@ export async function formatJsonText(content, indent = 2) {
     parser: 'json-stringify',
     plugins: [babelPlugin, estreePlugin],
     tabWidth: indent,
+    endOfLine: 'lf', // Use LF for consistency across platforms (fixes Windows CRLF issues)
   });
 }

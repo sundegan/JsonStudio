@@ -535,10 +535,20 @@
     };
   }
 
+  function normalizeLineEndings(str: string): string {
+    return str.replace(/\r\n/g, '\n');
+  }
+
   function isJsonOperationContextCurrent(context: JsonOperationContext): boolean {
     if (jsonContent !== context.content) return false;
     if ((jsonEditor?.getEditorInstance() ?? null) !== context.editor) return false;
-    return !context.editor || context.editor.getValue() === context.content;
+
+    // Normalize line endings before comparison to handle Windows CRLF vs Unix LF
+    // This fixes Issue #76 where operations fail on Windows due to line ending mismatches
+    const editorValue = context.editor?.getValue();
+    if (!context.editor || !editorValue) return true;
+
+    return normalizeLineEndings(editorValue) === normalizeLineEndings(context.content);
   }
 
   function setJsonContentValue(value: string, context?: JsonOperationContext): boolean {
