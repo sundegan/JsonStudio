@@ -47,7 +47,8 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app
-        run: pnpm tauri build --target x86_64-pc-windows-msvc --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
+        shell: bash
+        run: pnpm tauri build --target x86_64-pc-windows-msvc --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
       - name: Prepare artifacts
         shell: bash
