@@ -47,7 +47,7 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app
-        run: pnpm tauri build --target x86_64-pc-windows-msvc --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        run: pnpm tauri build --target x86_64-pc-windows-msvc --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
 
       - name: Prepare artifacts
         shell: bash
@@ -151,7 +151,7 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app
-        run: pnpm tauri build --target aarch64-apple-darwin --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        run: pnpm tauri build --target aarch64-apple-darwin --bundles app --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
 
       - name: Create DMG with install guides
         run: |
@@ -272,7 +272,7 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app
-        run: pnpm tauri build --target x86_64-unknown-linux-gnu --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        run: pnpm tauri build --target x86_64-unknown-linux-gnu --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
 
       - name: Rename AppImage
         run: |
