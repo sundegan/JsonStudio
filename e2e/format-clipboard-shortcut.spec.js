@@ -9,8 +9,8 @@ const FORMATTED_CLIPBOARD = `{
 const ESCAPED_JSON_ARRAY_CLIPBOARD =
   '"[{\\"id\\":101,\\"name\\":\\"Alice\\",\\"role\\":\\"Developer\\",\\"active\\":true},{\\"id\\":102,\\"name\\":\\"James\\",\\"role\\":\\"Designer\\",\\"active\\":false}]"';
 
-async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CLIPBOARD) {
-  await page.addInitScript(({ tabStateKey, settingsKey, clipboardPayload }) => {
+async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CLIPBOARD, enabled = true) {
+  await page.addInitScript(({ tabStateKey, settingsKey, clipboardPayload, enabled }) => {
     localStorage.setItem(tabStateKey, JSON.stringify({
       tabs: [{
         id: 'initial-tab',
@@ -37,10 +37,13 @@ async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CL
       autoSave: false,
       isDarkMode: false,
     }));
+    localStorage.setItem('jsonstudio_shortcuts', JSON.stringify({ globalShortcutsEnabled: enabled }));
 
     let callbackId = 0;
     const callbacks = new Map();
     const eventListeners = new Map();
+    let registeredBindings = [];
+    window.isTauri = true;
 
     window.__TAURI_INTERNALS__ = {
       metadata: {
@@ -65,6 +68,10 @@ async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CL
         return path;
       },
       async invoke(command, args = {}) {
+        if (command === 'update_global_shortcuts') {
+          registeredBindings = args.bindings;
+          return { bindings: registeredBindings, error: null };
+        }
         if (command === 'get_pending_files') return [];
         if (command === 'plugin:event|listen') {
           const listeners = eventListeners.get(args.event) || [];
@@ -97,10 +104,14 @@ async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CL
       listenerCount(event) {
         return eventListeners.get(event)?.length || 0;
       },
+      bindingCount() {
+        return registeredBindings.length;
+      },
     };
 
     window.addEventListener('keydown', (event) => {
       if (
+        registeredBindings.some(binding => binding.id === 'format_clipboard') &&
         (event.ctrlKey || event.metaKey) &&
         event.shiftKey &&
         event.key.toLowerCase() === 'v'
@@ -112,6 +123,7 @@ async function installTauriShortcutHarness(page, clipboardContent = FORMATTED_CL
     tabStateKey: TAB_STATE_KEY,
     settingsKey: SETTINGS_KEY,
     clipboardPayload: clipboardContent,
+    enabled,
   });
 }
 
@@ -161,4 +173,27 @@ test('Ctrl+Shift+V unescapes and formats escaped JSON arrays from clipboard', as
   await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText('"id": 101');
   await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText('"name": "Alice"');
   await expect(page.locator('[data-testid="json-editor"] .view-lines')).toContainText('"active": false');
+});
+
+test('turning off global shortcuts stops clipboard events without disabling app shortcuts', async ({ page }) => {
+  await installTauriShortcutHarness(page);
+  await page.goto('/');
+  await expect.poll(() => page.evaluate(
+    () => window.__jsonStudioShortcutHarness.bindingCount(),
+  )).toBe(2);
+  await page.getByRole('button', { name: 'Open settings and shortcuts', exact: true }).click();
+  await page.locator('.settings-tabs').getByRole('button', { name: 'Shortcuts', exact: true }).click();
+  const toggle = page.getByRole('switch', { name: 'Enable global shortcuts' });
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await expect.poll(() => page.evaluate(
+    () => window.__jsonStudioShortcutHarness.bindingCount(),
+  )).toBe(0);
+  await page.locator('.settings-close-btn').click();
+
+  const commandKey = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.press(`${commandKey}+Shift+v`);
+  await expect(page.locator('.tab-button')).toHaveCount(1);
+  await page.keyboard.press(`${commandKey}+n`);
+  await expect(page.locator('.tab-button')).toHaveCount(2);
 });

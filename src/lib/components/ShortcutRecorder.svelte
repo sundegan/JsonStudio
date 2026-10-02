@@ -4,14 +4,16 @@
   interface Props {
     value: string;
     onchange: (key: string) => void;
+    disabled?: boolean;
   }
 
-  let { value, onchange }: Props = $props();
+  let { value, onchange, disabled = false }: Props = $props();
   
   let isRecording = $state(false);
   let recordedKeys = $state<string[]>([]);
 
   function startRecording() {
+    if (disabled) return;
     isRecording = true;
     recordedKeys = [];
   }
@@ -26,7 +28,7 @@
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (!isRecording) return;
+    if (!isRecording || disabled) return;
     
     e.preventDefault();
     e.stopPropagation();
@@ -56,7 +58,7 @@
   }
 
   function handleKeyUp(e: KeyboardEvent) {
-    if (!isRecording) return;
+    if (!isRecording || disabled) return;
     
     e.preventDefault();
     e.stopPropagation();
@@ -80,6 +82,7 @@
   <input
     type="text"
     readonly
+    {disabled}
     value={isRecording ? (recordedKeys.length > 0 ? formatShortcutKey(recordedKeys.join('+')) : '') : formatShortcutKey(value)}
     placeholder={isRecording ? 'Press shortcut...' : ''}
     class="w-32 px-2 py-1 text-xs font-mono text-center rounded border transition-all cursor-pointer"
@@ -106,5 +109,10 @@
   input::placeholder {
     color: var(--text-secondary);
     opacity: 0.6;
+  }
+
+  input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>
