@@ -8,6 +8,7 @@
   import { tabsStore, type Tab } from '$lib/stores/tabs';
   import { getDocumentContent } from '$lib/stores/documentStore';
   import { shortcutsStore, formatShortcutKey, type ShortcutsSettings } from '$lib/stores/shortcuts';
+  import { normalizeLineEndings } from '$lib/services/lineEndings';
   import { settingsStore } from '$lib/stores/settings';
   import { appUpdateStore } from '$lib/stores/appUpdateStore';
   import { getSaveFileName } from '$lib/stores/untitledTabs.js';
@@ -535,10 +536,6 @@
     };
   }
 
-  function normalizeLineEndings(str: string): string {
-    return str.replace(/\r\n/g, '\n');
-  }
-
   function isJsonOperationContextCurrent(context: JsonOperationContext): boolean {
     if (jsonContent !== context.content) return false;
     if ((jsonEditor?.getEditorInstance() ?? null) !== context.editor) return false;
@@ -546,9 +543,9 @@
     // Normalize line endings before comparison to handle Windows CRLF vs Unix LF
     // This fixes Issue #76 where operations fail on Windows due to line ending mismatches
     const editorValue = context.editor?.getValue();
-    if (!context.editor || !editorValue) return true;
+    if (!context.editor) return true;
 
-    return normalizeLineEndings(editorValue) === normalizeLineEndings(context.content);
+    return normalizeLineEndings(editorValue ?? '') === normalizeLineEndings(context.content);
   }
 
   function setJsonContentValue(value: string, context?: JsonOperationContext): boolean {

@@ -5,6 +5,7 @@
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
   import { generateCode, codeToJson, supportsReverse, CODEGEN_LANGUAGES, type CodegenLanguage } from '$lib/services/codegen';
   import { t } from '$lib/i18n';
+  import { normalizeLineEndings } from '$lib/services/lineEndings';
 
   type Direction = 'json2code' | 'code2json';
 
@@ -138,7 +139,7 @@
   $effect(() => {
     if (direction !== 'json2code') return;
     const val = inputValue;
-    if (leftEditor && val !== leftEditor.getValue()) {
+    if (leftEditor && normalizeLineEndings(val) !== normalizeLineEndings(leftEditor.getValue())) {
       isSyncingLeft = true;
       leftEditor.setValue(val);
       isSyncingLeft = false;

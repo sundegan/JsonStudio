@@ -6,7 +6,7 @@ export function parseConvertStructuredFormat(kind, value) {
     INI: parseIni,
     'Markdown Table': parseMarkdownTable,
   })[kind];
-  return parser ? parser(value, true) : null;
+  return parser ? parser(value.replace(/\r\n?/g, '\n'), true) : null;
 }
 
 function parseProperties(value, explicit = false) {

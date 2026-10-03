@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
+use super::file_encoding::decode_text;
 
 pub(crate) const JSON_FILE_EXTENSIONS: &[&str] = &[
     "json",
@@ -27,6 +28,13 @@ pub struct FileNode {
     pub children: Option<Vec<FileNode>>,
 }
 
+async fn read_text_file(path: &Path) -> Result<String, String> {
+    let bytes = tokio::fs::read(path)
+        .await
+        .map_err(|error| format!("Failed to read file: {error}"))?;
+    decode_text(bytes)
+}
+
 /// Open a JSON file using file picker dialog
 #[tauri::command]
 pub async fn open_file_dialog(app: AppHandle) -> Result<Option<(String, String)>, String> {
@@ -40,9 +48,9 @@ pub async fn open_file_dialog(app: AppHandle) -> Result<Option<(String, String)>
         Some(path) => {
             let path_str = path.to_string();
             let path_buf = PathBuf::from(&path_str);
-            match tokio::fs::read_to_string(&path_buf).await {
+            match read_text_file(&path_buf).await {
                 Ok(content) => Ok(Some((path_str, content))),
-                Err(e) => Err(format!("Failed to read file: {}", e)),
+                Err(error) => Err(error),
             }
         }
         None => Ok(None), // User cancelled
@@ -144,9 +152,7 @@ pub async fn save_binary_file_dialog(
 /// Read file content by path (for drag & drop)
 #[tauri::command]
 pub async fn read_file(path: String) -> Result<String, String> {
-    tokio::fs::read_to_string(&path)
-        .await
-        .map_err(|e| format!("Failed to read file: {}", e))
+    read_text_file(Path::new(&path)).await
 }
 
 /// Check if file path is valid JSON file

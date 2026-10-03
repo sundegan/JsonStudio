@@ -328,8 +328,9 @@ test('editor paste formatting runs outside the UI thread and discards stale resu
   assert.match(editorSource, /const tabId = sourceTab\.id/);
   assert.match(editorSource, /formatPastedJsonAsync\(sourceValue, tabSize\)/);
   assert.match(editorSource, /\$activeTab\?\.id !== tabId/);
-  assert.match(editorSource, /getDocumentContent\(tabId\) !== sourceValue/);
-  assert.match(editorSource, /tabsStore\.updateTabContent\(tabId, normalized\)/);
+  assert.match(editorSource, /normalizeLineEndings\(getDocumentContent\(tabId\)\) !== normalizeLineEndings\(sourceValue\)/);
+  assert.match(editorSource, /const editorContent = monacoEditor\.getValue\(\)/);
+  assert.match(editorSource, /tabsStore\.updateTabContent\(tabId, editorContent\)/);
   assert.match(editorSource, /function syncActiveTab[\s\S]*?cancelPasteFormat\(\)/);
   assert.match(workerClient, /createPersistentWorker\(/);
   assert.match(workerClient, /pasteFormatWorker\.run\(\{ content, indent \}\)/);

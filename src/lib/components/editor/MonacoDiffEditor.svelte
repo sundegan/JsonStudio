@@ -7,6 +7,7 @@
   import { normalizePastedJson } from '$lib/services/diffPasteNormalize.js';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
   import { t } from '$lib/i18n';
+  import { normalizeLineEndings } from '$lib/services/lineEndings';
 
   type DiffSide = 'original' | 'modified';
 
@@ -107,7 +108,7 @@
     // Always read originalValue first to establish dependency tracking
     // (avoid short-circuit evaluation preventing dependency registration)
     const currentOriginalValue = originalValue;
-    if (originalModel && currentOriginalValue !== originalModel.getValue()) {
+    if (originalModel && normalizeLineEndings(currentOriginalValue) !== normalizeLineEndings(originalModel.getValue())) {
       isSyncingOriginal = true;
       // Use pushEditOperations to preserve undo history
       const fullRange = originalModel.getFullModelRange();
@@ -124,7 +125,7 @@
     // Always read modifiedValue first to establish dependency tracking
     // (avoid short-circuit evaluation preventing dependency registration)
     const currentModifiedValue = modifiedValue;
-    if (modifiedModel && currentModifiedValue !== modifiedModel.getValue()) {
+    if (modifiedModel && normalizeLineEndings(currentModifiedValue) !== normalizeLineEndings(modifiedModel.getValue())) {
       isSyncingModified = true;
       // Use pushEditOperations to preserve undo history
       const fullRange = modifiedModel.getFullModelRange();
@@ -283,8 +284,8 @@
         destroyed ||
         model.isDisposed() ||
         !normalized ||
-        normalized === sourceValue ||
-        model.getValue() !== sourceValue
+        normalizeLineEndings(normalized) === normalizeLineEndings(sourceValue) ||
+        normalizeLineEndings(model.getValue()) !== normalizeLineEndings(sourceValue)
       ) {
         return;
       }

@@ -36,6 +36,7 @@
   import type { CodegenLanguage } from '$lib/services/codegen';
   import type { ConvertFormat } from '$lib/services/convert';
   import { cancelPasteFormat, formatPastedJsonAsync } from '$lib/services/pasteFormatWorker.js';
+  import { normalizeLineEndings } from '$lib/services/lineEndings';
   import { normalizeOpenedJson } from '$lib/services/openJsonNormalize.js';
   import { isJsonlFilePath } from '$lib/services/jsonlParser.js';
   import {
@@ -1454,22 +1455,25 @@
 
     try {
       const normalized = await formatPastedJsonAsync(sourceValue, tabSize);
-      if (!normalized || normalized === sourceValue) return;
+      if (!normalized || normalizeLineEndings(normalized) === normalizeLineEndings(sourceValue)) return;
       const currentSourceTab = tabsState.tabs.find(tab => tab.id === tabId);
       if (
         $activeTab?.id !== tabId ||
+        !monacoEditor ||
         !currentSourceTab ||
-        getDocumentContent(tabId) !== sourceValue ||
-        content !== sourceValue ||
-        monacoEditor?.getValue() !== sourceValue
+        normalizeLineEndings(getDocumentContent(tabId)) !== normalizeLineEndings(sourceValue) ||
+        normalizeLineEndings(content) !== normalizeLineEndings(sourceValue) ||
+        normalizeLineEndings(monacoEditor?.getValue() ?? '') !== normalizeLineEndings(sourceValue)
       ) {
         return;
       }
 
-      setContentState(normalized, { syncRightPanel: true });
       monacoEditor.setValue(normalized);
-      tabsStore.updateTabContent(tabId, normalized);
-      scheduleLogJsonDetection(normalized);
+      // Source offsets must match Monaco's actual text, including its EOL sequence.
+      const editorContent = monacoEditor.getValue();
+      setContentState(editorContent, { syncRightPanel: true });
+      tabsStore.updateTabContent(tabId, editorContent);
+      scheduleLogJsonDetection(editorContent);
       await updateStats();
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {

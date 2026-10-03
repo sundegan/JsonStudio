@@ -2,6 +2,7 @@ pub mod json;
 pub mod window;
 pub mod shortcuts;
 pub mod file;
+mod file_encoding;
 pub mod file_watcher;
 pub mod convert;
 pub mod codegen;

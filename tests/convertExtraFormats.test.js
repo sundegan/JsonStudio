@@ -10,6 +10,24 @@ test('converts Properties and INI configuration text', () => {
   assert.throws(() => parseProperties('host=localhost\ninvalid line'));
 });
 
+test('parses Windows CRLF Properties and INI without losing values', () => {
+  assert.deepEqual(
+    parseProperties('host=localhost\r\nport=8080\r\nactive=true\r\n'),
+    { host: 'localhost', port: 8080, active: true },
+  );
+  assert.deepEqual(
+    parseProperties('; settings\r\n[server]\r\nhost=localhost\r\nport=8080\r\n', { ini: true }),
+    { server: { host: 'localhost', port: 8080 } },
+  );
+});
+
+test('keeps escaped line breaks in quoted Properties values', () => {
+  assert.deepEqual(
+    parseProperties('message="line 1\\r\\nline 2"\r\nport=8080\r\n'),
+    { message: 'line 1\r\nline 2', port: 8080 },
+  );
+});
+
 test('round-trips single-entry Properties and flat INI documents', () => {
   const properties = formatProperties({ host: 'localhost' });
   const ini = formatProperties({ host: 'localhost', port: 8080 }, { ini: true });

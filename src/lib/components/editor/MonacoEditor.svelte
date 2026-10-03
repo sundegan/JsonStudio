@@ -6,7 +6,8 @@
   import { initMonaco } from '$lib/services/monaco';
   import { getJson5FoldingRanges } from '$lib/services/json5Folding.js';
   import { registerMonacoThemes, type EditorTheme } from '$lib/config/monacoThemes';
-  
+  import { normalizeLineEndings } from '$lib/services/lineEndings';
+
   // Props
   let {
     value = '',
@@ -198,9 +199,9 @@
       isInternalChange = false;
       return;
     }
-    
+
     // Only update the active model when external value actually changes
-    if (editor && value !== editor.getValue()) {
+    if (editor && normalizeLineEndings(value) !== normalizeLineEndings(editor.getValue())) {
       const model = editor.getModel();
       if (model) {
         // Use pushEditOperations instead of setValue to preserve undo history
@@ -222,7 +223,7 @@
       model = monaco.editor.createModel(nextValue, nextLanguage);
     } else {
       modelsByKey.delete(key);
-      if (model.getValue() !== nextValue) {
+      if (normalizeLineEndings(model.getValue()) !== normalizeLineEndings(nextValue)) {
         model.setValue(nextValue);
       }
       if (model.getLanguageId() !== nextLanguage) {
@@ -236,6 +237,15 @@
     activeModelKey = key;
     isSwitchingModel = false;
     disposeUnretainedModels();
+    syncNormalizedModelValue(nextValue);
+  }
+
+  function syncNormalizedModelValue(expectedValue: string) {
+    const currentValue = editor?.getValue();
+    if (currentValue === undefined || currentValue === expectedValue) return;
+    // Monaco strips a leading BOM and normalizes mixed line endings when creating models.
+    isInternalChange = true;
+    onChange(currentValue);
   }
 
   function disposeUnretainedModels() {
@@ -425,6 +435,7 @@
       }
     }
 
+    syncNormalizedModelValue(value);
     hideFindWidgetManagedHovers();
     monacoHoverObserver = new MutationObserver(() => {
       hideFindWidgetManagedHovers();

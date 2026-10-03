@@ -45,7 +45,8 @@ test('diff mode exposes the shared toolbar for the active editor side', async ()
   assert.match(toolbar, /let isSubPageMode = \$derived\(isDiffMode \|\| isConvertMode \|\| isCodegenMode \|\| isSchemaMode\)/);
   assert.match(toolbar, /type JsonOperationContext =/);
   assert.match(toolbar, /jsonEditor\?\.getEditorInstance\(\) \?\? null\) !== context\.editor/);
-  assert.match(toolbar, /context\.editor\.getValue\(\) === context\.content/);
+  assert.match(toolbar, /normalizeLineEndings\(editorValue \?\? ''\) === normalizeLineEndings\(context\.content\)/);
+  assert.doesNotMatch(toolbar, /!context\.editor \|\| !editorValue/);
   assert.match(toolbar, /setJsonContentValue\(formatted, operation\)/);
   assert.match(toolbar, /isDiffMode \? \$t\('toolbar\.exitDiff'\) : \$t\('toolbar\.diff'\)/);
   assert.match(toolbar, /disabled=\{isDiffMode \|\| isCodegenMode \|\| isSchemaMode\}/);
